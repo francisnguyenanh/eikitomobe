@@ -398,6 +398,7 @@ def add_note():
 def edit_note(id):
     note = Note.query.get_or_404(id)
     if note.user_id != current_user.id:
+        app.logger.warning(f"Unauthorized access to note {id} by user {current_user.id}")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'status': 'error', 'message': 'Unauthorized access.'}), 403
         flash('Unauthorized access.', 'danger')
@@ -414,28 +415,32 @@ def edit_note(id):
 
             # Validate required fields
             if not title:
+                app.logger.warning("Title is required.")
                 flash('Title is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'Title is required'}), 400
+                    return jsonify({'status': 'error', 'message': 'Title is required.'}), 400
                 return redirect(url_for('index'))
 
             if not content:
+                app.logger.warning("Content is required.")
                 flash('Content is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'Content is required'}), 400
+                    return jsonify({'status': 'error', 'message': 'Content is required.'}), 400
                 return redirect(url_for('index'))
 
             # Validate category
             categories = Category.query.filter_by(user_id=current_user.id).all()
             if not categories:
+                app.logger.warning("No categories available.")
                 flash('No categories available. Please create a category first.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'No categories available'}), 400
+                    return jsonify({'status': 'error', 'message': 'No categories available.'}), 400
                 return redirect(url_for('index'))
             if not category_id or not Category.query.filter_by(id=category_id, user_id=current_user.id).first():
+                app.logger.warning("Invalid category selected.")
                 flash('Please select a valid category.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'Invalid category'}), 400
+                    return jsonify({'status': 'error', 'message': 'Invalid category.'}), 400
                 return redirect(url_for('index'))
 
             # Parse due_date
@@ -445,9 +450,10 @@ def edit_note(id):
                     due_date_obj = datetime.strptime(due_date, '%Y-%m-%dT%H:%M')
                     due_date_utc = due_date_obj - timedelta(hours=9)  # Convert JST to UTC
                 except ValueError as e:
+                    app.logger.error(f"Invalid due date format: {due_date}")
                     flash('Invalid due date format.', 'danger')
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return jsonify({'status': 'error', 'message': 'Invalid due date format'}), 400
+                        return jsonify({'status': 'error', 'message': 'Invalid due date format.'}), 400
                     return redirect(url_for('index'))
 
             # Cập nhật thông tin memo
@@ -461,15 +467,18 @@ def edit_note(id):
             # Xử lý ảnh hiện có
             images = json.loads(note.images) if note.images else []
             keep_images = request.form.getlist('keep_images')
-            app.logger.debug(f"Keep images indices: {keep_images}")
+            app.logger.debug(f"keep_images received: {keep_images}")
             if keep_images:
                 keep_indices = [int(i) for i in keep_images if i.isdigit() and int(i) < len(images)]
+                app.logger.debug(f"keep_indices after filter: {keep_indices}")
                 images = [images[i] for i in keep_indices]
             else:
-                images = images if images else []  # Giữ nguyên nếu không có keep_images
-
-            # Lưu memo trước khi xử lý ảnh mới
+                images = images if images else []
             note.images = json.dumps(images) if images else None
+            
+            app.logger.debug(f"Images after filtering: {images}")
+            app.logger.debug(f"note.images after update: {note.images}")
+
             db.session.commit()
 
             # Hàm xử lý ảnh mới bất đồng bộ
@@ -525,6 +534,7 @@ def edit_note(id):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({
                     'status': 'success',
+                    'message': 'Note updated successfully!',
                     'note': {
                         'id': note.id,
                         'title': note.title,
@@ -550,6 +560,7 @@ def edit_note(id):
         images = json.loads(note.images) if note.images else []
         return jsonify({
             'status': 'success',
+            'message': 'Note loaded successfully.',
             'note': {
                 'id': note.id,
                 'title': note.title,
