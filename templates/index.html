@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme|default('light') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tomo Memo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.3/dist/heic2any.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --card-bg: #f8f9fa;
+            --primary-color: #0d6efd;
+        }
+        [data-theme="dark"] {
+            --bg-color: #343a40;
+            --text-color: #ffffff;
+            --card-bg: #495057;
+            --primary-color: #6c757d;
+        }
+        [data-theme="blue"] {
+            --bg-color: #e6f0fa;
+            --text-color: #003087;
+            --card-bg: #d6e4f0;
+            --primary-color: #004aad;
+        }
+        [data-theme="green"] {
+            --bg-color: #e6f4ea;
+            --text-color: #004d00;
+            --card-bg: #d4edda;
+            --primary-color: #006400;
+        }
+        [data-theme="purple"] {
+            --bg-color: #f3e5f5;
+            --text-color: #4a0072;
+            --card-bg: #e1bee7;
+            --primary-color: #6a1b9a;
+        }
+        [data-theme="red"] {
+            --bg-color: #ffe6e6;
+            --text-color: #721c24;
+            --card-bg: #f5c6cb;
+            --primary-color: #dc3545;
+        }
+        [data-theme="orange"] {
+            --bg-color: #fff3e0;
+            --text-color: #8a3e00;
+            --card-bg: #ffe5b4;
+            --primary-color: #fd7e14;
+        }
+        [data-theme="yellow"] {
+            --bg-color: #fffde7;
+            --text-color: #856404;
+            --card-bg: #fff3cd;
+            --primary-color: #ffc107;
+        }
+        [data-theme="pink"] {
+            --bg-color: #fce4ec;
+            --text-color: #771653;
+            --card-bg: #f8c1d0;
+            --primary-color: #e83e8c;
+        }
+        [data-theme="cyan"] {
+            --bg-color: #e0f7fa;
+            --text-color: #005257;
+            --card-bg: #b2ebf2;
+            --primary-color: #00acc1;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        .card {
+            background-color: var(--card-bg);
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        .category-card {
+            background-color: var(--card-bg);
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            padding: 20px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: slideIn 0.5s ease forwards;
+        }
+        .category-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(0, 0, 0, 0.05));
+            opacity: 0.2;
+            z-index: 0;
+        }
+        .category-card .card-body {
+            position: relative;
+            z-index: 1;
+        }
+
+        .category-card:hover {
+            transform: translateY(-8px) scale(1.02) rotate(0deg);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        .category-card.reminder {
+            border: 3px solid red !important;
+            box-shadow: 0 4px 12px rgba(255, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+        .category-card .card-title {
+            font-family: 'Kosugi Maru', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        .category-card .card-text, .category-card .text-muted, .category-card .text-muted a, .category-card .card-body a {
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        .category-card .card-body::before {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 12px;
+            background: rgba(255, 204, 0, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 2px;
+            z-index: 2;
+        }
+        .category-card.pushpin .card-body::before {
+            content: '\1F4CC';
+            top: -10px;
+            left: 10px;
+            width: auto;
+            height: auto;
+            font-size: 22px;
+            color: var(--primary-color);
+            transform: rotate(-15deg);
+            background: none;
+            border: none;
+        }
+        /* Highlight effect for reminder click */
+        .category-card.highlight {
+            animation: highlight 1s ease;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) rotate(2deg);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) rotate(var(--random-rotation));
+            }
+        }
+        @keyframes highlight {
+            0%, 100% {
+                border-color: transparent;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+            }
+            50% {
+                border-color: var(--primary-color);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1), 0 0 10px var(--primary-color);
+            }
+        }
+        .input-group .btn {
+            white-space: nowrap;
+        }
+        .form-switch .form-check-input {
+            cursor: pointer;
+        }
+
+        /* Add to existing <style> section */
+        .reminder-item.clicked {
+            background-color: var(--primary-color) !important; /* Use theme's primary color for clicked state */
+            color: #ffffff; /* White text for contrast */
+        }
+
+        .reminder-item.clicked:hover {
+            background-color: #28a745 !important; /* Green hover color for clicked reminders */
+            color: #ffffff;
+        }
+
+        /* Ensure regular reminder hover state for non-clicked reminders */
+        .reminder-item:hover {
+            background-color: #ffca2c; /* Slightly darker yellow for regular hover */
+        }
+
+        #viewMemoModal .modal-body {
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        #viewMemoModal #viewMemoTitle {
+            font-family: 'Kosugi Maru', sans-serif;
+            font-size: 1.5rem;
+        }
+        #viewMemoModal #viewMemoContent {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 100px;
+            max-height: 300px; /* Giới hạn chiều cao tối đa */
+            overflow-y: auto; /* Cho phép cuộn dọc khi nội dung vượt quá */
+            white-space: pre-wrap; /* Đảm bảo xuống hàng tự nhiên và giữ định dạng */
+            word-wrap: break-word; /* Đảm bảo từ dài không làm tràn nội dung */
+            border: 1px solid #ddd; /* Thêm viền nhẹ để rõ ràng hơn */
+        }
+        #imagePreview img, #editImagePreview img, #viewMemoImages img {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 5px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .position-relative {
+            display: inline-block;
+        }
+        .position-relative .btn-danger {
+            padding: 2px 6px;
+            font-size: 12px;
+        }
+        #viewMemoModal #viewMemoImages img {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 5px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .link-input[readonly] {
+            background-color: #f3f3f3 !important;
+            color: #555;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .link-input:not([readonly]) {
+            background-color: #fffbe6 !important;
+            color: #212529;
+            transition: background 0.2s;
+        }
+        .link-input:focus {
+            background-color: #fffde7 !important;
+            border-color: #ffe066;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- HTML remains unchanged -->
+    <nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Tomobe Eiki</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <!-- Memo dropdown menu -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="memoDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Memo
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="memoDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('index') }}">Memo List</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('calendar') }}">Calendar</a></li>
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#manageCategoriesModal">Category</a></li>
+                        </ul>
+                    </li>
+                    
+                    <!-- filepath: /Users/eikitomobe/Documents/3. Học tập/Lập trình/VS code/Memo_WEB/templates/index.html -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="diaryDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Diary
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="diaryDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('new_diary') }}">New Diary</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('diary_list') }}">Diary List</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('diary_grid') }}">Diary Grid</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="diaryDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Quote
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="quoteDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('quotes') }}">View Quote</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('manage_quotes') }}">List Quote</a></li>
+                        </ul>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">Settings</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="showLinksBtn"><i class="bi bi-link-45deg"></i> Links</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form class="mb-3" id="searchForm">
+            <div class="input-group mb-2">
+                <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#addMemoModal" title="Add New Note">
+                    <i class="bi bi-plus-circle"></i>
+                </button>
+                <input type="text" class="form-control" id="searchInput" name="search" placeholder="Search notes..." value="{{ search_query }}">
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <select class="form-select mb-2" name="category_id" id="categorySelect">
+                        <option value="">All Categories</option>
+                        {% for category in categories %}
+                            <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="showCompleted" name="show_completed" value="1" {% if show_completed %}checked{% endif %}>
+                        <label class="form-check-label" for="showCompleted"><i class="bi bi-check2"></i> Completed</label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="showIncomplete" name="show_incomplete" value="1" {% if show_incomplete is none or show_incomplete %}checked{% endif %}>
+                        <label class="form-check-label" for="showIncomplete"><i class="bi bi-circle"></i> Incomplete</label>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="showReminders" name="show_reminders" value="1">
+                        <label class="form-check-label" for="showReminders"><i class="bi bi-bell"></i> Reminders</label>
+                    </div>
+                </div>
+            </div>
+        </form>
+        
+        <div id="reminders" class="mb-3"></div>
+        <div class="row" id="notesContainer">
+            {% for note in notes %}
+                <div class="col-12 col-md-6 col-lg-4 mb-3">
+                    <div class="card category-card {% if note.due_date and note.due_date <= now and not note.is_completed %}reminder{% endif %}" data-note-id="{{ note.id }}" style="background-color: {{ note.category.color if note.category and note.category.color else '#ffffff' }};">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title">{{ note.title }}</h5>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input complete-switch" type="checkbox" data-note-id="{{ note.id }}" id="complete-switch-{{ note.id }}" {% if note.is_completed %}checked{% endif %}>
+                                </div>
+                            </div>
+                            <p class="card-text">{{ note.content|truncate(100) }}</p>
+                            <p class="card-text"><small class="text-muted">Category: {{ note.category.name if note.category else 'None' }}</small></p>
+                            {% if note.due_date and not note.is_completed %}
+                                <p class="card-text"><small class="text-muted due-date" data-due-date="{{ note.due_date.isoformat() if note.due_date else '' }}">Due: </small></p>
+                            {% endif %}
+                            {% if note.share_id %}
+                                <p class="card-text"><small class="text-muted">Share: <a href="{{ url_for('share_note', share_id=note.share_id) }}" target="_blank">Link</a></small></p>
+                            {% endif %}
+                            <div class="d-flex justify-content-end">
+
+                                <a href="{{ url_for('delete_note', id=note.id) }}" class="btn btn-sm me-1"><i class="bi bi-trash"></i></a>
+                                <a href="{{ url_for('export_note', id=note.id) }}" class="btn btn-sm me-1"><i class="bi bi-file-earmark-text"></i></a>
+                                <a href="{{ url_for('export_pdf', id=note.id) }}" class="btn btn-sm"><i class="bi bi-file-earmark-pdf"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <!-- filepath: c:\8. Private\Tool\Memo_WEB\Memo_WEB\templates\index.html -->
+    <div class="modal fade" id="linksModal" tabindex="-1" aria-labelledby="linksModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="linksModalLabel">Saved Links</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="linksForm">
+                        <div id="linksInputs"></div>
+                        <button type="submit" class="btn btn-primary mt-2">Update</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Add Memo Modal -->
+    {% if categories %}
+    <!-- Trong file index.html, phần addMemoModal -->
+    <div class="modal fade" id="addMemoModal" tabindex="-1" aria-labelledby="addMemoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addMemoModalLabel">Add New Memo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addMemoForm" method="POST" action="{{ url_for('add_note') }}" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="memoTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="memoTitle" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="memoContent" class="form-label">Content</label>
+                            <textarea class="form-control" id="memoContent" name="content" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="memoImages" class="form-label">Images (PNG, JPG, JPEG, GIF, HEIC)</label>
+                            <input type="file" class="form-control" id="memoImages" name="images" multiple accept="image/png,image/jpeg,image/gif,image/heic">
+                            <div id="imagePreview" class="mt-2 d-flex flex-wrap gap-2"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="memoDueDate" class="form-label">Due Date (JST)</label>
+                            <input type="datetime-local" class="form-control" id="memoDueDate" name="due_date" step="60">
+                        </div>
+                        <div class="mb-3">
+                            <label for="memoCategory" class="form-label">Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="memoCategory" name="category_id" required>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="memoShare" name="share">
+                                <label class="form-check-label" for="memoShare">Enable public sharing</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="memoCompleted" name="is_completed">
+                                <label class="form-check-label" for="memoCompleted">Completed</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Memo</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- View Memo Modal -->
+    <!-- Trong file index.html, phần viewMemoModal -->
+    <div class="modal fade" id="viewMemoModal" tabindex="-1" aria-labelledby="viewMemoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="viewMemoModalLabel">View Memo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 id="viewMemoTitle" class="mb-3"></h6>
+                    <p id="viewMemoContent" style="white-space: pre-wrap;"></p>
+                    <div id="viewMemoImages" class="mt-2 d-flex flex-wrap gap-2"></div>
+                    <p id="viewMemoDueDate" class="text-muted"></p>
+                    <p id="viewMemoCategory" class="text-muted"></p>
+                    <p id="viewMemoShare" class="text-muted"></p>
+                    <p id="viewMemoCompleted" class="text-muted"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="editFromViewButton">Edit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New modal for enlarged image -->
+    <div class="modal fade" id="imageViewModal" tabindex="-1" aria-labelledby="imageViewModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="enlargedImage" src="" style="max-width: 100%; max-height: 80vh; object-fit: contain;">
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Edit Memo Modal -->
+    {% if categories %}
+    <!-- Trong file index.html, phần editMemoModal -->
+    <div class="modal fade" id="editMemoModal" tabindex="-1" aria-labelledby="editMemoModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editMemoModalLabel">Edit Memo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editMemoForm" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" id="editMemoId" name="id">
+                        <div class="mb-3">
+                            <label for="editMemoTitle" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="editMemoTitle" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editMemoContent" class="form-label">Content</label>
+                            <textarea class="form-control" id="editMemoContent" name="content" rows="4" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editMemoImages" class="form-label">Images (PNG, JPG, JPEG, GIF, HEIC)</label>
+                            <input type="file" class="form-control" id="editMemoImages" name="images" multiple accept="image/png,image/jpeg,image/gif,image/heic">
+                            <div id="editImagePreview" class="mt-2 d-flex flex-wrap gap-2"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editMemoDueDate" class="form-label">Due Date (JST)</label>
+                            <input type="datetime-local" class="form-control" id="editMemoDueDate" name="due_date" step="60">
+                        </div>
+                        <div class="mb-3">
+                            <label for="editMemoCategory" class="form-label">Category <span class="text-danger">*</span></label>
+                            <select class="form-select" id="editMemoCategory" name="category_id" required>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="editMemoShare" name="share">
+                                <label class="form-check-label" for="editMemoShare">Enable public sharing</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="editMemoCompleted" name="is_completed">
+                                <label class="form-check-label" for="editMemoCompleted">Completed</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Memo</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    <!-- Manage Categories Modal -->
+    <div class="modal fade" id="manageCategoriesModal" tabindex="-1" aria-labelledby="manageCategoriesModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manageCategoriesModalLabel">Manage Categories</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCategoryForm" class="mb-3">
+                        <div class="mb-3">
+                            <label for="categoryName" class="form-label">Category Name</label>
+                            <input type="text" class="form-control" id="categoryName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryColor" class="form-label">Color</label>
+                            <input type="color" class="form-control form-control-color" id="categoryColor" name="color" value="#ffffff">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Category</button>
+                    </form>
+                    <div id="categoriesContainer" class="row">
+                        {% for category in categories %}
+                            <div class="col-12 mb-3">
+                                <div class="card" style="background-color: {{ category.color or '#ffffff' }};">
+                                    <div class="card-body d-flex justify-content-between align-items-center">
+                                        <span>{{ category.name }}</span>
+                                        <div>
+                                            <button class="btn btn-sm me-1 edit-category" data-category-id="{{ category.id }}" data-category-name="{{ category.name }}" data-category-color="{{ category.color or '#ffffff' }}"><i class="bi bi-pencil"></i></button>
+                                            <button class="btn btn-sm delete-category" data-category-id="{{ category.id }}"><i class="bi bi-trash"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="settingsModalLabel">Settings</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('change_password') }}">
+                        <div class="mb-3">
+                            <label for="new_password" class="form-label">Change Password</label>
+                            <input type="password" class="form-control" id="new_password" name="new_password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Password</button>
+                    </form>
+                    <hr>
+                    <div class="mb-3">
+                        <label for="themeSelect" class="form-label">Theme</label>
+                        <select class="form-select" id="themeSelect">
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                            <option value="blue">Blue</option>
+                            <option value="green">Green</option>
+                            <option value="purple">Purple</option>
+                            <option value="red">Red</option>
+                            <option value="orange">Orange</option>
+                            <option value="yellow">Yellow</option>
+                            <option value="pink">Pink</option>
+                            <option value="cyan">Cyan</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- filepath: c:\8. Private\Tool\Memo_WEB\Memo_WEB\templates\index.html -->
+    <footer class="text-end p-2" style="position:fixed;right:0;bottom:0;z-index:999;width:auto;min-width:180px;background:rgba(255,255,255,0.8);font-size:0.95em;">
+        DB size: <span id="dbSize">...</span>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/offline.js"></script>
+    <script>
+        let currentlyClickedReminderId = null;
+        let selectedFilesAdd = [];
+        let selectedFilesEdit = [];
+        let existingImagesEdit = [];
+
+        const editMemoModal = new bootstrap.Modal(document.getElementById('editMemoModal'));
+        const editMemoForm = document.getElementById('editMemoForm');
+
+        const themeSelect = document.getElementById('themeSelect');
+        const currentTheme = localStorage.getItem('theme') || '{{ session.get("theme", "light") }}';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        themeSelect.value = currentTheme;
+        themeSelect.addEventListener('change', () => {
+            const theme = themeSelect.value;
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            // Gửi theme lên server để lưu vào session
+            fetch('/set_theme', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({theme: theme})
+            });
+        });
+
+        const searchInput = document.getElementById('searchInput');
+        const categorySelect = document.getElementById('categorySelect');
+        const showCompleted = document.getElementById('showCompleted');
+        const showIncomplete = document.getElementById('showIncomplete');
+        const showReminders = document.getElementById('showReminders');
+        const notesContainer = document.getElementById('notesContainer');
+        const remindersDiv = document.getElementById('reminders');
+        // Add Memo Modal Handling
+        const addMemoModal = new bootstrap.Modal(document.getElementById('addMemoModal'));
+        const manageCategoriesModal = new bootstrap.Modal(document.getElementById('manageCategoriesModal'));
+        const addCategoryForm = document.getElementById('addCategoryForm');
+        const categoriesContainer = document.getElementById('categoriesContainer');
+        const viewMemoModal = new bootstrap.Modal(document.getElementById('viewMemoModal'));
+
+        let notes = {{ notes_data | tojson }};
+        let categories = {{ categories | tojson }};
+        let searchTimeout;
+
+        // 1. Các hàm tiện ích (utility functions)
+        async function compressImage(file, targetSizeRatio = 0.2) {
+            return new Promise((resolve, reject) => {
+                // Nếu là HEIC, chỉ giảm kích thước file bằng cách giảm chất lượng và độ phân giải
+                if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
+                    // Giả lập giảm kích thước bằng cách tạo Blob với kích thước nhỏ hơn
+                    // Lưu ý: Không dùng canvas vì trình duyệt không hỗ trợ HEIC
+                    resolve(file); // Tạm thời gửi file gốc, server sẽ xử lý
+                } else {
+                    const img = new Image();
+                    img.src = URL.createObjectURL(file);
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        // Tính kích thước mới
+                        const scaleFactor = Math.sqrt(targetSizeRatio);
+                        canvas.width = img.width * scaleFactor;
+                        canvas.height = img.height * scaleFactor;
+
+                        // Vẽ ảnh lên canvas
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                        // Xuất ra JPEG với chất lượng 20%
+                        canvas.toBlob(
+                            newBlob => {
+                                const newFile = new File(
+                                    [newBlob],
+                                    file.name,
+                                    {
+                                        type: 'image/jpeg',
+                                        lastModified: Date.now()
+                                    }
+                                );
+                                URL.revokeObjectURL(img.src);
+                                resolve(newFile);
+                            },
+                            'image/jpeg',
+                            0.2
+                        );
+                    };
+                    img.onerror = () => {
+                        URL.revokeObjectURL(img.src);
+                        reject(new Error('Failed to load image'));
+                    };
+                }
+            });
+        }
+
+        function formatDateJST(isoDate) {
+            if (!isoDate) return '';
+            const date = new Date(isoDate);
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                weekday: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZone: 'Asia/Tokyo'
+            };
+            const formatter = new Intl.DateTimeFormat('ja-JP', options);
+            const parts = formatter.formatToParts(date);
+            const year = parts.find(p => p.type === 'year').value;
+            const month = parts.find(p => p.type === 'month').value;
+            const day = parts.find(p => p.type === 'day').value;
+            const weekday = parts.find(p => p.type === 'weekday').value;
+            const hour = parts.find(p => p.type === 'hour').value;
+            const minute = parts.find(p => p.type === 'minute').value;
+            return `${year}/${month}/${day} (${weekday}) ${hour}:${minute}`;
+        }
+
+        function linkify(text) {
+            const urlRegex = /(https?:\/\/[^\s<]+[^\s<.,:;"')\]\}])/g;
+            return text.replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+        }
+
+        // 2. Các hàm cập nhật giao diện
+        function updateDueDateDisplays() {
+            document.querySelectorAll('.due-date').forEach(el => {
+                const isoDate = el.getAttribute('data-due-date');
+                if (isoDate) {
+                    el.textContent = `Due: ${formatDateJST(isoDate)}`;
+                }
+            });
+        }
+
+        // Hàm hiển thị preview ảnh với nút xóa
+        function updateImagePreview(previewContainer, files, isAddModal) {
+            previewContainer.innerHTML = '';
+            files.forEach((fileObj, index) => {
+                const container = document.createElement('div');
+                container.className = 'position-relative';
+
+                const placeholder = document.createElement('div');
+                placeholder.style.width = '100px';
+                placeholder.style.height = '100px';
+                placeholder.style.display = 'flex';
+                placeholder.style.alignItems = 'center';
+                placeholder.style.justifyContent = 'center';
+                placeholder.style.border = '1px solid #ddd';
+                placeholder.style.borderRadius = '5px';
+                placeholder.style.backgroundColor = '#f8f9fa';
+                placeholder.classList.add('img-thumbnail');
+
+                // Nếu là ảnh đã upload (object có url)
+                if (fileObj && typeof fileObj === 'object' && fileObj.url) {
+                    const img = document.createElement('img');
+                    img.src = fileObj.url;
+                    img.style.maxWidth = '100px';
+                    img.style.maxHeight = '100px';
+                    img.style.objectFit = 'contain';
+                    img.onerror = () => {
+                        placeholder.textContent = 'Error loading image';
+                        placeholder.style.fontSize = '12px';
+                        placeholder.style.color = '#dc3545';
+                        placeholder.style.textAlign = 'center';
+                    };
+                    placeholder.appendChild(img);
+                }
+                // Nếu là file mới upload (File object)
+                else if (fileObj && typeof fileObj === 'object' && (fileObj.type === 'image/heic' || (fileObj.name && fileObj.name.toLowerCase().endsWith('.heic')))) {
+                    placeholder.textContent = 'HEIC';
+                    placeholder.style.fontSize = '14px';
+                    placeholder.style.color = '#666';
+                    placeholder.style.textAlign = 'center';
+                }
+                else if (fileObj && typeof fileObj === 'object' && fileObj instanceof File) {
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(fileObj);
+                    img.style.maxWidth = '100px';
+                    img.style.maxHeight = '100px';
+                    img.style.objectFit = 'contain';
+                    img.onerror = () => {
+                        placeholder.textContent = 'Error loading image';
+                        placeholder.style.fontSize = '12px';
+                        placeholder.style.color = '#dc3545';
+                        placeholder.style.textAlign = 'center';
+                    };
+                    placeholder.appendChild(img);
+                }
+
+                container.appendChild(placeholder);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn btn-danger btn-sm position-absolute top-0 end-0';
+                deleteBtn.innerHTML = '<i class="bi bi-x"></i>';
+                deleteBtn.onclick = () => {
+                    if (isAddModal) {
+                        selectedFilesAdd.splice(index, 1);
+                        updateImagePreview(previewContainer, selectedFilesAdd, true);
+                    } else {
+                        existingImagesEdit.splice(index, 1);
+                        updateImagePreview(previewContainer, [...existingImagesEdit, ...selectedFilesEdit], false);
+                    }
+                };
+                container.appendChild(deleteBtn);
+                container.dataset.index = index;
+                previewContainer.appendChild(container);
+            });
+        }
+
+        // Update category select dropdown
+        function updateCategorySelect() {
+            categorySelect.innerHTML = '<option value="">All Categories</option>';
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                if (category.id == {{ selected_category | tojson }}) {
+                    option.selected = true;
+                }
+                categorySelect.appendChild(option);
+            });
+        }
+
+        // Update Categories Display
+        function updateCategoriesDisplay() {
+            categoriesContainer.innerHTML = '';
+            categories.forEach(category => {
+                const div = document.createElement('div');
+                div.className = 'col-12 mb-3';
+                div.innerHTML = `
+                    <div class="card" style="background-color: ${category.color || '#ffffff'};">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <span>${category.name}</span>
+                            <div>
+                                <button class="btn btn-sm me-1 edit-category" data-category-id="${category.id}" data-category-name="${category.name}" data-category-color="${category.color || '#ffffff'}"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm delete-category" data-category-id="${category.id}"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                categoriesContainer.appendChild(div);
+            });
+            adjustCategoryTextColors();
+            attachCategoryEventListeners();
+        }
+
+        // Adjust text color for categories
+        function adjustCategoryTextColors() {
+            categoriesContainer.querySelectorAll('.card').forEach(card => {
+                const bgColor = card.style.backgroundColor;
+                if (bgColor) {
+                    const rgb = bgColor.match(/\d+/g)?.map(Number) || [255, 255, 255];
+                    const luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+                    const textColor = luminance > 0.5 ? '#000000' : '#ffffff';
+                    card.style.color = textColor;
+                    card.querySelectorAll('.card-body, .card-body button').forEach(el => {
+                        el.style.color = textColor;
+                    });
+                }
+            });
+        }
+
+        // Adjust text colors and apply dynamic styles
+        function adjustTextColors() {
+            document.querySelectorAll('.category-card').forEach(card => {
+                const bgColor = card.style.backgroundColor;
+                if (bgColor) {
+                    const rgb = bgColor.match(/\d+/g)?.map(Number) || [255, 255, 255];
+                    const luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+                    const textColor = luminance > 0.5 ? '#000000' : '#ffffff';
+                    card.style.color = textColor;
+                    card.querySelectorAll('.card-title, .card-text, .text-muted, .text-muted a, .card-body a').forEach(el => {
+                        el.style.setProperty('color', textColor, 'important');
+                    });
+                    // Apply random rotation
+                    const randomAngle = (Math.random() - 0.5) * 6;
+                    card.style.setProperty('--random-rotation', `${randomAngle}deg`);
+                    card.style.transform = `rotate(${randomAngle}deg)`;
+                    // Randomly assign pushpin or tape
+
+                    // Subtle color variation
+                    const variation = Math.random() * 0.1 + 0.95;
+                    const rgbValues = rgb.map(v => Math.min(255, Math.max(0, Math.round(v * variation))));
+                    card.style.backgroundColor = `rgb(${rgbValues.join(',')})`;
+                }
+            });
+        }
+
+         // Show flash message
+        function showFlashMessage(category, message) {
+            const flashContainer = document.querySelector('.container.mt-4');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${category} alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            flashContainer.insertBefore(alert, flashContainer.firstChild);
+            setTimeout(() => {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 150);
+            }, 3000);
+        }
+
+        // 3. Các hàm xử lý sự kiện (event handlers)
+        function attachCategoryEventListeners() {
+            categoriesContainer.querySelectorAll('.edit-category').forEach(button => {
+                button.addEventListener('click', () => {
+                    const categoryId = button.dataset.categoryId;
+                    const categoryName = button.dataset.categoryName;
+                    const categoryColor = button.dataset.categoryColor;
+                    addCategoryForm.innerHTML = `
+                        <div class="mb-3">
+                            <label for="categoryName" class="form-label">Category Name</label>
+                            <input type="text" class="form-control" id="categoryName" name="name" value="${categoryName}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryColor" class="form-label">Color</label>
+                            <input type="color" class="form-control form-control-color" id="categoryColor" name="color" value="${categoryColor}">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Category</button>
+                        <button type="button" class="btn btn-secondary cancel-edit">Cancel</button>
+                    `;
+                    addCategoryForm.dataset.categoryId = categoryId;
+                    addCategoryForm.onsubmit = async function(e) {
+                        e.preventDefault();
+                        const formData = new FormData(this);
+                        try {
+                            const response = await fetch(`/edit_category/${categoryId}`, {
+                                method: 'POST',
+                                body: formData,
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+                            const data = await response.json();
+                            if (data.status === 'success') {
+                                const index = categories.findIndex(c => c.id == categoryId);
+                                categories[index] = data.category;
+                                updateCategoriesDisplay();
+                                updateCategorySelect();
+                                addCategoryForm.reset();
+                                addCategoryForm.innerHTML = `
+                                    <div class="mb-3">
+                                        <label for="categoryName" class="form-label">Category Name</label>
+                                        <input type="text" class="form-control" id="categoryName" name="name" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="categoryColor" class="form-label">Color</label>
+                                        <input type="color" class="form-control form-control-color" id="categoryColor" name="color" value="#ffffff">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Add Category</button>
+                                `;
+                                delete addCategoryForm.dataset.categoryId;
+                                showFlashMessage('success', 'Category updated successfully');
+                            } else {
+                                alert('Failed to update category: ' + (data.message || 'Unknown error'));
+                            }
+                        } catch (error) {
+                            console.error('Update category error:', error);
+                            alert('Error updating category: ' + error.message);
+                        }
+                    };
+                    addCategoryForm.querySelector('.cancel-edit').addEventListener('click', () => {
+                        addCategoryForm.reset();
+                        addCategoryForm.innerHTML = `
+                            <div class="mb-3">
+                                <label for="categoryName" class="form-label">Category Name</label>
+                                <input type="text" class="form-control" id="categoryName" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="categoryColor" class="form-label">Color</label>
+                                <input type="color" class="form-control form-control-color" id="categoryColor" name="color" value="#ffffff">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Add Category</button>
+                        `;
+                        delete addCategoryForm.dataset.categoryId;
+                    });
+                });
+            });
+
+            categoriesContainer.querySelectorAll('.delete-category').forEach(button => {
+                button.addEventListener('click', async () => {
+                    const categoryId = button.dataset.categoryId;
+                    if (confirm('Are you sure you want to delete this category?')) {
+                        try {
+                            const response = await fetch(`/delete_category/${categoryId}`, {
+                                method: 'POST',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+                            const data = await response.json();
+                            if (data.status === 'success') {
+                                categories = categories.filter(c => c.id != categoryId);
+                                updateCategoriesDisplay();
+                                updateCategorySelect();
+                                updateSearch();
+                                showFlashMessage('success', 'Category deleted successfully');
+                            } else {
+                                alert('Failed to delete category: ' + (data.message || 'Unknown error'));
+                            }
+                        } catch (error) {
+                            console.error('Delete category error:', error);
+                            alert('Error deleting category: ' + error.message);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Attach click listeners to reminders
+        function attachReminderListeners() {
+            document.querySelectorAll('.reminder-item').forEach(reminder => {
+                reminder.addEventListener('click', () => {
+                    const noteId = reminder.dataset.noteId;
+
+                    // Remove 'clicked' class from all reminders
+                    document.querySelectorAll('.reminder-item').forEach(r => {
+                        r.classList.remove('clicked');
+                    });
+
+                    // Add 'clicked' class to the clicked reminder
+                    reminder.classList.add('clicked');
+                    currentlyClickedReminderId = noteId;
+
+                    // Scroll to the corresponding note card and highlight it
+                    const card = document.querySelector(`.category-card[data-note-id="${noteId}"]`);
+                    if (card) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        card.classList.add('highlight');
+                        setTimeout(() => card.classList.remove('highlight'), 1000);
+                    }
+                });
+            });
+        }
+
+        // Toggle switch
+        function attachToggleSwitchListeners() {
+            document.querySelectorAll('.complete-switch').forEach(switchEl => {
+                switchEl.addEventListener('change', async () => {
+                    const noteId = parseInt(switchEl.dataset.noteId);
+                    const isChecked = switchEl.checked;
+                    try {
+                        const response = await fetch(`/toggle_complete/${noteId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        if (response.ok) {
+                            const note = notes.find(n => n.id === noteId);
+                            if (note) {
+                                note.is_completed = isChecked;
+                                updateReminders();
+                                const card = switchEl.closest('.category-card');
+                                if (card) {
+                                    const now = new Date();
+                                    const dueDateJST = note.due_date ? new Date(note.due_date) : null;
+                                    if (dueDateJST && dueDateJST <= now && !isChecked) {
+                                        card.classList.add('reminder');
+                                    } else {
+                                        card.classList.remove('reminder');
+                                    }
+                                }
+                                if (showIncomplete.checked || showCompleted.checked) {
+                                    updateSearch();
+                                }
+                            }
+                        } else {
+                            console.error('Toggle failed:', await response.json());
+                            switchEl.checked = !isChecked;
+                        }
+                    } catch (error) {
+                        console.error('Toggle error:', error);
+                        switchEl.checked = !isChecked;
+                    }
+                });
+            });
+        }
+
+        // Update event listeners for notes
+        function updateNotesEventListeners() {
+            attachToggleSwitchListeners();
+            // Remove existing edit button listeners to avoid duplicates
+            document.querySelectorAll('.btn .bi-pencil').forEach(button => {
+                button.parentElement.removeEventListener('click', openEditMemoModal);
+            });
+            // Add click event to cards for viewing
+            document.querySelectorAll('.category-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    // Prevent triggering view modal when clicking buttons or toggle switch
+                    if (e.target.closest('.btn, .form-check-input')) {
+                        return;
+                    }
+                    const noteId = card.dataset.noteId;
+                    openViewMemoModal(noteId);
+                });
+            });
+            adjustTextColors();
+        }
+
+        // 4. Các hàm xử lý logic chính
+        // Reminders
+        function updateReminders() {
+            const now = new Date();
+            const search = searchInput.value.toLowerCase();
+            const category_id = categorySelect.value;
+            const show_completed = showCompleted.checked;
+            const show_incomplete = showIncomplete.checked;
+
+            let filteredNotes = notes.filter(note => {
+                const matchesSearch = !search ||
+                    (note.title.toLowerCase().includes(search) ||
+                     note.content.toLowerCase().includes(search));
+                const matchesCategory = !category_id || note.category_id === parseInt(category_id);
+                const matchesCompletion =
+                    (show_completed && note.is_completed) ||
+                    (show_incomplete && !note.is_completed) ||
+                    (!show_completed && !show_incomplete);
+                return matchesSearch && matchesCategory && matchesCompletion;
+            });
+
+            const reminders = filteredNotes
+                .filter(note => {
+                    if (!note.due_date) return false;
+                    const dueDateJST = new Date(note.due_date);
+                    return dueDateJST <= now && !note.is_completed;
+                })
+                .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+
+            remindersDiv.innerHTML = '';
+            reminders.forEach(note => {
+                const reminder = document.createElement('div');
+                reminder.className = 'alert alert-warning reminder-item';
+                if (note.id == currentlyClickedReminderId) {
+                    reminder.classList.add('clicked');
+                }
+                reminder.dataset.noteId = note.id;
+                const dueDateFormatted = formatDateJST(note.due_date);
+                reminder.textContent = `Reminder: "${note.title}" is due at ${dueDateFormatted}`;
+                remindersDiv.appendChild(reminder);
+            });
+
+            // Attach click listeners to reminders
+            attachReminderListeners();
+        }
+
+        async function updateSearch() {
+            currentlyClickedReminderId = null; // Reset clicked reminder
+            const search = searchInput.value.toLowerCase();
+            const category_id = categorySelect.value;
+            const show_completed = showCompleted.checked ? 1 : 0;
+            const show_incomplete = showIncomplete.checked ? 1 : 0;
+            const params = new URLSearchParams({
+                search,
+                category_id,
+                show_completed,
+                show_incomplete
+            });
+            try {
+                const response = await fetch(`/?${params.toString()}`);
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newNotesContainer = doc.getElementById('notesContainer');
+                notesContainer.innerHTML = newNotesContainer.innerHTML;
+                const newNotesData = doc.querySelector('script').textContent.match(/let notes = (\[.*?\]);/s);
+                if (newNotesData) {
+                    notes = JSON.parse(newNotesData[1]);
+                }
+                const newCategoriesData = doc.querySelector('script').textContent.match(/let categories = (\[.*?\]);/s);
+                if (newCategoriesData) {
+                    categories = JSON.parse(newCategoriesData[1]);
+                    updateCategorySelect();
+                }
+                updateNotesEventListeners();
+                updateReminders();
+                updateDueDateDisplays();
+                toggleRemindersVisibility();
+            } catch (error) {
+                console.error('Search error:', error);
+            }
+        }
+
+        async function openEditMemoModal(noteId){
+            try {
+                const response = await fetch(`/edit_note/${noteId}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    const note = data.note;
+                    document.getElementById('editMemoId').value = note.id;
+                    document.getElementById('editMemoTitle').value = note.title;
+                    document.getElementById('editMemoContent').value = note.content;
+                    document.getElementById('editMemoDueDate').value = note.due_date || '';
+                    document.getElementById('editMemoCategory').value = note.category_id;
+                    document.getElementById('editMemoShare').checked = !!note.share_id;
+                    document.getElementById('editMemoCompleted').checked = note.is_completed === true;
+
+                    // Hiển thị ảnh hiện có
+                    const editImagePreview = document.getElementById('editImagePreview');
+                    editImagePreview.innerHTML = '';
+                    existingImagesEdit = note.images
+                        ? note.images.map((img, idx) => ({
+                            url: `data:image/${img.filename.split('.').pop()};base64,${img.data}`,
+                            originalIndex: idx
+                        }))
+                        : [];
+                    selectedFilesEdit = [];
+                    updateImagePreview(editImagePreview, existingImagesEdit, false);
+
+                    const categorySelect = document.getElementById('editMemoCategory');
+                    categorySelect.innerHTML = '';
+                    data.categories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        if (category.id == note.category_id) {
+                            option.selected = true;
+                        }
+                        categorySelect.appendChild(option);
+                    });
+                    editMemoModal.show();
+                } else {
+                    showFlashMessage('danger', data.message || 'Failed to load note data.');
+                }
+            } catch (error) {
+                console.error('Error loading note:', error);
+                showFlashMessage('danger', 'Error loading note.');
+            }
+        }
+
+        async function openViewMemoModal(noteId) {
+            try {
+                const response = await fetch(`/edit_note/${noteId}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    const note = data.note;
+                    document.getElementById('viewMemoTitle').textContent = note.title;
+                    document.getElementById('viewMemoContent').innerHTML = linkify(note.content);
+                    document.getElementById('viewMemoDueDate').textContent = note.due_date ? `Due: ${formatDateJST(note.due_date)}` : '';
+                    document.getElementById('viewMemoCategory').textContent = `Category: ${note.category_name ? note.category_name : 'None'}`;
+                    document.getElementById('viewMemoShare').innerHTML = note.share_id ? `Share: <a href="{{ url_for('share_note', share_id='') }}${note.share_id}" target="_blank">Link</a>` : '';
+                    document.getElementById('viewMemoCompleted').textContent = `Status: ${note.is_completed ? 'Completed' : 'Incomplete'}`;
+
+                    // Hiển thị ảnh
+                    const viewMemoImages = document.getElementById('viewMemoImages');
+                    viewMemoImages.innerHTML = '';
+                    console.log('Images from server:', note.images);
+                    if (note.images && note.images.length) {
+                        note.images.forEach(image => {
+                            const container = document.createElement('div');
+                            container.className = 'position-relative';
+                            const img = document.createElement('img');
+                            img.src = `data:image/${image.filename.split('.').pop().toLowerCase()};base64,${image.data}`;
+                            img.style.maxWidth = '100px';
+                            img.style.maxHeight = '100px';
+                            img.style.objectFit = 'contain';
+                            img.classList.add('img-thumbnail');
+                            img.style.cursor = 'pointer';
+                            img.onclick = () => {
+                                const imageViewModal = new bootstrap.Modal(document.getElementById('imageViewModal'));
+                                document.getElementById('enlargedImage').src = img.src;
+                                imageViewModal.show();
+                            };
+                            img.onerror = () => {
+                                console.error(`Failed to load image: ${image.filename}`);
+                                showFlashMessage('danger', `Failed to load image: ${image.filename}`);
+                            };
+                            container.appendChild(img);
+                            viewMemoImages.appendChild(container);
+                        });
+                    } else {
+                        viewMemoImages.textContent = 'No images available.';
+                    }
+
+                    const editFromViewButton = document.getElementById('editFromViewButton');
+                    if (editFromViewButton) {
+                        editFromViewButton.onclick = () => {
+                            viewMemoModal.hide();
+                            openEditMemoModal(noteId);
+                        };
+                    }
+
+                    viewMemoModal.show();
+                } else {
+                    showFlashMessage('danger', data.message || 'Failed to load note data.');
+                }
+            } catch (error) {
+                console.error('Error loading note:', error);
+                showFlashMessage('danger', 'Error loading note.');
+            }
+        }
+        // Toggle reminders visibility
+        function toggleRemindersVisibility() {
+            remindersDiv.style.display = showReminders.checked ? 'block' : 'none';
+        }
+
+        updateDueDateDisplays();
+        toggleRemindersVisibility();
+
+        // Xử lý preview ảnh trong modal thêm ghi chú
+        document.getElementById('memoImages').addEventListener('change', function(e) {
+            const imagePreview = document.getElementById('imagePreview');
+            const files = Array.from(e.target.files);
+            selectedFilesAdd = [...selectedFilesAdd, ...files];
+            updateImagePreview(imagePreview, selectedFilesAdd, true);
+        });
+
+        // Xử lý preview ảnh trong modal chỉnh sửa ghi chú
+        document.getElementById('editMemoImages').addEventListener('change', function(e) {
+            const editImagePreview = document.getElementById('editImagePreview');
+            const files = Array.from(e.target.files);
+            selectedFilesEdit = [...selectedFilesEdit, ...files];
+            updateImagePreview(editImagePreview, [...existingImagesEdit, ...selectedFilesEdit], false);
+        });
+
+        // Xóa preview ảnh khi mở addMemoModal
+        document.getElementById('addMemoModal').addEventListener('show.bs.modal', function() {
+            const nowJST = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+            const dateStr = nowJST.toISOString().slice(0, 16);
+            document.getElementById('memoDueDate').value = dateStr;
+            document.getElementById('addMemoForm').reset();
+            document.getElementById('memoDueDate').value = dateStr;
+            document.getElementById('imagePreview').innerHTML = '';
+            selectedFilesAdd = [];
+        });
+
+        // Initialize showIncomplete to ON if no query parameter
+        if (!{{ show_incomplete | tojson }}) {
+            showIncomplete.checked = true;
+            showCompleted.checked = false;
+            updateSearch();
+        }
+
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(updateSearch, 300);
+        });
+        categorySelect.addEventListener('change', updateSearch);
+        showCompleted.addEventListener('change', () => {
+            updateSearch();
+        });
+        showIncomplete.addEventListener('change', () => {
+            updateSearch();
+        });
+        showReminders.addEventListener('change', () => {
+            toggleRemindersVisibility();
+        });
+
+        // Xử lý submit form Add Memo
+        document.getElementById('addMemoForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const form = this;
+            const formData = new FormData(form);
+            const dueDate = formData.get('due_date');
+            if (dueDate) {
+                formData.set('due_date', dueDate.slice(0, 16));
+            }
+            formData.set('is_completed', formData.get('is_completed') ? '1' : '');
+            formData.set('share', formData.get('share') ? '1' : '');
+            formData.delete('images');
+            for (const file of selectedFilesAdd) {
+                try {
+                    if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
+                        // Gửi file HEIC gốc lên server
+                        formData.append('images', file);
+                    } else {
+                        const compressedFile = await compressImage(file, 0.2);
+                        formData.append('images', compressedFile);
+                    }
+                } catch (err) {
+                    console.error('Image compression error:', err);
+                    showFlashMessage('danger', 'Failed to process image: ' + err.message);
+                    return;
+                }
+            }
+            try {
+                const response = await fetch('{{ url_for("add_note") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        addMemoModal.hide();
+                        updateSearch();
+                    } else {
+                        showFlashMessage('danger', 'Failed to add memo: ' + (data.message || 'Unknown error'));
+                    }
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                showFlashMessage('danger', 'Error adding memo: ' + error.message);
+            }
+        });
+
+        // Set default due_date to current time in JST
+        document.getElementById('addMemoModal').addEventListener('show.bs.modal', function() {
+            const nowJST = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
+            const dateStr = nowJST.toISOString().slice(0, 16);
+            document.getElementById('memoDueDate').value = dateStr;
+            document.getElementById('addMemoForm').reset();
+            document.getElementById('memoDueDate').value = dateStr;
+        });        
+
+        // Add Category
+        addCategoryForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            try {
+                const response = await fetch('{{ url_for("add_category") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    categories.push(data.category);
+                    updateCategoriesDisplay();
+                    updateCategorySelect();
+                    addCategoryForm.reset();
+                    showFlashMessage('success', 'Category added successfully');
+                } else {
+                    alert('Failed to add category: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Add category error:', error);
+                alert('Error adding category: ' + error.message);
+            }
+        });
+
+        updateReminders();
+
+        // Xử lý submit form Edit Memo
+        document.getElementById('editMemoForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.set('is_completed', document.getElementById('editMemoCompleted').checked ? '1' : '0');
+            formData.set('share', document.getElementById('editMemoShare').checked ? '1' : '0');
+            const noteId = formData.get('id');
+            formData.delete('images');
+            for (const file of selectedFilesEdit) {
+                try {
+                    if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
+                        // Gửi file HEIC gốc lên server
+                        formData.append('images', file);
+                    } else {
+                        const compressedFile = await compressImage(file, 0.2);
+                        formData.append('images', compressedFile);
+                    }
+                } catch (err) {
+                    console.error('Image compression error:', err);
+                    showFlashMessage('danger', 'Failed to process image: ' + err.message);
+                    return;
+                }
+            }
+            existingImagesEdit.forEach(imgObj => formData.append('keep_images', imgObj.originalIndex));
+            try {
+                const response = await fetch(`/edit_note/${noteId}`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    editMemoModal.hide();
+                    updateSearch();
+                    showFlashMessage('success', data.message);
+                } else {
+                    showFlashMessage('danger', data.message || 'Failed to update note.');
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                showFlashMessage('danger', 'Error updating memo: ' + error.message);
+            }
+        });
+
+        // filepath: c:\8. Private\Tool\Memo_WEB\Memo_WEB\templates\index.html
+        document.querySelectorAll('.alert-dismissible').forEach(alert => {
+            setTimeout(() => {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 150);
+            }, 3000);
+        });
+
+        function updateAddMemoCategorySelect() {
+            const memoCategory = document.getElementById('memoCategory');
+            if (!memoCategory) return;
+            memoCategory.innerHTML = '';
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                option.textContent = category.name;
+                memoCategory.appendChild(option);
+            });
+        }
+
+        function updateDbSize() {
+            fetch('/db_size')
+                .then(res => res.json())
+                .then(data => {                    
+                    let text = '';
+                    if (data.size_mb > 0) {
+                        text = `${data.size_mb} MB`;
+                    } else {
+                        text = `${data.size_kb} KB`;
+                    }
+                    document.getElementById('dbSize').textContent = text;
+                });
+        }
+
+        updateDbSize();
+
+        document.getElementById('showLinksBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch('/links')
+                .then(res => res.json())
+                .then(data => {
+                    const linksInputs = document.getElementById('linksInputs');
+                    linksInputs.innerHTML = '';
+                    let links = data.links || [];
+
+                    function createLinkInput(linkValue = '') {
+                        const div = document.createElement('div');
+                        div.className = 'mb-2 d-flex align-items-center gap-2';
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'form-control link-input';
+                        input.value = linkValue;
+                        input.placeholder = 'Enter link...';
+                        input.style.flex = '1 1 auto';
+
+                        if (linkValue) {
+                            input.readOnly = true;
+                            input.style.cursor = 'pointer';
+
+                            // Icon chỉnh sửa
+                            const editBtn = document.createElement('button');
+                            editBtn.type = 'button';
+                            editBtn.className = 'btn btn-outline-secondary btn-sm d-flex align-items-center';
+                            editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+                            editBtn.title = 'Edit';
+                            editBtn.onclick = function() {
+                                input.readOnly = false;
+                                input.focus();
+                                input.style.cursor = '';
+                                input.addEventListener('blur', function onBlur() {
+                                    input.readOnly = true;
+                                    input.style.cursor = 'pointer';
+                                    input.removeEventListener('blur', onBlur);
+                                });
+                            };
+
+                            // Icon xoá
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.type = 'button';
+                            deleteBtn.className = 'btn btn-outline-danger btn-sm d-flex align-items-center';
+                            deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                            deleteBtn.title = 'Delete';
+                            deleteBtn.onclick = function() {
+                                div.remove();
+                            };
+
+                            input.addEventListener('click', function(e) {
+                                if (input.readOnly && input.value.trim()) {
+                                    window.open(input.value.startsWith('http') ? input.value : 'http://' + input.value, '_blank');
+                                }
+                            });
+
+                            div.appendChild(input);
+                            div.appendChild(editBtn);
+                            div.appendChild(deleteBtn);
+                        } else {
+                            // Dòng trống cho phép nhập, tự động thêm dòng mới khi nhập
+                            input.addEventListener('input', function handler() {
+                                if (input.value.trim() !== '' && !div.nextElementSibling) {
+                                    createLinkInput();
+                                }
+                            });
+                            div.appendChild(input);
+                        }
+                        linksInputs.appendChild(div);
+                    }
+
+                    // Tạo input cho các link đã có
+                    links.forEach(link => createLinkInput(link));
+                    // Luôn có 1 dòng trống cuối cùng
+                    createLinkInput();
+
+                    const modal = new bootstrap.Modal(document.getElementById('linksModal'));
+                    modal.show();
+                });
+        });
+
+        document.getElementById('linksForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const inputs = document.querySelectorAll('.link-input');
+            const links = [];
+            inputs.forEach(input => {
+                const val = input.value.trim();
+                if (val) links.push(val);
+            });
+            fetch('/links', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                body: JSON.stringify({links: links})
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Đóng modal hoặc thông báo thành công
+                    showFlashMessage && showFlashMessage('success', 'Links updated!');
+                    bootstrap.Modal.getInstance(document.getElementById('linksModal')).hide();
+                } else {
+                    alert('Failed to update links');
+                }
+            });
+        });
+
+        updateNotesEventListeners();
+    </script>
+</body>
+</html>
