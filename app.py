@@ -1386,5 +1386,25 @@ def upload_avatar():
         flash('Avatar đã được cập nhật!', 'success')
     return redirect(url_for('home'))
 
+@app.route('/get_card_info')
+@login_required
+def get_card_info_api():
+    info = get_card_info()
+    return jsonify(info)
+
+@app.route('/update_card_info', methods=['POST'])
+@login_required
+def update_card_info():
+    data = request.json
+    # Xoá hết nội dung cũ
+    with open('cardinfor.txt', 'w', encoding='utf-8') as f:
+        f.write(f"Name: {data.get('name','')}\n")
+        f.write(f"Job: {data.get('job','')}\n")
+        f.write(f"Email: {data.get('email','')}\n")
+        f.write(f"Phone: {data.get('phone','')}\n")
+        f.write(f"SNS: {data.get('sns','')}\n")
+        f.write(f"Slogan: {data.get('slogan','')}\n")
+    return jsonify({'status': 'success'})
+
 if __name__ == '__main__':
     app.run(debug=True)

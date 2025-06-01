@@ -289,6 +289,11 @@
                             Avatar
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profileTab" type="button" role="tab" aria-controls="profileTab" aria-selected="false">
+                            Card
+                        </button>
+                    </li>
                 </ul>
                 <!-- Tab panes -->
                 <div class="tab-content mt-3">
@@ -332,6 +337,36 @@
                             <input type="file" name="avatar_image" accept="image/*,.heic" class="form-control d-inline-block mb-2" style="max-width:5.3.3/dist/js/bootstrap.bundle.min.js00px;display:inline-block;" required>
                             <button type="submit" class="btn btn-primary mt-2">Upload</button>
                         </form>
+                    </div>
+                    <div class="tab-pane fade" id="profileTab" role="tabpanel" aria-labelledby="profile-tab">
+                        <form id="profileForm" class="mb-3">
+                            <div class="mb-2">
+                                <label class="form-label">Name</label>
+                                <input type="text" class="form-control" name="name" id="profileName" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Job</label>
+                                <input type="text" class="form-control" name="job" id="profileJob">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email" id="profileEmail">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Phone</label>
+                                <input type="text" class="form-control" name="phone" id="profilePhone">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">SNS</label>
+                                <input type="text" class="form-control" name="sns" id="profileSNS">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Slogan</label>
+                                <input type="text" class="form-control" name="slogan" id="profileSlogan">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Update</button>
+                        </form>
+                        <div id="profileMsg" class="text-success text-center"></div>
                     </div>
                 </div>
             </div>
@@ -458,6 +493,47 @@
                     });
                     new bootstrap.Modal(document.getElementById('cardListModal')).show();
                 });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Khi mở tab, load dữ liệu
+            document.getElementById('profile-tab').addEventListener('shown.bs.tab', function () {
+                fetch('/get_card_info')
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('profileName').value = data.name || '';
+                        document.getElementById('profileJob').value = data.job || '';
+                        document.getElementById('profileEmail').value = data.email || '';
+                        document.getElementById('profilePhone').value = data.phone || '';
+                        document.getElementById('profileSNS').value = data.sns || '';
+                        document.getElementById('profileSlogan').value = data.slogan || '';
+                    });
+            });
+
+            // Submit form
+            document.getElementById('profileForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const data = {
+                    name: document.getElementById('profileName').value,
+                    job: document.getElementById('profileJob').value,
+                    email: document.getElementById('profileEmail').value,
+                    phone: document.getElementById('profilePhone').value,
+                    sns: document.getElementById('profileSNS').value,
+                    slogan: document.getElementById('profileSlogan').value
+                };
+                fetch('/update_card_info', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                })
+                .then(res => res.json())
+                .then(resp => {
+                    if(resp.status === 'success') {
+                        document.getElementById('profileMsg').textContent = 'Cập nhật thành công!';
+                        setTimeout(() => { document.getElementById('profileMsg').textContent = ''; }, 2000);
+                    }
+                });
+            });
         });
     </script>
 </body>
