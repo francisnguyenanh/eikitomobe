@@ -499,7 +499,6 @@
                                         navigator.clipboard.writeText(publicUrl)
                                             .then(() => {
                                                 window.open(publicUrl, '_blank');
-                                                alert('Đã copy link public vào clipboard!');
                                             })
                                             .catch(() => {
                                                 // Fallback: tạo input ẩn để copy
@@ -510,7 +509,6 @@
                                                 try {
                                                     document.execCommand('copy');
                                                     window.open(publicUrl, '_blank');
-                                                    alert('Đã copy link public vào clipboard!');
                                                 } catch (err) {
                                                     window.open(publicUrl, '_blank');
                                                     alert('Không thể copy link vào clipboard, hãy copy thủ công:\n' + publicUrl);
@@ -526,7 +524,6 @@
                                         try {
                                             document.execCommand('copy');
                                             window.open(publicUrl, '_blank');
-                                            alert('Đã copy link public vào clipboard!');
                                         } catch (err) {
                                             window.open(publicUrl, '_blank');
                                             alert('Không thể copy link vào clipboard, hãy copy thủ công:\n' + publicUrl);
