@@ -723,7 +723,7 @@ def get_card_info():
         'email': '',
         'phone': '',
         'sns': '',
-        'slogan': ''
+        'subslogan': ''
     }
     try:
         with open('cardinfor.txt', 'r', encoding='utf-8') as f:
