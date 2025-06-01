@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>友部　瑛希</title>
+    <title>Tomo Memo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
@@ -259,53 +259,17 @@
     <!-- HTML remains unchanged -->
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/home">友部瑛希</a>
+            <a class="navbar-brand" href="/home">Memo</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
-                    <!-- Memo dropdown menu -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="memoDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Memo
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="memoDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('list_note') }}">Memo List</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('calendar') }}">Calendar</a></li>
-                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#manageCategoriesModal">Category</a></li>
-                        </ul>
-                    </li>
-                    
-                    <!-- filepath: /Users/eikitomobe/Documents/3. Học tập/Lập trình/VS code/Memo_WEB/templates/index.html -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="diaryDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Diary
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="diaryDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('new_diary') }}">New Diary</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('diary_list') }}">Diary List</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('diary_grid') }}">Diary Grid</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="diaryDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Quote
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="quoteDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('quotes') }}">View Quote</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('manage_quotes') }}">List Quote</a></li>
-                        </ul>
-                    </li>
-
                     <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">Settings</a>
+                        <a class="nav-link" href="{{ url_for('calendar') }}">Calendar</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" id="showLinksBtn"><i class="bi bi-link-45deg"></i> Links</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#manageCategoriesModal">Category</a>
                     </li>
                 </ul>
             </div>
@@ -1624,86 +1588,7 @@
 
         updateDbSize();
 
-        document.getElementById('showLinksBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            fetch('/links')
-                .then(res => res.json())
-                .then(data => {
-                    const linksInputs = document.getElementById('linksInputs');
-                    linksInputs.innerHTML = '';
-                    let links = data.links || [];
-
-                    function createLinkInput(linkValue = '') {
-                        const div = document.createElement('div');
-                        div.className = 'mb-2 d-flex align-items-center gap-2';
-                        const input = document.createElement('input');
-                        input.type = 'text';
-                        input.className = 'form-control link-input';
-                        input.value = linkValue;
-                        input.placeholder = 'Enter link...';
-                        input.style.flex = '1 1 auto';
-
-                        if (linkValue) {
-                            input.readOnly = true;
-                            input.style.cursor = 'pointer';
-
-                            // Icon chỉnh sửa
-                            const editBtn = document.createElement('button');
-                            editBtn.type = 'button';
-                            editBtn.className = 'btn btn-outline-secondary btn-sm d-flex align-items-center';
-                            editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
-                            editBtn.title = 'Edit';
-                            editBtn.onclick = function() {
-                                input.readOnly = false;
-                                input.focus();
-                                input.style.cursor = '';
-                                input.addEventListener('blur', function onBlur() {
-                                    input.readOnly = true;
-                                    input.style.cursor = 'pointer';
-                                    input.removeEventListener('blur', onBlur);
-                                });
-                            };
-
-                            // Icon xoá
-                            const deleteBtn = document.createElement('button');
-                            deleteBtn.type = 'button';
-                            deleteBtn.className = 'btn btn-outline-danger btn-sm d-flex align-items-center';
-                            deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                            deleteBtn.title = 'Delete';
-                            deleteBtn.onclick = function() {
-                                div.remove();
-                            };
-
-                            input.addEventListener('click', function(e) {
-                                if (input.readOnly && input.value.trim()) {
-                                    window.open(input.value.startsWith('http') ? input.value : 'http://' + input.value, '_blank');
-                                }
-                            });
-
-                            div.appendChild(input);
-                            div.appendChild(editBtn);
-                            div.appendChild(deleteBtn);
-                        } else {
-                            // Dòng trống cho phép nhập, tự động thêm dòng mới khi nhập
-                            input.addEventListener('input', function handler() {
-                                if (input.value.trim() !== '' && !div.nextElementSibling) {
-                                    createLinkInput();
-                                }
-                            });
-                            div.appendChild(input);
-                        }
-                        linksInputs.appendChild(div);
-                    }
-
-                    // Tạo input cho các link đã có
-                    links.forEach(link => createLinkInput(link));
-                    // Luôn có 1 dòng trống cuối cùng
-                    createLinkInput();
-
-                    const modal = new bootstrap.Modal(document.getElementById('linksModal'));
-                    modal.show();
-                });
-        });
+    
 
         document.getElementById('linksForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -1756,20 +1641,6 @@
             }
         });
 
-        document.getElementById('logoutBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            const modal = new bootstrap.Modal(document.getElementById('confirmLogoutModal'));
-            modal.show();
-        });
-
-        document.getElementById('confirmLogoutBtn').onclick = function() {
-            fetch('{{ url_for("logout") }}', {
-                method: 'POST',
-                headers: {'X-Requested-With': 'XMLHttpRequest'}
-            }).then(() => {
-                window.location.href = '{{ url_for("login") }}';
-            });
-        };
 
 
         updateNotesEventListeners();
