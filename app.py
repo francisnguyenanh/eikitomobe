@@ -30,6 +30,7 @@ from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 import random
+from deep_translator import GoogleTranslator
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
@@ -1178,47 +1179,49 @@ def delete_quote_category(category_id):
             flash(f"Nguồn '{category.name}' đã được xóa thành công.", "success")
         return redirect(url_for('manage_quotes'))
 
+
 @app.route('/home')
 @login_required
 def home():
-    # Get current date
-    today = datetime.now().date()
-    
-    # Fetch Bible verse
     try:
-        # Using a public Bible API or website (example: BibleGateway)
-        response = requests.get('https://www.biblegateway.com/votd/get/?format=json')
+        response = requests.get('https://zenquotes.io/api/today')
         if response.status_code == 200:
             data = response.json()
-            kinh_thanh = f"{data['votd']['text']} ({data['votd']['reference']})"
-        else:
-            kinh_thanh = "Không thể lấy được câu Kinh Thánh hôm nay."
-    except Exception as e:
-        app.logger.error(f"Error fetching Bible verse: {str(e)}")
-        kinh_thanh = "Không thể lấy được câu Kinh Thánh hôm nay."
-
-    # Fetch Buddhist quote
-    try:
-        # Using a website with Buddhist quotes
-        response = requests.get('https://www.buddhanet.net/e-learning/history/buddhasayings.htm')
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
-            quotes = soup.find_all('p')  # Adjust selector based on website structure
-            buddhist_quotes = [quote.get_text().strip() for quote in quotes if quote.get_text().strip()]
-            if buddhist_quotes:
-                # Select a quote based on the day (cyclic selection)
-                loi_phat_day = buddhist_quotes[today.toordinal() % len(buddhist_quotes)]
+            if isinstance(data, list) and data:
+                quote = data[0]
+                # Tách nội dung và tác giả
+                content = quote['q'].strip()
+                author = quote['a'].strip()
             else:
-                loi_phat_day = "Không tìm thấy lời Phật dạy hôm nay."
+                content = "Không thể lấy được trích dẫn nổi tiếng hôm nay."
+                author = ""
         else:
-            loi_phat_day = "Không tìm thấy lời Phật dạy hôm nay."
+            content = "Không thể lấy được trích dẫn nổi tiếng hôm nay."
+            author = ""
     except Exception as e:
-        app.logger.error(f"Error fetching Buddhist quote: {str(e)}")
-        loi_phat_day = "Không tìm thấy lời Phật dạy hôm nay."
+        app.logger.error(f"Error fetching famous quote: {str(e)}")
+        content = "Không thể lấy được trích dẫn nổi tiếng hôm nay."
+        author = ""
+
+    # Dịch phần nội dung
+    try:
+        content_vi = GoogleTranslator(source='auto', target='vi').translate(content)
+    except Exception:
+        content_vi = "Không thể dịch sang tiếng Việt."
+    try:
+        content_ja = GoogleTranslator(source='auto', target='ja').translate(content)
+    except Exception:
+        content_ja = "日本語への翻訳ができませんでした。"
 
     theme = session.get('theme', 'light')
-    app.logger.info(f"[HOME] theme from session: {theme}")
-    return render_template('home.html', kinh_thanh=kinh_thanh, loi_phat_day=loi_phat_day, theme=theme)
+    return render_template(
+        'home.html',
+        quote_content=content,
+        quote_content_vi=content_vi,
+        quote_content_ja=content_ja,
+        quote_author=author,
+        theme=theme
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
