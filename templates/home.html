@@ -493,9 +493,48 @@
                             .then(res => res.json())
                             .then(data => {
                                 if (data.hash) {
-                                window.open(`/public_card/${data.hash}`, '_blank');
+                                    const publicUrl = `${window.location.origin}/public_card/${data.hash}`;
+                                    // Thử copy clipboard
+                                    if (navigator.clipboard) {
+                                        navigator.clipboard.writeText(publicUrl)
+                                            .then(() => {
+                                                window.open(publicUrl, '_blank');
+                                                alert('Đã copy link public vào clipboard!');
+                                            })
+                                            .catch(() => {
+                                                // Fallback: tạo input ẩn để copy
+                                                const tempInput = document.createElement('input');
+                                                tempInput.value = publicUrl;
+                                                document.body.appendChild(tempInput);
+                                                tempInput.select();
+                                                try {
+                                                    document.execCommand('copy');
+                                                    window.open(publicUrl, '_blank');
+                                                    alert('Đã copy link public vào clipboard!');
+                                                } catch (err) {
+                                                    window.open(publicUrl, '_blank');
+                                                    alert('Không thể copy link vào clipboard, hãy copy thủ công:\n' + publicUrl);
+                                                }
+                                                document.body.removeChild(tempInput);
+                                            });
+                                    } else {
+                                        // Fallback luôn
+                                        const tempInput = document.createElement('input');
+                                        tempInput.value = publicUrl;
+                                        document.body.appendChild(tempInput);
+                                        tempInput.select();
+                                        try {
+                                            document.execCommand('copy');
+                                            window.open(publicUrl, '_blank');
+                                            alert('Đã copy link public vào clipboard!');
+                                        } catch (err) {
+                                            window.open(publicUrl, '_blank');
+                                            alert('Không thể copy link vào clipboard, hãy copy thủ công:\n' + publicUrl);
+                                        }
+                                        document.body.removeChild(tempInput);
+                                    }
                                 } else {
-                                alert('Không thể tạo link public cho card này!');
+                                    alert('Không thể tạo link public cho card này!');
                                 }
                             });
                         };
