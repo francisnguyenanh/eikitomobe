@@ -304,6 +304,9 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#" id="showLinksBtn"><i class="bi bi-link-45deg"></i> Links</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -388,7 +391,25 @@
             {% endfor %}
         </div>
     </div>
-    <!-- filepath: c:\8. Private\Tool\Memo_WEB\Memo_WEB\templates\index.html -->
+    
+    <div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmLogoutModalLabel">Confirm Logout</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to logout?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmLogoutBtn">Logout</button>
+            </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="linksModal" tabindex="-1" aria-labelledby="linksModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -1318,7 +1339,6 @@
                     // Hiển thị ảnh
                     const viewMemoImages = document.getElementById('viewMemoImages');
                     viewMemoImages.innerHTML = '';
-                    console.log('Images from server:', note.images);
                     if (note.images && note.images.length) {
                         note.images.forEach(image => {
                             const container = document.createElement('div');
@@ -1336,7 +1356,6 @@
                                 imageViewModal.show();
                             };
                             img.onerror = () => {
-                                console.error(`Failed to load image: ${image.filename}`);
                                 showFlashMessage('danger', `Failed to load image: ${image.filename}`);
                             };
                             container.appendChild(img);
@@ -1346,12 +1365,23 @@
                         viewMemoImages.textContent = 'No images available.';
                     }
 
+                    // Thêm sự kiện click vào content để mở modal edit (trừ khi click vào link)
+                    const viewMemoContent = document.getElementById('viewMemoContent');
+                    viewMemoContent.onclick = function(e) {
+                        if (e.target.tagName === 'A') return;
+                        viewMemoModal.hide();
+                        const handler = function() {
+                            openEditMemoModal(note.id);
+                            document.getElementById('viewMemoModal').removeEventListener('hidden.bs.modal', handler);
+                        };
+                        document.getElementById('viewMemoModal').addEventListener('hidden.bs.modal', handler);
+                    };
+
+                    // Giữ lại nút Edit nếu muốn
                     const editFromViewButton = document.getElementById('editFromViewButton');
                     if (editFromViewButton) {
                         editFromViewButton.onclick = () => {
-                            // Đóng modal View trước
                             viewMemoModal.hide();
-                            // Đảm bảo chỉ gán 1 lần
                             const handler = function() {
                                 openEditMemoModal(note.id);
                                 document.getElementById('viewMemoModal').removeEventListener('hidden.bs.modal', handler);
@@ -1365,7 +1395,6 @@
                     showFlashMessage('danger', data.message || 'Failed to load note data.');
                 }
             } catch (error) {
-                console.error('Error loading note:', error);
                 showFlashMessage('danger', 'Error loading note.');
             }
         }
@@ -1726,6 +1755,21 @@
                 confirmModal.show();
             }
         });
+
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            const modal = new bootstrap.Modal(document.getElementById('confirmLogoutModal'));
+            modal.show();
+        });
+
+        document.getElementById('confirmLogoutBtn').onclick = function() {
+            fetch('{{ url_for("logout") }}', {
+                method: 'POST',
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            }).then(() => {
+                window.location.href = '{{ url_for("login") }}';
+            });
+        };
 
 
         updateNotesEventListeners();
