@@ -604,15 +604,25 @@ def toggle_complete(id):
     db.session.commit()
     return jsonify({'is_completed': note.is_completed})
 
-@app.route('/delete/<int:id>')
+@app.route('/delete_note/<int:id>', methods=['POST'])
 @login_required
 def delete_note(id):
     note = Note.query.get_or_404(id)
-    if note.user_id == current_user.id:
+    try:
         db.session.delete(note)
         db.session.commit()
-        flash('Note deleted successfully!', 'success')
-    return redirect(url_for('index'))
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'status': 'success'})
+        else:
+            flash('Note deleted successfully.', 'success')
+            return redirect(url_for('index'))
+    except Exception as e:
+        db.session.rollback()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+        else:
+            flash('Failed to delete note.', 'danger')
+            return redirect(url_for('index'))
 
 @app.route('/export/<int:id>')
 @login_required
