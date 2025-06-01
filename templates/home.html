@@ -9,64 +9,44 @@
     <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #ffffff;
-            --text-color: #000000;
             --card-bg: #f8f9fa;
-            --primary-color: #0d6efd;
+            --quote-text-color: #ff8c00;
         }
         [data-theme="dark"] {
-            --bg-color: #343a40;
-            --text-color: #ffffff;
             --card-bg: #495057;
-            --primary-color: #6c757d;
+            --quote-text-color: #ff8c00;
         }
         [data-theme="blue"] {
-            --bg-color: #e6f0fa;
-            --text-color: #003087;
             --card-bg: #d6e4f0;
-            --primary-color: #004aad;
+            --quote-text-color: #ff8c00;
         }
         [data-theme="green"] {
-            --bg-color: #e6f4ea;
-            --text-color: #004d00;
             --card-bg: #d4edda;
-            --primary-color: #006400;
+            --quote-text-color: #ff8c00;
         }
         [data-theme="purple"] {
-            --bg-color: #f3e5f5;
-            --text-color: #4a0072;
             --card-bg: #e1bee7;
-            --primary-color: #6a1b9a;
+            --quote-text-color: #ff8c00;
         }
         [data-theme="red"] {
-            --bg-color: #ffe6e6;
-            --text-color: #721c24;
             --card-bg: #f5c6cb;
-            --primary-color: #dc3545;
+            --quote-text-color: #ff8c00;
         }
         [data-theme="orange"] {
-            --bg-color: #fff3e0;
-            --text-color: #8a3e00;
             --card-bg: #ffe5b4;
-            --primary-color: #fd7e14;
+            --quote-text-color: #ff8c00;
         }
         [data-theme="yellow"] {
-            --bg-color: #fffde7;
-            --text-color: #856404;
             --card-bg: #fff3cd;
-            --primary-color: #ffc107;
+            --quote-text-color: #ff8c00;
         }
         [data-theme="pink"] {
-            --bg-color: #fce4ec;
-            --text-color: #771653;
             --card-bg: #f8c1d0;
-            --primary-color: #e83e8c;
+            --quote-text-color: #ff8c00;
         }
         [data-theme="cyan"] {
-            --bg-color: #e0f7fa;
-            --text-color: #005257;
             --card-bg: #b2ebf2;
-            --primary-color: #00acc1;
+            --quote-text-color: #ff8c00;
         }
         body {
             background-color: var(--bg-color);
@@ -91,9 +71,84 @@
             .container, .container-fluid { padding-left: 8px !important; padding-right: 8px !important; }
             .modal-content { font-size: 1rem; }
         }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Noto Sans JP', sans-serif;
+            {% if bg_image_url %}
+            background-image: url('{{ bg_image_url }}');
+            background-size: contain;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            {% endif %}
+        }
+        @media (max-width: 576px) {
+            body {
+                background-attachment: scroll;
+                background-size: contain;
+            }
+        }
+        .card {
+            background-color: transparent !important;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .card-body {
+            position: relative;
+            overflow: hidden;
+            background-color: transparent !important;
+        }
+        .card-body::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-color: var(--card-bg);
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .card-body > * {
+            position: relative;
+            z-index: 1;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container.py-4 {
+            margin-top: auto;
+            margin-bottom: 0;
+        }
+        .quote-content {
+            font-size: 1.7rem;
+            font-family: 'Kosugi Maru', 'Noto Sans JP', sans-serif;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--quote-text-color);
+        }
+        .quote-author {
+            font-family: 'Kosugi Maru', 'Noto Sans JP', sans-serif;
+            font-style: italic;
+            color: var(--primary-color);
+            text-align: right;
+            font-size: 1.1rem;
+        }
+        @media (max-width: 576px) {
+            .quote-content {
+                font-size: 1.15rem;
+            }
+            .quote-author {
+                font-size: 0.95rem;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- filepath: /Users/eikitomobe/Documents/3.Học tập/Lập trình/VS code/EikiTomobe/eikitomobe/templates/home.html -->
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
         <div class="container-fluid">
             <a class="navbar-brand" href="/home">友部瑛希</a>
@@ -102,34 +157,17 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
-                    <!-- Memo dropdown menu -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="memoDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Memo
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="memoDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('list_note') }}">Memo List</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('calendar') }}">Calendar</a></li>
-                        </ul>
+                    <!-- Memo menu item -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('list_note') }}">Memo</a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="diaryDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Diary
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="diaryDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('new_diary') }}">New Diary</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('diary_list') }}">Diary List</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('diary_grid') }}">Diary Grid</a></li>
-                        </ul>
+                    <!-- Diary menu item -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('diary_list') }}">Diary</a>
                     </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="quoteDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Quote
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="quoteDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('quotes') }}">View Quote</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('manage_quotes') }}">List Quote</a></li>
-                        </ul>
+                    <!-- Quote menu item -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('quotes') }}">Quote</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">Settings</a>
@@ -144,16 +182,18 @@
             </div>
         </div>
     </nav>
-    <!-- filepath: /Users/eikitomobe/Documents/3.Học tập/Lập trình/VS code/EikiTomobe/eikitomobe/templates/home.html -->
+
+
+
     <div class="container py-4">
         <div class="row g-3">
             <div class="col-12">
                 <div class="card shadow-sm">
                     <div class="card-body text-center">
-                        <div style="font-size: 1.7rem; font-family: 'Kosugi Maru', 'Noto Sans JP', sans-serif; font-weight: bold; margin-bottom: 1rem;">
+                        <div class="quote-content">
                             {{ quote_content }}
                         </div>
-                        <div class="mt-3" style="font-family: 'Kosugi Maru', 'Noto Sans JP', sans-serif; font-style: italic; color: var(--primary-color); text-align: right;">
+                        <div class="quote-author mt-3">
                             — {{ quote_author }}
                         </div>
                     </div>
@@ -203,6 +243,7 @@
     </div>
 
     <!-- Settings Modal -->
+
     <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -211,28 +252,56 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('change_password') }}">
-                        <div class="mb-3">
-                            <label for="new_password" class="form-label">Change Password</label>
-                            <input type="password" class="form-control" id="new_password" name="new_password" required>
+                    <!-- Nav tabs -->
+                    <ul class="nav nav-tabs" id="settingsTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#generalTab" type="button" role="tab" aria-controls="generalTab" aria-selected="true">
+                                General
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#uploadTab" type="button" role="tab" aria-controls="uploadTab" aria-selected="false">
+                                Upload Ảnh Nền
+                            </button>
+                        </li>
+                    </ul>
+                    <!-- Tab panes -->
+                    <div class="tab-content mt-3">
+                        <!-- General Tab -->
+                        <div class="tab-pane fade show active" id="generalTab" role="tabpanel" aria-labelledby="general-tab">
+                            <form method="POST" action="{{ url_for('change_password') }}">
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label">Change Password</label>
+                                    <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Password</button>
+                            </form>
+                            <hr>
+                            <div class="mb-3">
+                                <label for="themeSelect" class="form-label">Theme</label>
+                                <select class="form-select" id="themeSelect">
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="blue">Blue</option>
+                                    <option value="green">Green</option>
+                                    <option value="purple">Purple</option>
+                                    <option value="red">Red</option>
+                                    <option value="orange">Orange</option>
+                                    <option value="yellow">Yellow</option>
+                                    <option value="pink">Pink</option>
+                                    <option value="cyan">Cyan</option>
+                                </select>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Save Password</button>
-                    </form>
-                    <hr>
-                    <div class="mb-3">
-                        <label for="themeSelect" class="form-label">Theme</label>
-                        <select class="form-select" id="themeSelect">
-                            <option value="light">Light</option>
-                            <option value="dark">Dark</option>
-                            <option value="blue">Blue</option>
-                            <option value="green">Green</option>
-                            <option value="purple">Purple</option>
-                            <option value="red">Red</option>
-                            <option value="orange">Orange</option>
-                            <option value="yellow">Yellow</option>
-                            <option value="pink">Pink</option>
-                            <option value="cyan">Cyan</option>
-                        </select>
+                        <!-- Upload Tab -->
+                        <div class="tab-pane fade" id="uploadTab" role="tabpanel" aria-labelledby="upload-tab">
+                            <form action="{{ url_for('upload_bg') }}" method="post" enctype="multipart/form-data" class="mb-3 text-center">
+                                <label class="form-label">Chọn ảnh nền mới:</label>
+                                <input type="file" name="bg_image" accept="image/*" class="form-control d-inline-block mb-2" style="max-width:300px;display:inline-block;">
+                                <button type="submit" class="btn btn-primary mt-2">Upload</button>
+                            </form>
+                            <div class="text-muted" style="font-size:0.95rem;">Ảnh sẽ thay thế toàn bộ ảnh nền hiện tại.</div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

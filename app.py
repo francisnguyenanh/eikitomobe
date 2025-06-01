@@ -29,6 +29,8 @@ import difflib
 from datetime import datetime
 import requests
 import random
+from werkzeug.utils import secure_filename
+import shutil
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
@@ -1177,34 +1179,108 @@ def delete_quote_category(category_id):
             flash(f"Nguồn '{category.name}' đã được xóa thành công.", "success")
         return redirect(url_for('manage_quotes'))
 
+UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'photo')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload_bg', methods=['POST'])
+@login_required
+def upload_bg():
+    if 'bg_image' not in request.files:
+        flash('No file part', 'danger')
+        return redirect(url_for('home'))
+    file = request.files['bg_image']
+    if file.filename == '':
+        flash('No selected file', 'danger')
+        return redirect(url_for('home'))
+    if file and allowed_file(file.filename):
+        # Xóa rỗng thư mục photo
+        if os.path.exists(UPLOAD_FOLDER):
+            shutil.rmtree(UPLOAD_FOLDER)
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        filename = secure_filename(file.filename)
+        save_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(save_path)
+        flash('Ảnh nền đã được cập nhật!', 'success')
+    else:
+        flash('File không hợp lệ!', 'danger')
+    return redirect(url_for('home'))
+
+QUOTE_FILE = os.path.join(app.root_path, 'quote.txt')
+
+def get_today_quote():
+    today_str = datetime.now().strftime("%Y/%m/%d")
+    quote_content = ""
+    file_date = ""
+    file_quote = ""
+    file_author = ""
+
+    # Đọc file quote.txt nếu có
+    if os.path.exists(QUOTE_FILE):
+        with open(QUOTE_FILE, "r", encoding="utf-8") as f:
+            line = f.readline().strip()
+            if line:
+                parts = line.split(":", 1)
+                if len(parts) == 2:
+                    file_date = parts[0].strip()
+                    quote_line = parts[1].strip()
+                    # Tách content và author nếu có (dạng: nội dung (author))
+                    if "(" in quote_line and quote_line.endswith(")"):
+                        content = quote_line[:quote_line.rfind("(")].strip()
+                        author = quote_line[quote_line.rfind("(")+1:-1].strip()
+                        file_quote = content
+                        file_author = author
+                    else:
+                        file_quote = quote_line
+                        file_author = ""
+
+    # Nếu file trống hoặc ngày khác hôm nay, lấy từ API
+    if not file_quote or file_date != today_str:
+        try:
+            response = requests.get('https://zenquotes.io/api/today')
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list) and data:
+                    quote = data[0]
+                    quote_content = f"{today_str}: {quote['q'].strip()} ({quote['a'].strip()})"
+                    # Ghi quote mới vào file
+                    with open(QUOTE_FILE, "w", encoding="utf-8") as f:
+                        f.write(quote_content)
+                    return quote['q'].strip(), quote['a'].strip()
+        except Exception as e:
+            app.logger.error(f"Error fetching quote: {str(e)}")
+        # Nếu lỗi API, dùng quote cũ nếu có
+        if file_quote:
+            return file_quote, file_author
+        else:
+            return "Không thể lấy được trích dẫn nổi tiếng hôm nay.", ""
+    else:
+        # Nếu ngày trùng, lấy quote từ file
+        return file_quote, file_author
+    
 @app.route('/home')
 @login_required
 def home():
-    try:
-        response = requests.get('https://zenquotes.io/api/today')
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, list) and data:
-                quote = data[0]
-                content = quote['q'].strip()
-                author = quote['a'].strip()
-            else:
-                content = "Không thể lấy được trích dẫn nổi tiếng hôm nay."
-                author = ""
-        else:
-            content = "Không thể lấy được trích dẫn nổi tiếng hôm nay."
-            author = ""
-    except Exception as e:
-        app.logger.error(f"Error fetching famous quote: {str(e)}")
-        content = "Không thể lấy được trích dẫn nổi tiếng hôm nay."
-        author = ""
+    
+    quote_text, quote_author = get_today_quote()
+    logging.debug(f"Today's quote: {quote_text} - Author: {quote_author}")
 
     theme = session.get('theme', 'light')
+    
+    bg_image_url = None
+    photo_dir = os.path.join(app.static_folder, 'photo')
+    if os.path.exists(photo_dir):
+        files = [f for f in os.listdir(photo_dir) if allowed_file(f)]
+        if files:
+            bg_image_url = url_for('static', filename=f'photo/{files[0]}')
     return render_template(
         'home.html',
-        quote_content=content,
-        quote_author=author,
-        theme=theme
+        quote_content=quote_text,
+        quote_author=quote_author,
+        theme=theme,
+        bg_image_url=bg_image_url
     )
 
 if __name__ == '__main__':
