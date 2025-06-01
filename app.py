@@ -28,9 +28,7 @@ from markupsafe import Markup
 import difflib
 from datetime import datetime
 import requests
-from bs4 import BeautifulSoup
 import random
-from deep_translator import GoogleTranslator
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
@@ -1179,7 +1177,6 @@ def delete_quote_category(category_id):
             flash(f"Nguồn '{category.name}' đã được xóa thành công.", "success")
         return redirect(url_for('manage_quotes'))
 
-
 @app.route('/home')
 @login_required
 def home():
@@ -1189,7 +1186,6 @@ def home():
             data = response.json()
             if isinstance(data, list) and data:
                 quote = data[0]
-                # Tách nội dung và tác giả
                 content = quote['q'].strip()
                 author = quote['a'].strip()
             else:
@@ -1203,22 +1199,10 @@ def home():
         content = "Không thể lấy được trích dẫn nổi tiếng hôm nay."
         author = ""
 
-    # Dịch phần nội dung
-    try:
-        content_vi = GoogleTranslator(source='auto', target='vi').translate(content)
-    except Exception:
-        content_vi = "Không thể dịch sang tiếng Việt."
-    try:
-        content_ja = GoogleTranslator(source='auto', target='ja').translate(content)
-    except Exception:
-        content_ja = "日本語への翻訳ができませんでした。"
-
     theme = session.get('theme', 'light')
     return render_template(
         'home.html',
         quote_content=content,
-        quote_content_vi=content_vi,
-        quote_content_ja=content_ja,
         quote_author=author,
         theme=theme
     )
