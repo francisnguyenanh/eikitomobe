@@ -1346,5 +1346,45 @@ def home():
         bg_image_url=bg_image_url
     )
 
+@app.route('/upload_avatar', methods=['POST'])
+@login_required
+def upload_avatar():
+    if 'avatar_image' not in request.files:
+        flash('No file part', 'danger')
+        return redirect(url_for('home'))
+    file = request.files['avatar_image']
+    if file.filename == '':
+        flash('No selected file', 'danger')
+        return redirect(url_for('home'))
+    # Xoá hết ảnh cũ trong static/avatar
+    avatar_folder = os.path.join(app.static_folder, 'avatar')
+    if os.path.exists(avatar_folder):
+        for f in os.listdir(avatar_folder):
+            try:
+                os.remove(os.path.join(avatar_folder, f))
+            except Exception:
+                pass
+    else:
+        os.makedirs(avatar_folder, exist_ok=True)
+    filename = secure_filename(file.filename)
+    ext = os.path.splitext(filename)[1].lower()
+    save_path = os.path.join(avatar_folder, filename)
+    # Xử lý HEIC
+    if ext == '.heic':
+        try:
+            from wand.image import Image
+            with Image(file=file) as img:
+                img.format = 'jpeg'
+                img.compression_quality = 30  # Giảm chất lượng/dung lượng còn 30%
+                img.save(filename=save_path.replace('.heic', '.jpg'))
+            flash('Avatar HEIC đã được chuyển và nén thành công!', 'success')
+        except Exception as e:
+            flash(f'Lỗi xử lý HEIC: {e}', 'danger')
+            return redirect(url_for('home'))
+    else:
+        file.save(save_path)
+        flash('Avatar đã được cập nhật!', 'success')
+    return redirect(url_for('home'))
+
 if __name__ == '__main__':
     app.run(debug=True)
