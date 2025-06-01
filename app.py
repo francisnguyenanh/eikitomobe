@@ -26,6 +26,10 @@ import sqlite3
 import random
 from markupsafe import Markup
 import difflib
+from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
+import random
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
@@ -1177,20 +1181,41 @@ def delete_quote_category(category_id):
 @app.route('/home')
 @login_required
 def home():
-    # Lấy ngày hiện tại
+    # Get current date
     today = datetime.now().date()
-    # Ví dụ: Lấy kinh thành và lời Phật dạy từ file hoặc danh sách
+    
+    # Fetch Bible verse
     try:
-        with open('kinh_thanh.txt', encoding='utf-8') as f:
-            kinh_thanh_lines = [line.strip() for line in f if line.strip()]
-        with open('loi_phat_day.txt', encoding='utf-8') as f:
-            loi_phat_day_lines = [line.strip() for line in f if line.strip()]
-    except Exception:
-        kinh_thanh_lines = ["Không tìm thấy dữ liệu kinh thánh."]
-        loi_phat_day_lines = ["Không tìm thấy dữ liệu lời Phật dạy."]
-    # Lấy đoạn theo ngày (vòng lặp nếu hết)
-    kinh_thanh = kinh_thanh_lines[today.toordinal() % len(kinh_thanh_lines)]
-    loi_phat_day = loi_phat_day_lines[today.toordinal() % len(loi_phat_day_lines)]
+        # Using a public Bible API or website (example: BibleGateway)
+        response = requests.get('https://www.biblegateway.com/votd/get/?format=json')
+        if response.status_code == 200:
+            data = response.json()
+            kinh_thanh = f"{data['votd']['text']} ({data['votd']['reference']})"
+        else:
+            kinh_thanh = "Không thể lấy được câu Kinh Thánh hôm nay."
+    except Exception as e:
+        app.logger.error(f"Error fetching Bible verse: {str(e)}")
+        kinh_thanh = "Không thể lấy được câu Kinh Thánh hôm nay."
+
+    # Fetch Buddhist quote
+    try:
+        # Using a website with Buddhist quotes
+        response = requests.get('https://www.buddhanet.net/e-learning/history/buddhasayings.htm')
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            quotes = soup.find_all('p')  # Adjust selector based on website structure
+            buddhist_quotes = [quote.get_text().strip() for quote in quotes if quote.get_text().strip()]
+            if buddhist_quotes:
+                # Select a quote based on the day (cyclic selection)
+                loi_phat_day = buddhist_quotes[today.toordinal() % len(buddhist_quotes)]
+            else:
+                loi_phat_day = "Không tìm thấy lời Phật dạy hôm nay."
+        else:
+            loi_phat_day = "Không tìm thấy lời Phật dạy hôm nay."
+    except Exception as e:
+        app.logger.error(f"Error fetching Buddhist quote: {str(e)}")
+        loi_phat_day = "Không tìm thấy lời Phật dạy hôm nay."
+
     theme = session.get('theme', 'light')
     app.logger.info(f"[HOME] theme from session: {theme}")
     return render_template('home.html', kinh_thanh=kinh_thanh, loi_phat_day=loi_phat_day, theme=theme)
