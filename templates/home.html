@@ -151,7 +151,7 @@
  
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/home">友部 瑛希</a>
+            <a class="navbar-brand" href="#" id="showCardListModal">友部 瑛希</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -183,6 +183,20 @@
         </div>
     </nav>
 
+    <!-- Thêm sau nav -->
+    <div class="modal fade" id="cardListModal" tabindex="-1" aria-labelledby="cardListModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+        <div class="modal-header">
+            <h5 class="modal-title" id="cardListModalLabel">Chọn Card</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+            <ul id="cardList" class="list-group"></ul>
+        </div>
+        </div>
+    </div>
+    </div>
 
 
     <div class="container py-4">
@@ -412,6 +426,27 @@
               .then(() => {
                 location.reload(); // Reload to apply new theme from session
             });
+        });
+
+        document.getElementById('showCardListModal').addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch('/card_list')
+                .then(res => res.json())
+                .then(data => {
+                    const cardList = document.getElementById('cardList');
+                    cardList.innerHTML = '';
+                    data.files.forEach(file => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item';
+                        const a = document.createElement('a');
+                        a.href = `/card_view/${file}`;
+                        a.target = '_blank';
+                        a.textContent = file;
+                        li.appendChild(a);
+                        cardList.appendChild(li);
+                    });
+                    new bootstrap.Modal(document.getElementById('cardListModal')).show();
+                });
         });
     </script>
 </body>

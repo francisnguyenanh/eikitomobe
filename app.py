@@ -700,6 +700,69 @@ def share_note(share_id):
     note = Note.query.filter_by(share_id=share_id).first_or_404()
     return render_template('Memo/share_note.html', note=note)
 
+@app.route('/Card')
+@login_required
+def card():
+    return render_template('Card/Card1.html')
+
+@app.route('/card_list')
+@login_required
+def card_list():
+    card_dir = os.path.join(app.template_folder, 'Card')
+    files = []
+    for fname in os.listdir(card_dir):
+        if fname.endswith('.html'):
+            files.append(fname)
+    return jsonify({'files': files})
+
+def get_card_info():
+    info = {
+        'name': '',
+        'job': '',
+        'email': '',
+        'phone': '',
+        'sns': '',
+        'slogan': ''
+    }
+    try:
+        with open('cardinfor.txt', 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.startswith('Name:'):
+                    info['name'] = line.replace('Name:', '').strip()
+                elif line.startswith('Job:'):
+                    info['job'] = line.replace('Job:', '').strip()
+                elif line.startswith('Email:'):
+                    info['email'] = line.replace('Email:', '').strip()
+                elif line.startswith('Phone:'):
+                    info['phone'] = line.replace('Phone:', '').strip()
+                elif line.startswith('SNS:'):
+                    info['sns'] = line.replace('SNS:', '').strip()
+                elif line.startswith('Slogan:'):
+                    info['subslogan'] = line.replace('Slogan:', '').strip()
+    except Exception:
+        pass
+    return info
+
+import os
+
+@app.route('/card_view/<filename>')
+@login_required
+def card_view(filename):
+    if not filename.endswith('.html'):
+        return "Invalid file", 400
+    card_dir = os.path.join('Card', filename)
+    card_info = get_card_info()  # Luôn truyền context cho mọi file
+    # ... avatar_url như hướng dẫn trước ...
+    avatar_dir = os.path.join(app.static_folder, 'avatar')
+    avatar_file = None
+    if os.path.exists(avatar_dir):
+        for fname in os.listdir(avatar_dir):
+            if fname.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp', '.heic')):
+                avatar_file = f'avatar/{fname}'
+                break
+    card_info['avatar_url'] = url_for('static', filename=avatar_file) if avatar_file else ''
+    return render_template(card_dir, **card_info)
+
 @app.route('/import', methods=['GET', 'POST'])
 @login_required
 def import_note():
