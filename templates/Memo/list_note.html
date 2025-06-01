@@ -259,7 +259,7 @@
     <!-- HTML remains unchanged -->
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">友部瑛希</a>
+            <a class="navbar-brand" href="/home">友部瑛希</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -271,7 +271,7 @@
                             Memo
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="memoDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('index') }}">Memo List</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('list_note') }}">Memo List</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('calendar') }}">Calendar</a></li>
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#manageCategoriesModal">Category</a></li>
                         </ul>
@@ -1245,7 +1245,7 @@
                 show_incomplete
             });
             try {
-                const response = await fetch(`/?${params.toString()}`);
+                const response = await fetch(`/list_note?${params.toString()}`);
                 const html = await response.text();
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');

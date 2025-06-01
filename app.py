@@ -186,9 +186,14 @@ except Exception as e:
     app.logger.error(f"Failed to register font: {str(e)}")
     pdfmetrics.registerFont(TTFont('DejaVuSans', 'Helvetica'))  # Fallback to Helvetica
 
+
 @app.route('/')
+def root():
+    return redirect(url_for('login'))
+
+@app.route('/list_note')
 @login_required
-def index():
+def list_note():
     search_query = request.args.get('search', '')
     category_id = request.args.get('category_id', type=int)
     show_completed = request.args.get('show_completed', type=int, default=0)
@@ -228,7 +233,7 @@ def index():
     ]
     now = datetime.now()
     return render_template(
-        'index.html',
+        'Memo/list_note.html',
         notes=notes,
         notes_data=notes_data,
         search_query=search_query,
@@ -267,13 +272,13 @@ def add_note():
                 flash('Title is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Title is required'}), 400
-                return redirect(url_for('index'))
+                return redirect(url_for('list_note'))
 
             if not content:
                 flash('Content is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Content is required'}), 400
-                return redirect(url_for('index'))
+                return redirect(url_for('list_note'))
 
             # Validate category
             categories = Category.query.filter_by(user_id=current_user.id).all()
@@ -281,12 +286,12 @@ def add_note():
                 flash('No categories available. Please create a category first.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'No categories available'}), 400
-                return redirect(url_for('index'))
+                return redirect(url_for('list_note'))
             if not category_id or not Category.query.filter_by(id=category_id, user_id=current_user.id).first():
                 flash('Please select a valid category.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Invalid category'}), 400
-                return redirect(url_for('index'))
+                return redirect(url_for('list_note'))
 
             # Parse due_date
             due_date_utc = None
@@ -298,7 +303,7 @@ def add_note():
                     flash('Invalid due date format.', 'danger')
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return jsonify({'status': 'error', 'message': 'Invalid due date format'}), 400
-                    return redirect(url_for('index'))
+                    return redirect(url_for('list_note'))
 
             # Lưu memo trước
             note = Note(
@@ -381,17 +386,17 @@ def add_note():
                     },
                     'categories': [{'id': c.id, 'name': c.name} for c in Category.query.filter_by(user_id=current_user.id).all()]
                 })
-            return redirect(url_for('index'))
+            return redirect(url_for('list_note'))
 
         except Exception as e:
             app.logger.error(f"Error in add_note: {str(e)}")
             flash('An error occurred while adding the note.', 'danger')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'}), 500
-            return redirect(url_for('index'))
+            return redirect(url_for('list_note'))
 
     categories = Category.query.filter_by(user_id=current_user.id).all()
-    return redirect(url_for('index'))
+    return redirect(url_for('list_note'))
 
 @app.route('/edit_note/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -402,7 +407,7 @@ def edit_note(id):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'status': 'error', 'message': 'Unauthorized access.'}), 403
         flash('Unauthorized access.', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('list_note'))
 
     if request.method == 'POST':
         try:
@@ -419,14 +424,14 @@ def edit_note(id):
                 flash('Title is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Title is required.'}), 400
-                return redirect(url_for('index'))
+                return redirect(url_for('list_note'))
 
             if not content:
                 app.logger.warning("Content is required.")
                 flash('Content is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Content is required.'}), 400
-                return redirect(url_for('index'))
+                return redirect(url_for('list_note'))
 
             # Validate category
             categories = Category.query.filter_by(user_id=current_user.id).all()
@@ -435,13 +440,13 @@ def edit_note(id):
                 flash('No categories available. Please create a category first.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'No categories available.'}), 400
-                return redirect(url_for('index'))
+                return redirect(url_for('list_note'))
             if not category_id or not Category.query.filter_by(id=category_id, user_id=current_user.id).first():
                 app.logger.warning("Invalid category selected.")
                 flash('Please select a valid category.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Invalid category.'}), 400
-                return redirect(url_for('index'))
+                return redirect(url_for('list_note'))
 
             # Parse due_date
             due_date_utc = None
@@ -454,7 +459,7 @@ def edit_note(id):
                     flash('Invalid due date format.', 'danger')
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return jsonify({'status': 'error', 'message': 'Invalid due date format.'}), 400
-                    return redirect(url_for('index'))
+                    return redirect(url_for('list_note'))
 
             # Cập nhật thông tin memo
             note.title = title
@@ -550,14 +555,14 @@ def edit_note(id):
                         'images': images
                     }
                 })
-            return redirect(url_for('index'))
+            return redirect(url_for('list_note'))
 
         except Exception as e:
             app.logger.error(f"Error in edit_note: {str(e)}")
             flash('An error occurred while updating the note.', 'danger')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'}), 500
-            return redirect(url_for('index'))
+            return redirect(url_for('list_note'))
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         images = json.loads(note.images) if note.images else []
@@ -579,7 +584,7 @@ def edit_note(id):
         })
 
     categories = Category.query.filter_by(user_id=current_user.id).all()
-    return redirect(url_for('index'))
+    return redirect(url_for('list_note'))
 
 @app.route('/get_image/<int:note_id>/<string:filename>')
 @login_required
@@ -615,14 +620,14 @@ def delete_note(id):
             return jsonify({'status': 'success'})
         else:
             flash('Note deleted successfully.', 'success')
-            return redirect(url_for('index'))
+            return redirect(url_for('list_note'))
     except Exception as e:
         db.session.rollback()
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'status': 'error', 'message': str(e)}), 500
         else:
             flash('Failed to delete note.', 'danger')
-            return redirect(url_for('index'))
+            return redirect(url_for('list_note'))
 
 @app.route('/export/<int:id>')
 @login_required
@@ -630,7 +635,7 @@ def export_note(id):
     note = Note.query.get_or_404(id)
     if note.user_id != current_user.id:
         flash('Unauthorized access!', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('list_note'))
     file_content = f"Title: {note.title}\n\n{note.content}\n\nCategory: {note.category.name if note.category else 'None'}"
     file = BytesIO(file_content.encode('utf-8'))
     return send_file(file, download_name=f"{note.title}.txt", as_attachment=True)
@@ -641,7 +646,7 @@ def export_pdf(id):
     note = Note.query.get_or_404(id)
     if note.user_id != current_user.id:
         flash('Unauthorized access!', 'danger')
-        return redirect(url_for('index'))
+        return redirect(url_for('home'))
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     try:
@@ -688,7 +693,7 @@ def export_pdf(id):
 @app.route('/share/<share_id>')
 def share_note(share_id):
     note = Note.query.filter_by(share_id=share_id).first_or_404()
-    return render_template('share_note.html', note=note)
+    return render_template('Memo/share_note.html', note=note)
 
 @app.route('/import', methods=['GET', 'POST'])
 @login_required
@@ -730,7 +735,7 @@ def import_note():
                 return jsonify({'status': 'error', 'message': 'Please upload a .txt file!'}), 400
             flash('Please upload a .txt file!', 'danger')
         if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
-            return redirect(url_for('index'))
+            return redirect(url_for('list_note'))
     return render_template('import_note.html')
 
 @app.route('/calendar')
@@ -739,7 +744,7 @@ def calendar():
     categories = Category.query.filter_by(user_id=current_user.id).all()
     # Serialize categories for JavaScript
     categories_data = [{'id': c.id, 'name': c.name, 'color': c.color or '#ffffff'} for c in categories]
-    return render_template('calendar.html', categories=categories, categories_data=categories_data)
+    return render_template('Memo/calendar.html', categories=categories, categories_data=categories_data)
 
 @app.route('/notes')
 @login_required
@@ -766,7 +771,7 @@ def manage_categories():
             'status': 'success',
             'categories': [{'id': c.id, 'name': c.name, 'color': c.color or '#ffffff'} for c in categories]
         })
-    return render_template('manage_categories.html', categories=categories)
+    return render_template('Memo/manage_categories.html', categories=categories)
 
 @app.route('/add_category', methods=['GET', 'POST'])
 @login_required
@@ -848,7 +853,7 @@ def login():
         if verify_password(password):
             user = User()
             login_user(user)
-            return redirect(url_for('index'))
+            return redirect(url_for('home'))
         flash('Invalid password', 'danger')
     return render_template('login.html')
 
@@ -863,7 +868,7 @@ def change_password():
         flash('Password changed successfully!', 'success')
     else:
         flash('Please enter a new password', 'danger')
-    return redirect(url_for('index'))
+    return redirect(url_for('list_note'))
 
 @app.route('/logout')
 @login_required
@@ -1039,7 +1044,6 @@ def change_slogan():
 def inject_theme():
     # Theme lấy từ session hoặc mặc định
     theme = session.get('theme', 'light')
-    print(theme)
     username, birthday = get_user_info()
     days_alive = 0
     if birthday:
@@ -1169,6 +1173,27 @@ def delete_quote_category(category_id):
             db_quote.session.commit()
             flash(f"Nguồn '{category.name}' đã được xóa thành công.", "success")
         return redirect(url_for('manage_quotes'))
+
+@app.route('/home')
+@login_required
+def home():
+    # Lấy ngày hiện tại
+    today = datetime.now().date()
+    # Ví dụ: Lấy kinh thành và lời Phật dạy từ file hoặc danh sách
+    try:
+        with open('kinh_thanh.txt', encoding='utf-8') as f:
+            kinh_thanh_lines = [line.strip() for line in f if line.strip()]
+        with open('loi_phat_day.txt', encoding='utf-8') as f:
+            loi_phat_day_lines = [line.strip() for line in f if line.strip()]
+    except Exception:
+        kinh_thanh_lines = ["Không tìm thấy dữ liệu kinh thánh."]
+        loi_phat_day_lines = ["Không tìm thấy dữ liệu lời Phật dạy."]
+    # Lấy đoạn theo ngày (vòng lặp nếu hết)
+    kinh_thanh = kinh_thanh_lines[today.toordinal() % len(kinh_thanh_lines)]
+    loi_phat_day = loi_phat_day_lines[today.toordinal() % len(loi_phat_day_lines)]
+    theme = session.get('theme', 'light')
+    app.logger.info(f"[HOME] theme from session: {theme}")
+    return render_template('home.html', kinh_thanh=kinh_thanh, loi_phat_day=loi_phat_day, theme=theme)
 
 if __name__ == '__main__':
     app.run(debug=True)
