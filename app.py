@@ -31,6 +31,7 @@ import requests
 import random
 from werkzeug.utils import secure_filename
 import shutil
+import hashlib
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
@@ -1406,5 +1407,44 @@ def update_card_info():
         f.write(f"Slogan: {data.get('slogan','')}\n")
     return jsonify({'status': 'success'})
 
+import hashlib
+
+def encode_card(filename):
+    # Có thể dùng thêm salt hoặc user_id nếu muốn bảo mật hơn
+    return hashlib.sha256(filename.encode()).hexdigest()[:12]
+
+# Ví dụ ánh xạ tạm thời (nên lưu vào DB nếu dùng thực tế)
+CARD_HASH_MAP = {}
+def get_card_hash(filename):
+    h = encode_card(filename)
+    CARD_HASH_MAP[h] = filename
+    return h
+
+@app.route('/get_card_hash/<filename>')
+def get_card_hash_api(filename):
+    # Bảo vệ chỉ cho phép file .html trong thư mục Card
+    card_dir = os.path.join(app.template_folder, 'Card')
+    if not filename.endswith('.html') or filename not in os.listdir(card_dir):
+        return jsonify({'error': 'Invalid file'}), 400
+    h = get_card_hash(filename)
+    return jsonify({'hash': h})
+
+@app.route('/public_card/<card_hash>')
+def public_card(card_hash):
+    filename = CARD_HASH_MAP.get(card_hash)
+    if not filename or not filename.endswith('.html'):
+        return "Invalid or expired link", 404
+    card_dir = os.path.join('Card', filename)
+    card_info = get_card_info()
+    avatar_dir = os.path.join(app.static_folder, 'avatar')
+    avatar_file = None
+    if os.path.exists(avatar_dir):
+        for fname in os.listdir(avatar_dir):
+            if fname.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp', '.heic')):
+                avatar_file = f'avatar/{fname}'
+                break
+    card_info['avatar_url'] = url_for('static', filename=avatar_file) if avatar_file else ''
+    return render_template(card_dir, **card_info)
+    
 if __name__ == '__main__':
     app.run(debug=True)

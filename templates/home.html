@@ -485,9 +485,20 @@
                         const li = document.createElement('li');
                         li.className = 'list-group-item';
                         const a = document.createElement('a');
-                        a.href = `/card_view/${file}`;
-                        a.target = '_blank';
+                        a.href = '#';
                         a.textContent = file;
+                        a.onclick = function(e) {
+                            e.preventDefault();
+                            fetch(`/get_card_hash/${file}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.hash) {
+                                window.open(`/public_card/${data.hash}`, '_blank');
+                                } else {
+                                alert('Không thể tạo link public cho card này!');
+                                }
+                            });
+                        };
                         li.appendChild(a);
                         cardList.appendChild(li);
                     });
