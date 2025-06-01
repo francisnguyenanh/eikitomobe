@@ -259,7 +259,7 @@
     <!-- HTML remains unchanged -->
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/">友部　瑛希</a>
+            <a class="navbar-brand" href="/">友部瑛希</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -1270,6 +1270,9 @@
                         }
                         categorySelect.appendChild(option);
                     });
+
+                    document.getElementById('editMemoImages').value = "";
+                    
                     editMemoModal.show();
                 } else {
                     showFlashMessage('danger', data.message || 'Failed to load note data.');
@@ -1329,8 +1332,14 @@
                     const editFromViewButton = document.getElementById('editFromViewButton');
                     if (editFromViewButton) {
                         editFromViewButton.onclick = () => {
+                            // Đóng modal View trước
                             viewMemoModal.hide();
-                            openEditMemoModal(noteId);
+                            // Đảm bảo chỉ gán 1 lần
+                            const handler = function() {
+                                openEditMemoModal(note.id);
+                                document.getElementById('viewMemoModal').removeEventListener('hidden.bs.modal', handler);
+                            };
+                            document.getElementById('viewMemoModal').addEventListener('hidden.bs.modal', handler);
                         };
                     }
 
@@ -1513,6 +1522,7 @@
                 }
             }
             existingImagesEdit.forEach(imgObj => formData.append('keep_images', imgObj.originalIndex));
+            console.log('Index ảnh giữ lại gửi về server:', existingImagesEdit.map(img => img.originalIndex));
             try {
                 const response = await fetch(`/edit_note/${noteId}`, {
                     method: 'POST',
@@ -1533,7 +1543,6 @@
             }
         });
 
-        // filepath: c:\8. Private\Tool\Memo_WEB\Memo_WEB\templates\index.html
         document.querySelectorAll('.alert-dismissible').forEach(alert => {
             setTimeout(() => {
                 alert.classList.remove('show');

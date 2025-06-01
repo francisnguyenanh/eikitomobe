@@ -317,7 +317,7 @@ def add_note():
             # Hàm xử lý ảnh bất đồng bộ
             def process_images(note_id, files):
                 with app.app_context():
-                    app.logger.debug(f"Processing images for note_id {note_id}, files: {[f.filename for f in files]}")
+                    #app.logger.debug(f"Processing images for note_id {note_id}, files: {[f.filename for f in files]}")
                     images = []
                     for file in files:
                         if file and file.filename:
@@ -351,13 +351,13 @@ def add_note():
                             note = Note.query.get(note_id)
                             note.images = json.dumps(images)
                             db.session.commit()
-                            app.logger.debug(f"Images saved for note_id {note_id}: {len(images)} images")
+                            #app.logger.debug(f"Images saved for note_id {note_id}: {len(images)} images")
                         except Exception as e:
                             app.logger.error(f"Error saving images to DB for note_id {note_id}: {str(e)}")
 
             # Lấy danh sách file và xử lý bất đồng bộ
             files = request.files.getlist('images')
-            app.logger.debug(f"Received files: {[f.filename for f in files if f.filename]}")
+            #app.logger.debug(f"Received files: {[f.filename for f in files if f.filename]}")
             if files and any(file.filename for file in files):
                 threading.Thread(target=process_images, args=(note.id, files)).start()
             else:
@@ -467,24 +467,27 @@ def edit_note(id):
             # Xử lý ảnh hiện có
             images = json.loads(note.images) if note.images else []
             keep_images = request.form.getlist('keep_images')
-            app.logger.debug(f"keep_images received: {keep_images}")
-            if keep_images:
-                keep_indices = [int(i) for i in keep_images if i.isdigit() and int(i) < len(images)]
-                app.logger.debug(f"keep_indices after filter: {keep_indices}")
-                images = [images[i] for i in keep_indices]
+            #app.logger.debug(f"keep_images received: {keep_images}")
+            if keep_images is not None:
+                # Nếu mảng rỗng, nghĩa là không giữ lại ảnh nào
+                if len(keep_images) == 0:
+                    images = []
+                else:
+                    keep_indices = [int(i) for i in keep_images if i.isdigit() and int(i) < len(images)]
+                    images = [images[i] for i in keep_indices]
             else:
                 images = images if images else []
             note.images = json.dumps(images) if images else None
             
-            app.logger.debug(f"Images after filtering: {images}")
-            app.logger.debug(f"note.images after update: {note.images}")
+            #app.logger.debug(f"Images after filtering: {images}")
+            #app.logger.debug(f"note.images after update: {note.images}")
 
             db.session.commit()
 
             # Hàm xử lý ảnh mới bất đồng bộ
             def process_new_images(note_id, files, existing_images):
                 with app.app_context():
-                    app.logger.debug(f"Processing new images for note_id {note_id}, files: {[f.filename for f in files]}")
+                    #app.logger.debug(f"Processing new images for note_id {note_id}, files: {[f.filename for f in files]}")
                     new_images = existing_images[:] if existing_images else []
                     for file in files:
                         if file and file.filename:
@@ -517,13 +520,13 @@ def edit_note(id):
                         note = Note.query.get(note_id)
                         note.images = json.dumps(new_images) if new_images else None
                         db.session.commit()
-                        app.logger.debug(f"Images saved for note_id {note_id}: {len(new_images)} images")
+                        #app.logger.debug(f"Images saved for note_id {note_id}: {len(new_images)} images")
                     except Exception as e:
                         app.logger.error(f"Error saving images to DB for note_id {note_id}: {str(e)}")
 
             # Lấy danh sách file mới và xử lý bất đồng bộ
             files = request.files.getlist('images')
-            app.logger.debug(f"Received files for edit: {[f.filename for f in files if f.filename]}")
+            #app.logger.debug(f"Received files for edit: {[f.filename for f in files if f.filename]}")
             if files and any(file.filename for file in files):
                 threading.Thread(target=process_new_images, args=(note.id, files, images)).start()
             else:
@@ -863,7 +866,7 @@ def logout():
 def sync_notes():
     try:
         data = request.get_json()
-        app.logger.debug(f"Received sync data: {data}")
+        #app.logger.debug(f"Received sync data: {data}")
         for note in data.get('notes', []):
             existing_note = Note.query.get(note.get('id'))
             if existing_note and existing_note.user_id == current_user.id:
@@ -898,7 +901,7 @@ def sync_notes():
                 } for note in notes
             ]
         }
-        app.logger.debug(f"Sync response: {response}")
+        #app.logger.debug(f"Sync response: {response}")
         return response
     except Exception as e:
         app.logger.error(f"Sync error: {str(e)}")
