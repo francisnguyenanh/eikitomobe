@@ -1331,16 +1331,25 @@ def get_today_quote():
     else:
         # Nếu ngày trùng, lấy quote từ file
         return file_quote, file_author
+
+def get_random_quote_from_db():
+    """Lấy 1 quote ngẫu nhiên từ bảng quote trong quotes.db"""
+    with quote_app.app_context():
+        quote = Quote.query.order_by(db_quote.func.random()).first()
+        if quote:
+            quote_text = quote.content
+            quote_author = quote.category.name if quote.category else ""
+        else:
+            quote_text = "Chưa có trích dẫn nào."
+            quote_author = ""
+    return quote_text, quote_author
     
 @app.route('/home')
 @login_required
 def home():
-    
-    quote_text, quote_author = get_today_quote()
-    logging.debug(f"Today's quote: {quote_text} - Author: {quote_author}")
+    quote_text, quote_author = get_random_quote_from_db()
 
     theme = session.get('theme', 'light')
-    
     bg_image_url = None
     photo_dir = os.path.join(app.static_folder, 'photo')
     if os.path.exists(photo_dir):
