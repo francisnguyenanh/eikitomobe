@@ -393,6 +393,7 @@
     <!-- Add Memo Modal -->
     {% if categories %}
     <!-- Trong file index.html, phần addMemoModal -->
+    <!-- Add Memo Modal -->
     <div class="modal fade" id="addMemoModal" tabindex="-1" aria-labelledby="addMemoModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -401,42 +402,57 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs mb-3" id="addMemoTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="add-content-tab" data-bs-toggle="tab" data-bs-target="#add-content" type="button" role="tab">Content</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="add-meta-tab" data-bs-toggle="tab" data-bs-target="#add-meta" type="button" role="tab">Meta</button>
+                        </li>
+                    </ul>
                     <form id="addMemoForm" method="POST" action="{{ url_for('add_note') }}" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label for="memoTitle" class="form-label">Title</label>
-                            <input type="text" class="form-control" id="memoTitle" name="title" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="memoContent" class="form-label">Content</label>
-                            <textarea class="form-control" id="memoContent" name="content" rows="4" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="memoImages" class="form-label">Images (PNG, JPG, JPEG, GIF, HEIC)</label>
-                            <input type="file" class="form-control" id="memoImages" name="images" multiple accept="image/png,image/jpeg,image/gif,image/heic">
-                            <div id="imagePreview" class="mt-2 d-flex flex-wrap gap-2"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="memoDueDate" class="form-label">Due Date (JST)</label>
-                            <input type="datetime-local" class="form-control" id="memoDueDate" name="due_date" step="60">
-                        </div>
-                        <div class="mb-3">
-                            <label for="memoCategory" class="form-label">Category <span class="text-danger">*</span></label>
-                            <select class="form-select" id="memoCategory" name="category_id" required>
-                                {% for category in categories %}
-                                    <option value="{{ category.id }}">{{ category.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="memoShare" name="share">
-                                <label class="form-check-label" for="memoShare">Enable public sharing</label>
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="add-content" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="memoTitle" class="form-label">Title</label>
+                                    <input type="text" class="form-control" id="memoTitle" name="title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="memoContent" class="form-label">Content</label>
+                                    <textarea class="form-control" id="memoContent" name="content" rows="8" required></textarea>
+                                </div>
                             </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="memoCompleted" name="is_completed">
-                                <label class="form-check-label" for="memoCompleted">Completed</label>
+                            <div class="tab-pane fade" id="add-meta" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="memoImages" class="form-label">Images (PNG, JPG, JPEG, GIF, HEIC)</label>
+                                    <input type="file" class="form-control" id="memoImages" name="images" multiple accept="image/png,image/jpeg,image/gif,image/heic">
+                                    <div id="imagePreview" class="mt-2 d-flex flex-wrap gap-2"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="memoDueDate" class="form-label">Due Date (JST)</label>
+                                    <input type="datetime-local" class="form-control" id="memoDueDate" name="due_date" step="60">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="memoCategory" class="form-label">Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="memoCategory" name="category_id" required>
+                                        {% for category in categories %}
+                                            <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="memoShare" name="share">
+                                        <label class="form-check-label" for="memoShare">Enable public sharing</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="memoCompleted" name="is_completed">
+                                        <label class="form-check-label" for="memoCompleted">Completed</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary">Save Memo</button>
@@ -458,13 +474,27 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <h6 id="viewMemoTitle" class="mb-3"></h6>
-                    <p id="viewMemoContent" style="white-space: pre-wrap;"></p>
-                    <div id="viewMemoImages" class="mt-2 d-flex flex-wrap gap-2"></div>
-                    <p id="viewMemoDueDate" class="text-muted"></p>
-                    <p id="viewMemoCategory" class="text-muted"></p>
-                    <p id="viewMemoShare" class="text-muted"></p>
-                    <p id="viewMemoCompleted" class="text-muted"></p>
+                    <ul class="nav nav-tabs mb-3" id="viewMemoTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="view-content-tab" data-bs-toggle="tab" data-bs-target="#view-content" type="button" role="tab">Content</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="view-meta-tab" data-bs-toggle="tab" data-bs-target="#view-meta" type="button" role="tab">Meta</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="view-content" role="tabpanel">
+                            <h6 id="viewMemoTitle" class="mb-3"></h6>
+                            <p id="viewMemoContent" style="white-space: pre-wrap;"></p>
+                        </div>
+                        <div class="tab-pane fade" id="view-meta" role="tabpanel">
+                            <div id="viewMemoImages" class="mt-2 d-flex flex-wrap gap-2"></div>
+                            <p id="viewMemoDueDate" class="text-muted"></p>
+                            <p id="viewMemoCategory" class="text-muted"></p>
+                            <p id="viewMemoShare" class="text-muted"></p>
+                            <p id="viewMemoCompleted" class="text-muted"></p>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -518,43 +548,57 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <ul class="nav nav-tabs mb-3" id="editMemoTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="edit-content-tab" data-bs-toggle="tab" data-bs-target="#edit-content" type="button" role="tab">Content</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="edit-meta-tab" data-bs-toggle="tab" data-bs-target="#edit-meta" type="button" role="tab">Meta</button>
+                        </li>
+                    </ul>
                     <form id="editMemoForm" method="POST" enctype="multipart/form-data">
                         <input type="hidden" id="editMemoId" name="id">
-                        <div class="mb-3">
-                            <label for="editMemoTitle" class="form-label">Title</label>
-                            <input type="text" class="form-control" id="editMemoTitle" name="title" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editMemoContent" class="form-label">Content</label>
-                            <textarea class="form-control" id="editMemoContent" name="content" rows="4" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editMemoImages" class="form-label">Images (PNG, JPG, JPEG, GIF, HEIC)</label>
-                            <input type="file" class="form-control" id="editMemoImages" name="images" multiple accept="image/png,image/jpeg,image/gif,image/heic">
-                            <div id="editImagePreview" class="mt-2 d-flex flex-wrap gap-2"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editMemoDueDate" class="form-label">Due Date (JST)</label>
-                            <input type="datetime-local" class="form-control" id="editMemoDueDate" name="due_date" step="60">
-                        </div>
-                        <div class="mb-3">
-                            <label for="editMemoCategory" class="form-label">Category <span class="text-danger">*</span></label>
-                            <select class="form-select" id="editMemoCategory" name="category_id" required>
-                                {% for category in categories %}
-                                    <option value="{{ category.id }}">{{ category.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="editMemoShare" name="share">
-                                <label class="form-check-label" for="editMemoShare">Enable public sharing</label>
+                        <div class="tab-content">
+                            <div class="tab-pane fade show active" id="edit-content" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="editMemoTitle" class="form-label">Title</label>
+                                    <input type="text" class="form-control" id="editMemoTitle" name="title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editMemoContent" class="form-label">Content</label>
+                                    <textarea class="form-control" id="editMemoContent" name="content" rows="8" required></textarea>
+                                </div>
                             </div>
-                        </div>
-                        <div class="mb-3">
-                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="editMemoCompleted" name="is_completed">
-                                <label class="form-check-label" for="editMemoCompleted">Completed</label>
+                            <div class="tab-pane fade" id="edit-meta" role="tabpanel">
+                                <div class="mb-3">
+                                    <label for="editMemoImages" class="form-label">Images (PNG, JPG, JPEG, GIF, HEIC)</label>
+                                    <input type="file" class="form-control" id="editMemoImages" name="images" multiple accept="image/png,image/jpeg,image/gif,image/heic">
+                                    <div id="editImagePreview" class="mt-2 d-flex flex-wrap gap-2"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editMemoDueDate" class="form-label">Due Date (JST)</label>
+                                    <input type="datetime-local" class="form-control" id="editMemoDueDate" name="due_date" step="60">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editMemoCategory" class="form-label">Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="editMemoCategory" name="category_id" required>
+                                        {% for category in categories %}
+                                            <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="editMemoShare" name="share">
+                                        <label class="form-check-label" for="editMemoShare">Enable public sharing</label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" id="editMemoCompleted" name="is_completed">
+                                        <label class="form-check-label" for="editMemoCompleted">Completed</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary">Update Memo</button>
