@@ -7,7 +7,7 @@
         </div>
         <div class="mb-3">
             <input type="text" name="category" class="form-control" placeholder="Nhập nguồn"
-                   list="categoryList" required>
+                   list="categoryList">
         </div>
         {% if require_password %}
         <div class="mb-3">
@@ -154,6 +154,7 @@
     </div>
     <!-- Datalist chung cho cả trang -->
     <datalist id="categoryList">
+        <option value="St">
         {% for category in categories %}
         <option value="{{ category }}">
         {% endfor %}

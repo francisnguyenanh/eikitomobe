@@ -1187,12 +1187,20 @@ def manage_quotes():
                     flash("Trích dẫn này quá giống (≥80%) với một trích dẫn đã tồn tại! Vui lòng nhập trích dẫn khác.", "error")
                     break
             else:
-                if content and category_name:
-                    category = QuoteCategory.query.filter_by(name=category_name).first()
-                    if not category:
-                        category = QuoteCategory(name=category_name)
-                        db_quote.session.add(category)
-                        db_quote.session.commit()
+                if content:
+                    if category_name:
+                        category = QuoteCategory.query.filter_by(name=category_name).first()
+                        if not category:
+                            category = QuoteCategory(name=category_name)
+                            db_quote.session.add(category)
+                            db_quote.session.commit()
+                    else:
+                        # Nếu không nhập nguồn, tìm nguồn "St"
+                        category = QuoteCategory.query.filter_by(name="St").first()
+                        if not category:
+                            category = QuoteCategory(name="St")
+                            db_quote.session.add(category)
+                            db_quote.session.commit()
                     db_quote.session.add(Quote(content=content, category=category))
                     db_quote.session.commit()
                     flash("Trích dẫn đã được thêm thành công!", "success")
@@ -1200,7 +1208,7 @@ def manage_quotes():
         categories = QuoteCategory.query.order_by(QuoteCategory.name).all()
         category_counts = db_quote.session.query(QuoteCategory, db_quote.func.count(Quote.id)).outerjoin(Quote).group_by(QuoteCategory.id).all()
         return render_template('Quote/manage_quotes.html', quotes=quotes, categories=categories, category_counts=category_counts)
-
+    
 @app.route('/quotes/edit/<int:id>', methods=['POST'])
 def edit_quote(id):
     with quote_app.app_context():
