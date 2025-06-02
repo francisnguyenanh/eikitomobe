@@ -397,10 +397,6 @@
     <div class="modal fade" id="addMemoModal" tabindex="-1" aria-labelledby="addMemoModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="addMemoModalLabel">Add New Memo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
                 <div class="modal-body">
                     <!-- Tabs -->
                     <ul class="nav nav-tabs mb-3" id="addMemoTab" role="tablist">
@@ -415,26 +411,21 @@
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="add-content" role="tabpanel">
                                 <div class="mb-3">
-                                    <label for="memoTitle" class="form-label">Title</label>
                                     <input type="text" class="form-control" id="memoTitle" name="title" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="memoContent" class="form-label">Content</label>
                                     <textarea class="form-control" id="memoContent" name="content" rows="8" required></textarea>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="add-meta" role="tabpanel">
                                 <div class="mb-3">
-                                    <label for="memoImages" class="form-label">Images (PNG, JPG, JPEG, GIF, HEIC)</label>
                                     <input type="file" class="form-control" id="memoImages" name="images" multiple accept="image/png,image/jpeg,image/gif,image/heic">
                                     <div id="imagePreview" class="mt-2 d-flex flex-wrap gap-2"></div>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="memoDueDate" class="form-label">Due Date (JST)</label>
                                     <input type="datetime-local" class="form-control" id="memoDueDate" name="due_date" step="60">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="memoCategory" class="form-label">Category <span class="text-danger">*</span></label>
                                     <select class="form-select" id="memoCategory" name="category_id" required>
                                         {% for category in categories %}
                                             <option value="{{ category.id }}">{{ category.name }}</option>
@@ -466,43 +457,41 @@
 
     <!-- View Memo Modal -->
     <!-- Trong file index.html, phần viewMemoModal -->
-    <div class="modal fade" id="viewMemoModal" tabindex="-1" aria-labelledby="viewMemoModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="viewMemoModalLabel">View Memo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <ul class="nav nav-tabs mb-3" id="viewMemoTab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="view-content-tab" data-bs-toggle="tab" data-bs-target="#view-content" type="button" role="tab">Content</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="view-meta-tab" data-bs-toggle="tab" data-bs-target="#view-meta" type="button" role="tab">Meta</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content">
-                        <div class="tab-pane fade show active" id="view-content" role="tabpanel">
-                            <h6 id="viewMemoTitle" class="mb-3"></h6>
-                            <p id="viewMemoContent" style="white-space: pre-wrap;"></p>
-                        </div>
-                        <div class="tab-pane fade" id="view-meta" role="tabpanel">
-                            <div id="viewMemoImages" class="mt-2 d-flex flex-wrap gap-2"></div>
-                            <p id="viewMemoDueDate" class="text-muted"></p>
-                            <p id="viewMemoCategory" class="text-muted"></p>
-                            <p id="viewMemoShare" class="text-muted"></p>
-                            <p id="viewMemoCompleted" class="text-muted"></p>
-                        </div>
+    <!-- filepath: /Users/eikitomobe/Documents/3.Học tập/Lập trình/VS code/EikiTomobe/eikitomobe/templates/Memo/list_note.html -->
+<div class="modal fade" id="viewMemoModal" tabindex="-1" aria-labelledby="viewMemoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-body">
+                <ul class="nav nav-tabs mb-3" id="viewMemoTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="view-content-tab" data-bs-toggle="tab" data-bs-target="#view-content" type="button" role="tab">Content</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="view-meta-tab" data-bs-toggle="tab" data-bs-target="#view-meta" type="button" role="tab">Meta</button>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="view-content" role="tabpanel">
+                        <h6 id="viewMemoTitle" class="mb-3"></h6>
+                        <p id="viewMemoContent" style="white-space: pre-wrap;"></p>
+                    </div>
+                    <div class="tab-pane fade" id="view-meta" role="tabpanel">
+                        <div id="viewMemoImages" class="mt-2 d-flex flex-wrap gap-2"></div>
+                        <p id="viewMemoDueDate" class="text-muted"></p>
+                        <p id="viewMemoCategory" class="text-muted"></p>
+                        <p id="viewMemoShare" class="text-muted"></p>
+                        <p id="viewMemoCompleted" class="text-muted"></p>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <div class="d-flex justify-content-start gap-2 mt-3">
                     <button type="button" class="btn btn-primary" id="editFromViewButton">Edit</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     <!-- New modal for enlarged image -->
     <div class="modal fade" id="imageViewModal" tabindex="-1" aria-labelledby="imageViewModalLabel" aria-hidden="true">
@@ -543,10 +532,6 @@
     <div class="modal fade" id="editMemoModal" tabindex="-1" aria-labelledby="editMemoModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editMemoModalLabel">Edit Memo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
                 <div class="modal-body">
                     <ul class="nav nav-tabs mb-3" id="editMemoTab" role="tablist">
                         <li class="nav-item" role="presentation">
@@ -561,26 +546,21 @@
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="edit-content" role="tabpanel">
                                 <div class="mb-3">
-                                    <label for="editMemoTitle" class="form-label">Title</label>
                                     <input type="text" class="form-control" id="editMemoTitle" name="title" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="editMemoContent" class="form-label">Content</label>
                                     <textarea class="form-control" id="editMemoContent" name="content" rows="8" required></textarea>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="edit-meta" role="tabpanel">
                                 <div class="mb-3">
-                                    <label for="editMemoImages" class="form-label">Images (PNG, JPG, JPEG, GIF, HEIC)</label>
                                     <input type="file" class="form-control" id="editMemoImages" name="images" multiple accept="image/png,image/jpeg,image/gif,image/heic">
                                     <div id="editImagePreview" class="mt-2 d-flex flex-wrap gap-2"></div>
                                 </div>
                                 <div class="mb-3">
-                                    <label for="editMemoDueDate" class="form-label">Due Date (JST)</label>
                                     <input type="datetime-local" class="form-control" id="editMemoDueDate" name="due_date" step="60">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="editMemoCategory" class="form-label">Category <span class="text-danger">*</span></label>
                                     <select class="form-select" id="editMemoCategory" name="category_id" required>
                                         {% for category in categories %}
                                             <option value="{{ category.id }}">{{ category.name }}</option>
