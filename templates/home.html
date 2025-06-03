@@ -8,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&family=Shippori+Mincho+B1:wght@700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <style>
         :root {
             --bg-color: #f8f9fa; /* Light */
@@ -181,11 +182,11 @@
         .brand-shodo {
             font-family: 'Shippori Mincho B1', 'Kosugi Maru', 'Noto Sans JP', serif;
             font-weight: 700;
-            font-size: 2.1rem;
+            font-size: 1.5rem;
             letter-spacing: 0.08em;
             color: #222;
             text-shadow: 0 2px 8px rgba(0,0,0,0.07);
-            line-height: 0.5;
+            line-height: 0.2;
         }
         @media (max-width: 576px) {
             .brand-shodo { font-size: 1.3rem; }
@@ -762,6 +763,34 @@
                         renderLinksInputs(data.links);
                     }
                 });
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            const quoteContent = document.querySelector('.quote-content');
+            if (quoteContent) {
+                quoteContent.style.cursor = 'pointer';
+                quoteContent.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    let audio = new Audio('/static/bell.mp3');
+                    let count = 0;
+                    const maxCount = 3;
+                    const pauseBetween = 2000;
+
+                    function playBell() {
+                        if (count < maxCount) {
+                            audio.play();
+                            count++;
+                            audio.onended = function() {
+                                if (count < maxCount) {
+                                    setTimeout(playBell, pauseBetween);
+                                }
+                            };
+                        }
+                    }
+
+                    playBell();
+                    audio = new Audio('/static/bell.mp3');
+                });
+            }
         });
     </script>
 </body>

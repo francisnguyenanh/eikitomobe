@@ -1451,7 +1451,7 @@ def public_card(card_hash):
     filename = CARD_HASH_MAP.get(card_hash)
     if not filename or not filename.endswith('.html'):
         return "Invalid or expired link", 404
-    card_dir = os.path.join('Card', filename)
+    card_dir = f'Card/{filename}'  # SỬA Ở ĐÂY
     card_info = get_card_info()
     avatar_dir = os.path.join(app.static_folder, 'avatar')
     avatar_file = None
