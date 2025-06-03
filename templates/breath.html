@@ -239,6 +239,7 @@
                             <select id="patternSelect" class="form-select breath-settings-input d-inline-block">
                                 <option value="5-5-5-5">Box</option>
                                 <option value="4-7-8">4-7-8</option>
+                                <option value="6-3-6-3">6-3-6-3</option> <!-- Thêm dòng này -->
                             </select>
                         </div>
                         <div class="breath-controls-row">
@@ -277,7 +278,8 @@
         // Breath patterns: [in, hold1, out, hold2] (seconds)
         const patterns = {
             "5-5-5-5": [5, 5, 5, 5],
-            "4-7-8": [4, 7, 8] // 4 inhale, 7 hold, 8 exhale
+            "4-7-8": [4, 7, 8],
+            "6-3-6-3": [6, 3, 6, 3] // Thêm dòng này
         };
         const patternMeta = {
             "5-5-5-5": {
@@ -289,6 +291,11 @@
                 names: ["Inhale", "Hold", "Exhale"],
                 colors: ["#0d6efd", "#ffc107", "#28a745"],
                 bgIds: ['bg-inhale', 'bg-hold1', 'bg-exhale']
+            },
+            "6-3-6-3": { // Thêm block này
+                names: ["Inhale", "Hold", "Exhale", "Hold"],
+                colors: ["#0d6efd", "#ffc107", "#28a745", "#ffc107"],
+                bgIds: ['bg-inhale', 'bg-hold1', 'bg-exhale', 'bg-hold2']
             }
         };
 
