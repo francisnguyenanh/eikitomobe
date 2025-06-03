@@ -1,8 +1,8 @@
-<!-- filepath: /Users/eikitomobe/Documents/3.Học tập/Lập trình/VS code/EikiTomobe/eikitomobe/templates/breath.html -->
 <!DOCTYPE html>
 <html lang="en" data-theme="{{ theme|default('light') }}">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Breath Practice</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
@@ -69,26 +69,32 @@
         body {
             background: var(--bg-color);
             min-height: 100vh;
+            font-size: 16px;
         }
         .breath-container {
             max-width: 700px;
-            min-width: 0;
             width: 98vw;
-            margin: 1px auto;
+            margin: 0 auto;
             background: var(--card-bg);
             border-radius: 16px;
             box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-            padding: 2rem 1.5rem 2.5rem 1.5rem;
+            padding: 1.5rem 1rem;
             text-align: center;
         }
         @media (max-width: 900px) {
-            .breath-container { max-width: 98vw; }
+            .breath-container {
+                width: 100vw;
+                margin: 0;
+                border-radius: 0; /* Remove border radius for full-screen effect */
+            }
         }
         @media (max-width: 576px) {
-            .breath-container { padding: 1rem 0.2rem 1.5rem 0.2rem; }
+            .breath-container {
+                padding: 1rem 0.5rem;
+            }
         }
         .circle-visual {
-            margin: 30px auto 10px auto;
+            margin: 20px auto;
             width: 320px;
             height: 320px;
             position: relative;
@@ -108,15 +114,15 @@
         .breath-phase {
             font-size: 1.5rem;
             font-weight: bold;
-            margin-top: 18px;
+            margin-top: 15px;
             margin-bottom: 10px;
         }
         .breath-controls-row {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 1rem;
-            margin-bottom: 0.7rem;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
             flex-wrap: wrap;
         }
         .toggle-btn {
@@ -126,7 +132,7 @@
         .countdown-info {
             font-size: 1.1rem;
             font-weight: 500;
-            margin-bottom: 0.7rem;
+            margin-bottom: 0.5rem;
         }
         .circle-progress {
             stroke: #0d6efd;
@@ -136,15 +142,6 @@
             background-color: var(--card-bg) !important;
             color: var(--text-color) !important;
         }
-        @media (max-width: 600px) {
-            .circle-visual {
-                width: 98vw;
-                height: 98vw;
-                max-width: 340px;
-                max-height: 340px;
-            }
-        }
-
         .circle-hover-bg {
             transition: opacity 0.8s;
             filter: blur(2px);
@@ -168,24 +165,115 @@
             min-width: 120px;
             max-width: 180px;
             width: 150px;
-        }
-        .breath-controls-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 0.7rem;
-            flex-wrap: wrap;
+            font-size: 1rem;
+            padding: 0.5rem;
         }
         .breath-controls-row label {
             min-width: 80px;
             text-align: right;
             margin-bottom: 0;
+            font-size: 1rem;
         }
-        .breath-settings-input {
-            min-width: 120px;
-            max-width: 180px;
-            width: 150px;
+        @media (max-width: 600px) {
+            html, body {
+                font-size: 18px;
+            }
+            .navbar {
+                padding-top: 0.4rem !important;
+                padding-bottom: 0.4rem !important;
+            }
+            .navbar-brand {
+                font-size: 1.35rem !important;
+                font-family: 'Kosugi Maru', 'Noto Sans JP', sans-serif;
+                letter-spacing: 0.04em;
+                padding: 0.3rem 0.7rem !important;
+            }
+            .navbar-nav .nav-link {
+                font-size: 1.1rem !important;
+                padding: 0.5rem 0.9rem !important;
+            }
+            .container, .container.py-2, .container.py-4 {
+                max-width: 100vw !important;
+                width: 100vw !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
+            .breath-container {
+                width: 100vw;
+                min-height: 100vh;
+                padding: 1rem 0.2rem 1.5rem 0.2rem;
+                border-radius: 12px;
+            }
+            .breath-controls {
+                margin-bottom: 1.2rem;
+            }
+            .nav-tabs .nav-item {
+                width: 50%;
+                text-align: center;
+            }
+            .nav-tabs .nav-link {
+                width: 100%;
+                display: block;
+                text-align: center;
+                font-size: 1.05rem !important;
+                padding: 0.5rem 0 !important;
+                border-radius: 0 !important;
+            }
+            .breath-controls-row {
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 0.75rem;
+                width: 100%;
+                text-align: center;
+            }
+            .breath-controls-row label {
+                min-width: unset;
+                width: 100%;
+                text-align: center;
+                font-size: 1rem;
+                margin-bottom: 0.25rem;
+            }
+            .breath-settings-input,
+            .form-select,
+            .form-control {
+                min-width: 120px;
+                max-width: 180px;
+                width: 140px;
+                font-size: 1rem;
+                padding: 0.4rem 0.7rem;
+                height: 40px;
+                border-radius: 7px;
+                margin-left: auto;
+                margin-right: auto;
+                display: block;
+            }
+            .circle-visual {
+                width: 90vw;
+                height: 90vw;
+                max-width: 320px;
+                max-height: 320px;
+                margin: 12px auto 10px auto;
+            }
+            .circle-svg {
+                width: 100%;
+                height: 100%;
+            }
+            .breath-phase {
+                font-size: 1.2rem;
+                margin-top: 10px;
+                margin-bottom: 8px;
+            }
+            .countdown-info,
+            #totalTimeInfo,
+            #totalTimeInfoSettings {
+                font-size: 1rem !important;
+            }
+            button, .btn, .nav-link {
+                font-size: 1.05rem !important;
+                padding: 0.5rem 1rem !important;
+                min-height: 40px;
+            }
         }
     </style>
 </head>
@@ -195,7 +283,7 @@
             <a class="navbar-brand" href="/home">Breath</a>
         </div>
     </nav>
-    <div class="container py-4">
+    <div class="container py-2">
         <div class="breath-container">
             <!-- Controls -->
             <div class="breath-controls">
@@ -214,7 +302,7 @@
                 <div class="tab-content" id="breathTabContent">
                     <div class="tab-pane fade show active" id="practice" role="tabpanel" aria-labelledby="practice-tab">
                         <div class="mb-2" id="totalTimeInfo" style="font-size:1rem;color:var(--text-color);"></div>
-                        <!-- Vòng tròn chỉ hiển thị ở tab Practice -->
+                        <!-- Circle visual in Practice tab -->
                         <div class="circle-visual" style="position: relative;">
                             <svg class="circle-svg" viewBox="0 0 320 320">
                                 <circle class="circle-hover-bg" cx="160" cy="160" r="120" fill="var(--primary-color)" opacity="0" />
@@ -239,7 +327,7 @@
                             <select id="patternSelect" class="form-select breath-settings-input d-inline-block">
                                 <option value="5-5-5-5">Box</option>
                                 <option value="4-7-8">4-7-8</option>
-                                <option value="6-3-6-3">6-3-6-3</option> <!-- Thêm dòng này -->
+                                <option value="6-3-6-3">6-3-6-3</option>
                             </select>
                         </div>
                         <div class="breath-controls-row">
@@ -258,20 +346,6 @@
                     </div>
                 </div>
             </div>
-            <div class="countdown-info" id="countdownInfo"></div>
-            <div class="mb-2" id="totalTimeInfoSettings" style="font-size:1rem;color:var(--text-color);"></div>
-            <div class="circle-visual" style="position: relative;">
-                <svg class="circle-svg" viewBox="0 0 320 320">
-                    <circle id="bg-inhale" cx="160" cy="160" r="140" fill="none" stroke="#0d6efd" stroke-width="24" stroke-dasharray="0 880"/>
-                    <circle id="bg-hold1"  cx="160" cy="160" r="140" fill="none" stroke="#ffc107" stroke-width="24" stroke-dasharray="0 880"/>
-                    <circle id="bg-exhale" cx="160" cy="160" r="140" fill="none" stroke="#28a745" stroke-width="24" stroke-dasharray="0 880"/>
-                    <circle id="bg-hold2"  cx="160" cy="160" r="140" fill="none" stroke="#ffc107" stroke-width="24" stroke-dasharray="0 880"/>
-                    <circle class="circle-progress" cx="160" cy="160" r="140" fill="none" stroke="#0d6efd"
-                        stroke-width="24" stroke-linecap="round" stroke-dasharray="880" stroke-dashoffset="880"/>
-                </svg>
-
-            </div>
-
         </div>
     </div>
     <script>
@@ -279,7 +353,7 @@
         const patterns = {
             "5-5-5-5": [5, 5, 5, 5],
             "4-7-8": [4, 7, 8],
-            "6-3-6-3": [6, 3, 6, 3] // Thêm dòng này
+            "6-3-6-3": [6, 3, 6, 3]
         };
         const patternMeta = {
             "5-5-5-5": {
@@ -292,7 +366,7 @@
                 colors: ["#0d6efd", "#ffc107", "#28a745"],
                 bgIds: ['bg-inhale', 'bg-hold1', 'bg-exhale']
             },
-            "6-3-6-3": { // Thêm block này
+            "6-3-6-3": {
                 names: ["Inhale", "Hold", "Exhale", "Hold"],
                 colors: ["#0d6efd", "#ffc107", "#28a745", "#ffc107"],
                 bgIds: ['bg-inhale', 'bg-hold1', 'bg-exhale', 'bg-hold2']
@@ -333,7 +407,6 @@
                 el.setAttribute('stroke-dashoffset', -acc);
                 acc += len;
             }
-            // Ẩn các bg không dùng
             for (let i = pattern.length; i < 4; i++) {
                 const el = document.getElementById(['bg-inhale', 'bg-hold1', 'bg-exhale', 'bg-hold2'][i]);
                 if (el) {
@@ -342,7 +415,6 @@
             }
         }
         function lerpColor(a, b, t) {
-            // a, b: hex string, t: 0..1
             const ah = a.replace('#', '');
             const bh = b.replace('#', '');
             const ar = parseInt(ah.substring(0,2),16), ag = parseInt(ah.substring(2,4),16), ab = parseInt(ah.substring(4,6),16);
@@ -355,12 +427,11 @@
         function resetCircle() {
             circle.setAttribute('stroke-dasharray', circleLength);
             circle.setAttribute('stroke-dashoffset', circleLength);
-            updateProgressDot(0); // Đặt dot về điểm xuất phát khi reset
+            updateProgressDot(0);
         }
 
         function updateCircle(progress) {
-            // const offset = circleLength - (progress % 1) * circleLength; // cũ
-            const offset = circleLength - progress * circleLength; // mới: không dùng %
+            const offset = circleLength - progress * circleLength;
             circle.setAttribute('stroke-dashoffset', offset);
         }
 
@@ -376,13 +447,10 @@
         let totalSec = 0;
         let elapsedSec = 0;
 
-
         function updateProgressDot(progress) {
-            // progress: 0..1, 0 là đầu, 1 là hết vòng
             const r = 140;
             const centerX = 160;
             const centerY = 160;
-            // KHÔNG cần -Math.PI/2 nữa vì đã xoay SVG
             const angle = 2 * Math.PI * (progress % 1);
             const x = centerX + r * Math.cos(angle);
             const y = centerY + r * Math.sin(angle);
@@ -396,7 +464,7 @@
         function animateBreath(now) {
             if (!running) return;
             if (!startTime) startTime = now;
-            let elapsed = (now - startTime) / 1000; // seconds
+            let elapsed = (now - startTime) / 1000;
             elapsedSec = Math.floor(elapsed);
 
             let cycleElapsed = elapsed % total;
@@ -413,19 +481,16 @@
             let colorA = phaseColors[currentPhase];
             let colorB = phaseColors[(currentPhase+1)%phaseColors.length];
 
-            // Nội suy màu theo tiến trình phase
             let phaseDuration = phaseDurations[currentPhase];
             let phaseProgress = (cycleElapsed - phaseStartTime) / phaseDuration;
             let smoothColor = lerpColor(colorA, colorB, Math.min(Math.max(phaseProgress,0),1));
             circle.style.stroke = smoothColor;
 
-            // Tính progress của chu kỳ
             let cycleProgress = elapsed / total;
 
             updateCircle(cycleProgress);
             updateProgressDot(cycleProgress);
 
-            // Cập nhật countdown
             let cyclesPassed = Math.floor(elapsed / total);
             cyclesLeft = Math.max(0, cycles - cyclesPassed);
             let remainSec = Math.max(0, totalSec - elapsedSec);
@@ -433,7 +498,6 @@
             let sec = remainSec % 60;
             countdownInfo.textContent = `Cycles left: ${cyclesLeft} | Time left: ${min}m ${sec < 10 ? '0' : ''}${sec}s`;
 
-            // Dừng khi hết cycles
             if (elapsedSec >= totalSec) {
                 stopBreath(true);
                 return;
@@ -451,7 +515,6 @@
             totalSec = total * cycles;
             elapsedSec = 0;
 
-            // Tính thời điểm kết thúc của từng phase
             phaseDurations = pattern;
             phaseEnds = [];
             let acc = 0;
@@ -489,15 +552,12 @@
             const totalSec = pattern.reduce((a, b) => a + b, 0) * cycles;
             const min = Math.floor(totalSec / 60);
             const sec = totalSec % 60;
-            // Practice tab: giữ nguyên
-            // Settings tab: chỉ hiển thị phút giây
             const totalTimeInfoSettings = document.getElementById('totalTimeInfoSettings');
             if (totalTimeInfoSettings) {
                 totalTimeInfoSettings.textContent = `Total time: ${min}m ${sec}s`;
             }
         }
 
-        // Sự kiện thay đổi
         patternSelect.onchange = function() {
             if (running) stopBreath();
             updatePhaseMeta();
@@ -505,6 +565,7 @@
             phaseLabel.textContent = "Ready";
             setPhaseSegments(getPattern());
             updateTotalTime();
+            saveBreathSettings();
         };
         levelSelect.onchange = function() {
             if (running) stopBreath();
@@ -512,10 +573,12 @@
             phaseLabel.textContent = "Ready";
             setPhaseSegments(getPattern());
             updateTotalTime();
+            saveBreathSettings();
         };
         cycleInput.oninput = function() {
             updateTotalTime();
             if (running) stopBreath();
+            saveBreathSettings();
         };
 
         document.querySelector('.circle-visual').addEventListener('click', function() {
@@ -523,7 +586,6 @@
             else stopBreath();
         });
 
-        // Init
         resetCircle();
         setPhaseSegments(getPattern());
         updateTotalTime();
@@ -555,31 +617,6 @@
                 });
         }
 
-        // Gọi khi user thay đổi settings
-        patternSelect.onchange = function() {
-            if (running) stopBreath();
-            updatePhaseMeta();
-            resetCircle();
-            phaseLabel.textContent = "Ready";
-            setPhaseSegments(getPattern());
-            updateTotalTime();
-            saveBreathSettings();
-        };
-        levelSelect.onchange = function() {
-            if (running) stopBreath();
-            resetCircle();
-            phaseLabel.textContent = "Ready";
-            setPhaseSegments(getPattern());
-            updateTotalTime();
-            saveBreathSettings();
-        };
-        cycleInput.oninput = function() {
-            updateTotalTime();
-            if (running) stopBreath();
-            saveBreathSettings();
-        };
-
-        // Khi trang load, lấy lại settings
         document.addEventListener('DOMContentLoaded', loadBreathSettings);
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
