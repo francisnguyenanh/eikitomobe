@@ -210,29 +210,40 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
-                    <!-- Memo menu item -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('list_note') }}">Memo</a>
-                    </li>
-                    <!-- Diary menu item -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('diary_list') }}">Diary</a>
-                    </li>
-                    <!-- Quote menu item -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('quotes') }}">Quote</a>
+                        <a class="nav-link" href="{{ url_for('list_note') }}">
+                            <i class="bi bi-journal-text"></i> Memo
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('breath') }}">Breath</a>
+                        <a class="nav-link" href="{{ url_for('diary_list') }}">
+                            <i class="bi bi-calendar-heart"></i> Diary
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">Settings</a>
+                        <a class="nav-link" href="{{ url_for('manage_quotes') }}">
+                            <i class="bi bi-chat-quote"></i> Quote
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" id="showLinksBtn"><i class="bi bi-link-45deg"></i> Links</a>
+                        <a class="nav-link" href="{{ url_for('breath') }}">
+                            <i class="bi bi-wind"></i> Breath
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> Logout</a>
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">
+                            <i class="bi bi-gear"></i> Settings
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="showLinksBtn">
+                            <i class="bi bi-link-45deg"></i> Links
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="logoutBtn">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
                     </li>
                 </ul>
             </div>
