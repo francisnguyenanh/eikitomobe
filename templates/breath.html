@@ -1,4 +1,4 @@
-<!-- filepath: c:\8. Private\Tool\EikiTomobe\eikitomobe\templates\breath.html -->
+<!-- filepath: /Users/eikitomobe/Documents/3.Học tập/Lập trình/VS code/EikiTomobe/eikitomobe/templates/breath.html -->
 <!DOCTYPE html>
 <html lang="en" data-theme="{{ theme|default('light') }}">
 <head>
@@ -71,13 +71,21 @@
             min-height: 100vh;
         }
         .breath-container {
-            max-width: 500px;
+            max-width: 700px;
+            min-width: 0;
+            width: 98vw;
             margin: 40px auto;
             background: var(--card-bg);
             border-radius: 16px;
             box-shadow: 0 4px 16px rgba(0,0,0,0.08);
             padding: 2rem 1.5rem 2.5rem 1.5rem;
             text-align: center;
+        }
+        @media (max-width: 900px) {
+            .breath-container { max-width: 98vw; }
+        }
+        @media (max-width: 576px) {
+            .breath-container { padding: 1rem 0.2rem 1.5rem 0.2rem; }
         }
         .circle-visual {
             margin: 30px auto 10px auto;
@@ -103,8 +111,26 @@
             margin-top: 18px;
             margin-bottom: 10px;
         }
-        .breath-controls {
-            margin-bottom: 18px;
+        .breath-controls-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.7rem;
+            flex-wrap: wrap;
+        }
+        .toggle-btn {
+            min-width: 110px;
+            font-size: 1.1rem;
+        }
+        .countdown-info {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.7rem;
+        }
+        .circle-progress {
+            stroke: #0d6efd;
+            transition: stroke-dashoffset 0.2s linear, stroke 0.7s linear;
         }
     </style>
 </head>
@@ -112,32 +138,39 @@
     <div class="container py-4">
         <div class="breath-container">
             <h3 class="mb-3">Breath Practice</h3>
-            <div class="breath-controls mb-3">
-                <label for="patternSelect" class="form-label">Select Pattern:</label>
-                <select id="patternSelect" class="form-select w-auto d-inline-block">
-                    <option value="5-5-5-5">5-5-5-5 (In-Hold-Out-Hold)</option>
-                    <option value="4-7-6-8">4-7-6-8 (In-Hold-Out-Hold)</option>
-                </select>
-                <label for="levelSelect" class="form-label ms-2">Level:</label>
-                <select id="levelSelect" class="form-select w-auto d-inline-block">
-                    <option value="1">Level 1</option>
-                    <option value="2">Level 2</option>
-                    <option value="3">Level 3</option>
-                </select>
-                <label for="cycleInput" class="form-label ms-2">Cycles:</label>
-                <input id="cycleInput" type="number" min="1" value="1" class="form-control d-inline-block w-auto" style="width: 70px;">
-                <button id="startBtn" class="btn btn-primary ms-2">Start</button>
-                <button id="stopBtn" class="btn btn-secondary ms-2" disabled>Stop</button>
+            <!-- Controls -->
+            <div class="breath-controls">
+                <div class="breath-controls-row">
+                    <label for="patternSelect" class="form-label mb-0">Pattern:</label>
+                    <select id="patternSelect" class="form-select w-auto d-inline-block">
+                        <option value="5-5-5-5">Box</option>
+                        <option value="4-7-8">4-7-8</option>
+                    </select>
+                </div>
+                <div class="breath-controls-row">
+                    <label for="levelSelect" class="form-label mb-0">Level:</label>
+                    <select id="levelSelect" class="form-select w-auto d-inline-block">
+                        <option value="1">Level 1</option>
+                        <option value="2">Level 2</option>
+                        <option value="3">Level 3</option>
+                    </select>
+                </div>
+                <div class="breath-controls-row">
+                    <label for="cycleInput" class="form-label mb-0">Cycles:</label>
+                    <input id="cycleInput" type="number" min="1" value="1" class="form-control d-inline-block w-auto" style="width: 70px;">
+                </div>
+                <div class="breath-controls-row">
+                    <button id="toggleBtn" class="btn btn-success toggle-btn">Start</button>
+                </div>
             </div>
+            <div class="countdown-info" id="countdownInfo"></div>
             <div class="mb-2" id="totalTimeInfo" style="font-size:1rem;color:var(--text-color);"></div>
             <div class="circle-visual" style="position: relative;">
                 <svg class="circle-svg" viewBox="0 0 260 260">
-                    <!-- Các đoạn màu cho từng pha -->
                     <circle id="bg-inhale" cx="130" cy="130" r="110" fill="none" stroke="#0d6efd" stroke-width="18" stroke-dasharray="0 690"/>
                     <circle id="bg-hold1"  cx="130" cy="130" r="110" fill="none" stroke="#ffc107" stroke-width="18" stroke-dasharray="0 690"/>
                     <circle id="bg-exhale" cx="130" cy="130" r="110" fill="none" stroke="#28a745" stroke-width="18" stroke-dasharray="0 690"/>
                     <circle id="bg-hold2"  cx="130" cy="130" r="110" fill="none" stroke="#ffc107" stroke-width="18" stroke-dasharray="0 690"/>
-                    <!-- Tiến trình -->
                     <circle class="circle-progress" cx="130" cy="130" r="110" fill="none" stroke="#0d6efd"
                         stroke-width="18" stroke-linecap="round" stroke-dasharray="690" stroke-dashoffset="690"/>
                 </svg>
@@ -155,9 +188,21 @@
         // Breath patterns: [in, hold1, out, hold2] (seconds)
         const patterns = {
             "5-5-5-5": [5, 5, 5, 5],
-            "4-7-6-8": [4, 7, 6, 8]
+            "4-7-8": [4, 7, 8] // 4 inhale, 7 hold, 8 exhale
         };
-        const phaseNames = ["Inhale", "Hold", "Exhale", "Hold"];
+        const patternMeta = {
+            "5-5-5-5": {
+                names: ["Inhale", "Hold", "Exhale", "Hold"],
+                colors: ["#0d6efd", "#ffc107", "#28a745", "#ffc107"],
+                bgIds: ['bg-inhale', 'bg-hold1', 'bg-exhale', 'bg-hold2']
+            },
+            "4-7-8": {
+                names: ["Inhale", "Hold", "Exhale"],
+                colors: ["#0d6efd", "#ffc107", "#28a745"],
+                bgIds: ['bg-inhale', 'bg-hold1', 'bg-exhale']
+            }
+        };
+
         let running = false;
         let pattern = patterns["5-5-5-5"];
         let total = pattern.reduce((a, b) => a + b, 0);
@@ -165,24 +210,52 @@
         const circle = document.querySelector('.circle-progress');
         const phaseLabel = document.getElementById('phaseLabel');
         const patternSelect = document.getElementById('patternSelect');
-        const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
+        const levelSelect = document.getElementById('levelSelect');
+        const cycleInput = document.getElementById('cycleInput');
+        const totalTimeInfo = document.getElementById('totalTimeInfo');
+        const countdownInfo = document.getElementById('countdownInfo');
+        const toggleBtn = document.getElementById('toggleBtn');
         const circleLength = 2 * Math.PI * 110;
+
+        let phaseNames = patternMeta[patternSelect.value].names;
+        let phaseColors = patternMeta[patternSelect.value].colors;
+        let phaseBgIds = patternMeta[patternSelect.value].bgIds;
+
+        function updatePhaseMeta() {
+            phaseNames = patternMeta[patternSelect.value].names;
+            phaseColors = patternMeta[patternSelect.value].colors;
+            phaseBgIds = patternMeta[patternSelect.value].bgIds;
+        }
 
         function setPhaseSegments(pattern) {
             const total = pattern.reduce((a, b) => a + b, 0);
-            const circleLength = 2 * Math.PI * 110;
             let acc = 0;
-            const ids = ['bg-inhale', 'bg-hold1', 'bg-exhale', 'bg-hold2'];
             for (let i = 0; i < pattern.length; i++) {
                 const len = pattern[i] / total * circleLength;
                 const gap = circleLength - len;
-                const el = document.getElementById(ids[i]);
-                // Đặt đoạn màu đúng vị trí
+                const el = document.getElementById(phaseBgIds[i]);
                 el.setAttribute('stroke-dasharray', `${len} ${gap}`);
                 el.setAttribute('stroke-dashoffset', -acc);
                 acc += len;
             }
+            // Ẩn các bg không dùng
+            for (let i = pattern.length; i < 4; i++) {
+                const el = document.getElementById(['bg-inhale', 'bg-hold1', 'bg-exhale', 'bg-hold2'][i]);
+                if (el) {
+                    el.setAttribute('stroke-dasharray', `0 ${circleLength}`);
+                }
+            }
+        }
+        function lerpColor(a, b, t) {
+            // a, b: hex string, t: 0..1
+            const ah = a.replace('#', '');
+            const bh = b.replace('#', '');
+            const ar = parseInt(ah.substring(0,2),16), ag = parseInt(ah.substring(2,4),16), ab = parseInt(ah.substring(4,6),16);
+            const br = parseInt(bh.substring(0,2),16), bg = parseInt(bh.substring(2,4),16), bb = parseInt(bh.substring(4,6),16);
+            const rr = Math.round(ar + (br-ar)*t);
+            const rg = Math.round(ag + (bg-ag)*t);
+            const rb = Math.round(ab + (bb-ab)*t);
+            return `#${rr.toString(16).padStart(2,'0')}${rg.toString(16).padStart(2,'0')}${rb.toString(16).padStart(2,'0')}`;
         }
         function resetCircle() {
             circle.setAttribute('stroke-dasharray', circleLength);
@@ -190,8 +263,8 @@
         }
 
         function updateCircle(progress) {
-            // progress có thể lớn hơn 1, nên dùng phần thập phân để tiếp tục quay liên tiếp
-            const offset = circleLength - (progress % 1) * circleLength;
+            // const offset = circleLength - (progress % 1) * circleLength; // cũ
+            const offset = circleLength - progress * circleLength; // mới: không dùng %
             circle.setAttribute('stroke-dashoffset', offset);
         }
 
@@ -202,49 +275,70 @@
         let phaseEnd = 0;
         let phaseDurations = [];
         let phaseEnds = [];
-
-        const phaseColors = [
-            '#0d6efd', // Inhale (xanh dương)
-            '#ffc107', // Hold (vàng)
-            '#28a745', // Exhale (xanh lá)
-            '#ffc107'  // Hold (vàng)
-        ];
-
-        function setPhaseColor(phaseIdx) {
-            circle.style.stroke = phaseColors[phaseIdx % phaseColors.length];
-        }
+        let cycles = 1;
+        let cyclesLeft = 1;
+        let totalSec = 0;
+        let elapsedSec = 0;
 
 
         function animateBreath(now) {
             if (!running) return;
             if (!startTime) startTime = now;
             let elapsed = (now - startTime) / 1000; // seconds
+            elapsedSec = Math.floor(elapsed);
 
-            // Xác định phase hiện tại
             let cycleElapsed = elapsed % total;
             let currentPhase = 0;
+            let phaseStartTime = 0;
             for (let i = 0; i < phaseEnds.length; i++) {
                 if (cycleElapsed < phaseEnds[i]) {
                     currentPhase = i;
                     break;
                 }
+                phaseStartTime = phaseEnds[i];
             }
             phaseLabel.textContent = phaseNames[currentPhase];
-            setPhaseColor(currentPhase); // Đổi màu theo pha
+            let colorA = phaseColors[currentPhase];
+            let colorB = phaseColors[(currentPhase+1)%phaseColors.length];
 
-            // Tính progress của chu kỳ (dùng tổng thời gian đã chạy để vòng tròn đi liên tiếp)
+            // Nội suy màu theo tiến trình phase
+            let phaseDuration = phaseDurations[currentPhase];
+            let phaseProgress = (cycleElapsed - phaseStartTime) / phaseDuration;
+            let smoothColor = lerpColor(colorA, colorB, Math.min(Math.max(phaseProgress,0),1));
+            circle.style.stroke = smoothColor;
+
+            // Tính progress của chu kỳ
             let cycleProgress = elapsed / total;
             updateCircle(cycleProgress);
+
+            // Cập nhật countdown
+            let cyclesPassed = Math.floor(elapsed / total);
+            cyclesLeft = Math.max(0, cycles - cyclesPassed);
+            let remainSec = Math.max(0, totalSec - elapsedSec);
+            let min = Math.floor(remainSec / 60);
+            let sec = remainSec % 60;
+            countdownInfo.textContent = `Cycles left: ${cyclesLeft} | Time left: ${min}m ${sec < 10 ? '0' : ''}${sec}s`;
+
+            // Dừng khi hết cycles
+            if (elapsedSec >= totalSec) {
+                stopBreath(true);
+                return;
+            }
 
             animationId = requestAnimationFrame(animateBreath);
         }
 
         function startBreath() {
             running = true;
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            pattern = patterns[patternSelect.value];
+            toggleBtn.textContent = "Stop";
+            toggleBtn.classList.remove('btn-success');
+            toggleBtn.classList.add('btn-danger');
+            pattern = getPattern();
             total = pattern.reduce((a, b) => a + b, 0);
+            cycles = getCycles();
+            cyclesLeft = cycles;
+            totalSec = total * cycles;
+            elapsedSec = 0;
 
             // Tính thời điểm kết thúc của từng phase
             phaseDurations = pattern;
@@ -259,42 +353,24 @@
             animationId = requestAnimationFrame(animateBreath);
         }
 
-        function stopBreath() {
+        function stopBreath(finished = false) {
             running = false;
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
+            toggleBtn.textContent = "Start";
+            toggleBtn.classList.remove('btn-danger');
+            toggleBtn.classList.add('btn-success');
             if (animationId) cancelAnimationFrame(animationId);
-            phaseLabel.textContent = "Ready";
+            phaseLabel.textContent = finished ? "Done!" : "Ready";
             resetCircle();
+            countdownInfo.textContent = finished ? "Completed all cycles!" : "";
         }
-
-        startBtn.onclick = function() {
-            if (!running) startBreath();
-        };
-        stopBtn.onclick = function() {
-            if (running) stopBreath();
-        };
-        patternSelect.onchange = function() {
-            if (running) stopBreath();
-            resetCircle();
-            phaseLabel.textContent = "Ready";
-        };
-
-        // Init
-        resetCircle();
-
-        const levelSelect = document.getElementById('levelSelect');
-        const cycleInput = document.getElementById('cycleInput');
-        const totalTimeInfo = document.getElementById('totalTimeInfo');
 
         function getLevelMultiplier() {
             return parseInt(levelSelect.value) || 1;
         }
         function getCycles() {
-            return parseInt(cycleInput.value) || 1;
+            return Math.max(1, parseInt(cycleInput.value) || 1);
         }
         function getPattern() {
-            // Trả về mảng pattern đã nhân với level
             const base = patterns[patternSelect.value];
             const mul = getLevelMultiplier();
             return base.map(x => x * mul);
@@ -311,6 +387,7 @@
         // Sự kiện thay đổi
         patternSelect.onchange = function() {
             if (running) stopBreath();
+            updatePhaseMeta();
             resetCircle();
             phaseLabel.textContent = "Ready";
             setPhaseSegments(getPattern());
@@ -323,35 +400,21 @@
             setPhaseSegments(getPattern());
             updateTotalTime();
         };
-        cycleInput.oninput = updateTotalTime;
+        cycleInput.oninput = function() {
+            updateTotalTime();
+            if (running) stopBreath();
+        };
 
-        // Sửa lại startBreath để dùng pattern đã nhân level
-        function startBreath() {
-            running = true;
-            startBtn.disabled = true;
-            stopBtn.disabled = false;
-            pattern = getPattern();
-            total = pattern.reduce((a, b) => a + b, 0);
-
-            // Tính thời điểm kết thúc của từng phase
-            phaseDurations = pattern;
-            phaseEnds = [];
-            let acc = 0;
-            for (let d of phaseDurations) {
-                acc += d;
-                phaseEnds.push(acc);
-            }
-
-            startTime = null;
-            animationId = requestAnimationFrame(animateBreath);
-        }
-
-        // ...existing code...
+        toggleBtn.onclick = function() {
+            if (!running) startBreath();
+            else stopBreath();
+        };
 
         // Init
         resetCircle();
         setPhaseSegments(getPattern());
-        updateTotalTime();  
+        updateTotalTime();
+        countdownInfo.textContent = "";
     </script>
 </body>
 </html>
