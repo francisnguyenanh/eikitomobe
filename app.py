@@ -1462,6 +1462,12 @@ def public_card(card_hash):
                 break
     card_info['avatar_url'] = url_for('static', filename=avatar_file) if avatar_file else ''
     return render_template(card_dir, **card_info)
-    
+
+@app.route('/breath')
+@login_required
+def breath():
+    theme = session.get('theme', 'light')
+    return render_template('breath.html', theme=theme)
+
 if __name__ == '__main__':
     app.run(debug=True)
