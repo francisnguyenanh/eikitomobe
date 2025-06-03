@@ -190,6 +190,9 @@
         @media (max-width: 576px) {
             .brand-shodo { font-size: 1.3rem; }
         }
+        input.link-input[readonly] {
+            cursor: default !important;
+        }
     </style>
 </head>
 <body>
@@ -276,10 +279,6 @@
             </div>
             <div class="modal-body">
               <div id="linksInputs"></div>
-            </div>
-            <div class="modal-footer">
-              <button type="submit" class="btn btn-primary">Save</button>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
           </form>
         </div>
@@ -486,7 +485,7 @@
                     if (typeof showFlashMessage === 'function') {
                         showFlashMessage('success', 'Links updated!');
                     }
-                    bootstrap.Modal.getInstance(document.getElementById('linksModal')).hide();
+                    // Đừng đóng modal ở đây!
                 } else {
                     alert('Failed to update links');
                 }
@@ -669,6 +668,100 @@
                     document.body.classList.add('no-bg-image');
                 }
             });
+        });
+        function renderLinksInputs(links) {
+            const linksInputs = document.getElementById('linksInputs');
+            linksInputs.innerHTML = '';
+
+            // Helper để tạo 1 input link
+            function createLinkInput(link = '', isNew = false) {
+                const div = document.createElement('div');
+                div.className = 'input-group mb-2';
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'form-control link-input';
+                input.value = link;
+                input.readOnly = !isNew && link !== '';
+                input.setAttribute('data-index', linksInputs.children.length);
+
+                // Đặt màu nền khi inactive (readonly)
+                input.style.backgroundColor = input.readOnly ? '#f8f9fa' : '#fffbe6';
+
+                // Icon edit
+                const editBtn = document.createElement('button');
+                editBtn.type = 'button';
+                editBtn.className = 'btn btn-outline-secondary';
+                editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+                editBtn.onclick = function() {
+                    input.readOnly = false;
+                    input.focus();
+                    input.select();
+                    input.style.backgroundColor = '#fffbe6'; // vàng nhạt khi active
+                };
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.className = 'btn btn-outline-danger';
+                deleteBtn.innerHTML = '<i class="bi bi-x"></i>';
+                deleteBtn.onclick = function() {
+                    div.remove();
+                    // Sau khi xóa, tự động lưu lại links
+                    document.getElementById('linksForm').dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}));
+                };
+
+                // Single click: mở link nếu readonly và có giá trị
+                input.addEventListener('click', function(e) {
+                    if (input.readOnly && input.value.trim()) {
+                        let url = input.value.trim();
+                        if (!/^https?:\/\//i.test(url)) {
+                            url = 'https://' + url;
+                        }
+                        window.open(url, '_blank');
+                    }
+                });
+
+                // Khi mất focus: lưu lại nếu có thay đổi, đổi lại màu nền
+                input.addEventListener('blur', function(e) {
+                    if (!input.readOnly) {
+                        input.readOnly = true;
+                        input.style.backgroundColor = '#f8f9fa';
+                        // Nếu là ô cuối cùng (ô trống) và đã nhập giá trị, tự động thêm ô trống mới
+                        if (div === linksInputs.lastElementChild && input.value.trim() !== '') {
+                            createLinkInput('', true);
+                        }
+                        // Submit form để lưu lại toàn bộ links (KHÔNG đóng modal)
+                        document.getElementById('linksForm').dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}));
+                    }
+                });
+
+                // Khi focus vào (bằng tab), đổi màu active
+                input.addEventListener('focus', function(e) {
+                    if (!input.readOnly) {
+                        input.style.backgroundColor = '#fffbe6';
+                    }
+                });
+
+                div.appendChild(input);
+                div.appendChild(editBtn);
+                div.appendChild(deleteBtn);
+                linksInputs.appendChild(div);
+            }
+
+            // Render các link đã có
+            links.forEach(link => createLinkInput(link));
+            // Luôn có 1 ô trống cuối cùng để nhập mới
+            createLinkInput('', true);
+        }
+
+        // Khi mở modal, lấy links và render
+        document.getElementById('linksModal').addEventListener('show.bs.modal', function() {
+            fetch('/links', {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                .then(res => res.json())
+                .then(data => {
+                    if (data.links) {
+                        renderLinksInputs(data.links);
+                    }
+                });
         });
     </script>
 </body>
