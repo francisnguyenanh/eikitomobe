@@ -1469,5 +1469,25 @@ def breath():
     theme = session.get('theme', 'light')
     return render_template('breath.html', theme=theme)
 
+SETTINGS_FILE = 'breath_settings.txt'
+
+@app.route('/breath_settings', methods=['GET', 'POST'])
+@login_required
+def breath_settings():
+    if request.method == 'POST':
+        data = request.json
+        with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f)
+        return jsonify({'status': 'success'})
+    else:
+        if os.path.exists(SETTINGS_FILE):
+            with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
+                try:
+                    data = json.load(f)
+                except Exception:
+                    data = {}
+            return jsonify(data)
+        return jsonify({})
+    
 if __name__ == '__main__':
     app.run(debug=True)

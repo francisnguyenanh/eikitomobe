@@ -144,17 +144,59 @@
                 max-height: 340px;
             }
         }
+
+        .circle-hover-bg {
+            transition: opacity 0.8s;
+            filter: blur(2px);
+        }
+        .circle-visual:hover .circle-hover-bg {
+            opacity: 0.5;
+        }
+        .circle-visual:hover {
+            box-shadow: 0 0 0 8px var(--primary-color, #0d6efd), 0 8px 32px 0 rgba(13,110,253,0.15);
+            transition: box-shadow 0.2s;
+        }
+        .circle-visual:focus,
+        .circle-visual:active,
+        .circle-visual:hover,
+        .circle-visual svg:focus,
+        .circle-visual svg:active {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        .breath-settings-input {
+            min-width: 120px;
+            max-width: 180px;
+            width: 150px;
+        }
+        .breath-controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 0.7rem;
+            flex-wrap: wrap;
+        }
+        .breath-controls-row label {
+            min-width: 80px;
+            text-align: right;
+            margin-bottom: 0;
+        }
+        .breath-settings-input {
+            min-width: 120px;
+            max-width: 180px;
+            width: 150px;
+        }
     </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
         <div class="container-fluid">
-            <a class="navbar-brand" href="/home">Quotes</a>
+            <a class="navbar-brand" href="/home">Breath</a>
         </div>
     </nav>
     <div class="container py-4">
         <div class="breath-container">
-            <h3 class="mb-3">Breath Practice</h3>
             <!-- Controls -->
             <div class="breath-controls">
                 <ul class="nav nav-tabs mb-3" id="breathTab" role="tablist">
@@ -171,13 +213,11 @@
                 </ul>
                 <div class="tab-content" id="breathTabContent">
                     <div class="tab-pane fade show active" id="practice" role="tabpanel" aria-labelledby="practice-tab">
-                        <div class="breath-controls-row">
-                            <button id="toggleBtn" class="btn btn-success toggle-btn">Start</button>
-                        </div>
                         <div class="mb-2" id="totalTimeInfo" style="font-size:1rem;color:var(--text-color);"></div>
                         <!-- Vòng tròn chỉ hiển thị ở tab Practice -->
                         <div class="circle-visual" style="position: relative;">
                             <svg class="circle-svg" viewBox="0 0 320 320">
+                                <circle class="circle-hover-bg" cx="160" cy="160" r="120" fill="var(--primary-color)" opacity="0" />
                                 <circle id="bg-inhale" cx="160" cy="160" r="140" fill="none" stroke="#0d6efd" stroke-width="24" stroke-dasharray="0 880"/>
                                 <circle id="bg-hold1"  cx="160" cy="160" r="140" fill="none" stroke="#ffc107" stroke-width="24" stroke-dasharray="0 880"/>
                                 <circle id="bg-exhale" cx="160" cy="160" r="140" fill="none" stroke="#28a745" stroke-width="24" stroke-dasharray="0 880"/>
@@ -196,14 +236,14 @@
                     <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
                         <div class="breath-controls-row">
                             <label for="patternSelect" class="form-label mb-0">Pattern:</label>
-                            <select id="patternSelect" class="form-select w-auto d-inline-block">
+                            <select id="patternSelect" class="form-select breath-settings-input d-inline-block">
                                 <option value="5-5-5-5">Box</option>
                                 <option value="4-7-8">4-7-8</option>
                             </select>
                         </div>
                         <div class="breath-controls-row">
                             <label for="levelSelect" class="form-label mb-0">Level:</label>
-                            <select id="levelSelect" class="form-select w-auto d-inline-block">
+                            <select id="levelSelect" class="form-select breath-settings-input d-inline-block">
                                 <option value="1">Level 1</option>
                                 <option value="2" selected>Level 2</option>
                                 <option value="3">Level 3</option>
@@ -211,7 +251,7 @@
                         </div>
                         <div class="breath-controls-row">
                             <label for="cycleInput" class="form-label mb-0">Cycles:</label>
-                            <input id="cycleInput" type="number" min="1" value="30" class="form-control d-inline-block w-auto" style="width: 70px;">
+                            <input id="cycleInput" type="number" min="1" value="30" class="form-control breath-settings-input d-inline-block">
                         </div>
                         <div class="mb-2" id="totalTimeInfoSettings" style="font-size:1rem;color:var(--text-color);"></div>
                     </div>
@@ -263,7 +303,6 @@
         const cycleInput = document.getElementById('cycleInput');
         const totalTimeInfo = document.getElementById('totalTimeInfo');
         const countdownInfo = document.getElementById('countdownInfo');
-        const toggleBtn = document.getElementById('toggleBtn');
         const circleLength = 2 * Math.PI * 140;
 
         let phaseNames = patternMeta[patternSelect.value].names;
@@ -398,9 +437,6 @@
 
         function startBreath() {
             running = true;
-            toggleBtn.textContent = "Stop";
-            toggleBtn.classList.remove('btn-success');
-            toggleBtn.classList.add('btn-danger');
             pattern = getPattern();
             total = pattern.reduce((a, b) => a + b, 0);
             cycles = getCycles();
@@ -423,9 +459,6 @@
 
         function stopBreath(finished = false) {
             running = false;
-            toggleBtn.textContent = "Start";
-            toggleBtn.classList.remove('btn-danger');
-            toggleBtn.classList.add('btn-success');
             if (animationId) cancelAnimationFrame(animationId);
             phaseLabel.textContent = finished ? "Done!" : "Ready";
             resetCircle();
@@ -478,10 +511,10 @@
             if (running) stopBreath();
         };
 
-        toggleBtn.onclick = function() {
+        document.querySelector('.circle-visual').addEventListener('click', function() {
             if (!running) startBreath();
             else stopBreath();
-        };
+        });
 
         // Init
         resetCircle();
@@ -489,6 +522,58 @@
         updateTotalTime();
         countdownInfo.textContent = "";
 
+        function saveBreathSettings() {
+            fetch('/breath_settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    pattern: patternSelect.value,
+                    level: levelSelect.value,
+                    cycles: cycleInput.value
+                })
+            });
+        }
+
+        function loadBreathSettings() {
+            fetch('/breath_settings')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.pattern) patternSelect.value = data.pattern;
+                    if (data.level) levelSelect.value = data.level;
+                    if (data.cycles) cycleInput.value = data.cycles;
+                    updatePhaseMeta();
+                    resetCircle();
+                    setPhaseSegments(getPattern());
+                    updateTotalTime();
+                });
+        }
+
+        // Gọi khi user thay đổi settings
+        patternSelect.onchange = function() {
+            if (running) stopBreath();
+            updatePhaseMeta();
+            resetCircle();
+            phaseLabel.textContent = "Ready";
+            setPhaseSegments(getPattern());
+            updateTotalTime();
+            saveBreathSettings();
+        };
+        levelSelect.onchange = function() {
+            if (running) stopBreath();
+            resetCircle();
+            phaseLabel.textContent = "Ready";
+            setPhaseSegments(getPattern());
+            updateTotalTime();
+            saveBreathSettings();
+        };
+        cycleInput.oninput = function() {
+            updateTotalTime();
+            if (running) stopBreath();
+            saveBreathSettings();
+        };
+
+        // Khi trang load, lấy lại settings
+        document.addEventListener('DOMContentLoaded', loadBreathSettings);
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
