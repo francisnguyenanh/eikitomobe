@@ -74,7 +74,7 @@
             max-width: 700px;
             min-width: 0;
             width: 98vw;
-            margin: 40px auto;
+            margin: 1px auto;
             background: var(--card-bg);
             border-radius: 16px;
             box-shadow: 0 4px 16px rgba(0,0,0,0.08);
@@ -89,8 +89,8 @@
         }
         .circle-visual {
             margin: 30px auto 10px auto;
-            width: 260px;
-            height: 260px;
+            width: 320px;
+            height: 320px;
             position: relative;
         }
         .circle-svg {
@@ -132,56 +132,105 @@
             stroke: #0d6efd;
             transition: stroke-dashoffset 0.2s linear, stroke 0.7s linear;
         }
+        .navbar, .navbar .navbar-brand, .navbar .nav-link {
+            background-color: var(--card-bg) !important;
+            color: var(--text-color) !important;
+        }
+        @media (max-width: 600px) {
+            .circle-visual {
+                width: 98vw;
+                height: 98vw;
+                max-width: 340px;
+                max-height: 340px;
+            }
+        }
     </style>
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/home">Quotes</a>
+        </div>
+    </nav>
     <div class="container py-4">
         <div class="breath-container">
             <h3 class="mb-3">Breath Practice</h3>
             <!-- Controls -->
             <div class="breath-controls">
-                <div class="breath-controls-row">
-                    <label for="patternSelect" class="form-label mb-0">Pattern:</label>
-                    <select id="patternSelect" class="form-select w-auto d-inline-block">
-                        <option value="5-5-5-5">Box</option>
-                        <option value="4-7-8">4-7-8</option>
-                    </select>
-                </div>
-                <div class="breath-controls-row">
-                    <label for="levelSelect" class="form-label mb-0">Level:</label>
-                    <select id="levelSelect" class="form-select w-auto d-inline-block">
-                        <option value="1">Level 1</option>
-                        <option value="2">Level 2</option>
-                        <option value="3">Level 3</option>
-                    </select>
-                </div>
-                <div class="breath-controls-row">
-                    <label for="cycleInput" class="form-label mb-0">Cycles:</label>
-                    <input id="cycleInput" type="number" min="1" value="1" class="form-control d-inline-block w-auto" style="width: 70px;">
-                </div>
-                <div class="breath-controls-row">
-                    <button id="toggleBtn" class="btn btn-success toggle-btn">Start</button>
+                <ul class="nav nav-tabs mb-3" id="breathTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="practice-tab" data-bs-toggle="tab" data-bs-target="#practice" type="button" role="tab" aria-controls="practice" aria-selected="true">
+                            Practice
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">
+                            Settings
+                        </button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="breathTabContent">
+                    <div class="tab-pane fade show active" id="practice" role="tabpanel" aria-labelledby="practice-tab">
+                        <div class="breath-controls-row">
+                            <button id="toggleBtn" class="btn btn-success toggle-btn">Start</button>
+                        </div>
+                        <div class="mb-2" id="totalTimeInfo" style="font-size:1rem;color:var(--text-color);"></div>
+                        <!-- Vòng tròn chỉ hiển thị ở tab Practice -->
+                        <div class="circle-visual" style="position: relative;">
+                            <svg class="circle-svg" viewBox="0 0 320 320">
+                                <circle id="bg-inhale" cx="160" cy="160" r="140" fill="none" stroke="#0d6efd" stroke-width="24" stroke-dasharray="0 880"/>
+                                <circle id="bg-hold1"  cx="160" cy="160" r="140" fill="none" stroke="#ffc107" stroke-width="24" stroke-dasharray="0 880"/>
+                                <circle id="bg-exhale" cx="160" cy="160" r="140" fill="none" stroke="#28a745" stroke-width="24" stroke-dasharray="0 880"/>
+                                <circle id="bg-hold2"  cx="160" cy="160" r="140" fill="none" stroke="#ffc107" stroke-width="24" stroke-dasharray="0 880"/>
+                                <circle class="circle-progress" cx="160" cy="160" r="140" fill="none" stroke="#0d6efd"
+                                    stroke-width="24" stroke-linecap="round" stroke-dasharray="880" stroke-dashoffset="880"/>
+                                <circle id="progress-dot" r="12" fill="var(--primary-color)" cx="160" cy="20" />
+                            </svg>
+                            <div class="breath-phase" id="phaseLabel"
+                                style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none;">
+                                Ready
+                            </div>
+                        </div>
+                        <div class="countdown-info" id="countdownInfo"></div>
+                    </div>
+                    <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                        <div class="breath-controls-row">
+                            <label for="patternSelect" class="form-label mb-0">Pattern:</label>
+                            <select id="patternSelect" class="form-select w-auto d-inline-block">
+                                <option value="5-5-5-5">Box</option>
+                                <option value="4-7-8">4-7-8</option>
+                            </select>
+                        </div>
+                        <div class="breath-controls-row">
+                            <label for="levelSelect" class="form-label mb-0">Level:</label>
+                            <select id="levelSelect" class="form-select w-auto d-inline-block">
+                                <option value="1">Level 1</option>
+                                <option value="2" selected>Level 2</option>
+                                <option value="3">Level 3</option>
+                            </select>
+                        </div>
+                        <div class="breath-controls-row">
+                            <label for="cycleInput" class="form-label mb-0">Cycles:</label>
+                            <input id="cycleInput" type="number" min="1" value="30" class="form-control d-inline-block w-auto" style="width: 70px;">
+                        </div>
+                        <div class="mb-2" id="totalTimeInfoSettings" style="font-size:1rem;color:var(--text-color);"></div>
+                    </div>
                 </div>
             </div>
             <div class="countdown-info" id="countdownInfo"></div>
-            <div class="mb-2" id="totalTimeInfo" style="font-size:1rem;color:var(--text-color);"></div>
+            <div class="mb-2" id="totalTimeInfoSettings" style="font-size:1rem;color:var(--text-color);"></div>
             <div class="circle-visual" style="position: relative;">
-                <svg class="circle-svg" viewBox="0 0 260 260">
-                    <circle id="bg-inhale" cx="130" cy="130" r="110" fill="none" stroke="#0d6efd" stroke-width="18" stroke-dasharray="0 690"/>
-                    <circle id="bg-hold1"  cx="130" cy="130" r="110" fill="none" stroke="#ffc107" stroke-width="18" stroke-dasharray="0 690"/>
-                    <circle id="bg-exhale" cx="130" cy="130" r="110" fill="none" stroke="#28a745" stroke-width="18" stroke-dasharray="0 690"/>
-                    <circle id="bg-hold2"  cx="130" cy="130" r="110" fill="none" stroke="#ffc107" stroke-width="18" stroke-dasharray="0 690"/>
-                    <circle class="circle-progress" cx="130" cy="130" r="110" fill="none" stroke="#0d6efd"
-                        stroke-width="18" stroke-linecap="round" stroke-dasharray="690" stroke-dashoffset="690"/>
+                <svg class="circle-svg" viewBox="0 0 320 320">
+                    <circle id="bg-inhale" cx="160" cy="160" r="140" fill="none" stroke="#0d6efd" stroke-width="24" stroke-dasharray="0 880"/>
+                    <circle id="bg-hold1"  cx="160" cy="160" r="140" fill="none" stroke="#ffc107" stroke-width="24" stroke-dasharray="0 880"/>
+                    <circle id="bg-exhale" cx="160" cy="160" r="140" fill="none" stroke="#28a745" stroke-width="24" stroke-dasharray="0 880"/>
+                    <circle id="bg-hold2"  cx="160" cy="160" r="140" fill="none" stroke="#ffc107" stroke-width="24" stroke-dasharray="0 880"/>
+                    <circle class="circle-progress" cx="160" cy="160" r="140" fill="none" stroke="#0d6efd"
+                        stroke-width="24" stroke-linecap="round" stroke-dasharray="880" stroke-dashoffset="880"/>
                 </svg>
-                <div class="breath-phase" id="phaseLabel"
-                    style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; pointer-events: none;">
-                    Ready
-                </div>
+
             </div>
-            <div class="mt-3">
-                <a href="{{ url_for('home') }}" class="btn btn-outline-secondary">Back to Home</a>
-            </div>
+
         </div>
     </div>
     <script>
@@ -215,7 +264,7 @@
         const totalTimeInfo = document.getElementById('totalTimeInfo');
         const countdownInfo = document.getElementById('countdownInfo');
         const toggleBtn = document.getElementById('toggleBtn');
-        const circleLength = 2 * Math.PI * 110;
+        const circleLength = 2 * Math.PI * 140;
 
         let phaseNames = patternMeta[patternSelect.value].names;
         let phaseColors = patternMeta[patternSelect.value].colors;
@@ -260,6 +309,7 @@
         function resetCircle() {
             circle.setAttribute('stroke-dasharray', circleLength);
             circle.setAttribute('stroke-dashoffset', circleLength);
+            updateProgressDot(0); // Đặt dot về điểm xuất phát khi reset
         }
 
         function updateCircle(progress) {
@@ -280,6 +330,22 @@
         let totalSec = 0;
         let elapsedSec = 0;
 
+
+        function updateProgressDot(progress) {
+            // progress: 0..1, 0 là đầu, 1 là hết vòng
+            const r = 140;
+            const centerX = 160;
+            const centerY = 160;
+            // KHÔNG cần -Math.PI/2 nữa vì đã xoay SVG
+            const angle = 2 * Math.PI * (progress % 1);
+            const x = centerX + r * Math.cos(angle);
+            const y = centerY + r * Math.sin(angle);
+            const dot = document.getElementById('progress-dot');
+            if (dot) {
+                dot.setAttribute('cx', x);
+                dot.setAttribute('cy', y);
+            }
+        }
 
         function animateBreath(now) {
             if (!running) return;
@@ -309,7 +375,9 @@
 
             // Tính progress của chu kỳ
             let cycleProgress = elapsed / total;
+
             updateCircle(cycleProgress);
+            updateProgressDot(cycleProgress);
 
             // Cập nhật countdown
             let cyclesPassed = Math.floor(elapsed / total);
@@ -381,7 +449,12 @@
             const totalSec = pattern.reduce((a, b) => a + b, 0) * cycles;
             const min = Math.floor(totalSec / 60);
             const sec = totalSec % 60;
-            totalTimeInfo.textContent = `Total time: ${cycles} cycle(s) × ${pattern.reduce((a, b) => a + b, 0)}s = ${totalSec}s (${min}m ${sec}s)`;
+            // Practice tab: giữ nguyên
+            // Settings tab: chỉ hiển thị phút giây
+            const totalTimeInfoSettings = document.getElementById('totalTimeInfoSettings');
+            if (totalTimeInfoSettings) {
+                totalTimeInfoSettings.textContent = `Total time: ${min}m ${sec}s`;
+            }
         }
 
         // Sự kiện thay đổi
@@ -415,6 +488,8 @@
         setPhaseSegments(getPattern());
         updateTotalTime();
         countdownInfo.textContent = "";
+
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
