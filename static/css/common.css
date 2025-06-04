@@ -1,67 +1,68 @@
 :root {
-    --bg-color: #f8f9fa; /* Light */
+    --bg-color: #ffffff;
+    --text-color: #000000;
     --card-bg: #f8f9fa;
-    --quote-text-color: #ff8c00;
+    --primary-color: #0d6efd;
 }
-
 [data-theme="dark"] {
-    --bg-color: #23272b;
+    --bg-color: #343a40;
+    --text-color: #ffffff;
     --card-bg: #495057;
-    --quote-text-color: #ff8c00;
+    --primary-color: #6c757d;
 }
-
 [data-theme="blue"] {
-    --bg-color: #e3f0fc;
+    --bg-color: #e6f0fa;
+    --text-color: #003087;
     --card-bg: #d6e4f0;
-    --quote-text-color: #ff8c00;
+    --primary-color: #004aad;
 }
-
 [data-theme="green"] {
-    --bg-color: #eafaf1;
+    --bg-color: #e6f4ea;
+    --text-color: #004d00;
     --card-bg: #d4edda;
-    --quote-text-color: #ff8c00;
+    --primary-color: #006400;
 }
-
 [data-theme="purple"] {
-    --bg-color: #f3e6fa;
+    --bg-color: #f3e5f5;
+    --text-color: #4a0072;
     --card-bg: #e1bee7;
-    --quote-text-color: #ff8c00;
+    --primary-color: #6a1b9a;
 }
-
 [data-theme="red"] {
-    --bg-color: #fff0f0;
+    --bg-color: #ffe6e6;
+    --text-color: #721c24;
     --card-bg: #f5c6cb;
-    --quote-text-color: #ff8c00;
+    --primary-color: #dc3545;
 }
-
 [data-theme="orange"] {
-    --bg-color: #fff7e6;
+    --bg-color: #fff3e0;
+    --text-color: #8a3e00;
     --card-bg: #ffe5b4;
-    --quote-text-color: #ff8c00;
+    --primary-color: #fd7e14;
 }
-
 [data-theme="yellow"] {
-    --bg-color: #fffbe6;
+    --bg-color: #fffde7;
+    --text-color: #856404;
     --card-bg: #fff3cd;
-    --quote-text-color: #ff8c00;
+    --primary-color: #ffc107;
 }
-
 [data-theme="pink"] {
-    --bg-color: #fff0f6;
+    --bg-color: #fce4ec;
+    --text-color: #771653;
     --card-bg: #f8c1d0;
-    --quote-text-color: #ff8c00;
+    --primary-color: #e83e8c;
 }
-
 [data-theme="cyan"] {
-    --bg-color: #e0fcff;
+    --bg-color: #e0f7fa;
+    --text-color: #005257;
     --card-bg: #b2ebf2;
-    --quote-text-color: #ff8c00;
+    --primary-color: #00acc1;
 }
 
 body {
     background-color: var(--bg-color);
     color: var(--text-color);
-    font-family: 'Noto Sans JP', sans-serif;
+    font-family: 'Noto Sans JP', 'Roboto', sans-serif;
 }
 
 .card {

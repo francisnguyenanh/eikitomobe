@@ -9,19 +9,84 @@
     <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&family=Shippori+Mincho+B1:wght@700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
     <style>
+        :root {
+            --bg-color: #f8f9fa; /* Light */
+            --card-bg: #f8f9fa;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="dark"] {
+            --bg-color: #23272b;
+            --card-bg: #495057;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="blue"] {
+            --bg-color: #e3f0fc;
+            --card-bg: #d6e4f0;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="green"] {
+            --bg-color: #eafaf1;
+            --card-bg: #d4edda;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="purple"] {
+            --bg-color: #f3e6fa;
+            --card-bg: #e1bee7;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="red"] {
+            --bg-color: #fff0f0;
+            --card-bg: #f5c6cb;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="orange"] {
+            --bg-color: #fff7e6;
+            --card-bg: #ffe5b4;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="yellow"] {
+            --bg-color: #fffbe6;
+            --card-bg: #fff3cd;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="pink"] {
+            --bg-color: #fff0f6;
+            --card-bg: #f8c1d0;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="cyan"] {
+            --bg-color: #e0fcff;
+            --card-bg: #b2ebf2;
+            --quote-text-color: #ff8c00;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+        .card {
+            background-color: var(--card-bg);
+            font-family: 'Noto Sans JP', sans-serif;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        .card-title {
+            color: var(--primary-color);
+        }
         @media (max-width: 576px) {
             .card-title { font-size: 1.1rem; }
             .card-text { font-size: 1rem; }
             .navbar-brand { font-size: 1.1rem; }
             .container, .container-fluid { padding-left: 8px !important; padding-right: 8px !important; }
             .modal-content { font-size: 1rem; }
-            .brand-shodo { font-size: 1.3rem; }
-            .quote-content { font-size: 1.15rem; }
-            .quote-author { font-size: 0.95rem; }
         }
         body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Noto Sans JP', sans-serif;
             {% if bg_image_url %}
             background-image: url('{{ bg_image_url }}');
             background-size: contain;
@@ -38,6 +103,10 @@
         }
         .card {
             background-color: transparent !important;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
         }
         .card-body {
             position: relative;
@@ -56,6 +125,89 @@
         .card-body > * {
             position: relative;
             z-index: 1;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container.py-4 {
+            margin-bottom: 0;
+        }
+        .quote-content {
+            font-size: 1.7rem;
+            font-family: 'Noto Sans', 'Noto Sans JP', 'Roboto', Arial, sans-serif;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--quote-text-color);
+        }
+        .quote-author {
+            font-family: 'Kosugi Maru', 'Noto Sans JP', sans-serif;
+            font-style: italic;
+            color: var(--primary-color);
+            text-align: right;
+            font-size: 1.1rem;
+        }
+        @media (max-width: 576px) {
+            .quote-content {
+                font-size: 1.15rem;
+            }
+            .quote-author {
+                font-size: 0.95rem;
+            }
+        }
+        body.no-bg-image {
+            background-image: none !important;
+            background-color: var(--bg-color) !important;
+        }
+        body.no-bg-image .container.py-4 {
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        body.no-bg-image .row.g-3,
+        body.no-bg-image .col-12 {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        body.no-bg-image .card {
+            width: 100%;
+            max-width: 600px;
+        }
+        .brand-shodo {
+            font-family: 'Shippori Mincho B1', 'Kosugi Maru', 'Noto Sans JP', serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            letter-spacing: 0.08em;
+            color: #222;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            line-height: 0.2;
+        }
+        @media (max-width: 576px) {
+            .brand-shodo { font-size: 1.3rem; }
+        }
+        input.link-input[readonly] {
+            cursor: default !important;
+        }
+        .circle-visual:hover #mindCircleHover {
+            opacity: 0.15;
+            filter: blur(2px);
+            transition: opacity 0.2s, filter 0.2s;
+        }
+        .circle-visual:active #mindCircleHover {
+            opacity: 0.25;
+            filter: blur(0.5px);
+        }
+        .center-quote {
+            min-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
     </style>
 </head>
@@ -95,7 +247,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('eye_exercise') }}">
-                            <i class="bi bi-eye"></i> Eyes
+                            <i class="bi bi-eye"></i> Eyes 
                         </a>
                     </li>
                     <li class="nav-item">
@@ -134,7 +286,7 @@
     </div>
 
 
-    <div class="container py-4">
+    <div class="container py-4 center-quote">
         <div class="row g-3">
             <div class="col-12">
                 {% if show_quote %}
@@ -158,10 +310,6 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <form id="linksForm">
-            <div class="modal-header">
-              <h5 class="modal-title" id="linksModalLabel">Links</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
             <div class="modal-body">
               <div id="linksInputs"></div>
             </div>
@@ -195,10 +343,6 @@
 <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="settingsModalLabel">Settings</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
             <div class="modal-body">
                 <!-- Nav tabs -->
                 <ul class="nav nav-tabs" id="settingsTab" role="tablist">
@@ -311,9 +455,6 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
         </div>
     </div>
 </div>
@@ -403,6 +544,8 @@
 
     const RADIUS = 50;
     const CIRCUM = 2 * Math.PI * RADIUS;
+
+    const BG_IMAGE_URL = "{{ bg_image_url|default('') }}";
 
     let isRunning = false;
     let timer = null, totalSec = 0, remainSec = 0, isPaused = false, breakCount = 1, breakLength = 0, currentBreak = 0;
@@ -586,10 +729,9 @@
         function applyBgImage(show) {
             if (show) {
                 document.body.classList.remove('no-bg-image');
-                // Nếu có bg_image_url, set lại background-image
-                {% if bg_image_url %}
-                document.body.style.backgroundImage = "url('{{ bg_image_url }}')";
-                {% endif %}
+                if (BG_IMAGE_URL) {
+                    document.body.style.backgroundImage = "url('" + BG_IMAGE_URL + "')";
+                }
             } else {
                 document.body.classList.add('no-bg-image');
                 document.body.style.backgroundImage = "none";
@@ -613,21 +755,73 @@
                     function createLinkInput(linkValue = '') {
                         const div = document.createElement('div');
                         div.className = 'input-group mb-2';
+
                         const input = document.createElement('input');
                         input.type = 'text';
                         input.className = 'form-control link-input';
                         input.value = linkValue;
                         input.placeholder = 'Enter link...';
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'btn btn-outline-danger';
-                        btn.innerHTML = '<i class="bi bi-x"></i>';
-                        btn.onclick = () => {
-                            div.remove();
+
+                        // Nếu có link thì readonly, click mở tab mới
+                        if (linkValue) {
+                            input.readOnly = true;
+                            input.style.cursor = 'pointer';
+                            input.addEventListener('click', function() {
+                                window.open(linkValue, '_blank');
+                            });
+                        }
+
+                        // Nút edit
+                        const editBtn = document.createElement('button');
+                        editBtn.type = 'button';
+                        editBtn.className = 'btn btn-outline-secondary';
+                        editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+                        if (!linkValue) editBtn.style.display = 'none'; // Ẩn nút edit cho input mới
+
+                        editBtn.onclick = function() {
+                            input.readOnly = false;
+                            input.focus();
+                            input.style.cursor = '';
+                            editBtn.style.display = 'none';
                         };
+
+                        // Nút xóa
+                        const removeBtn = document.createElement('button');
+                        removeBtn.type = 'button';
+                        removeBtn.className = 'btn btn-outline-danger';
+                        removeBtn.innerHTML = '<i class="bi bi-x"></i>';
+                        removeBtn.onclick = () => div.remove();
+
+                        // Khi input mất focus, nếu có giá trị thì lại readonly và hiện lại nút edit
+                        input.addEventListener('blur', function() {
+                            if (input.value.trim()) {
+                                input.readOnly = true;
+                                input.style.cursor = 'pointer';
+                                editBtn.style.display = '';
+                                // Nếu là ô cuối cùng (ô trống vừa nhập), thì thêm ô mới
+                                const allInputs = Array.from(document.querySelectorAll('.link-input'));
+                                if (allInputs[allInputs.length - 1] === input) {
+                                    createLinkInput();
+                                }
+                            }
+                            // --- Gửi cập nhật links lên server ---
+                            const inputs = document.querySelectorAll('.link-input');
+                            const links = [];
+                            inputs.forEach(inp => {
+                                const val = inp.value.trim();
+                                if (val) links.push(val);
+                            });
+                            fetch('/links', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({links: links})
+                            });
+                        });
+
                         div.appendChild(input);
-                        div.appendChild(btn);
-                        linksInputs.appendChild(div);
+                        div.appendChild(editBtn);
+                        div.appendChild(removeBtn);
+                        document.getElementById('linksInputs').appendChild(div);
                     }
                     links.forEach(link => createLinkInput(link));
                     createLinkInput();
