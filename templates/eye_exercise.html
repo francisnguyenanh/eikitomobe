@@ -36,31 +36,23 @@
 </nav>
 <div class="container py-4">
     <form class="mb-4" id="eyeForm">
-        <div class="row mb-3 justify-content-center">
-            <div class="col-6 col-md-4">
-                <label class="form-label">Thời gian (phút)</label>
-                <select class="form-select" id="eyeDuration">
+        <div class="row g-1 align-items-center text-center">
+            <div class="col-4">
+                <select class="form-select form-select-sm" id="eyeDuration" title="Thời gian">
                     {% for i in range(1, 21) %}
-                    <option value="{{ i }}">{{ i }}</option>
+                    <option value="{{ i }}">{{ i }}p</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-6 col-md-4">
-                <label class="form-label">Tốc độ</label>
-                <select class="form-select" id="eyeSpeed">
+            <div class="col-4">
+                <select class="form-select form-select-sm" id="eyeSpeed" title="Tốc độ">
                     <option value="0.5">Chậm</option>
-                    <option value="1" selected>Trung bình</option>
+                    <option value="1" selected>Trung Bình</option>
                     <option value="2">Nhanh</option>
                 </select>
             </div>
-        </div>
-        <div class="row align-items-center justify-content-center mb-2">
-            <div class="col-12 col-md-4 mb-2 mb-md-0 text-center text-md-start">
-                <label class="form-label">Màu</label>
-                <input type="color" class="form-control form-control-color d-inline-block" id="eyeColor" value="#0d6efd" style="vertical-align: middle;">
-            </div>
-            <div class="col-12 col-md-4 mb-2 mb-md-0 text-center">
-                <span id="eyeTimer" style="font-size:1.3rem;font-weight:bold;">00:00</span>
+            <div class="col-4">
+                <input type="color" class="form-control form-control-color d-inline-block" id="eyeColor" value="#0d6efd" title="Màu" style="width:2.5rem;height:2.5rem;">
             </div>
         </div>
     </form>
@@ -72,6 +64,7 @@
 <script>
 const canvas = document.getElementById('patternCanvas');
 const ctx = canvas.getContext('2d');
+
 function resizeCanvas() {
     const navbar = document.querySelector('.navbar');
     const form = document.getElementById('eyeForm');
@@ -82,7 +75,11 @@ function resizeCanvas() {
     canvas.height = window.innerHeight - navH - formH - 60 - margin;
 }
 resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+window.addEventListener('resize', () => {
+    resizeCanvas();
+    resetBall();
+    drawBall();
+});
 
 let animationId = null;
 let startTime = null;
@@ -90,6 +87,7 @@ let duration = 1;
 let speed = 1;
 let color = '#0d6efd';
 let running = false;
+let timerText = "00:00";
 
 // Ball state
 let ball = {
@@ -103,7 +101,7 @@ let ball = {
 // Obstacles state
 let obstacles = [];
 
-// Tạo 3 chướng ngại vật random, không trùng vị trí bóng
+// Tạo 3 chướng ngại vật random, không trùng vị trí bóng và nhau
 function resetObstacles() {
     obstacles = [];
     const margin = 50;
@@ -135,7 +133,7 @@ function resetBall() {
     ball.y = margin + Math.random() * (canvas.height - 2*margin);
     // Random direction, speed depends on speed setting
     const angle = Math.random() * 2 * Math.PI;
-    const baseSpeed = 700 * speed; // px/sec (tăng gấp 3)
+    const baseSpeed = 800 * speed; // px/sec (tăng gấp 3)
     ball.vx = Math.cos(angle) * baseSpeed;
     ball.vy = Math.sin(angle) * baseSpeed;
     resetObstacles();
@@ -163,6 +161,17 @@ function drawBall() {
     ctx.shadowBlur = 8;
     ctx.fill();
     ctx.shadowBlur = 0;
+
+    // Vẽ giờ đếm ngược ở giữa canvas
+    ctx.save();
+    ctx.font = `bold ${Math.max(28, Math.floor(canvas.height/14))}px Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#222";
+    ctx.globalAlpha = 0.85;
+    ctx.fillText(timerText, canvas.width/2, canvas.height/2);
+    ctx.globalAlpha = 1;
+    ctx.restore();
 }
 
 // Kiểm tra va chạm bóng với obstacle
@@ -218,10 +227,10 @@ function animateBall(ts) {
         // Kiểm tra va chạm obstacle
         checkObstacleCollision();
     }
-    drawBall();
     // Timer
     const remain = Math.max(0, Math.ceil(totalSec - elapsed * speed));
-    document.getElementById('eyeTimer').textContent = `${String(Math.floor(remain/60)).padStart(2,'0')}:${String(remain%60).padStart(2,'0')}`;
+    timerText = `${String(Math.floor(remain/60)).padStart(2,'0')}:${String(remain%60).padStart(2,'0')}`;
+    drawBall();
     if (elapsed * speed < totalSec) {
         animationId = requestAnimationFrame(animateBall);
     } else {
@@ -243,8 +252,8 @@ function startEyeExercise() {
 function stopEyeExercise() {
     running = false;
     cancelAnimationFrame(animationId);
+    timerText = `${String(duration).padStart(2,'0')}:00`;
     drawBall();
-    document.getElementById('eyeTimer').textContent = `${String(duration).padStart(2,'0')}:00`;
 }
 
 ['eyeDuration','eyeSpeed','eyeColor'].forEach(id=>{
@@ -252,15 +261,17 @@ function stopEyeExercise() {
         if(!running) {
             color = document.getElementById('eyeColor').value;
             resetBall();
+            timerText = `${String(document.getElementById('eyeDuration').value).padStart(2,'0')}:00`;
             drawBall();
         }
     });
 });
+
 window.onload = () => {
     resizeCanvas();
     resetBall();
+    timerText = `${String(document.getElementById('eyeDuration').value).padStart(2,'0')}:00`;
     drawBall();
-    document.getElementById('eyeTimer').textContent = `${String(document.getElementById('eyeDuration').value).padStart(2,'0')}:00`;
 };
 
 canvas.addEventListener('click', function() {
