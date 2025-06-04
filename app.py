@@ -32,6 +32,7 @@ import random
 from werkzeug.utils import secure_filename
 import shutil
 import hashlib
+import json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
@@ -60,6 +61,14 @@ login_manager.login_view = 'login'
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
+def load_config():
+    with open('config.txt', encoding='utf-8') as f:
+        return json.load(f)
+
+def save_config(config):
+    with open('config.txt', 'w', encoding='utf-8') as f:
+        json.dump(config, f, ensure_ascii=False, indent=2)
+        
 # User model
 class User(UserMixin):
     def __init__(self):
@@ -132,27 +141,11 @@ with app.app_context():
         if not Category.query.filter_by(name=name, user_id='default').first():
             db.session.add(Category(name=name, user_id='default', color=color))
     db.session.commit()
-    # Initialize user.txt with default password '1234' if not exist
-    if not os.path.exists('user.txt'):
-        default_password = '1234'
-        hashed = bcrypt.hashpw(default_password.encode('utf-8'), bcrypt.gensalt())
-        with open('user.txt', 'w') as f:
-            f.write(hashed.decode('utf-8'))
             
 def get_user_info():
-    try:
-        with open('userinfor.txt', 'r', encoding='utf-8') as f:
-            lines = f.read().splitlines()
-            birthday = None
-            name = None
-            for line in lines:
-                if line.startswith('Birthday:'):
-                    birthday = line.replace('Birthday:', '').strip().replace('/', '-')
-                elif line.startswith('Name:'):
-                    name = line.replace('Name:', '').strip()
-            return name or 'Unknown', birthday
-    except Exception:
-        return 'Unknown', None
+    config = load_config()
+    user = config.get('user', {})
+    return user.get('name', 'Unknown'), user.get('birthday', None)
 
 
 def nl2br(value):
@@ -175,13 +168,12 @@ def set_theme():
 def load_user(user_id):
     return User() if user_id == 'default' else None
 
-# Verify password
 def verify_password(password):
-    if not os.path.exists('user.txt'):
+    config = load_config()
+    hash = config.get('user_password_hash', '')
+    if not hash:
         return False
-    with open('user.txt', 'r') as f:
-        hash = f.read().strip()
-        return bcrypt.checkpw(password.encode('utf-8'), hash.encode('utf-8'))
+    return bcrypt.checkpw(password.encode('utf-8'), hash.encode('utf-8'))
 
 
 
@@ -717,32 +709,8 @@ def card_list():
     return jsonify({'files': files})
 
 def get_card_info():
-    info = {
-        'name': '',
-        'job': '',
-        'email': '',
-        'phone': '',
-        'sns': '',
-        'subslogan': ''
-    }
-    try:
-        with open('cardinfor.txt', 'r', encoding='utf-8') as f:
-            for line in f:
-                if line.startswith('Name:'):
-                    info['name'] = line.replace('Name:', '').strip()
-                elif line.startswith('Job:'):
-                    info['job'] = line.replace('Job:', '').strip()
-                elif line.startswith('Email:'):
-                    info['email'] = line.replace('Email:', '').strip()
-                elif line.startswith('Phone:'):
-                    info['phone'] = line.replace('Phone:', '').strip()
-                elif line.startswith('SNS:'):
-                    info['sns'] = line.replace('SNS:', '').strip()
-                elif line.startswith('Slogan:'):
-                    info['subslogan'] = line.replace('Slogan:', '').strip()
-    except Exception:
-        pass
-    return info
+    config = load_config()
+    return config.get('card', {})
 
 import os
 
@@ -763,49 +731,6 @@ def card_view(filename):
                 break
     card_info['avatar_url'] = url_for('static', filename=avatar_file) if avatar_file else ''
     return render_template(card_dir, **card_info)
-
-@app.route('/import', methods=['GET', 'POST'])
-@login_required
-def import_note():
-    if request.method == 'POST':
-        file = request.files['file']
-        if file and file.filename.endswith('.txt'):
-            try:
-                content = file.read().decode('utf-8')
-                lines = content.split('\n', 2)
-                title = lines[0].replace('Title: ', '') if lines[0].startswith('Title: ') else 'Imported Note'
-                note_content = lines[2].split('Category: ')[0] if len(lines) > 2 else content
-                category_name = lines[2].split('Category: ')[1].strip() if len(lines) > 2 and 'Category: ' in lines[2] else None
-                category = Category.query.filter_by(name=category_name, user_id=current_user.id).first()
-                category_id = category.id if category else None
-                note = Note(title=title, content=note_content, user_id=current_user.id, category_id=category_id)
-                db.session.add(note)
-                db.session.commit()
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({
-                        'status': 'success',
-                        'message': 'Note imported successfully!',
-                        'note': {
-                            'id': note.id,
-                            'title': note.title,
-                            'content': note.content,
-                            'category_id': note.category_id,
-                            'category_name': category_name,
-                            'is_completed': note.is_completed
-                        }
-                    })
-                flash('Note imported successfully!', 'success')
-            except Exception as e:
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': f'Failed to import note: {str(e)}'}), 400
-                flash(f'Failed to import note: {str(e)}', 'danger')
-        else:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'status': 'error', 'message': 'Please upload a .txt file!'}), 400
-            flash('Please upload a .txt file!', 'danger')
-        if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
-            return redirect(url_for('list_note'))
-    return render_template('import_note.html')
 
 @app.route('/calendar')
 @login_required
@@ -932,8 +857,9 @@ def change_password():
     new_password = request.form['new_password']
     if new_password:
         hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
-        with open('user.txt', 'w') as f:
-            f.write(hashed.decode('utf-8'))
+        config = load_config()
+        config['user_password_hash'] = hashed.decode('utf-8')
+        save_config(config)
         flash('Password changed successfully!', 'success')
     else:
         flash('Please enter a new password', 'danger')
@@ -1005,44 +931,15 @@ def db_size():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/links')
-@login_required
-def get_links():
-    links = []
-    try:
-        with open('link.txt', 'r', encoding='utf-8') as f:
-            for line in f:
-                url = line.strip()
-                if url:
-                    links.append(url)
-    except Exception as e:
-        app.logger.error(f"Error reading link.txt: {e}")
-    return jsonify({'links': links})
-
 @app.route('/links', methods=['GET', 'POST'])
-@login_required
 def links():
+    config = load_config()
     if request.method == 'POST':
         data = request.get_json()
-        links = data.get('links', [])
-        try:
-            with open('link.txt', 'w', encoding='utf-8') as f:
-                for link in links:
-                    f.write(link.strip() + '\n')
-            return jsonify({'status': 'success'})
-        except Exception as e:
-            return jsonify({'status': 'error', 'message': str(e)})
-    # GET như cũ
-    links = []
-    try:
-        with open('link.txt', 'r', encoding='utf-8') as f:
-            for line in f:
-                url = line.strip()
-                if url:
-                    links.append(url)
-    except Exception as e:
-        app.logger.error(f"Error reading link.txt: {e}")
-    return jsonify({'links': links})
+        config['links'] = data.get('links', [])
+        save_config(config)
+        return jsonify({'status': 'success'})
+    return jsonify({'links': config.get('links', [])})
 
 
 # Diary app routes
@@ -1280,57 +1177,6 @@ def upload_bg():
         flash('File không hợp lệ!', 'danger')
     return redirect(url_for('home'))
 
-QUOTE_FILE = os.path.join(app.root_path, 'quote.txt')
-
-def get_today_quote():
-    today_str = datetime.now().strftime("%Y/%m/%d")
-    quote_content = ""
-    file_date = ""
-    file_quote = ""
-    file_author = ""
-
-    # Đọc file quote.txt nếu có
-    if os.path.exists(QUOTE_FILE):
-        with open(QUOTE_FILE, "r", encoding="utf-8") as f:
-            line = f.readline().strip()
-            if line:
-                parts = line.split(":", 1)
-                if len(parts) == 2:
-                    file_date = parts[0].strip()
-                    quote_line = parts[1].strip()
-                    # Tách content và author nếu có (dạng: nội dung (author))
-                    if "(" in quote_line and quote_line.endswith(")"):
-                        content = quote_line[:quote_line.rfind("(")].strip()
-                        author = quote_line[quote_line.rfind("(")+1:-1].strip()
-                        file_quote = content
-                        file_author = author
-                    else:
-                        file_quote = quote_line
-                        file_author = ""
-
-    # Nếu file trống hoặc ngày khác hôm nay, lấy từ API
-    if not file_quote or file_date != today_str:
-        try:
-            response = requests.get('https://zenquotes.io/api/today')
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list) and data:
-                    quote = data[0]
-                    quote_content = f"{today_str}: {quote['q'].strip()} ({quote['a'].strip()})"
-                    # Ghi quote mới vào file
-                    with open(QUOTE_FILE, "w", encoding="utf-8") as f:
-                        f.write(quote_content)
-                    return quote['q'].strip(), quote['a'].strip()
-        except Exception as e:
-            app.logger.error(f"Error fetching quote: {str(e)}")
-        # Nếu lỗi API, dùng quote cũ nếu có
-        if file_quote:
-            return file_quote, file_author
-        else:
-            return "Không thể lấy được trích dẫn nổi tiếng hôm nay.", ""
-    else:
-        # Nếu ngày trùng, lấy quote từ file
-        return file_quote, file_author
 
 def get_random_quote_from_db():
     """Lấy 1 quote ngẫu nhiên từ bảng quote trong quotes.db"""
@@ -1414,14 +1260,16 @@ def get_card_info_api():
 @login_required
 def update_card_info():
     data = request.json
-    # Xoá hết nội dung cũ
-    with open('cardinfor.txt', 'w', encoding='utf-8') as f:
-        f.write(f"Name: {data.get('name','')}\n")
-        f.write(f"Job: {data.get('job','')}\n")
-        f.write(f"Email: {data.get('email','')}\n")
-        f.write(f"Phone: {data.get('phone','')}\n")
-        f.write(f"SNS: {data.get('sns','')}\n")
-        f.write(f"Slogan: {data.get('slogan','')}\n")
+    config = load_config()
+    config['card'] = {
+        'Name': data.get('Name',''),
+        'Job': data.get('Job',''),
+        'Email': data.get('Email',''),
+        'Phone': data.get('Phone',''),
+        'SNS': data.get('SNS',''),
+        'SubSlogan': data.get('SubSlogan','')
+    }
+    save_config(config)
     return jsonify({'status': 'success'})
 
 import hashlib
@@ -1469,25 +1317,17 @@ def breath():
     theme = session.get('theme', 'light')
     return render_template('breath.html', theme=theme)
 
-SETTINGS_FILE = 'breath_settings.txt'
-
 @app.route('/breath_settings', methods=['GET', 'POST'])
 @login_required
 def breath_settings():
+    config = load_config()
     if request.method == 'POST':
         data = request.json
-        with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(data, f)
+        config['breath_settings'] = data
+        save_config(config)
         return jsonify({'status': 'success'})
     else:
-        if os.path.exists(SETTINGS_FILE):
-            with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
-                try:
-                    data = json.load(f)
-                except Exception:
-                    data = {}
-            return jsonify(data)
-        return jsonify({})
+        return jsonify(config.get('breath_settings', {}))
     
 if __name__ == '__main__':
     app.run(debug=True)

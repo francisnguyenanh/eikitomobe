@@ -114,19 +114,19 @@
         </div>
         <!-- Text and Contact Info -->
         <div class="col-md-8 contact-info">
-          {% set name_main = name.split('（')[0].strip() %}
-          {% set name_sub = '（' + name.split('（', 1)[1] if '（' in name else '' %}
+          {% set name_main = Name.split('（')[0].strip() %}
+          {% set name_sub = '（' + Name.split('（', 1)[1] if '（' in Name else '' %}
           <h1>
             <span class="name-shodo">{{ name_main }}</span>
             {% if name_sub %}
               <span class="name-sub">{{ name_sub }}</span>
             {% endif %}
           </h1>
-          <p>{{job}}</p>
-          <p><strong>Email:</strong> {{email}}</p>
-          <p><strong>Phone:</strong> {{phone}}</p>
+          <p>{{Job}}</p>
+          <p><strong>Email:</strong> {{Email}}</p>
+          <p><strong>Phone:</strong> {{Phone}}</p>
           <p><strong>SNS:</strong> 
-            <a href="{{ 'https://' + sns if not sns.startswith('http') else sns }}" target="_blank">Hồ sơ</a>
+            <a href="{{ 'https://' + SNS if not SNS.startswith('http') else SNS }}" target="_blank">Hồ sơ</a>
           </p>
         </div>
       </div>
@@ -136,7 +136,7 @@
   <!-- Footer -->
   <footer>
     <div class="container">
-      <p>{{subslogan}}</p>
+      <p>{{SubSlogan}}</p>
     </div>
   </footer>
 

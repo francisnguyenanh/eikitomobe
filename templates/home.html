@@ -398,6 +398,10 @@
                             <input class="form-check-input" type="checkbox" id="toggleBgImage">
                             <label class="form-check-label" for="toggleBgImage">Hiển thị hình nền</label>
                         </div>
+                        <div class="form-check form-switch mt-3">
+                            <input class="form-check-input" type="checkbox" id="toggleQuote" checked>
+                            <label class="form-check-label" for="toggleQuote">Hiển thị quote</label>
+                        </div>
                     </div>
                     <div class="tab-pane fade" id="avatarTab" role="tabpanel" aria-labelledby="avatar-tab">
                         <form action="{{ url_for('upload_avatar') }}" method="post" enctype="multipart/form-data" class="mb-3 text-center">
@@ -615,12 +619,12 @@
                 fetch('/get_card_info')
                     .then(res => res.json())
                     .then(data => {
-                        document.getElementById('profileName').value = data.name || '';
-                        document.getElementById('profileJob').value = data.job || '';
-                        document.getElementById('profileEmail').value = data.email || '';
-                        document.getElementById('profilePhone').value = data.phone || '';
-                        document.getElementById('profileSNS').value = data.sns || '';
-                        document.getElementById('profileSlogan').value = data.subslogan || '';
+                        document.getElementById('profileName').value = data.Name || '';
+                        document.getElementById('profileJob').value = data.Job || '';
+                        document.getElementById('profileEmail').value = data.Email || '';
+                        document.getElementById('profilePhone').value = data.Phone || '';
+                        document.getElementById('profileSNS').value = data.SNS || '';
+                        document.getElementById('profileSlogan').value = data.SubSlogan || '';
                     });
             });
 
@@ -628,12 +632,12 @@
             document.getElementById('profileForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 const data = {
-                    name: document.getElementById('profileName').value,
-                    job: document.getElementById('profileJob').value,
-                    email: document.getElementById('profileEmail').value,
-                    phone: document.getElementById('profilePhone').value,
-                    sns: document.getElementById('profileSNS').value,
-                    slogan: document.getElementById('profileSlogan').value
+                    Name: document.getElementById('profileName').value,
+                    Job: document.getElementById('profileJob').value,
+                    Email: document.getElementById('profileEmail').value,
+                    Phone: document.getElementById('profilePhone').value,
+                    SNS: document.getElementById('profileSNS').value,
+                    SubSlogan: document.getElementById('profileSlogan').value
                 };
                 fetch('/update_card_info', {
                     method: 'POST',
@@ -805,6 +809,29 @@
                     audio = new Audio('/static/bell.mp3');
                 });
             }
+        });
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleQuote = document.getElementById('toggleQuote');
+            const quoteBlock = document.querySelector('.card.shadow-sm'); // hoặc .quote-content nếu chỉ muốn ẩn nội dung
+
+            // Khởi tạo trạng thái từ localStorage
+            if (localStorage.getItem('showQuote') === 'false') {
+                toggleQuote.checked = false;
+                if (quoteBlock) quoteBlock.style.display = 'none';
+            } else {
+                toggleQuote.checked = true;
+                if (quoteBlock) quoteBlock.style.display = '';
+            }
+
+            toggleQuote.addEventListener('change', function() {
+                if (toggleQuote.checked) {
+                    localStorage.setItem('showQuote', 'true');
+                    if (quoteBlock) quoteBlock.style.display = '';
+                } else {
+                    localStorage.setItem('showQuote', 'false');
+                    if (quoteBlock) quoteBlock.style.display = 'none';
+                }
+            });
         });
     </script>
 </body>
