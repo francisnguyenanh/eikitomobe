@@ -863,7 +863,7 @@ def change_password():
         flash('Password changed successfully!', 'success')
     else:
         flash('Please enter a new password', 'danger')
-    return redirect(url_for('list_note'))
+    return redirect(url_for('home'))
 
 @app.route('/logout')
 @login_required

@@ -9,7 +9,7 @@
     "Email": "eikitomobe@gmail.com",
     "Phone": "070-9077-2099",
     "SNS": "facebook.com",
-    "SubSlogan": "\"ngày mai ăn gì ta?\" ta"
+    "SubSlogan": "\"ngày mai ăn gì ta?\""
   },
   "quote": [
     {
@@ -19,12 +19,13 @@
   ],
   "links": [
     "https://eikitomobe.pythonanywhere.com/list_note",
-    "google.com.vn"
+    "google.com.vn",
+    "abc"
   ],
   "breath_settings": {
     "pattern": "6-3-6-3",
     "level": "1",
     "cycles": "30"
   },
-  "user_password_hash": "$2b$12$m1PzyRaCVG0NxqLsHhsWu.VRzFlV8oaWFysU6OsU3.yW5sszU7w82"
+  "user_password_hash": "$2b$12$q.9zfKSIQllUqTlJ14ynvuVNK3Eq8vFuaQeTWzDzxKcmUvtbqo4V."
 }
