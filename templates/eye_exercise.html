@@ -40,7 +40,7 @@
             <div class="col-4">
                 <select class="form-select form-select-sm" id="eyeDuration" title="Thời gian">
                     {% for i in range(1, 21) %}
-                    <option value="{{ i }}">{{ i }}p</option>
+                    <option value="{{ i }}"{% if i == 5 %} selected{% endif %}>{{ i }}p</option>
                     {% endfor %}
                 </select>
             </div>
