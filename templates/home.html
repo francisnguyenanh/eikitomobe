@@ -194,6 +194,15 @@
         input.link-input[readonly] {
             cursor: default !important;
         }
+        .circle-visual:hover #mindCircleHover {
+            opacity: 0.15;
+            filter: blur(2px);
+            transition: opacity 0.2s, filter 0.2s;
+        }
+        .circle-visual:active #mindCircleHover {
+            opacity: 0.25;
+            filter: blur(0.5px);
+        }
     </style>
 </head>
 <body>
@@ -450,9 +459,290 @@
     </div>
 </div>
 
+<!-- Mindfulness Modal -->
+    <div class="modal fade" id="mindfulnessModal" tabindex="-1" aria-labelledby="mindfulnessModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-md modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content" style="background: var(--card-bg);">
+        <div class="modal-body">
+            <!-- Tabs -->
+            <ul class="nav nav-tabs" id="mindTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="mind-main-tab" data-bs-toggle="tab" data-bs-target="#mindMainTab" type="button" role="tab">Practice</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="mind-setting-tab" data-bs-toggle="tab" data-bs-target="#mindSettingTab" type="button" role="tab">Setting</button>
+            </li>
+            </ul>
+            <div class="tab-content mt-3">
+            <!-- Practice Tab -->
+            <div class="tab-pane fade show active text-center" id="mindMainTab" role="tabpanel">
+                
+                <div class="mb-2">
+                <span id="mindTimer" style="font-size:2.2rem;font-weight:bold;">00:00:00</span>
+                </div>
+                <div class="mb-2">
+                <span id="mindBreakInfo" style="font-size:1.1rem;color:var(--primary-color);"></span>
+                </div>
+                <div class="mb-2 d-flex justify-content-center">
+                    <svg id="mindCircleSvg" class="circle-visual" width="120" height="120" viewBox="0 0 120 120" style="cursor:pointer;">
+                        <circle cx="60" cy="60" r="50" stroke="#0d6efd" stroke-width="6" fill="none" opacity="0.15"/>
+                        <circle id="mindCircleProgress" cx="60" cy="60" r="50" stroke="#0d6efd" stroke-width="6" fill="none"
+                            stroke-dasharray="314" stroke-dashoffset="314" stroke-linecap="round"
+                            transform="rotate(-90 60 60)" />
+                        <circle id="mindCircleDot" r="8" fill="#0d6efd" cx="60" cy="10"/>
+                        <circle id="mindCircleHover" cx="60" cy="60" r="40" fill="#0d6efd" opacity="0" />
+                    </svg>
+                </div>
+            </div>
+            <!-- Setting Tab -->
+            <div class="tab-pane fade" id="mindSettingTab" role="tabpanel">
+                <form id="mindSettingForm">
+                <div class="mb-2">
+                    <label class="form-label">Thời gian (phút)</label>
+                    <select id="mindDuration" class="form-select">
+                    {% for i in range(5, 301, 5) %}
+                    <option value="{{ i }}">{{ i // 60 }}h {{ i % 60 }}m</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Số lần nghỉ (break)</label>
+                    <select id="mindBreaks" class="form-select">
+                    {% for i in range(1, 11) %}
+                    <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Mỗi lần nghỉ: <span id="mindBreakLength">0</span> phút</label>
+                </div>
+                </form>
+            </div>
+            </div>
+        </div>
+        </div>
+    </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Links Modal logic
+        document.addEventListener('DOMContentLoaded', function() {
+    // --- Mindfulness Timer Logic ---
+    const circleSvg = document.getElementById('mindCircleSvg');
+    const circleProgress = document.getElementById('mindCircleProgress');
+    const circleDot = document.getElementById('mindCircleDot');
+    const circleLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    circleLabel.setAttribute('id', 'mindCircleLabel');
+    circleLabel.setAttribute('x', '60');
+    circleLabel.setAttribute('y', '68');
+    circleLabel.setAttribute('text-anchor', 'middle');
+    circleLabel.setAttribute('font-size', '1.2rem');
+    circleLabel.setAttribute('font-family', 'inherit');
+    circleLabel.setAttribute('fill', '#0d6efd');
+    circleLabel.style.cursor = 'pointer';
+    circleSvg.appendChild(circleLabel);
+
+    const RADIUS = 50;
+    const CIRCUM = 2 * Math.PI * RADIUS;
+
+    let isRunning = false;
+    let timer = null, totalSec = 0, remainSec = 0, isPaused = false, breakCount = 1, breakLength = 0, currentBreak = 0;
+    let startTimestamp = null;
+    let pausedAt = null;
+
+    const timerDisplay = document.getElementById('mindTimer');
+    const breakInfo = document.getElementById('mindBreakInfo');
+    const durationSel = document.getElementById('mindDuration');
+    const breaksSel = document.getElementById('mindBreaks');
+    const breakLenSpan = document.getElementById('mindBreakLength');
+
+    function updateCircle(progress) {
+        const offset = CIRCUM - progress * CIRCUM;
+        circleProgress.setAttribute('stroke-dashoffset', offset);
+        const angle = -Math.PI / 2 + 2 * Math.PI * progress;
+        const cx = 60 + RADIUS * Math.cos(angle);
+        const cy = 60 + RADIUS * Math.sin(angle);
+        circleDot.setAttribute('cx', cx);
+        circleDot.setAttribute('cy', cy);
+    }
+
+    function playBell() {
+        const audio = new Audio('/static/bell.mp3');
+        audio.play();
+    }
+
+    function updateBreakLength() {
+        const duration = parseInt(durationSel.value) || 5;
+        const breaks = parseInt(breaksSel.value) || 1;
+        breakLength = Math.floor(duration / breaks);
+        breakLenSpan.textContent = breakLength;
+    }
+    durationSel.addEventListener('change', updateBreakLength);
+    breaksSel.addEventListener('change', updateBreakLength);
+    updateBreakLength();
+
+    function formatTime(sec) {
+        const h = Math.floor(sec / 3600);
+        const m = Math.floor((sec % 3600) / 60);
+        const s = sec % 60;
+        return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+    }
+
+    function showCircleLabel(text) {
+        circleLabel.textContent = text;
+    }
+
+    function startTimer() {
+        totalSec = parseInt(durationSel.value) * 60;
+        remainSec = totalSec;
+        breakCount = parseInt(breaksSel.value);
+        breakLength = Math.floor((parseInt(durationSel.value)) / breakCount);
+        currentBreak = 1;
+        isPaused = false;
+        isRunning = true;
+        startTimestamp = performance.now();
+        pausedAt = null;
+        showCircleLabel('stop');
+        requestAnimationFrame(tick);
+        playBell();
+    }
+    function tick(now) {
+        if (isPaused) {
+            pausedAt = now;
+            return;
+        }
+        if (!startTimestamp) startTimestamp = now;
+        let elapsed = Math.floor((now - startTimestamp) / 1000);
+        if (pausedAt) {
+            startTimestamp += (now - pausedAt);
+            pausedAt = null;
+        }
+        remainSec = Math.max(0, totalSec - elapsed);
+        timerDisplay.textContent = formatTime(remainSec);
+
+        let progress = Math.min(1, (totalSec - remainSec) / totalSec);
+        updateCircle(progress);
+
+        const breakInterval = Math.floor(totalSec / breakCount);
+        const nextBreak = totalSec - (currentBreak * breakInterval);
+        if (remainSec === nextBreak && currentBreak <= breakCount) {
+            breakInfo.textContent = `Break ${currentBreak} - ${breakLength} phút`;
+            currentBreak++;
+        } else if (remainSec > 0) {
+            breakInfo.textContent = '';
+        }
+
+        if (remainSec <= 0) {
+            timerDisplay.textContent = "00:00:00";
+            breakInfo.textContent = "Hoàn thành!";
+            updateCircle(1);
+            isRunning = false;
+            showCircleLabel('start');
+            playBell();
+            return;
+        }
+        timer = requestAnimationFrame(tick);
+    }
+        function stopTimer(playSound = true) {
+            cancelAnimationFrame(timer);
+            timerDisplay.textContent = "00:00:00";
+            breakInfo.textContent = '';
+            updateCircle(0);
+            isRunning = false;
+            showCircleLabel('start');
+            if (playSound) playBell();
+        }
+
+
+    // Vòng tròn: hover hiệu ứng nổi
+    circleSvg.addEventListener('mouseenter', function() {
+        circleSvg.classList.add('circle-hover');
+    });
+    circleSvg.addEventListener('mouseleave', function() {
+        circleSvg.classList.remove('circle-hover');
+    });
+
+    // Click vào vòng tròn: start/stop
+    circleSvg.addEventListener('click', function() {
+        if (isRunning) {
+            stopTimer();
+        } else {
+            stopTimer();
+            startTimer();
+        }
+    });
+
+    // Khi mở modal, reset về trạng thái ban đầu (KHÔNG phát âm thanh)
+    document.getElementById('mindfulnessModal').addEventListener('shown.bs.modal', function () {
+        stopTimer(false);
+        showCircleLabel('start');
+    });
+
+    // Khi đóng modal, reset timer (KHÔNG phát âm thanh)
+    document.getElementById('mindfulnessModal').addEventListener('hidden.bs.modal', function () {
+        stopTimer(false);
+        showCircleLabel('start');
+    });
+
+    // Click vào quote mở modal mindfulness
+    document.querySelectorAll('.quote-content').forEach(function(el) {
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', function() {
+            var modal = new bootstrap.Modal(document.getElementById('mindfulnessModal'));
+            modal.show();
+        });
+    });
+});
+
+        // --- UI Settings (Background & Quote toggle) ---
+        document.getElementById('upload-tab').addEventListener('shown.bs.tab', function () {
+            fetch('/ui_settings')
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('toggleBgImage').checked = !!data.show_bg_image;
+                    document.getElementById('toggleQuote').checked = !!data.show_quote;
+                    // Áp dụng ngay trạng thái background
+                    applyBgImage(!!data.show_bg_image);
+                    applyQuote(!!data.show_quote);
+                });
+        });
+        document.getElementById('toggleBgImage').addEventListener('change', function() {
+            saveUiSettings();
+            applyBgImage(this.checked);
+        });
+        document.getElementById('toggleQuote').addEventListener('change', function() {
+            saveUiSettings();
+            applyQuote(this.checked);
+        });
+        function saveUiSettings() {
+            fetch('/ui_settings', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    show_bg_image: document.getElementById('toggleBgImage').checked,
+                    show_quote: document.getElementById('toggleQuote').checked
+                })
+            });
+        }
+        function applyBgImage(show) {
+            if (show) {
+                document.body.classList.remove('no-bg-image');
+                // Nếu có bg_image_url, set lại background-image
+                {% if bg_image_url %}
+                document.body.style.backgroundImage = "url('{{ bg_image_url }}')";
+                {% endif %}
+            } else {
+                document.body.classList.add('no-bg-image');
+                document.body.style.backgroundImage = "none";
+            }
+        }
+        function applyQuote(show) {
+            document.querySelectorAll('.card.shadow-sm').forEach(function(card) {
+                card.style.display = show ? '' : 'none';
+            });
+        }
+
+        // --- Links Modal logic ---
         document.getElementById('showLinksBtn').addEventListener('click', function(e) {
             e.preventDefault();
             fetch('/links')
@@ -486,7 +776,6 @@
                     modal.show();
                 });
         });
-
         document.getElementById('linksForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const inputs = document.querySelectorAll('.link-input');
@@ -513,7 +802,7 @@
             });
         });
 
-        // Logout Modal logic
+        // --- Logout Modal logic ---
         document.getElementById('logoutBtn').addEventListener('click', function(e) {
             e.preventDefault();
             const modal = new bootstrap.Modal(document.getElementById('confirmLogoutModal'));
@@ -528,7 +817,7 @@
             });
         };
 
-        // Theme select logic for Settings Modal
+        // --- Theme select logic for Settings Modal ---
         const themeSelect = document.getElementById('themeSelect');
         const currentTheme = localStorage.getItem('theme') || '{{ theme|default("light") }}';
         document.documentElement.setAttribute('data-theme', currentTheme);
@@ -542,11 +831,12 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({theme: theme})
             }).then(res => res.json())
-              .then(() => {
+            .then(() => {
                 location.reload(); // Reload to apply new theme from session
             });
         });
 
+        // --- Card List Modal logic ---
         document.getElementById('showCardListModal').addEventListener('click', function(e) {
             e.preventDefault();
             fetch('/card_list')
@@ -615,47 +905,44 @@
                 });
         });
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Khi mở tab, load dữ liệu
-            document.getElementById('profile-tab').addEventListener('shown.bs.tab', function () {
-                fetch('/get_card_info')
-                    .then(res => res.json())
-                    .then(data => {
-                        document.getElementById('profileName').value = data.Name || '';
-                        document.getElementById('profileJob').value = data.Job || '';
-                        document.getElementById('profileEmail').value = data.Email || '';
-                        document.getElementById('profilePhone').value = data.Phone || '';
-                        document.getElementById('profileSNS').value = data.SNS || '';
-                        document.getElementById('profileSlogan').value = data.SubSlogan || '';
-                    });
-            });
-
-            // Submit form
-            document.getElementById('profileForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-                const data = {
-                    Name: document.getElementById('profileName').value,
-                    Job: document.getElementById('profileJob').value,
-                    Email: document.getElementById('profileEmail').value,
-                    Phone: document.getElementById('profilePhone').value,
-                    SNS: document.getElementById('profileSNS').value,
-                    SubSlogan: document.getElementById('profileSlogan').value
-                };
-                fetch('/update_card_info', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
-                })
+        // --- Card Info (Profile Tab) ---
+        document.getElementById('profile-tab').addEventListener('shown.bs.tab', function () {
+            fetch('/get_card_info')
                 .then(res => res.json())
-                .then(resp => {
-                    if(resp.status === 'success') {
-                        document.getElementById('profileMsg').textContent = 'Cập nhật thành công!';
-                        setTimeout(() => { document.getElementById('profileMsg').textContent = ''; }, 2000);
-                    }
+                .then(data => {
+                    document.getElementById('profileName').value = data.Name || '';
+                    document.getElementById('profileJob').value = data.Job || '';
+                    document.getElementById('profileEmail').value = data.Email || '';
+                    document.getElementById('profilePhone').value = data.Phone || '';
+                    document.getElementById('profileSNS').value = data.SNS || '';
+                    document.getElementById('profileSlogan').value = data.SubSlogan || '';
                 });
+        });
+        document.getElementById('profileForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const data = {
+                Name: document.getElementById('profileName').value,
+                Job: document.getElementById('profileJob').value,
+                Email: document.getElementById('profileEmail').value,
+                Phone: document.getElementById('profilePhone').value,
+                SNS: document.getElementById('profileSNS').value,
+                SubSlogan: document.getElementById('profileSlogan').value
+            };
+            fetch('/update_card_info', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(resp => {
+                if(resp.status === 'success') {
+                    document.getElementById('profileMsg').textContent = 'Cập nhật thành công!';
+                    setTimeout(() => { document.getElementById('profileMsg').textContent = ''; }, 2000);
+                }
             });
         });
 
+        // --- Navbar auto close on outside click (mobile UX) ---
         document.addEventListener('click', function(event) {
             const navbarCollapse = document.getElementById('navbarNav');
             const navbarToggler = document.querySelector('.navbar-toggler');
@@ -667,186 +954,6 @@
                 ) {
                     new bootstrap.Collapse(navbarCollapse).hide();
                 }
-            }
-        });
-
-        function renderLinksInputs(links) {
-            const linksInputs = document.getElementById('linksInputs');
-            linksInputs.innerHTML = '';
-
-            // Helper để tạo 1 input link
-            function createLinkInput(link = '', isNew = false) {
-                const div = document.createElement('div');
-                div.className = 'input-group mb-2';
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'form-control link-input';
-                input.value = link;
-                input.readOnly = !isNew && link !== '';
-                input.setAttribute('data-index', linksInputs.children.length);
-
-                // Đặt màu nền khi inactive (readonly)
-                input.style.backgroundColor = input.readOnly ? '#f8f9fa' : '#fffbe6';
-
-                // Icon edit
-                const editBtn = document.createElement('button');
-                editBtn.type = 'button';
-                editBtn.className = 'btn btn-outline-secondary';
-                editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
-                editBtn.onclick = function() {
-                    input.readOnly = false;
-                    input.focus();
-                    input.select();
-                    input.style.backgroundColor = '#fffbe6'; // vàng nhạt khi active
-                };
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.type = 'button';
-                deleteBtn.className = 'btn btn-outline-danger';
-                deleteBtn.innerHTML = '<i class="bi bi-x"></i>';
-                deleteBtn.onclick = function() {
-                    div.remove();
-                    // Sau khi xóa, tự động lưu lại links
-                    document.getElementById('linksForm').dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}));
-                };
-
-                // Single click: mở link nếu readonly và có giá trị
-                input.addEventListener('click', function(e) {
-                    if (input.readOnly && input.value.trim()) {
-                        let url = input.value.trim();
-                        if (!/^https?:\/\//i.test(url)) {
-                            url = 'https://' + url;
-                        }
-                        window.open(url, '_blank');
-                    }
-                });
-
-                // Khi mất focus: lưu lại nếu có thay đổi, đổi lại màu nền
-                input.addEventListener('blur', function(e) {
-                    if (!input.readOnly) {
-                        input.readOnly = true;
-                        input.style.backgroundColor = '#f8f9fa';
-                        // Nếu là ô cuối cùng (ô trống) và đã nhập giá trị, tự động thêm ô trống mới
-                        if (div === linksInputs.lastElementChild && input.value.trim() !== '') {
-                            createLinkInput('', true);
-                        }
-                        // Submit form để lưu lại toàn bộ links (KHÔNG đóng modal)
-                        document.getElementById('linksForm').dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}));
-                    }
-                });
-
-                // Khi focus vào (bằng tab), đổi màu active
-                input.addEventListener('focus', function(e) {
-                    if (!input.readOnly) {
-                        input.style.backgroundColor = '#fffbe6';
-                    }
-                });
-
-                div.appendChild(input);
-                div.appendChild(editBtn);
-                div.appendChild(deleteBtn);
-                linksInputs.appendChild(div);
-            }
-
-            // Render các link đã có
-            links.forEach(link => createLinkInput(link));
-            // Luôn có 1 ô trống cuối cùng để nhập mới
-            createLinkInput('', true);
-        }
-
-        // Khi mở modal, lấy links và render
-        document.getElementById('linksModal').addEventListener('show.bs.modal', function() {
-            fetch('/links', {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                .then(res => res.json())
-                .then(data => {
-                    if (data.links) {
-                        renderLinksInputs(data.links);
-                    }
-                });
-        });
-        document.addEventListener('DOMContentLoaded', function() {
-            const quoteContent = document.querySelector('.quote-content');
-            if (quoteContent) {
-                quoteContent.style.cursor = 'pointer';
-                quoteContent.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    let audio = new Audio('/static/bell.mp3');
-                    let count = 0;
-                    const maxCount = 3;
-                    const pauseBetween = 2000;
-
-                    function playBell() {
-                        if (count < maxCount) {
-                            audio.play();
-                            count++;
-                            audio.onended = function() {
-                                if (count < maxCount) {
-                                    setTimeout(playBell, pauseBetween);
-                                }
-                            };
-                        }
-                    }
-
-                    playBell();
-                    audio = new Audio('/static/bell.mp3');
-                });
-            }
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Khi mở tab background, load trạng thái từ server
-            document.getElementById('upload-tab').addEventListener('shown.bs.tab', function () {
-                fetch('/ui_settings')
-                    .then(res => res.json())
-                    .then(data => {
-                        document.getElementById('toggleBgImage').checked = !!data.show_bg_image;
-                        document.getElementById('toggleQuote').checked = !!data.show_quote;
-                        // Áp dụng ngay trạng thái background
-                        applyBgImage(!!data.show_bg_image);
-                        applyQuote(!!data.show_quote);
-                    });
-            });
-
-            // Khi đổi trạng thái, gửi lên server và áp dụng ngay
-            document.getElementById('toggleBgImage').addEventListener('change', function() {
-                saveUiSettings();
-                applyBgImage(this.checked);
-            });
-            document.getElementById('toggleQuote').addEventListener('change', function() {
-                saveUiSettings();
-                applyQuote(this.checked);
-            });
-
-            function saveUiSettings() {
-                fetch('/ui_settings', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        show_bg_image: document.getElementById('toggleBgImage').checked,
-                        show_quote: document.getElementById('toggleQuote').checked
-                    })
-                });
-            }
-
-            // Hàm áp dụng background ngay lập tức
-            function applyBgImage(show) {
-                if (show) {
-                    document.body.classList.remove('no-bg-image');
-                    // Nếu có bg_image_url, set lại background-image
-                    {% if bg_image_url %}
-                    document.body.style.backgroundImage = "url('{{ bg_image_url }}')";
-                    {% endif %}
-                } else {
-                    document.body.classList.add('no-bg-image');
-                    document.body.style.backgroundImage = "none";
-                }
-            }
-
-            // Hàm ẩn/hiện quote ngay lập tức
-            function applyQuote(show) {
-                document.querySelectorAll('.card.shadow-sm').forEach(function(card) {
-                    card.style.display = show ? '' : 'none';
-                });
             }
         });
     </script>
