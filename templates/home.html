@@ -790,7 +790,21 @@
                         removeBtn.type = 'button';
                         removeBtn.className = 'btn btn-outline-danger';
                         removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-                        removeBtn.onclick = () => div.remove();
+                        removeBtn.onclick = () => {
+                            div.remove();
+                            // --- Gửi cập nhật links lên server ---
+                            const inputs = document.querySelectorAll('.link-input');
+                            const links = [];
+                            inputs.forEach(inp => {
+                                const val = inp.value.trim();
+                                if (val) links.push(val);
+                            });
+                            fetch('/links', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({links: links})
+                            });
+                        };
 
                         // Khi input mất focus, nếu có giá trị thì lại readonly và hiện lại nút edit
                         input.addEventListener('blur', function() {

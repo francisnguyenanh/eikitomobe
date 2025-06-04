@@ -23,9 +23,7 @@
   ],
   "links": [
     "https://eikitomobe.pythonanywhere.com/list_note",
-    "google.com.vn",
-    "abceeeee",
-    "abcêr"
+    "google.com.vn"
   ],
   "breath_settings": {
     "pattern": "6-3-6-3",
