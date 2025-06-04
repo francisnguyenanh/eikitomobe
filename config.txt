@@ -11,6 +11,10 @@
     "SNS": "facebook.com",
     "SubSlogan": "\"ngày mai ăn gì ta?\""
   },
+  "ui_settings": {
+    "show_bg_image": false,
+    "show_quote": true
+  },
   "quote": [
     {
       "date": "2025/06/02",

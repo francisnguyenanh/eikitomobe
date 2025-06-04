@@ -1037,6 +1037,21 @@ def format_thousands(number):
     except (ValueError, TypeError):
         return number
 
+@app.route('/ui_settings', methods=['GET', 'POST'])
+@login_required
+def ui_settings():
+    config = load_config()
+    if request.method == 'POST':
+        data = request.get_json()
+        config['ui_settings'] = {
+            'show_bg_image': bool(data.get('show_bg_image', True)),
+            'show_quote': bool(data.get('show_quote', True))
+        }
+        save_config(config)
+        return jsonify({'status': 'success'})
+    else:
+        return jsonify(config.get('ui_settings', {'show_bg_image': True, 'show_quote': True}))
+    
 # Quote app routes
 @quote_app.context_processor
 def inject_theme_quote():
@@ -1194,7 +1209,6 @@ def get_random_quote_from_db():
 @login_required
 def home():
     quote_text, quote_author = get_random_quote_from_db()
-
     theme = session.get('theme', 'light')
     bg_image_url = None
     photo_dir = os.path.join(app.static_folder, 'photo')
@@ -1202,12 +1216,15 @@ def home():
         files = [f for f in os.listdir(photo_dir) if allowed_file(f)]
         if files:
             bg_image_url = url_for('static', filename=f'photo/{files[0]}')
+    config = load_config()
+    ui_settings = config.get('ui_settings', {'show_bg_image': True, 'show_quote': True})
     return render_template(
         'home.html',
         quote_content=quote_text,
         quote_author=quote_author,
         theme=theme,
-        bg_image_url=bg_image_url
+        bg_image_url=bg_image_url if ui_settings.get('show_bg_image', True) else None,
+        show_quote=ui_settings.get('show_quote', True)
     )
 
 @app.route('/upload_avatar', methods=['POST'])

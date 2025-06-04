@@ -269,6 +269,7 @@
     <div class="container py-4">
         <div class="row g-3">
             <div class="col-12">
+                {% if show_quote %}
                 <div class="card shadow-sm">
                     <div class="card-body text-center">
                         <div class="quote-content">
@@ -279,6 +280,7 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -667,27 +669,7 @@
                 }
             }
         });
-        document.addEventListener('DOMContentLoaded', function() {
-            const toggleBgImage = document.getElementById('toggleBgImage');
-            // Lưu trạng thái vào localStorage
-            const bgImageEnabled = localStorage.getItem('bgImageEnabled');
-            if (bgImageEnabled === null || bgImageEnabled === 'true') {
-                toggleBgImage.checked = true;
-                document.body.classList.remove('no-bg-image');
-            } else {
-                toggleBgImage.checked = false;
-                document.body.classList.add('no-bg-image');
-            }
-            toggleBgImage.addEventListener('change', function() {
-                if (toggleBgImage.checked) {
-                    localStorage.setItem('bgImageEnabled', 'true');
-                    document.body.classList.remove('no-bg-image');
-                } else {
-                    localStorage.setItem('bgImageEnabled', 'false');
-                    document.body.classList.add('no-bg-image');
-                }
-            });
-        });
+
         function renderLinksInputs(links) {
             const linksInputs = document.getElementById('linksInputs');
             linksInputs.innerHTML = '';
@@ -810,28 +792,62 @@
                 });
             }
         });
-        document.addEventListener('DOMContentLoaded', function() {
-            const toggleQuote = document.getElementById('toggleQuote');
-            const quoteBlock = document.querySelector('.card.shadow-sm'); // hoặc .quote-content nếu chỉ muốn ẩn nội dung
 
-            // Khởi tạo trạng thái từ localStorage
-            if (localStorage.getItem('showQuote') === 'false') {
-                toggleQuote.checked = false;
-                if (quoteBlock) quoteBlock.style.display = 'none';
-            } else {
-                toggleQuote.checked = true;
-                if (quoteBlock) quoteBlock.style.display = '';
+        document.addEventListener('DOMContentLoaded', function() {
+            // Khi mở tab background, load trạng thái từ server
+            document.getElementById('upload-tab').addEventListener('shown.bs.tab', function () {
+                fetch('/ui_settings')
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById('toggleBgImage').checked = !!data.show_bg_image;
+                        document.getElementById('toggleQuote').checked = !!data.show_quote;
+                        // Áp dụng ngay trạng thái background
+                        applyBgImage(!!data.show_bg_image);
+                        applyQuote(!!data.show_quote);
+                    });
+            });
+
+            // Khi đổi trạng thái, gửi lên server và áp dụng ngay
+            document.getElementById('toggleBgImage').addEventListener('change', function() {
+                saveUiSettings();
+                applyBgImage(this.checked);
+            });
+            document.getElementById('toggleQuote').addEventListener('change', function() {
+                saveUiSettings();
+                applyQuote(this.checked);
+            });
+
+            function saveUiSettings() {
+                fetch('/ui_settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        show_bg_image: document.getElementById('toggleBgImage').checked,
+                        show_quote: document.getElementById('toggleQuote').checked
+                    })
+                });
             }
 
-            toggleQuote.addEventListener('change', function() {
-                if (toggleQuote.checked) {
-                    localStorage.setItem('showQuote', 'true');
-                    if (quoteBlock) quoteBlock.style.display = '';
+            // Hàm áp dụng background ngay lập tức
+            function applyBgImage(show) {
+                if (show) {
+                    document.body.classList.remove('no-bg-image');
+                    // Nếu có bg_image_url, set lại background-image
+                    {% if bg_image_url %}
+                    document.body.style.backgroundImage = "url('{{ bg_image_url }}')";
+                    {% endif %}
                 } else {
-                    localStorage.setItem('showQuote', 'false');
-                    if (quoteBlock) quoteBlock.style.display = 'none';
+                    document.body.classList.add('no-bg-image');
+                    document.body.style.backgroundImage = "none";
                 }
-            });
+            }
+
+            // Hàm ẩn/hiện quote ngay lập tức
+            function applyQuote(show) {
+                document.querySelectorAll('.card.shadow-sm').forEach(function(card) {
+                    card.style.display = show ? '' : 'none';
+                });
+            }
         });
     </script>
 </body>
