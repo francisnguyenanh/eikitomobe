@@ -1,0 +1,353 @@
+<!-- filepath: c:\8. Private\Tool\EikiTomobe\eikitomobe\templates\eye_exercise.html -->
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ theme|default('light') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Eyes Excercise</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .pattern-canvas {
+            background: #f8f9fa;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin: 0 auto;
+            display: block;
+            max-width: 100%;
+            width: 340px;
+            height: 340px;
+            touch-action: none;
+        }
+        @media (max-width: 600px) {
+            .pattern-canvas {
+                width: 95vw;
+                height: 60vw;
+                min-height: 220px;
+                min-width: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/home" style="font-size:1.3rem;"> Eyes Excercise</a>
+    </div>
+</nav>
+<div class="container py-4">
+    <form class="mb-4" id="eyeForm">
+        <div class="row mb-3 justify-content-center">
+            <div class="col-6 col-md-4">
+                <label class="form-label">Thời gian (phút)</label>
+                <select class="form-select" id="eyeDuration">
+                    {% for i in range(1, 21) %}
+                    <option value="{{ i }}">{{ i }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-4">
+                <label class="form-label">Tốc độ</label>
+                <select class="form-select" id="eyeSpeed">
+                    <option value="0.5">Chậm</option>
+                    <option value="1" selected>Trung bình</option>
+                    <option value="2">Nhanh</option>
+                </select>
+            </div>
+        </div>
+        <div class="row align-items-center justify-content-center mb-2">
+            <div class="col-12 col-md-4 mb-2 mb-md-0 text-center text-md-start">
+                <label class="form-label">Màu</label>
+                <input type="color" class="form-control form-control-color d-inline-block" id="eyeColor" value="#0d6efd" style="vertical-align: middle;">
+            </div>
+            <div class="col-12 col-md-4 mb-2 mb-md-0 text-center">
+                <span id="eyeTimer" style="font-size:1.3rem;font-weight:bold;">00:00</span>
+            </div>
+        </div>
+    </form>
+    <div class="d-flex justify-content-center">
+        <canvas id="patternCanvas" class="pattern-canvas"></canvas>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const canvas = document.getElementById('patternCanvas');
+const ctx = canvas.getContext('2d');
+function resizeCanvas() {
+    const navbar = document.querySelector('.navbar');
+    const form = document.getElementById('eyeForm');
+    let navH = navbar ? navbar.offsetHeight : 0;
+    let formH = form ? form.offsetHeight : 0;
+    let margin = window.innerWidth < 600 ? 24 : 0;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight - navH - formH - 60 - margin;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+let animationId = null;
+let startTime = null;
+let duration = 1;
+let speed = 1;
+let color = '#0d6efd';
+let running = false;
+
+// Ball state
+let ball = {
+    x: 100,
+    y: 100,
+    r: 22,
+    vx: 180,
+    vy: 120
+};
+
+// Obstacles state
+let obstacles = [];
+
+// Tạo 3 chướng ngại vật random, không trùng vị trí bóng
+function resetObstacles() {
+    obstacles = [];
+    const margin = 50;
+    for (let i = 0; i < 3; i++) {
+        let valid = false, ox, oy, or;
+        let tries = 0;
+        while (!valid && tries < 100) {
+            or = Math.max(16, Math.min(canvas.width, canvas.height) * 0.045);
+            ox = margin + Math.random() * (canvas.width - 2 * margin);
+            oy = margin + Math.random() * (canvas.height - 2 * margin);
+            // Không trùng với bóng
+            let dist = Math.hypot(ox - ball.x, oy - ball.y);
+            valid = dist > or + ball.r + 40;
+            // Không trùng với các obstacle khác
+            for (let obs of obstacles) {
+                if (Math.hypot(ox - obs.x, oy - obs.y) < or + obs.r + 30) valid = false;
+            }
+            tries++;
+        }
+        obstacles.push({x: ox, y: oy, r: or});
+    }
+}
+
+function resetBall() {
+    // Random position (not too close to edge)
+    const margin = 40;
+    ball.r = Math.max(18, Math.min(canvas.width, canvas.height) * 0.035);
+    ball.x = margin + Math.random() * (canvas.width - 2*margin);
+    ball.y = margin + Math.random() * (canvas.height - 2*margin);
+    // Random direction, speed depends on speed setting
+    const angle = Math.random() * 2 * Math.PI;
+    const baseSpeed = 700 * speed; // px/sec (tăng gấp 3)
+    ball.vx = Math.cos(angle) * baseSpeed;
+    ball.vy = Math.sin(angle) * baseSpeed;
+    resetObstacles();
+}
+
+function drawBall() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Vẽ obstacles
+    obstacles.forEach(obs => {
+        ctx.beginPath();
+        ctx.arc(obs.x, obs.y, obs.r, 0, 2 * Math.PI);
+        ctx.fillStyle = "#bbb";
+        ctx.globalAlpha = 0.7;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#888";
+        ctx.stroke();
+    });
+    // Vẽ bóng
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+}
+
+// Kiểm tra va chạm bóng với obstacle
+function checkObstacleCollision() {
+    for (let obs of obstacles) {
+        let dx = ball.x - obs.x;
+        let dy = ball.y - obs.y;
+        let dist = Math.hypot(dx, dy);
+        if (dist < ball.r + obs.r) {
+            // Bật lại: phản chiếu vận tốc theo pháp tuyến va chạm
+            let nx = dx / dist;
+            let ny = dy / dist;
+            let dot = ball.vx * nx + ball.vy * ny;
+            ball.vx = ball.vx - 2 * dot * nx;
+            ball.vy = ball.vy - 2 * dot * ny;
+            // Đẩy bóng ra ngoài để tránh kẹt
+            let overlap = ball.r + obs.r - dist + 1;
+            ball.x += nx * overlap;
+            ball.y += ny * overlap;
+        }
+    }
+}
+
+function animateBall(ts) {
+    if (!running) return;
+    if (!startTime) startTime = ts;
+    const elapsed = (ts - startTime) / 1000;
+    const totalSec = duration * 60;
+    // Move ball
+    const dt = 1 / 60; // simulate 60fps for physics
+    let steps = Math.max(1, Math.round((ts - (animateBall._lastTs || ts)) / 1000 * 60));
+    animateBall._lastTs = ts;
+    for (let i = 0; i < steps; i++) {
+        ball.x += ball.vx * dt;
+        ball.y += ball.vy * dt;
+        // Bounce on walls
+        if (ball.x - ball.r < 0) {
+            ball.x = ball.r;
+            ball.vx *= -1;
+        }
+        if (ball.x + ball.r > canvas.width) {
+            ball.x = canvas.width - ball.r;
+            ball.vx *= -1;
+        }
+        if (ball.y - ball.r < 0) {
+            ball.y = ball.r;
+            ball.vy *= -1;
+        }
+        if (ball.y + ball.r > canvas.height) {
+            ball.y = canvas.height - ball.r;
+            ball.vy *= -1;
+        }
+        // Kiểm tra va chạm obstacle
+        checkObstacleCollision();
+    }
+    drawBall();
+    // Timer
+    const remain = Math.max(0, Math.ceil(totalSec - elapsed * speed));
+    document.getElementById('eyeTimer').textContent = `${String(Math.floor(remain/60)).padStart(2,'0')}:${String(remain%60).padStart(2,'0')}`;
+    if (elapsed * speed < totalSec) {
+        animationId = requestAnimationFrame(animateBall);
+    } else {
+        running = false;
+    }
+}
+
+function startEyeExercise() {
+    duration = parseInt(document.getElementById('eyeDuration').value);
+    speed = parseFloat(document.getElementById('eyeSpeed').value);
+    color = document.getElementById('eyeColor').value;
+    running = true;
+    startTime = null;
+    resetBall();
+    drawBall();
+    animationId = requestAnimationFrame(animateBall);
+}
+
+function stopEyeExercise() {
+    running = false;
+    cancelAnimationFrame(animationId);
+    drawBall();
+    document.getElementById('eyeTimer').textContent = `${String(duration).padStart(2,'0')}:00`;
+}
+
+['eyeDuration','eyeSpeed','eyeColor'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', ()=>{
+        if(!running) {
+            color = document.getElementById('eyeColor').value;
+            resetBall();
+            drawBall();
+        }
+    });
+});
+window.onload = () => {
+    resizeCanvas();
+    resetBall();
+    drawBall();
+    document.getElementById('eyeTimer').textContent = `${String(document.getElementById('eyeDuration').value).padStart(2,'0')}:00`;
+};
+
+canvas.addEventListener('click', function() {
+    if (!running) {
+        startEyeExercise();
+    } else {
+        stopEyeExercise();
+    }
+});
+</script>
+<style>
+    :root {
+            --bg-color: #f8f9fa; /* Light */
+            --card-bg: #f8f9fa;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="dark"] {
+            --bg-color: #23272b;
+            --card-bg: #495057;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="blue"] {
+            --bg-color: #e3f0fc;
+            --card-bg: #d6e4f0;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="green"] {
+            --bg-color: #eafaf1;
+            --card-bg: #d4edda;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="purple"] {
+            --bg-color: #f3e6fa;
+            --card-bg: #e1bee7;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="red"] {
+            --bg-color: #fff0f0;
+            --card-bg: #f5c6cb;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="orange"] {
+            --bg-color: #fff7e6;
+            --card-bg: #ffe5b4;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="yellow"] {
+            --bg-color: #fffbe6;
+            --card-bg: #fff3cd;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="pink"] {
+            --bg-color: #fff0f6;
+            --card-bg: #f8c1d0;
+            --quote-text-color: #ff8c00;
+        }
+        [data-theme="cyan"] {
+            --bg-color: #e0fcff;
+            --card-bg: #b2ebf2;
+            --quote-text-color: #ff8c00;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+.pattern-canvas {
+    background: #f8f9fa;
+    border-radius: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin: 0 auto;
+    display: block;
+    max-width: 100vw;
+    width: 100vw;
+    height: 60vh;
+    min-height: 220px;
+    min-width: 220px;
+    transition: width 0.2s, height 0.2s;
+}
+@media (max-width: 600px) {
+    .pattern-canvas {
+        width: 100vw;
+        height: 55vh;
+        min-height: 140px;
+        margin-bottom: 16px;
+    }
+}
+</style>
+</body>
+</html>

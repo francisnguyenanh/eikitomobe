@@ -1346,5 +1346,11 @@ def breath_settings():
     else:
         return jsonify(config.get('breath_settings', {}))
     
+@app.route('/eye_exercise')
+@login_required
+def eye_exercise():
+    theme = session.get('theme', 'light')
+    return render_template('eye_exercise.html', theme=theme)
+
 if __name__ == '__main__':
     app.run(debug=True)
