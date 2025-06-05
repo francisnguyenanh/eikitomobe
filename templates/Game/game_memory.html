@@ -4,9 +4,9 @@
 <style>
 .memory-board {
     display: grid;
-    grid-template-columns: repeat(4, 70px);
-    grid-template-rows: repeat(4, 70px);
-    gap: 14px;
+    grid-template-columns: repeat(5, 48px);
+    grid-template-rows: repeat(4, 48px);
+    gap: 10px;
     justify-content: center;
     margin: 40px auto 20px auto;
 }
@@ -77,6 +77,14 @@
     50% { background: #a3cfbb; }
     100% { background: #d1e7dd; }
 }
+.memory-card {
+    width: 48px;
+    height: 48px;
+    font-size: 1.4rem;
+}
+.memory-card .back {
+    font-size: 1.5rem;
+}
 </style>
 
 <div class="container py-4">
@@ -91,7 +99,7 @@ const boardDiv = document.getElementById('memory-board');
 const statusDiv = document.getElementById('memory-status');
 const restartBtn = document.getElementById('memory-restart');
 
-const icons = ['🍎','🍌','🍇','🍉','🍓','🍒','🍋','🥝'];
+const icons = ['🍎','🍌','🍇','🍉','🍓','🍒','🍋','🥝','🍍','🍊']; // 10 icon
 let cards = [];
 let flipped = [];
 let matchedCount = 0;
