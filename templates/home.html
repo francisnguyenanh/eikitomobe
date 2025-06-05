@@ -287,12 +287,9 @@
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="gameDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link" href="{{ url_for('game_flip') }}">
                             <i class="bi bi-controller"></i> Game
                         </a>
-                        <ul class="dropdown-menu" aria-labelledby="gameDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('game_flip') }}">Trí nhớ vị trí</a></li>
-                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">
