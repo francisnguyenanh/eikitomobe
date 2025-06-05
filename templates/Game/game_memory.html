@@ -1,191 +1,187 @@
 {% extends "Game/base.html" %}
-{% block title %}Game Trí Nhớ Vị Trí{% endblock %}
+{% block title %}Game Lật Hình Nhớ Đôi{% endblock %}
 {% block content %}
 <style>
-/* Tăng kích thước container và game-board */
-.container.py-4 {
-    width: 90vw !important;
-    height: 70vh !important;
-    margin: auto;
+.memory-board {
+    display: grid;
+    grid-template-columns: repeat(4, 70px);
+    grid-template-rows: repeat(4, 70px);
+    gap: 14px;
+    justify-content: center;
+    margin: 40px auto 20px auto;
+}
+.memory-card {
+    width: 70px;
+    height: 70px;
+    background: #f5faff;
+    border: 2px solid #0d6efd;
+    border-radius: 12px;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #0d6efd;
     display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
     align-items: center;
-    box-sizing: border-box;
-}
-#game-board {
-    display: grid;
     justify-content: center;
-    align-content: center;
-    margin: auto;
-    background: transparent;
-    gap: 8px;
-    box-sizing: border-box;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.18s, color 0.18s, transform 0.15s, box-shadow 0.18s;
+    box-shadow: 0 2px 8px #0001;
+    position: relative;
 }
-#game-board > div {
-    box-sizing: border-box;
+.memory-card.flipped, .memory-card.matched {
+    background: #d1e7dd !important;
+    color: #146c43 !important;
+    cursor: default;
+    border-color: #146c43 !important;
+    transform: scale(1.08);
 }
-@media (max-width: 600px) {
-    .container.py-4 {
-        width: 96vw !important;
-        height: 70vw !important;
-    }
-    #game-board {
-        width: 90vw !important;
-        height: 90vw !important;
-        min-width: unset;
-        min-height: unset;
-        box-sizing: border-box;
-    }
-}
-#game-board {
-    display: grid;
+.memory-card .back {
+    position: absolute;
+    inset: 0;
+    background: #0d6efd;
+    border-radius: 10px;
+    color: #fff;
+    display: flex;
+    align-items: center;
     justify-content: center;
-    align-content: center;
-    margin: auto;
-    background: transparent;
-    gap: 8px;
-    box-sizing: border-box;
+    font-size: 2.2rem;
+    transition: opacity 0.2s;
 }
-#game-board > div {
-    box-sizing: border-box;
-    width: 100%;
-    aspect-ratio: 1/1;
+.memory-card.flipped .back, .memory-card.matched .back {
+    opacity: 0;
+    pointer-events: none;
+}
+.memory-card:not(.flipped):not(.matched) .front {
+    opacity: 0;
+}
+.memory-card:not(.flipped):not(.matched):hover {
+    background: #e3f0ff;
+    color: #084298;
+    transform: scale(1.08);
+    box-shadow: 0 4px 16px #0d6efd22;
+    cursor: pointer;
+}
+.memory-card.clicked {
+    animation: popClick 0.2s;
+}
+@keyframes popClick {
+    0% { transform: scale(1);}
+    60% { transform: scale(1.18);}
+    100% { transform: scale(1);}
+}
+.memory-card.correct {
+    animation: flashCorrect 0.5s;
+}
+@keyframes flashCorrect {
+    0% { background: #d1e7dd; }
+    50% { background: #a3cfbb; }
+    100% { background: #d1e7dd; }
 }
 </style>
 
 <div class="container py-4">
-    <h2 class="mb-3 text-center">Game Nhớ Vị Trí</h2>
-    <div class="text-center mb-3">
-        <label for="levelSelect" class="me-2">Level:</label>
-        <select id="levelSelect" class="form-select d-inline-block w-auto">
-            <option value="1">Dễ (3x3, 1 màu)</option>
-            <option value="2">Trung bình (4x4, 2 màu)</option>
-            <option value="3">Khó (5x5, 3 màu)</option>
-            <option value="4">Rất khó (6x6, 4 màu)</option>
-            <option value="5">Siêu khó (7x7, 5 màu)</option>
-        </select>
-    </div>
-    <div id="game-board"></div>
-    <div class="text-center mt-3">
-        <button class="btn btn-primary" id="startBtn">Bắt đầu lại</button>
-        <div id="game-status" class="mt-2 text-center"></div>
-        <div id="game-msg" class="mt-2"></div>
+    <div id="memory-board" class="memory-board"></div>
+    <div id="memory-status" class="text-center mt-3" style="font-size:1.2rem;min-height:32px;"></div>
+    <div class="text-center mt-2">
+        <button class="btn btn-primary" id="memory-restart">Chơi lại</button>
     </div>
 </div>
 <script>
-const board = document.getElementById('game-board');
-const msg = document.getElementById('game-msg');
-const startBtn = document.getElementById('startBtn');
-const levelSelect = document.getElementById('levelSelect');
+const boardDiv = document.getElementById('memory-board');
+const statusDiv = document.getElementById('memory-status');
+const restartBtn = document.getElementById('memory-restart');
 
-let sequence = [];
-let userStep = 0;
-let clickable = false;
-let gridSize = 3;
-let colorCount = 1;
-const colorList = ['#0d6efd', '#dc3545', '#ffc107', '#198754', '#6610f2'];
+const icons = ['🍎','🍌','🍇','🍉','🍓','🍒','🍋','🥝'];
+let cards = [];
+let flipped = [];
+let matchedCount = 0;
+let lock = false;
 
-function updateLevel() {
-    const level = parseInt(levelSelect.value);
-    if (level === 1) { gridSize = 3; colorCount = 1; }
-    else if (level === 2) { gridSize = 4; colorCount = 2; }
-    else if (level === 3) { gridSize = 5; colorCount = 3; }
-    else if (level === 4) { gridSize = 6; colorCount = 4; }
-    else { gridSize = 7; colorCount = 5; }
-    // Chỉ set width, KHÔNG set height!
-    let vw = Math.min(window.innerWidth, 700) * 0.85;
-    board.style.width = vw + "px";
-    board.style.height = ""; // Xóa height cũ nếu có
-    board.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
-    board.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
-}
-
-function randomPos() {
-    return Math.floor(Math.random() * (gridSize * gridSize));
-}
-function randomColorIdx() {
-    return Math.floor(Math.random() * colorCount);
-}
-function updateStatus() {
-    if (sequence.length > 0 && clickable) {
-        document.getElementById('game-status').textContent =
-            `Bước ${userStep + 1} / ${sequence.length} (${sequence.length - userStep} bước còn lại)`;
-    } else {
-        document.getElementById('game-status').textContent = '';
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
     }
+    return array;
 }
 
-function renderBoard(highlight=-1, highlightColorIdx=0, clickedIdx=-1, clickResult=null) {
-    board.innerHTML = '';
-    for(let i=0;i<gridSize*gridSize;i++) {
-        const cell = document.createElement('div');
-        cell.className = 'border d-inline-block';
-        // KHÔNG set width/height px ở đây nữa!
-        cell.style.aspectRatio = '1/1';
-        if (i === highlight) {
-            cell.style.background = colorList[highlightColorIdx];
-        } else if (i === clickedIdx && clickResult !== null) {
-            cell.style.background = clickResult ? '#198754' : '#dc3545';
-        } else {
-            cell.style.background = 'var(--card-bg)';
-        }
-        cell.style.transition = 'background 0.2s';
-        cell.style.borderRadius = '8px';
-        cell.style.cursor = clickable ? 'pointer' : 'default';
-        cell.onclick = () => {
-            if (!clickable) return;
-            const isCorrect = (i === sequence[userStep].pos && sequence[userStep].colorIdx === (colorCount === 1 ? 0 : sequence[userStep].colorIdx));
-            renderBoard(-1, 0, i, isCorrect);
-            clickable = false;
-            setTimeout(() => {
-                if (isCorrect) {
-                    userStep++;
-                    if (userStep === sequence.length) {
-                        setTimeout(nextRound, 800);
-                    } else {
-                        clickable = true;
-                        renderBoard();
-                    }
-                } else {
-                    renderBoard();
-                }
-            }, 300);
-        };
-        board.appendChild(cell);
-    }
+function initGame() {
+    // Tạo 8 cặp hình (16 ô)
+    cards = shuffle([...icons, ...icons]).map((icon, idx) => ({
+        icon,
+        id: idx,
+        flipped: false,
+        matched: false
+    }));
+    flipped = [];
+    matchedCount = 0;
+    lock = false;
+    renderBoard();
 }
-function showSequence(idx=0) {
-    if(idx >= sequence.length) {
-        clickable = true;
-        renderBoard();
-        updateStatus();
-        return;
-    }
-    renderBoard(sequence[idx].pos, sequence[idx].colorIdx);
-    setTimeout(()=>showSequence(idx+1), 700);
-}
-function nextRound() {
-    userStep = 0;
-    clickable = false;
-    // Thêm 1 bước mới với vị trí và màu ngẫu nhiên
-    sequence.push({
-        pos: randomPos(),
-        colorIdx: colorCount === 1 ? 0 : randomColorIdx()
+
+function renderBoard() {
+    boardDiv.innerHTML = '';
+    cards.forEach((card, idx) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'memory-card' + (card.flipped || card.matched ? ' flipped' : '');
+        if (card.matched) cardDiv.classList.add('matched');
+        cardDiv.onclick = () => flipCard(idx);
+        // Mặt trước
+        const front = document.createElement('div');
+        front.className = 'front';
+        front.textContent = card.icon;
+        // Mặt sau
+        const back = document.createElement('div');
+        back.className = 'back';
+        back.textContent = '?';
+        cardDiv.appendChild(front);
+        cardDiv.appendChild(back);
+        boardDiv.appendChild(cardDiv);
     });
-    showSequence();
 }
-function startGame() {
-    updateLevel();
-    sequence = [];
-    userStep = 0;
-    clickable = false;
-    msg.textContent = '';
-    nextRound();
+
+function flipCard(idx) {
+    if (lock) return;
+    const card = cards[idx];
+    if (card.flipped || card.matched) return;
+    card.flipped = true;
+    flipped.push(idx);
+    renderBoard();
+    // Hiệu ứng click
+    const cardDivs = document.querySelectorAll('.memory-card');
+    cardDivs[idx].classList.add('clicked');
+    setTimeout(() => cardDivs[idx].classList.remove('clicked'), 200);
+
+    if (flipped.length === 2) {
+        lock = true;
+        setTimeout(() => {
+            const [i, j] = flipped;
+            const cardDivs = document.querySelectorAll('.memory-card');
+            if (cards[i].icon === cards[j].icon) {
+                cards[i].matched = cards[j].matched = true;
+                matchedCount += 2;
+                // Hiệu ứng đúng
+                cardDivs[i].classList.add('correct');
+                cardDivs[j].classList.add('correct');
+                setTimeout(() => {
+                    cardDivs[i].classList.remove('correct');
+                    cardDivs[j].classList.remove('correct');
+                }, 500);
+                if (matchedCount === cards.length) {
+                    statusDiv.textContent = '🎉 Bạn đã hoàn thành!';
+                }
+            } else {
+                cards[i].flipped = cards[j].flipped = false;
+                // Hiệu ứng sai
+            }
+            flipped = [];
+            lock = false;
+            setTimeout(renderBoard, 500);
+        }, 800);
+    }
 }
-levelSelect.onchange = startGame;
-startBtn.onclick = startGame;
-updateLevel();
-renderBoard();
+
+restartBtn.onclick = initGame;
+initGame();
 </script>
 {% endblock %}

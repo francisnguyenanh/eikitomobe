@@ -1353,10 +1353,14 @@ def eye_exercise():
     return render_template('eye_exercise.html', theme=theme)
 
 # app.py
-@app.route('/game/memory')
-def game_memory():
-    theme = session.get('theme', 'light')
-    return render_template('Game/game_memory.html', theme=theme)
+@app.route('/game_flip')
+def game_flip():
+    return render_template('Game/game_memory.html')
+
+@app.route('/game_math')
+def game_math():
+    return render_template('Game/game_math.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)

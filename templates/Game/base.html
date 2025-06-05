@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tomo Quotes</title>
+    <title>Tome Game</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
@@ -21,30 +21,10 @@
             background-color: var(--card-bg) !important;
             color: var(--text-color) !important;
         }
-        .btn-primary, .btn-success {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-            color: #fff;
+        .container.py-4 {
+            padding-left: 0 !important;
         }
-        .btn-primary:hover, .btn-success:hover {
-            opacity: 0.85;
-        }
-        .alert-info {
-            background-color: var(--card-bg);
-            border-color: var(--primary-color);
-            color: var(--text-color);
-        }
-        @media (max-width: 768px) {
-            .blockquote { font-size: 1em; }
-            .btn { padding: 0.375rem 0.75rem; }
-            .d-flex.gap-2 { flex-direction: column; gap: 0.5rem !important; }
-            .btn-sm.w-100 { max-width: none; }
-            .modal-dialog { margin: 1rem; }
-        }
-        @media (max-width: 576px) {
-            .table-responsive { font-size: 0.875rem; }
-            .modal-content { font-size: 0.875rem; }
-        }
+        
     </style>
     {% block head %}{% endblock %}
 </head>
@@ -58,13 +38,13 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('quotes') }}">
-                        <i class="bi bi-chat-quote"></i> View Quote
+                    <a class="nav-link" href="{{ url_for('game_flip') }}">
+                        <i class="bi bi-chat-quote"></i> Nhớ vị trí
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('manage_quotes') }}">
-                        <i class="bi bi-list-ul"></i> List Quote
+                    <a class="nav-link" href="{{ url_for('game_math') }}">
+                        <i class="bi bi-list-ul"></i> Tính toán
                     </a>
                 </li>
             </ul>
