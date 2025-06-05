@@ -237,6 +237,14 @@
             padding: 4px 8px;
             font-weight: bold;
         }
+        .list-group-item.dragging {
+            opacity: 0.5;
+            background: #b3e5fc !important;
+        }
+        .list-group-item.drag-over {
+            border-top: 2px solid #1976d2;
+            background: #e3f2fd !important;
+        }
     </style>
 </head>
 <body>
@@ -857,10 +865,22 @@
                     // Drag events
                     li.ondragstart = function(e) {
                         e.dataTransfer.setData('text/plain', JSON.stringify({fromFolder: folderIdx, fromLink: linkIdx}));
+                        li.classList.add('dragging');
                     };
-                    li.ondragover = function(e) { e.preventDefault(); };
+                    li.ondragend = function() {
+                        li.classList.remove('dragging');
+                        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                    };
+                    li.ondragover = function(e) {
+                        e.preventDefault();
+                        li.classList.add('drag-over');
+                    };
+                    li.ondragleave = function() {
+                        li.classList.remove('drag-over');
+                    };
                     li.ondrop = function(e) {
                         e.preventDefault();
+                        li.classList.remove('drag-over');
                         const {fromFolder, fromLink} = JSON.parse(e.dataTransfer.getData('text/plain'));
                         if (fromFolder == folderIdx && fromLink == linkIdx) return;
                         const moved = treeData[fromFolder].children.splice(fromLink, 1)[0];
