@@ -215,6 +215,28 @@
         #linksTreeContainer .list-group-item:active {
             cursor: grabbing;
         }
+        #linksModal .modal-dialog {
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        #linksModal .modal-content {
+            max-height: 70vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #linksModal .modal-body {
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+        .folder-header {
+            background: #e3f2fd !important;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -317,7 +339,6 @@
             <div class="modal-content">
             <div class="modal-body">
                 <div id="linksTreeContainer"></div>
-                <button class="btn btn-primary mt-2" id="addFolderBtn">Thêm thư mục</button>
             </div>
             </div>
         </div>
@@ -778,14 +799,18 @@
 
                 // Folder header
                 const header = document.createElement('div');
-                header.className = 'd-flex align-items-center mb-1';
+                header.className = 'd-flex align-items-center mb-1 folder-header';
+                header.style.background = '#e3f2fd'; // Màu xanh nhạt
+                header.style.borderRadius = '6px';
+                header.style.padding = '4px 8px';
+                header.style.fontWeight = 'bold';
 
                 // Collapse/expand button
                 const toggleBtn = document.createElement('button');
                 toggleBtn.className = 'btn btn-sm btn-link px-1 py-0';
-                // Mặc định là đóng
-                let collapsed = true;
-                toggleBtn.innerHTML = '<i class="bi bi-caret-right-fill"></i>';
+                // Mặc định là mở
+                let collapsed = false;
+                toggleBtn.innerHTML = '<i class="bi bi-caret-down-fill"></i>';
                 toggleBtn.onclick = function() {
                     collapsed = !collapsed;
                     linksUl.style.display = collapsed ? 'none' : '';
@@ -804,25 +829,14 @@
                 folderName.placeholder = 'Tên thư mục...';
                 folderName.onblur = function() {
                     folder.name = folderName.value.trim();
+                    // Nếu là thư mục không phải cuối cùng và tên rỗng thì xoá luôn cả thư mục (bất kể có link con hay không)
+                    if (folderIdx !== treeData.length - 1 && folder.name === '') {
+                        treeData.splice(folderIdx, 1);
+                    }
                     saveLinksTree();
                     renderLinksTree(treeData);
                 };
                 header.appendChild(folderName);
-
-                // Remove folder button (chỉ hiện nếu không phải thư mục trống cuối)
-                if (folderIdx !== treeData.length - 1) {
-                    const removeFolderBtn = document.createElement('button');
-                    removeFolderBtn.className = 'btn btn-sm btn-danger ms-2';
-                    removeFolderBtn.innerHTML = '<i class="bi bi-trash"></i>';
-                    removeFolderBtn.onclick = function() {
-                        if (confirm('Xóa thư mục này?')) {
-                            treeData.splice(folderIdx, 1);
-                            renderLinksTree(treeData);
-                            saveLinksTree();
-                        }
-                    };
-                    header.appendChild(removeFolderBtn);
-                }
 
                 folderDiv.appendChild(header);
 
@@ -830,8 +844,8 @@
                 const linksUl = document.createElement('ul');
                 linksUl.className = 'list-group';
                 linksUl.style.minHeight = '10px';
-                // Mặc định ẩn (đóng)
-                linksUl.style.display = 'none';
+                // Mặc định HIỆN (mở)
+                linksUl.style.display = '';
 
                 folder.children = folder.children || [];
                 // Render các link đã có
@@ -863,6 +877,10 @@
                     input.placeholder = 'Link...';
                     input.onblur = function() {
                         link.url = input.value.trim();
+                        // Nếu link con bị xoá hết nội dung thì xoá luôn nút con đó
+                        if (!link.url) {
+                            folder.children.splice(linkIdx, 1);
+                        }
                         saveLinksTree();
                         renderLinksTree(treeData);
                     };
@@ -880,17 +898,6 @@
                         };
                         li.appendChild(openBtn);
                     }
-
-                    // Remove link button
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'btn btn-sm btn-outline-danger';
-                    removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-                    removeBtn.onclick = function() {
-                        folder.children.splice(linkIdx, 1);
-                        renderLinksTree(treeData);
-                        saveLinksTree();
-                    };
-                    li.appendChild(removeBtn);
 
                     linksUl.appendChild(li);
                 });
