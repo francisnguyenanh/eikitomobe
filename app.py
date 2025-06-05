@@ -936,10 +936,10 @@ def links():
     config = load_config()
     if request.method == 'POST':
         data = request.get_json()
-        config['links'] = data.get('links', [])
+        config['links_tree'] = data.get('links_tree', [])
         save_config(config)
         return jsonify({'status': 'success'})
-    return jsonify({'links': config.get('links', [])})
+    return jsonify({'links_tree': config.get('links_tree', [])})
 
 
 # Diary app routes

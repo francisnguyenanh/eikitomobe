@@ -209,6 +209,12 @@
             justify-content: center;
             align-items: center;
         }
+        #linksTreeContainer .list-group-item {
+            cursor: grab;
+        }
+        #linksTreeContainer .list-group-item:active {
+            cursor: grabbing;
+        }
     </style>
 </head>
 <body>
@@ -307,16 +313,15 @@
 
     <!-- Links Modal -->
     <div class="modal fade" id="linksModal" tabindex="-1" aria-labelledby="linksModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <form id="linksForm">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
             <div class="modal-body">
-              <div id="linksInputs"></div>
+                <div id="linksTreeContainer"></div>
+                <button class="btn btn-primary mt-2" id="addFolderBtn">Thêm thư mục</button>
             </div>
-          </form>
+            </div>
         </div>
-      </div>
-    </div>
+        </div>
 
     <!-- Confirm Logout Modal -->
     <div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutModalLabel" aria-hidden="true">
@@ -743,135 +748,200 @@
             });
         }
 
-        // --- Links Modal logic ---
+        
+
         document.getElementById('showLinksBtn').addEventListener('click', function(e) {
             e.preventDefault();
             fetch('/links')
                 .then(res => res.json())
                 .then(data => {
-                    const links = data.links || [];
-                    const linksInputs = document.getElementById('linksInputs');
-                    linksInputs.innerHTML = '';
-                    function createLinkInput(linkValue = '') {
-                        const div = document.createElement('div');
-                        div.className = 'input-group mb-2';
-
-                        const input = document.createElement('input');
-                        input.type = 'text';
-                        input.className = 'form-control link-input';
-                        input.value = linkValue;
-                        input.placeholder = 'Enter link...';
-
-                        // Nếu có link thì readonly, click mở tab mới
-                        if (linkValue) {
-                            input.readOnly = true;
-                            input.style.cursor = 'pointer';
-                            input.addEventListener('click', function() {
-                                let url = linkValue.trim();
-                                if (!/^https?:\/\//i.test(url)) {
-                                    url = 'https://' + url;
-                                }
-                                window.open(url, '_blank');
-                            });
-                        }
-
-                        // Nút edit
-                        const editBtn = document.createElement('button');
-                        editBtn.type = 'button';
-                        editBtn.className = 'btn btn-outline-secondary';
-                        editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
-                        if (!linkValue) editBtn.style.display = 'none'; // Ẩn nút edit cho input mới
-
-                        editBtn.onclick = function() {
-                            input.readOnly = false;
-                            input.focus();
-                            input.style.cursor = '';
-                            editBtn.style.display = 'none';
-                        };
-
-                        // Nút xóa
-                        const removeBtn = document.createElement('button');
-                        removeBtn.type = 'button';
-                        removeBtn.className = 'btn btn-outline-danger';
-                        removeBtn.innerHTML = '<i class="bi bi-x"></i>';
-                        removeBtn.onclick = () => {
-                            div.remove();
-                            // --- Gửi cập nhật links lên server ---
-                            const inputs = document.querySelectorAll('.link-input');
-                            const links = [];
-                            inputs.forEach(inp => {
-                                const val = inp.value.trim();
-                                if (val) links.push(val);
-                            });
-                            fetch('/links', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({links: links})
-                            });
-                        };
-
-                        // Khi input mất focus, nếu có giá trị thì lại readonly và hiện lại nút edit
-                        input.addEventListener('blur', function() {
-                            if (input.value.trim()) {
-                                input.readOnly = true;
-                                input.style.cursor = 'pointer';
-                                editBtn.style.display = '';
-                                // Nếu là ô cuối cùng (ô trống vừa nhập), thì thêm ô mới
-                                const allInputs = Array.from(document.querySelectorAll('.link-input'));
-                                if (allInputs[allInputs.length - 1] === input) {
-                                    createLinkInput();
-                                }
-                            }
-                            // --- Gửi cập nhật links lên server ---
-                            const inputs = document.querySelectorAll('.link-input');
-                            const links = [];
-                            inputs.forEach(inp => {
-                                const val = inp.value.trim();
-                                if (val) links.push(val);
-                            });
-                            fetch('/links', {
-                                method: 'POST',
-                                headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({links: links})
-                            });
-                        });
-
-                        div.appendChild(input);
-                        div.appendChild(editBtn);
-                        div.appendChild(removeBtn);
-                        document.getElementById('linksInputs').appendChild(div);
-                    }
-                    links.forEach(link => createLinkInput(link));
-                    createLinkInput();
+                    let linksTree = data.links_tree || [];
+                    renderLinksTree(linksTree);
                     const modal = new bootstrap.Modal(document.getElementById('linksModal'));
                     modal.show();
                 });
         });
-        document.getElementById('linksForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const inputs = document.querySelectorAll('.link-input');
-            const links = [];
-            inputs.forEach(input => {
-                const val = input.value.trim();
-                if (val) links.push(val);
-            });
-            fetch('/links', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
-                body: JSON.stringify({links: links})
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    if (typeof showFlashMessage === 'function') {
-                        showFlashMessage('success', 'Links updated!');
-                    }
-                    // Đừng đóng modal ở đây!
-                } else {
-                    alert('Failed to update links');
+
+        function renderLinksTree(treeData) {
+            const container = document.getElementById('linksTreeContainer');
+            container.innerHTML = '';
+
+            // Đảm bảo luôn có 1 thư mục trống cuối cùng
+            let last = treeData[treeData.length - 1];
+            if (!last || (last.name.trim() !== '' || (last.children && last.children.length > 0 && last.children.some(l => l.url && l.url.trim() !== '')))) {
+                treeData.push({name: '', children: []});
+            }
+
+            treeData.forEach((folder, folderIdx) => {
+                const folderDiv = document.createElement('div');
+                folderDiv.className = 'mb-2 border rounded p-2 bg-light';
+
+                // Folder header
+                const header = document.createElement('div');
+                header.className = 'd-flex align-items-center mb-1';
+
+                // Collapse/expand button
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'btn btn-sm btn-link px-1 py-0';
+                // Mặc định là đóng
+                let collapsed = true;
+                toggleBtn.innerHTML = '<i class="bi bi-caret-right-fill"></i>';
+                toggleBtn.onclick = function() {
+                    collapsed = !collapsed;
+                    linksUl.style.display = collapsed ? 'none' : '';
+                    toggleBtn.innerHTML = collapsed
+                        ? '<i class="bi bi-caret-right-fill"></i>'
+                        : '<i class="bi bi-caret-down-fill"></i>';
+                };
+                header.appendChild(toggleBtn);
+
+                // Folder name (editable)
+                const folderName = document.createElement('input');
+                folderName.type = 'text';
+                folderName.value = folder.name;
+                folderName.className = 'form-control form-control-sm d-inline-block mx-1';
+                folderName.style.width = '120px';
+                folderName.placeholder = 'Tên thư mục...';
+                folderName.onblur = function() {
+                    folder.name = folderName.value.trim();
+                    saveLinksTree();
+                    renderLinksTree(treeData);
+                };
+                header.appendChild(folderName);
+
+                // Remove folder button (chỉ hiện nếu không phải thư mục trống cuối)
+                if (folderIdx !== treeData.length - 1) {
+                    const removeFolderBtn = document.createElement('button');
+                    removeFolderBtn.className = 'btn btn-sm btn-danger ms-2';
+                    removeFolderBtn.innerHTML = '<i class="bi bi-trash"></i>';
+                    removeFolderBtn.onclick = function() {
+                        if (confirm('Xóa thư mục này?')) {
+                            treeData.splice(folderIdx, 1);
+                            renderLinksTree(treeData);
+                            saveLinksTree();
+                        }
+                    };
+                    header.appendChild(removeFolderBtn);
                 }
+
+                folderDiv.appendChild(header);
+
+                // Links list
+                const linksUl = document.createElement('ul');
+                linksUl.className = 'list-group';
+                linksUl.style.minHeight = '10px';
+                // Mặc định ẩn (đóng)
+                linksUl.style.display = 'none';
+
+                folder.children = folder.children || [];
+                // Render các link đã có
+                folder.children.forEach((link, linkIdx) => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex align-items-center';
+                    li.draggable = true;
+
+                    // Drag events
+                    li.ondragstart = function(e) {
+                        e.dataTransfer.setData('text/plain', JSON.stringify({fromFolder: folderIdx, fromLink: linkIdx}));
+                    };
+                    li.ondragover = function(e) { e.preventDefault(); };
+                    li.ondrop = function(e) {
+                        e.preventDefault();
+                        const {fromFolder, fromLink} = JSON.parse(e.dataTransfer.getData('text/plain'));
+                        if (fromFolder == folderIdx && fromLink == linkIdx) return;
+                        const moved = treeData[fromFolder].children.splice(fromLink, 1)[0];
+                        folder.children.splice(linkIdx, 0, moved);
+                        renderLinksTree(treeData);
+                        saveLinksTree();
+                    };
+
+                    // Link input
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'form-control form-control-sm me-2';
+                    input.value = link.url;
+                    input.placeholder = 'Link...';
+                    input.onblur = function() {
+                        link.url = input.value.trim();
+                        saveLinksTree();
+                        renderLinksTree(treeData);
+                    };
+                    li.appendChild(input);
+
+                    // Open link button
+                    if (link.url) {
+                        const openBtn = document.createElement('button');
+                        openBtn.className = 'btn btn-sm btn-primary me-2';
+                        openBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
+                        openBtn.onclick = function() {
+                            let url = link.url.trim();
+                            if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+                            window.open(url, '_blank');
+                        };
+                        li.appendChild(openBtn);
+                    }
+
+                    // Remove link button
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'btn btn-sm btn-outline-danger';
+                    removeBtn.innerHTML = '<i class="bi bi-x"></i>';
+                    removeBtn.onclick = function() {
+                        folder.children.splice(linkIdx, 1);
+                        renderLinksTree(treeData);
+                        saveLinksTree();
+                    };
+                    li.appendChild(removeBtn);
+
+                    linksUl.appendChild(li);
+                });
+
+                // Luôn render thêm 1 dòng link trống cuối cùng
+                const emptyLi = document.createElement('li');
+                emptyLi.className = 'list-group-item d-flex align-items-center';
+                const emptyInput = document.createElement('input');
+                emptyInput.type = 'text';
+                emptyInput.className = 'form-control form-control-sm me-2';
+                emptyInput.placeholder = 'Link...';
+                emptyInput.onblur = function() {
+                    const val = emptyInput.value.trim();
+                    if (val) {
+                        folder.children.push({url: val});
+                        saveLinksTree();
+                        renderLinksTree(treeData);
+                    }
+                };
+                emptyLi.appendChild(emptyInput);
+                linksUl.appendChild(emptyLi);
+
+                // Drag over folder to move link here
+                linksUl.ondragover = function(e) { e.preventDefault(); };
+                linksUl.ondrop = function(e) {
+                    e.preventDefault();
+                    const {fromFolder, fromLink} = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    if (fromFolder == folderIdx) return;
+                    const moved = treeData[fromFolder].children.splice(fromLink, 1)[0];
+                    folder.children.push(moved);
+                    renderLinksTree(treeData);
+                    saveLinksTree();
+                };
+
+                folderDiv.appendChild(linksUl);
+                container.appendChild(folderDiv);
             });
-        });
+
+            // Không còn nút Thêm thư mục
+
+            // Lưu lại tree sau mỗi thao tác
+            function saveLinksTree() {
+                fetch('/links', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({links_tree: treeData})
+                });
+            }
+        }
+
+        
 
         // --- Logout Modal logic ---
         document.getElementById('logoutBtn').addEventListener('click', function(e) {
