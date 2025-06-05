@@ -1,6 +1,59 @@
 {% extends "Game/base.html" %}
 {% block title %}Game Trí Nhớ Vị Trí{% endblock %}
 {% block content %}
+<style>
+/* Tăng kích thước container và game-board */
+.container.py-4 {
+    width: 90vw !important;
+    height: 70vh !important;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    box-sizing: border-box;
+}
+#game-board {
+    display: grid;
+    justify-content: center;
+    align-content: center;
+    margin: auto;
+    background: transparent;
+    gap: 8px;
+    box-sizing: border-box;
+}
+#game-board > div {
+    box-sizing: border-box;
+}
+@media (max-width: 600px) {
+    .container.py-4 {
+        width: 96vw !important;
+        height: 70vw !important;
+    }
+    #game-board {
+        width: 90vw !important;
+        height: 90vw !important;
+        min-width: unset;
+        min-height: unset;
+        box-sizing: border-box;
+    }
+}
+#game-board {
+    display: grid;
+    justify-content: center;
+    align-content: center;
+    margin: auto;
+    background: transparent;
+    gap: 8px;
+    box-sizing: border-box;
+}
+#game-board > div {
+    box-sizing: border-box;
+    width: 100%;
+    aspect-ratio: 1/1;
+}
+</style>
+
 <div class="container py-4">
     <h2 class="mb-3 text-center">Game Nhớ Vị Trí</h2>
     <div class="text-center mb-3">
@@ -9,9 +62,11 @@
             <option value="1">Dễ (3x3, 1 màu)</option>
             <option value="2">Trung bình (4x4, 2 màu)</option>
             <option value="3">Khó (5x5, 3 màu)</option>
+            <option value="4">Rất khó (6x6, 4 màu)</option>
+            <option value="5">Siêu khó (7x7, 5 màu)</option>
         </select>
     </div>
-    <div id="game-board" class="d-flex flex-wrap justify-content-center" style="max-width:500px;margin:auto;"></div>
+    <div id="game-board"></div>
     <div class="text-center mt-3">
         <button class="btn btn-primary" id="startBtn">Bắt đầu lại</button>
         <div id="game-status" class="mt-2 text-center"></div>
@@ -35,8 +90,15 @@ function updateLevel() {
     const level = parseInt(levelSelect.value);
     if (level === 1) { gridSize = 3; colorCount = 1; }
     else if (level === 2) { gridSize = 4; colorCount = 2; }
-    else { gridSize = 5; colorCount = 3; }
-    board.style.maxWidth = (gridSize*100) + 'px';
+    else if (level === 3) { gridSize = 5; colorCount = 3; }
+    else if (level === 4) { gridSize = 6; colorCount = 4; }
+    else { gridSize = 7; colorCount = 5; }
+    // Chỉ set width, KHÔNG set height!
+    let vw = Math.min(window.innerWidth, 700) * 0.85;
+    board.style.width = vw + "px";
+    board.style.height = ""; // Xóa height cũ nếu có
+    board.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+    board.style.gridTemplateRows = `repeat(${gridSize}, 1fr)`;
 }
 
 function randomPos() {
@@ -58,12 +120,13 @@ function renderBoard(highlight=-1, highlightColorIdx=0, clickedIdx=-1, clickResu
     board.innerHTML = '';
     for(let i=0;i<gridSize*gridSize;i++) {
         const cell = document.createElement('div');
-        cell.className = 'border m-1 d-inline-block';
-        cell.style.width = cell.style.height = (90 - (gridSize-3)*15) + 'px';
+        cell.className = 'border d-inline-block';
+        // KHÔNG set width/height px ở đây nữa!
+        cell.style.aspectRatio = '1/1';
         if (i === highlight) {
             cell.style.background = colorList[highlightColorIdx];
         } else if (i === clickedIdx && clickResult !== null) {
-            cell.style.background = clickResult ? '#198754' : '#dc3545'; // xanh lá hoặc đỏ
+            cell.style.background = clickResult ? '#198754' : '#dc3545';
         } else {
             cell.style.background = 'var(--card-bg)';
         }
@@ -73,19 +136,19 @@ function renderBoard(highlight=-1, highlightColorIdx=0, clickedIdx=-1, clickResu
         cell.onclick = () => {
             if (!clickable) return;
             const isCorrect = (i === sequence[userStep].pos && sequence[userStep].colorIdx === (colorCount === 1 ? 0 : sequence[userStep].colorIdx));
-            renderBoard(-1, 0, i, isCorrect); // Hiệu ứng màu
-            clickable = false; // Ngăn double click khi hiệu ứng
+            renderBoard(-1, 0, i, isCorrect);
+            clickable = false;
             setTimeout(() => {
                 if (isCorrect) {
                     userStep++;
                     if (userStep === sequence.length) {
                         setTimeout(nextRound, 800);
                     } else {
-                        clickable = true; // Cho phép click tiếp
+                        clickable = true;
                         renderBoard();
                     }
                 } else {
-                    renderBoard(); // Reset lại màu board
+                    renderBoard();
                 }
             }, 300);
         };
