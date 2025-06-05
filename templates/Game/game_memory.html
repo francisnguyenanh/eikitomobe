@@ -1,0 +1,128 @@
+{% extends "Game/base.html" %}
+{% block title %}Game Trí Nhớ Vị Trí{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-3 text-center">Game Nhớ Vị Trí</h2>
+    <div class="text-center mb-3">
+        <label for="levelSelect" class="me-2">Level:</label>
+        <select id="levelSelect" class="form-select d-inline-block w-auto">
+            <option value="1">Dễ (3x3, 1 màu)</option>
+            <option value="2">Trung bình (4x4, 2 màu)</option>
+            <option value="3">Khó (5x5, 3 màu)</option>
+        </select>
+    </div>
+    <div id="game-board" class="d-flex flex-wrap justify-content-center" style="max-width:500px;margin:auto;"></div>
+    <div class="text-center mt-3">
+        <button class="btn btn-primary" id="startBtn">Bắt đầu lại</button>
+        <div id="game-status" class="mt-2 text-center"></div>
+        <div id="game-msg" class="mt-2"></div>
+    </div>
+</div>
+<script>
+const board = document.getElementById('game-board');
+const msg = document.getElementById('game-msg');
+const startBtn = document.getElementById('startBtn');
+const levelSelect = document.getElementById('levelSelect');
+
+let sequence = [];
+let userStep = 0;
+let clickable = false;
+let gridSize = 3;
+let colorCount = 1;
+const colorList = ['#0d6efd', '#dc3545', '#ffc107', '#198754', '#6610f2'];
+
+function updateLevel() {
+    const level = parseInt(levelSelect.value);
+    if (level === 1) { gridSize = 3; colorCount = 1; }
+    else if (level === 2) { gridSize = 4; colorCount = 2; }
+    else { gridSize = 5; colorCount = 3; }
+    board.style.maxWidth = (gridSize*100) + 'px';
+}
+
+function randomPos() {
+    return Math.floor(Math.random() * (gridSize * gridSize));
+}
+function randomColorIdx() {
+    return Math.floor(Math.random() * colorCount);
+}
+function updateStatus() {
+    if (sequence.length > 0 && clickable) {
+        document.getElementById('game-status').textContent =
+            `Bước ${userStep + 1} / ${sequence.length} (${sequence.length - userStep} bước còn lại)`;
+    } else {
+        document.getElementById('game-status').textContent = '';
+    }
+}
+
+function renderBoard(highlight=-1, highlightColorIdx=0, clickedIdx=-1, clickResult=null) {
+    board.innerHTML = '';
+    for(let i=0;i<gridSize*gridSize;i++) {
+        const cell = document.createElement('div');
+        cell.className = 'border m-1 d-inline-block';
+        cell.style.width = cell.style.height = (90 - (gridSize-3)*15) + 'px';
+        if (i === highlight) {
+            cell.style.background = colorList[highlightColorIdx];
+        } else if (i === clickedIdx && clickResult !== null) {
+            cell.style.background = clickResult ? '#198754' : '#dc3545'; // xanh lá hoặc đỏ
+        } else {
+            cell.style.background = 'var(--card-bg)';
+        }
+        cell.style.transition = 'background 0.2s';
+        cell.style.borderRadius = '8px';
+        cell.style.cursor = clickable ? 'pointer' : 'default';
+        cell.onclick = () => {
+            if (!clickable) return;
+            const isCorrect = (i === sequence[userStep].pos && sequence[userStep].colorIdx === (colorCount === 1 ? 0 : sequence[userStep].colorIdx));
+            renderBoard(-1, 0, i, isCorrect); // Hiệu ứng màu
+            clickable = false; // Ngăn double click khi hiệu ứng
+            setTimeout(() => {
+                if (isCorrect) {
+                    userStep++;
+                    if (userStep === sequence.length) {
+                        setTimeout(nextRound, 800);
+                    } else {
+                        clickable = true; // Cho phép click tiếp
+                        renderBoard();
+                    }
+                } else {
+                    renderBoard(); // Reset lại màu board
+                }
+            }, 300);
+        };
+        board.appendChild(cell);
+    }
+}
+function showSequence(idx=0) {
+    if(idx >= sequence.length) {
+        clickable = true;
+        renderBoard();
+        updateStatus();
+        return;
+    }
+    renderBoard(sequence[idx].pos, sequence[idx].colorIdx);
+    setTimeout(()=>showSequence(idx+1), 700);
+}
+function nextRound() {
+    userStep = 0;
+    clickable = false;
+    // Thêm 1 bước mới với vị trí và màu ngẫu nhiên
+    sequence.push({
+        pos: randomPos(),
+        colorIdx: colorCount === 1 ? 0 : randomColorIdx()
+    });
+    showSequence();
+}
+function startGame() {
+    updateLevel();
+    sequence = [];
+    userStep = 0;
+    clickable = false;
+    msg.textContent = '';
+    nextRound();
+}
+levelSelect.onchange = startGame;
+startBtn.onclick = startGame;
+updateLevel();
+renderBoard();
+</script>
+{% endblock %}
