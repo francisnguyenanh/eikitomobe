@@ -409,7 +409,7 @@ function formatDate(dtStr) {
     const MM = String(dt.getMinutes()).padStart(2, '0');
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const aaa = days[dt.getDay()];
-    return `${yyyy}/${mm}/${dd} ${HH}:${MM}(${aaa})`;
+    return `${yyyy}/${mm}/${dd} (${aaa})`;
 }
 
 // Thêm ghi chú mới
