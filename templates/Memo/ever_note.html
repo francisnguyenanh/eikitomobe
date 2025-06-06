@@ -238,22 +238,24 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
 <div class="evernote-layout d-flex">
     <!-- Sidebar -->
     <div class="evernote-sidebar">
-        <div class="d-flex justify-content-between align-items-center px-3 py-2">
-            <span class="fw-bold">List note</span>
-            <div>
-                <!-- Nút collapse/expand chỉ hiện trên desktop -->
-                 <button class="btn btn-success btn-sm" id="add-note-btn"><i class="bi bi-plus"></i></button>
-                <button class="btn btn-outline-secondary btn-sm d-none d-lg-inline-block" id="toggle-sidebar-btn" title="Thu gọn/Mở rộng sidebar">
-                    <span id="toggle-sidebar-icon">&lt;</span>
-                </button>
-                <button class="btn btn-secondary btn-sm d-inline-block d-lg-none" id="toggle-list-btn" title="Ẩn/Hiện danh sách">
-                    <i class="bi bi-chevron-bar-up" id="toggle-list-icon"></i>
-                </button>
-                
-            </div>
+    <div class="d-flex justify-content-between align-items-center px-3 py-2">
+        <span class="fw-bold">List note</span>
+        <span id="save-status" style="margin-left:8px; color:#43a047; font-size:1.2em; display:none;">
+            <i class="bi bi-cloud-check-fill"></i>
+        </span>
+        <div>
+            <!-- Nút collapse/expand chỉ hiện trên desktop -->
+            <button class="btn btn-success btn-sm" id="add-note-btn"><i class="bi bi-plus"></i></button>
+            <button class="btn btn-outline-secondary btn-sm d-none d-lg-inline-block" id="toggle-sidebar-btn" title="Thu gọn/Mở rộng sidebar">
+                <span id="toggle-sidebar-icon">&lt;</span>
+            </button>
+            <button class="btn btn-secondary btn-sm d-inline-block d-lg-none" id="toggle-list-btn" title="Ẩn/Hiện danh sách">
+                <i class="bi bi-chevron-bar-up" id="toggle-list-icon"></i>
+            </button>
         </div>
-        <ul class="list-group list-group-flush" id="note-list"></ul>
     </div>
+    <ul class="list-group list-group-flush" id="note-list"></ul>
+</div>
     <!-- Main content -->
     <div class="evernote-main">
         <div class="evernote-toolbar">
@@ -870,5 +872,88 @@ searchModal.addEventListener('hidden.bs.modal', function() {
         lastSearchTerm = "";
     }
 });
+let lastSavedTitle = "";
+let lastSavedContent = "";
+
+// Hàm kiểm tra thay đổi và autosave
+function autoSaveNote() {
+    const title = document.getElementById('note-title').value.trim();
+    const content = document.getElementById('evernote-editor').innerHTML;
+    if (title !== lastSavedTitle || content !== lastSavedContent) {
+        saveNote();
+        lastSavedTitle = title;
+        lastSavedContent = content;
+    }
+}
+
+// Gọi autosave mỗi 5 giây
+setInterval(autoSaveNote, 5000);
+
+// Sau khi lưu thành công, cập nhật lại giá trị đã lưu
+async function saveNote() {
+    let title = document.getElementById('note-title').value.trim();
+    const content = document.getElementById('evernote-editor').innerHTML;
+
+    // Nếu tiêu đề rỗng, tự động sinh tiêu đề theo định dạng Note_yyyy/mm/dd_HHMM
+    if (title === "") {
+        const now = new Date();
+        const pad = n => n.toString().padStart(2, '0');
+        title = `Note_${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+        document.getElementById('note-title').value = title;
+    }
+
+    // Nếu chưa có note nào được chọn, tự động tạo mới nếu có nội dung hoặc tiêu đề
+    if (!currentId) {
+        if (title !== "" || content !== "") {
+            // Tạo mới note
+            const res = await fetch('/api/evernote_notes', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({title: title, content: content})
+            });
+            const data = await res.json();
+            await fetchNotes();
+            selectNote(data.id);
+        }
+        lastSavedTitle = title;
+        lastSavedContent = content;
+        return;
+    }
+
+    // Nếu đã có note, cập nhật như bình thường
+    const note = notes.find(n => n.id === currentId);
+    if (!note) return;
+    note.title = title;
+    note.content = content;
+    await fetch(`/api/evernote_notes/${currentId}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title: note.title, content: note.content})
+    });
+    await fetchNotes();
+    selectNote(currentId);
+
+    lastSavedTitle = title;
+    lastSavedContent = content;
+    showSaveStatus();
+}
+function showSaveStatus() {
+    const icon = document.getElementById('save-status');
+    icon.style.display = 'inline';
+    icon.style.opacity = '1';
+    // Hiệu ứng nhấp nháy nhẹ
+    icon.animate([
+        { opacity: 0.2 },
+        { opacity: 1 }
+    ], {
+        duration: 300,
+        iterations: 1
+    });
+    // Ẩn icon sau 1.5s
+    clearTimeout(showSaveStatus.timeout);
+    showSaveStatus.timeout = setTimeout(() => {
+        icon.style.display = 'none';
+    }, 1500);
+}
 </script>
 {% endblock %}
