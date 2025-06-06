@@ -239,7 +239,7 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
     <!-- Sidebar -->
     <div class="evernote-sidebar">
     <div class="d-flex justify-content-between align-items-center px-3 py-2">
-        <span class="fw-bold">List note</span>
+        <span class="fw-bold">Note</span>
         <span id="save-status" style="margin-left:8px; color:#43a047; font-size:1.2em; display:none;">
             <i class="bi bi-cloud-check-fill"></i>
         </span>
@@ -387,48 +387,6 @@ function selectNote(id) {
 }
 
 let pendingDelete = false;
-
-async function saveNote() {
-    let title = document.getElementById('note-title').value.trim();
-    const content = document.getElementById('evernote-editor').innerHTML;
-
-    // Nếu tiêu đề rỗng, tự động sinh tiêu đề theo định dạng Note_yyyy/mm/dd_HHMM
-    if (title === "") {
-        const now = new Date();
-        const pad = n => n.toString().padStart(2, '0');
-        title = `Note_${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
-        document.getElementById('note-title').value = title;
-    }
-
-    // Nếu chưa có note nào được chọn, tự động tạo mới nếu có nội dung hoặc tiêu đề
-    if (!currentId) {
-        if (title !== "" || content !== "") {
-            // Tạo mới note
-            const res = await fetch('/api/evernote_notes', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({title: title, content: content})
-            });
-            const data = await res.json();
-            await fetchNotes();
-            selectNote(data.id);
-        }
-        return;
-    }
-
-    // Nếu đã có note, cập nhật như bình thường
-    const note = notes.find(n => n.id === currentId);
-    if (!note) return;
-    note.title = title;
-    note.content = content;
-    await fetch(`/api/evernote_notes/${currentId}`, {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({title: note.title, content: note.content})
-    });
-    await fetchNotes();
-    selectNote(currentId);
-}
 
 // Thêm ghi chú mới
 async function addNote() {
@@ -930,8 +888,6 @@ async function saveNote() {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({title: note.title, content: note.content})
     });
-    await fetchNotes();
-    selectNote(currentId);
 
     lastSavedTitle = title;
     lastSavedContent = content;
