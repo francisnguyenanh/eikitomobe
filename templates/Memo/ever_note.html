@@ -216,6 +216,24 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
     background-color: #e3f2fd !important;
     transition: box-shadow 0.2s, background-color 0.2s;
 }
+.search-highlight {
+    background: yellow;
+    color: #222;
+    border-radius: 2px;
+}
+#searchModal .modal-dialog {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    z-index: 1060;
+    width: 320px;
+    max-width: 90vw;
+}
+#searchModal .modal-content {
+    box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+}
 </style>
 <div class="evernote-layout d-flex">
     <!-- Sidebar -->
@@ -244,6 +262,7 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
                 <button type="button" id="clear-title-btn" style="position:absolute; right:4px; top:50%; transform:translateY(-50%); border:none; background:transparent; padding:0; margin:0; font-size:1.1em; color:#888; cursor:pointer; z-index:2;" title="Xóa tiêu đề">&times;</button>
             </div>
             <button class="btn btn-danger btn-sm" id="delete-note-btn" title="Xóa"><i class="bi bi-trash"></i></button>
+            <button type="button" id="search-btn" class="btn btn-light btn-sm" title="Tìm kiếm"><i class="bi bi-search"></i></button>
             <div class="vr mx-2"></div>
             <!-- Toolbar định dạng -->
             <button class="btn btn-light btn-sm" type="button" id="bold-btn" title="In đậm" onmousedown="toggleFormat(event, 'bold', this)"><b>B</b></button>
@@ -303,6 +322,17 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
         <button type="button" class="btn btn-danger" id="confirm-delete-btn">Xóa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal search -->
+<div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body py-2">
+        <input type="text" id="search-textbox" class="form-control form-control-sm" placeholder="Nhập từ khóa...">
       </div>
     </div>
   </div>
@@ -650,6 +680,195 @@ function toggleChecklist(event, btn) {
         btn.classList.remove('effect-click');
     }, 200);
 }
+let searchResults = [];
+let currentSearchIndex = -1;
 
+// Mở modal search khi click kính lúp
+document.getElementById('search-btn').onclick = function() {
+    const modalEl = document.getElementById('searchModal');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    // Đợi modal hiện xong mới focus
+    modalEl.addEventListener('shown.bs.modal', function handler() {
+        document.getElementById('search-textbox').focus();
+        // Chỉ chạy 1 lần
+        modalEl.removeEventListener('shown.bs.modal', handler);
+    });
+};
+
+// Xóa highlight cũ
+function clearSearchHighlight() {
+    const editor = document.getElementById('evernote-editor');
+    const spans = editor.querySelectorAll('.search-highlight');
+    spans.forEach(span => {
+        const text = document.createTextNode(span.textContent);
+        span.parentNode.replaceChild(text, span);
+    });
+}
+
+// Tìm và highlight tất cả kết quả
+function highlightSearch(term) {
+    clearSearchHighlight();
+    if (!term) return [];
+    const editor = document.getElementById('evernote-editor');
+    const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    let results = [];
+
+    function walk(node) {
+        if (node.nodeType === 3) { // text node
+            let match;
+            let parent = node.parentNode;
+            let text = node.nodeValue;
+            let frag = document.createDocumentFragment();
+            let lastIndex = 0;
+            regex.lastIndex = 0;
+            while ((match = regex.exec(text)) !== null) {
+                // Thêm text trước match
+                if (match.index > lastIndex) {
+                    frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+                }
+                // Thêm highlight
+                const span = document.createElement('span');
+                span.className = 'search-highlight';
+                span.textContent = match[0];
+                frag.appendChild(span);
+                results.push(span);
+                lastIndex = regex.lastIndex;
+            }
+            // Thêm phần còn lại
+            if (lastIndex < text.length) {
+                frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+            }
+            if (results.length > 0) {
+                parent.replaceChild(frag, node);
+            }
+        } else if (node.nodeType === 1 && node.childNodes && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
+            // Đệ quy cho các node con
+            for (let i = node.childNodes.length - 1; i >= 0; i--) {
+                walk(node.childNodes[i]);
+            }
+        }
+    }
+
+    walk(editor);
+    return results;
+}
+
+// Di chuyển tới kết quả tiếp theo
+function gotoNextSearch() {
+    if (!searchResults.length) return;
+    // Bỏ chọn cũ
+    searchResults.forEach(span => span.style.outline = '');
+    currentSearchIndex = (currentSearchIndex + 1) % searchResults.length;
+    const span = searchResults[currentSearchIndex];
+    span.scrollIntoView({behavior: "smooth", block: "center"});
+    // Đánh dấu đang chọn
+    span.style.outline = '2px solid orange';
+}
+
+
+const searchBtn = document.getElementById('search-btn');
+const searchModal = document.getElementById('searchModal');
+let searchModalInstance = null;
+let searchActive = false;
+let lastSearchTerm = "";
+
+// Toggle nút tìm kiếm
+searchBtn.onclick = function() {
+    // Thêm hiệu ứng click cho btn search
+    searchBtn.classList.add('effect-click');
+    setTimeout(() => {
+        searchBtn.classList.remove('effect-click');
+    }, 200);
+
+    if (!searchActive) {
+        // Bật trạng thái active, show modal
+        searchBtn.classList.add('active');
+        searchActive = true;
+        searchModalInstance = new bootstrap.Modal(searchModal);
+        // Đặt lại giá trị textbox tìm kiếm về rỗng khi mở modal
+        document.getElementById('search-textbox').value = "";
+        searchModalInstance.show();
+        // Focus vào textbox khi modal hiện
+        searchModal.addEventListener('shown.bs.modal', function handler() {
+            document.getElementById('search-textbox').focus();
+            searchModal.removeEventListener('shown.bs.modal', handler);
+        });
+    } else {
+        // Đang active, tắt trạng thái, xóa highlight, ẩn modal nếu đang mở
+        searchBtn.classList.remove('active');
+        searchActive = false;
+        clearSearchHighlight();
+        searchResults = [];
+        currentSearchIndex = -1;
+        lastSearchTerm = "";
+        // Ẩn modal nếu đang mở
+        if (searchModalInstance) {
+            searchModalInstance.hide();
+        }
+    }
+};
+
+// Khi nhấn Enter trong textbox tìm kiếm
+document.getElementById('search-textbox').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('searchModal').querySelector('.modal-content').style.opacity = '0.2';
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) backdrop.style.display = 'none';
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.paddingRight = '';
+        document.getElementById('searchModal').removeAttribute('tabindex');
+
+        const term = document.getElementById('search-textbox').value.trim();
+        lastSearchTerm = term;
+        if (!term) return;
+        if (!searchResults.length) {
+            searchResults = highlightSearch(term);
+            currentSearchIndex = -1;
+        }
+        if (searchResults.length) {
+            gotoNextSearch();
+        }
+    }
+});
+
+// Khi nhập lại từ khóa mới thì reset kết quả và làm sáng modal
+document.getElementById('search-textbox').addEventListener('input', function() {
+    clearSearchHighlight();
+    searchResults = [];
+    currentSearchIndex = -1;
+    document.getElementById('searchModal').querySelector('.modal-content').style.opacity = '1';
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.style.display = '';
+    document.body.classList.add('modal-open');
+    document.body.style.overflow = 'hidden';
+    lastSearchTerm = this.value.trim();
+});
+
+// Khi modal đóng thì xử lý trạng thái toggle và highlight
+searchModal.addEventListener('hidden.bs.modal', function() {
+    document.getElementById('searchModal').querySelector('.modal-content').style.opacity = '1';
+    const backdrop = document.querySelector('.modal-backdrop');
+    if (backdrop) backdrop.style.display = '';
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    // Nếu còn highlight (tức là còn searchResults và lastSearchTerm), giữ nút active và giữ highlight
+    if (searchResults.length > 0 && lastSearchTerm) {
+        searchBtn.classList.add('active');
+        searchActive = true;
+    } else {
+        // Không còn highlight, trả nút về inactive
+        searchBtn.classList.remove('active');
+        searchActive = false;
+        clearSearchHighlight();
+        searchResults = [];
+        currentSearchIndex = -1;
+        lastSearchTerm = "";
+    }
+});
 </script>
 {% endblock %}
