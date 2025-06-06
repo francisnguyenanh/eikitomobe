@@ -198,9 +198,9 @@ except Exception as e:
 def root():
     return redirect(url_for('login'))
 
-@app.route('/list_note')
+@app.route('/task')
 @login_required
-def list_note():
+def task():
     search_query = request.args.get('search', '')
     category_id = request.args.get('category_id', type=int)
     show_completed = request.args.get('show_completed', type=int, default=0)
@@ -240,7 +240,7 @@ def list_note():
     ]
     now = datetime.now()
     return render_template(
-        'Memo/list_note.html',
+        'Memo/task.html',
         notes=notes,
         notes_data=notes_data,
         search_query=search_query,
@@ -279,13 +279,13 @@ def add_note():
                 flash('Title is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Title is required'}), 400
-                return redirect(url_for('list_note'))
+                return redirect(url_for('task'))
 
             if not content:
                 flash('Content is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Content is required'}), 400
-                return redirect(url_for('list_note'))
+                return redirect(url_for('task'))
 
             # Validate category
             categories = Category.query.filter_by(user_id=current_user.id).all()
@@ -293,12 +293,12 @@ def add_note():
                 flash('No categories available. Please create a category first.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'No categories available'}), 400
-                return redirect(url_for('list_note'))
+                return redirect(url_for('task'))
             if not category_id or not Category.query.filter_by(id=category_id, user_id=current_user.id).first():
                 flash('Please select a valid category.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Invalid category'}), 400
-                return redirect(url_for('list_note'))
+                return redirect(url_for('task'))
 
             # Parse due_date
             due_date_utc = None
@@ -310,7 +310,7 @@ def add_note():
                     flash('Invalid due date format.', 'danger')
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return jsonify({'status': 'error', 'message': 'Invalid due date format'}), 400
-                    return redirect(url_for('list_note'))
+                    return redirect(url_for('task'))
 
             # Lưu memo trước
             note = Note(
@@ -393,17 +393,17 @@ def add_note():
                     },
                     'categories': [{'id': c.id, 'name': c.name} for c in Category.query.filter_by(user_id=current_user.id).all()]
                 })
-            return redirect(url_for('list_note'))
+            return redirect(url_for('task'))
 
         except Exception as e:
             app.logger.error(f"Error in add_note: {str(e)}")
             flash('An error occurred while adding the note.', 'danger')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'}), 500
-            return redirect(url_for('list_note'))
+            return redirect(url_for('task'))
 
     categories = Category.query.filter_by(user_id=current_user.id).all()
-    return redirect(url_for('list_note'))
+    return redirect(url_for('task'))
 
 @app.route('/edit_note/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -414,7 +414,7 @@ def edit_note(id):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'status': 'error', 'message': 'Unauthorized access.'}), 403
         flash('Unauthorized access.', 'danger')
-        return redirect(url_for('list_note'))
+        return redirect(url_for('task'))
 
     if request.method == 'POST':
         try:
@@ -431,14 +431,14 @@ def edit_note(id):
                 flash('Title is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Title is required.'}), 400
-                return redirect(url_for('list_note'))
+                return redirect(url_for('task'))
 
             if not content:
                 app.logger.warning("Content is required.")
                 flash('Content is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Content is required.'}), 400
-                return redirect(url_for('list_note'))
+                return redirect(url_for('task'))
 
             # Validate category
             categories = Category.query.filter_by(user_id=current_user.id).all()
@@ -447,13 +447,13 @@ def edit_note(id):
                 flash('No categories available. Please create a category first.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'No categories available.'}), 400
-                return redirect(url_for('list_note'))
+                return redirect(url_for('task'))
             if not category_id or not Category.query.filter_by(id=category_id, user_id=current_user.id).first():
                 app.logger.warning("Invalid category selected.")
                 flash('Please select a valid category.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Invalid category.'}), 400
-                return redirect(url_for('list_note'))
+                return redirect(url_for('task'))
 
             # Parse due_date
             due_date_utc = None
@@ -466,7 +466,7 @@ def edit_note(id):
                     flash('Invalid due date format.', 'danger')
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return jsonify({'status': 'error', 'message': 'Invalid due date format.'}), 400
-                    return redirect(url_for('list_note'))
+                    return redirect(url_for('task'))
 
             # Cập nhật thông tin memo
             note.title = title
@@ -562,14 +562,14 @@ def edit_note(id):
                         'images': images
                     }
                 })
-            return redirect(url_for('list_note'))
+            return redirect(url_for('task'))
 
         except Exception as e:
             app.logger.error(f"Error in edit_note: {str(e)}")
             flash('An error occurred while updating the note.', 'danger')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'}), 500
-            return redirect(url_for('list_note'))
+            return redirect(url_for('task'))
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         images = json.loads(note.images) if note.images else []
@@ -591,7 +591,7 @@ def edit_note(id):
         })
 
     categories = Category.query.filter_by(user_id=current_user.id).all()
-    return redirect(url_for('list_note'))
+    return redirect(url_for('task'))
 
 @app.route('/get_image/<int:note_id>/<string:filename>')
 @login_required
@@ -627,14 +627,14 @@ def delete_note(id):
             return jsonify({'status': 'success'})
         else:
             flash('Note deleted successfully.', 'success')
-            return redirect(url_for('list_note'))
+            return redirect(url_for('task'))
     except Exception as e:
         db.session.rollback()
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'status': 'error', 'message': str(e)}), 500
         else:
             flash('Failed to delete note.', 'danger')
-            return redirect(url_for('list_note'))
+            return redirect(url_for('task'))
 
 @app.route('/export/<int:id>')
 @login_required
@@ -642,7 +642,7 @@ def export_note(id):
     note = Note.query.get_or_404(id)
     if note.user_id != current_user.id:
         flash('Unauthorized access!', 'danger')
-        return redirect(url_for('list_note'))
+        return redirect(url_for('task'))
     file_content = f"Title: {note.title}\n\n{note.content}\n\nCategory: {note.category.name if note.category else 'None'}"
     file = BytesIO(file_content.encode('utf-8'))
     return send_file(file, download_name=f"{note.title}.txt", as_attachment=True)
