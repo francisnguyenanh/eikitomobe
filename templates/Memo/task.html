@@ -105,92 +105,97 @@
             border-color: #ffe066;
             outline: none;
         }
+        .task-category .btn-link {
+            color: inherit;
+            text-decoration: none;
+        }
+        .category-table-wrapper.collapsed {
+            display: none;
+        }
+        
     </style>
 
-
-        <form class="mb-3" id="searchForm">
-            <div class="input-group mb-2">
-                <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#addMemoModal" title="Add New Note">
-                    <i class="bi bi-plus-circle"></i>
-                </button>
-                <input type="text" class="form-control" id="searchInput" name="search" placeholder="Search notes..." value="{{ search_query }}">
-            </div>
-            <div class="row">
-                <div class="col-md-4">
-                    <select class="form-select mb-2" name="category_id" id="categorySelect">
-                        <option value="">All Categories</option>
-                        {% for category in categories %}
-                            <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>{{ category.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="showCompleted" name="show_completed" value="1" {% if show_completed %}checked{% endif %}>
-                        <label class="form-check-label" for="showCompleted"><i class="bi bi-check2"></i> Completed</label>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="showIncomplete" name="show_incomplete" value="1" {% if show_incomplete is none or show_incomplete %}checked{% endif %}>
-                        <label class="form-check-label" for="showIncomplete"><i class="bi bi-circle"></i> Incomplete</label>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-check form-switch mb-2">
-                        <input class="form-check-input" type="checkbox" id="showReminders" name="show_reminders" value="1">
-                        <label class="form-check-label" for="showReminders"><i class="bi bi-bell"></i> Reminders</label>
-                    </div>
-                </div>
-            </div>
-        </form>
-        <div id="reminders" class="mb-3"></div>
-        <div id="notesContainer">
-            {% for category in categories %}
-            <div class="task-category" style="color: {{ category.color or '#0d6efd' }}">
-                <i class="bi bi-folder2-open"></i> {{ category.name }}
-            </div>
-            <table class="table table-hover task-table mb-4">
-                <thead>
-                    <tr>
-                        <th style="width:40px"></th>
-                        <th style="width:40px"></th>
-                        <th>Tiêu đề</th>
-                        <th>Nội dung</th>
-                        <th>Hạn</th>
-                        <th style="width:100px">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for note in notes if note.category_id == category.id %}
-                    <tr data-task-id="{{ note.id }}">
-                        <td>
-                            <input type="checkbox" class="form-check-input task-complete complete-switch" data-note-id="{{ note.id }}" {% if note.is_completed %}checked{% endif %}>
-                        </td>
-                        <td>
-                            <i class="bi bi-trash delete-btn btn-delete-memo" data-note-id="{{ note.id }}" title="Xoá"></i>
-                        </td>
-                        <td>
-                            <span class="task-title" onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">{{ note.title }}</span>
-                        </td>
-                        <td>
-                            <span class="task-content">{{ note.content|truncate(100) }}</span>
-                        </td>
-                        <td>
-                            <span class="task-due due-date" data-due-date="{{ note.due_date.isoformat() if note.due_date else '' }}">
-                                {{ note.due_date.strftime('%Y-%m-%d %H:%M') if note.due_date else '' }}
-                            </span>
-                        </td>
-                        <td>
-                            <a href="{{ url_for('export_note', id=note.id) }}" class="btn btn-sm me-1"><i class="bi bi-file-earmark-text"></i></a>
-                            <a href="{{ url_for('export_pdf', id=note.id) }}" class="btn btn-sm"><i class="bi bi-file-earmark-pdf"></i></a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% endfor %}
+    <form class="mb-3" id="searchForm">
+        <div class="input-group mb-2">
+            <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#addMemoModal" title="Add New Note">
+                <i class="bi bi-plus-circle"></i>
+            </button>
+            <input type="text" class="form-control" id="searchInput" name="search" placeholder="Search notes..." value="{{ search_query }}">
         </div>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="showCompleted" name="show_completed" value="1" {% if show_completed %}checked{% endif %}>
+                    <label class="form-check-label" for="showCompleted"><i class="bi bi-check2"></i> Completed</label>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="showIncomplete" name="show_incomplete" value="1"
+                        {% if show_incomplete is none or show_incomplete %}checked{% endif %}>
+                    <label class="form-check-label" for="showIncomplete"><i class="bi bi-circle"></i> Incomplete</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check form-switch mb-2">
+                    <input class="form-check-input" type="checkbox" id="showReminders" name="show_reminders" value="1">
+                    <label class="form-check-label" for="showReminders"><i class="bi bi-bell"></i> Reminders</label>
+                </div>
+            </div>
+        </div>
+    </form>
+    <div id="reminders" class="mb-3"></div>
+    <div id="notesContainer">
+        {% for category in categories %}
+            <div class="task-category d-flex align-items-center" style="color: {{ category.color or '#0d6efd' }}">
+                <button class="btn btn-link btn-sm p-0 me-2 toggle-category" type="button" data-category-id="{{ category.id }}">
+                    <i class="bi bi-chevron-down" id="toggle-icon-{{ category.id }}"></i>
+                </button>
+                <span>{{ category.name }}</span>
+            </div>
+            <div class="category-table-wrapper" id="category-table-{{ category.id }}">
+                <table class="table table-hover task-table mb-4">
+                    <thead>
+                        <tr>
+                            <th style="width:40px"></th>
+                            <th style="width:40px"></th>
+                            <th>Tiêu đề</th>
+                            <th>Nội dung</th>
+                            <th>Hạn</th>
+                            <th style="width:100px">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for note in notes if note.category_id == category.id %}
+                        <tr data-task-id="{{ note.id }}">
+                            <td>
+                                <input type="checkbox" class="form-check-input task-complete complete-switch" data-note-id="{{ note.id }}" {% if note.is_completed %}checked{% endif %}>
+                            </td>
+                            <td>
+                                <i class="bi bi-trash delete-btn btn-delete-memo" data-note-id="{{ note.id }}" title="Xoá"></i>
+                            </td>
+                            <td>
+                                <span class="task-title" onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">{{ note.title }}</span>
+                            </td>
+                            <td>
+                                <span class="task-content">{{ note.content|truncate(100) }}</span>
+                            </td>
+                            <td>
+                                <span class="task-due due-date" data-due-date="{{ note.due_date.isoformat() if note.due_date else '' }}">
+                                    {{ note.due_date.strftime('%Y-%m-%d %H:%M') if note.due_date else '' }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('export_note', id=note.id) }}" class="btn btn-sm me-1"><i class="bi bi-file-earmark-text"></i></a>
+                                <a href="{{ url_for('export_pdf', id=note.id) }}" class="btn btn-sm"><i class="bi bi-file-earmark-pdf"></i></a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endfor %}
+    </div>
 
     <div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -258,9 +263,6 @@
                                 </div>
                                 <div class="mb-3">
                                     <select class="form-select" id="memoCategory" name="category_id" required>
-                                        {% for category in categories %}
-                                            <option value="{{ category.id }}">{{ category.name }}</option>
-                                        {% endfor %}
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -375,9 +377,6 @@
                                 </div>
                                 <div class="mb-3">
                                     <select class="form-select" id="editMemoCategory" name="category_id" required>
-                                        {% for category in categories %}
-                                            <option value="{{ category.id }}">{{ category.name }}</option>
-                                        {% endfor %}
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -481,26 +480,22 @@
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let currentlyClickedReminderId = null;
-        let selectedFilesAdd = [];
-        let selectedFilesEdit = [];
-        let existingImagesEdit = [];
-        const editMemoModal = new bootstrap.Modal(document.getElementById('editMemoModal'));
+        // Khai báo modals
+        const modals = {
+            addMemo: new bootstrap.Modal(document.getElementById('addMemoModal')),
+            editMemo: new bootstrap.Modal(document.getElementById('editMemoModal')),
+            viewMemo: new bootstrap.Modal(document.getElementById('viewMemoModal')),
+            imageView: new bootstrap.Modal(document.getElementById('imageViewModal')),
+            confirmDelete: new bootstrap.Modal(document.getElementById('confirmDeleteModal')),
+            manageCategories: new bootstrap.Modal(document.getElementById('manageCategoriesModal')),
+            settings: new bootstrap.Modal(document.getElementById('settingsModal')),
+            links: new bootstrap.Modal(document.getElementById('linksModal')),
+            confirmLogout: new bootstrap.Modal(document.getElementById('confirmLogoutModal'))
+        };
+
+        // DOM elements
         const editMemoForm = document.getElementById('editMemoForm');
         const themeSelect = document.getElementById('themeSelect');
-        const currentTheme = localStorage.getItem('theme') || '{{ session.get("theme", "light") }}';
-        document.documentElement.setAttribute('data-theme', currentTheme);
-        themeSelect.value = currentTheme;
-        themeSelect.addEventListener('change', () => {
-            const theme = themeSelect.value;
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-            fetch('/set_theme', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({theme: theme})
-            });
-        });
         const searchInput = document.getElementById('searchInput');
         const categorySelect = document.getElementById('categorySelect');
         const showCompleted = document.getElementById('showCompleted');
@@ -508,48 +503,68 @@
         const showReminders = document.getElementById('showReminders');
         const notesContainer = document.getElementById('notesContainer');
         const remindersDiv = document.getElementById('reminders');
-        const addMemoModal = new bootstrap.Modal(document.getElementById('addMemoModal'));
-        const manageCategoriesModal = new bootstrap.Modal(document.getElementById('manageCategoriesModal'));
         const addCategoryForm = document.getElementById('addCategoryForm');
         const categoriesContainer = document.getElementById('categoriesContainer');
-        const viewMemoModal = new bootstrap.Modal(document.getElementById('viewMemoModal'));
-        let notes = {{ notes_data | tojson }};
-        let categories = {{ categories | tojson }};
-        let searchTimeout;
-        async function compressImage(file, targetSizeRatio = 0.2) {
-            return new Promise((resolve, reject) => {
-                if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
-                    resolve(file);
-                } else {
-                    const img = new Image();
-                    img.src = URL.createObjectURL(file);
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        const scaleFactor = Math.sqrt(targetSizeRatio);
-                        canvas.width = img.width * scaleFactor;
-                        canvas.height = img.height * scaleFactor;
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        canvas.toBlob(
-                            newBlob => {
-                                const newFile = new File([newBlob], file.name, {
-                                    type: 'image/jpeg',
-                                    lastModified: Date.now()
-                                });
-                                URL.revokeObjectURL(img.src);
-                                resolve(newFile);
-                            },
-                            'image/jpeg',
-                            0.2
-                        );
-                    };
-                    img.onerror = () => {
-                        URL.revokeObjectURL(img.src);
-                        reject(new Error('Failed to load image'));
-                    };
-                }
-            });
+
+        // State variables
+        let currentlyClickedReminderId = null;
+        let selectedFilesAdd = [];
+        let selectedFilesEdit = [];
+        let existingImagesEdit = [];
+        let notes, categories;
+        const currentTheme = localStorage.getItem('theme') || '{{ session.get("theme", "light") }}';
+
+        try {
+            notes = {{ notes_data | tojson }};
+            categories = {{ categories | tojson }};
+        } catch (e) {
+            console.error('Error parsing initial data:', e);
+            notes = [];
+            categories = [];
         }
+
+        function cleanBackdrops() {
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                backdrop.remove();
+            });
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.removeAttribute('aria-hidden');
+        }
+
+        // Tiện ích chung
+
+        // Xử lý lỗi và hiển thị thông báo flash
+        function handleError(error, defaultMessage = 'An error occurred') {
+            console.error(error);
+            showFlashMessage('danger', error.message || defaultMessage);
+        }
+
+        // Hiển thị thông báo flash
+        function showFlashMessage(category, message) {
+            const flashContainer = document.querySelector('.container.mt-4');
+            if (!flashContainer) return;
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${category} alert-dismissible fade show`;
+            alert.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            flashContainer.insertBefore(alert, flashContainer.firstChild);
+            setTimeout(() => {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 150);
+            }, 3000);
+        }
+
+        // Chuyển URL thành liên kết HTML
+        function linkify(text) {
+            if (!text) return '';
+            const urlRegex = /(https?:\/\/[^\s<]+[^\s<.,:;"')\]\}])/g;
+            return text.replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+        }
+
+        // Định dạng ngày giờ theo JST
         function formatDateJST(isoDate) {
             if (!isoDate) return '';
             const date = new Date(isoDate);
@@ -565,18 +580,63 @@
             };
             const formatter = new Intl.DateTimeFormat('ja-JP', options);
             const parts = formatter.formatToParts(date);
-            const year = parts.find(p => p.type === 'year').value;
-            const month = parts.find(p => p.type === 'month').value;
-            const day = parts.find(p => p.type === 'day').value;
-            const weekday = parts.find(p => p.type === 'weekday').value;
-            const hour = parts.find(p => p.type === 'hour').value;
-            const minute = parts.find(p => p.type === 'minute').value;
+            const year = parts.find(p => p.type === 'year')?.value || '';
+            const month = parts.find(p => p.type === 'month')?.value || '';
+            const day = parts.find(p => p.type === 'day')?.value || '';
+            const weekday = parts.find(p => p.type === 'weekday')?.value || '';
+            const hour = parts.find(p => p.type === 'hour')?.value || '';
+            const minute = parts.find(p => p.type === 'minute')?.value || '';
             return `${year}/${month}/${day} (${weekday}) ${hour}:${minute}`;
         }
-        function linkify(text) {
-            const urlRegex = /(https?:\/\/[^\s<]+[^\s<.,:;"')\]\}])/g;
-            return text.replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+
+        // Nén ảnh
+        async function compressImage(file, targetSizeRatio = 0.2) {
+            return new Promise((resolve, reject) => {
+                if (!file || (file.type === 'image/heic' || file.name?.toLowerCase().endsWith('.heic'))) {
+                    resolve(file);
+                    return;
+                }
+                const img = new Image();
+                img.src = URL.createObjectURL(file);
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const scaleFactor = Math.sqrt(targetSizeRatio);
+                    canvas.width = img.width * scaleFactor;
+                    canvas.height = img.height * scaleFactor;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob(
+                        newBlob => {
+                            const newFile = new File([newBlob], file.name, {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            URL.revokeObjectURL(img.src);
+                            resolve(newFile);
+                        },
+                        'image/jpeg',
+                        0.2
+                    );
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(img.src);
+                    reject(new Error('Failed to load image'));
+                };
+            });
         }
+
+        // Debounce utility
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Xử lý giao diện dữ liệu
+
+        // Cập nhật hiển thị ngày giờ
         function updateDueDateDisplays() {
             document.querySelectorAll('.due-date').forEach(el => {
                 const isoDate = el.getAttribute('data-due-date');
@@ -585,7 +645,10 @@
                 }
             });
         }
+
+        // Cập nhật preview ảnh
         function updateImagePreview(previewContainer, files, isAddModal) {
+            if (!previewContainer) return;
             previewContainer.innerHTML = '';
             files.forEach((fileObj, index) => {
                 const container = document.createElement('div');
@@ -600,7 +663,7 @@
                 placeholder.style.borderRadius = '5px';
                 placeholder.style.backgroundColor = '#f8f9fa';
                 placeholder.classList.add('img-thumbnail');
-                if (fileObj && typeof fileObj === 'object' && fileObj.url) {
+                if (fileObj?.url) {
                     const img = document.createElement('img');
                     img.src = fileObj.url;
                     img.style.maxWidth = '100px';
@@ -613,12 +676,12 @@
                         placeholder.style.textAlign = 'center';
                     };
                     placeholder.appendChild(img);
-                } else if (fileObj && typeof fileObj === 'object' && (fileObj.type === 'image/heic' || (fileObj.name && fileObj.name.toLowerCase().endsWith('.heic')))) {
+                } else if (fileObj && (fileObj.type === 'image/heic' || fileObj.name?.toLowerCase().endsWith('.heic'))) {
                     placeholder.textContent = 'HEIC';
                     placeholder.style.fontSize = '14px';
                     placeholder.style.color = '#666';
                     placeholder.style.textAlign = 'center';
-                } else if (fileObj && typeof fileObj === 'object' && fileObj instanceof File) {
+                } else if (fileObj instanceof File) {
                     const img = document.createElement('img');
                     img.src = URL.createObjectURL(fileObj);
                     img.style.maxWidth = '100px';
@@ -650,19 +713,39 @@
                 previewContainer.appendChild(container);
             });
         }
-        function updateCategorySelect() {
-            categorySelect.innerHTML = '<option value="">All Categories</option>';
+
+        // Quản lý danh mục
+
+        // Cập nhật select box danh mục
+        function updateCategorySelectBox(selectElement, selectedId = null) {
+            if (!selectElement) return;
+            selectElement.innerHTML = selectElement.id === 'categorySelect' ? '<option value="">All Categories</option>' : '';
             categories.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category.id;
                 option.textContent = category.name;
-                if (category.id == {{ selected_category | tojson }}) {
+                if (category.id == selectedId) {
                     option.selected = true;
                 }
-                categorySelect.appendChild(option);
+                selectElement.appendChild(option);
             });
         }
+
+        // Cập nhật select box tìm kiếm
+        function updateCategorySelect() {
+            updateCategorySelectBox(categorySelect, {{ selected_category | tojson }});
+        }
+
+        // Cập nhật select box thêm ghi chú
+        function updateAddMemoCategorySelect() {
+            const memoCategory = document.getElementById('memoCategory');
+            if (!memoCategory) return;
+            updateCategorySelectBox(memoCategory);
+        }
+
+        // Cập nhật danh sách danh mục
         function updateCategoriesDisplay() {
+            if (!categoriesContainer) return;
             categoriesContainer.innerHTML = '';
             categories.forEach(category => {
                 const div = document.createElement('div');
@@ -683,7 +766,10 @@
             adjustCategoryTextColors();
             attachCategoryEventListeners();
         }
+
+        // Điều chỉnh màu chữ danh mục
         function adjustCategoryTextColors() {
+            if (!categoriesContainer) return;
             categoriesContainer.querySelectorAll('.card').forEach(card => {
                 const bgColor = card.style.backgroundColor;
                 if (bgColor) {
@@ -697,26 +783,16 @@
                 }
             });
         }
-        function showFlashMessage(category, message) {
-            const flashContainer = document.querySelector('.container.mt-4');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${category} alert-dismissible fade show`;
-            alert.innerHTML = `
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            `;
-            flashContainer.insertBefore(alert, flashContainer.firstChild);
-            setTimeout(() => {
-                alert.classList.remove('show');
-                setTimeout(() => alert.remove(), 150);
-            }, 3000);
-        }
+
+        // Gắn sự kiện chỉnh sửa/xóa danh mục
         function attachCategoryEventListeners() {
+            if (!categoriesContainer) return;
             categoriesContainer.querySelectorAll('.edit-category').forEach(button => {
                 button.addEventListener('click', () => {
                     const categoryId = button.dataset.categoryId;
                     const categoryName = button.dataset.categoryName;
                     const categoryColor = button.dataset.categoryColor;
+                    if (!addCategoryForm) return;
                     addCategoryForm.innerHTML = `
                         <div class="mb-3">
                             <label for="categoryName" class="form-label">Category Name</label>
@@ -741,9 +817,12 @@
                             const data = await response.json();
                             if (data.status === 'success') {
                                 const index = categories.findIndex(c => c.id == categoryId);
-                                categories[index] = data.category;
+                                if (index !== -1) {
+                                    categories[index] = data.category;
+                                }
                                 updateCategoriesDisplay();
                                 updateCategorySelect();
+                                updateAddMemoCategorySelect();
                                 addCategoryForm.reset();
                                 addCategoryForm.innerHTML = `
                                     <div class="mb-3">
@@ -759,11 +838,10 @@
                                 delete addCategoryForm.dataset.categoryId;
                                 showFlashMessage('success', 'Category updated successfully');
                             } else {
-                                alert('Failed to update category: ' + (data.message || 'Unknown error'));
+                                showFlashMessage('danger', data.message || 'Failed to update category.');
                             }
                         } catch (error) {
-                            console.error('Update category error:', error);
-                            alert('Error updating category: ' + error.message);
+                            handleError(error, 'Error updating category.');
                         }
                     };
                 });
@@ -772,47 +850,190 @@
                 button.addEventListener('click', async () => {
                     const categoryId = button.dataset.categoryId;
                     if (confirm('Are you sure you want to delete this category?')) {
-                        try {
-                            const response = await fetch(`/delete_category/${categoryId}`, {
-                                method: 'POST',
-                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                            });
-                            const data = await response.json();
-                            if (data.status === 'success') {
-                                categories = categories.filter(c => c.id != categoryId);
-                                updateCategoriesDisplay();
-                                updateCategorySelect();
-                                updateSearch();
-                                showFlashMessage('success', 'Category deleted successfully');
-                            } else {
-                                alert('Failed to delete category: ' + (data.message || 'Unknown error'));
+                        await deleteItem(`/delete_category/${categoryId}`, 'Category deleted successfully', () => {
+                            categories = categories.filter(c => c.id != categoryId);
+                            updateCategoriesDisplay();
+                            updateCategorySelect();
+                            updateAddMemoCategorySelect();
+                            updateSearch();
+                        });
+                    }
+                });
+            });
+        }
+
+        // Quản lý ghi chú và nhắc nhở
+
+        // Lấy dữ liệu ghi chú
+        async function fetchNoteData(noteId) {
+            try {
+                const response = await fetch(`/edit_note/${noteId}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+                if (data.status !== 'success') {
+                    throw new Error(data.message || 'Failed to load note data.');
+                }
+                return data;
+            } catch (error) {
+                handleError(error, 'Error loading note.');
+                throw error;
+            }
+        }
+
+        // Xử lý FormData và nén ảnh
+        async function prepareFormData(form, isEdit = false, selectedFiles = [], existingImages = []) {
+            if (!form) throw new Error('Form is not provided.');
+            const formData = new FormData(form);
+            if (isEdit) {
+                const editMemoCompleted = document.getElementById('editMemoCompleted');
+                const editMemoShare = document.getElementById('editMemoShare');
+                if (editMemoCompleted) {
+                    formData.set('is_completed', editMemoCompleted.checked ? '1' : '0');
+                }
+                if (editMemoShare) {
+                    formData.set('share', editMemoShare.checked ? '1' : '0');
+                }
+                existingImages.forEach(imgObj => formData.append('keep_images', imgObj.originalIndex));
+            } else {
+                formData.set('is_completed', formData.get('is_completed') ? '1' : '');
+                formData.set('share', formData.get('share') ? '1' : '');
+            }
+            const dueDate = formData.get('due_date');
+            if (dueDate) {
+                formData.set('due_date', dueDate.slice(0, 16));
+            }
+            formData.delete('images');
+            for (const file of selectedFiles) {
+                try {
+                    if (file.type === 'image/heic' || file.name?.toLowerCase().endsWith('.heic')) {
+                        formData.append('images', file);
+                    } else {
+                        const compressedFile = await compressImage(file, 0.2);
+                        formData.append('images', compressedFile);
+                    }
+                } catch (err) {
+                    handleError(err, 'Failed to process image.');
+                    throw err;
+                }
+            }
+            return formData;
+        }
+
+        // Mở modal chỉnh sửa ghi chú
+        async function openEditMemoModal(noteId) {
+            try {
+                const data = await fetchNoteData(noteId);
+                const note = data.note;
+                const editMemoId = document.getElementById('editMemoId');
+                const editMemoTitle = document.getElementById('editMemoTitle');
+                const editMemoContent = document.getElementById('editMemoContent');
+                const editMemoDueDate = document.getElementById('editMemoDueDate');
+                const editMemoCategory = document.getElementById('editMemoCategory');
+                const editMemoShare = document.getElementById('editMemoShare');
+                const editMemoCompleted = document.getElementById('editMemoCompleted');
+                const editImagePreview = document.getElementById('editImagePreview');
+                const editMemoImages = document.getElementById('editMemoImages');
+                if (!editMemoId || !editMemoTitle || !editMemoContent || !editMemoCategory || !editImagePreview || !editMemoImages) {
+                    throw new Error('Missing required DOM elements.');
+                }
+                editMemoId.value = note.id;
+                editMemoTitle.value = note.title || '';
+                editMemoContent.value = note.content || '';
+                editMemoDueDate.value = note.due_date || '';
+                editMemoShare.checked = !!note.share_id;
+                editMemoCompleted.checked = note.is_completed === true;
+                editImagePreview.innerHTML = '';
+                existingImagesEdit = note.images
+                    ? note.images.map((img, idx) => ({
+                        url: `data:image/${img.filename.split('.').pop().toLowerCase()};base64,${img.data}`,
+                        originalIndex: idx
+                    }))
+                    : [];
+                selectedFilesEdit = [];
+                updateImagePreview(editImagePreview, existingImagesEdit, false);
+                editMemoCategory.innerHTML = '';
+                data.categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = category.name;
+                    if (category.id == note.category_id) {
+                        option.selected = true;
+                    }
+                    editMemoCategory.appendChild(option);
+                });
+                editMemoImages.value = '';
+                modals.editMemo.show();
+            } catch (error) {
+                // Lỗi đã được xử lý trong fetchNoteData
+            }
+        }
+
+        // Mở modal xem ghi chú
+        async function openViewMemoModal(noteId) {
+            try {
+                const data = await fetchNoteData(noteId);
+                const note = data.note;
+                const viewMemoTitle = document.getElementById('viewMemoTitle');
+                const viewMemoContent = document.getElementById('viewMemoContent');
+                const viewMemoDueDate = document.getElementById('viewMemoDueDate');
+                const viewMemoCategory = document.getElementById('viewMemoCategory');
+                const viewMemoShare = document.getElementById('viewMemoShare');
+                const viewMemoCompleted = document.getElementById('viewMemoCompleted');
+                const viewMemoImages = document.getElementById('viewMemoImages');
+                if (!viewMemoTitle || !viewMemoContent || !viewMemoDueDate || !viewMemoCategory || !viewMemoShare || !viewMemoCompleted || !viewMemoImages) {
+                    throw new Error('Missing required DOM elements.');
+                }
+                viewMemoTitle.textContent = note.title || '';
+                viewMemoContent.innerHTML = linkify(note.content || '');
+                viewMemoDueDate.textContent = note.due_date ? `Due: ${formatDateJST(note.due_date)}` : '';
+                viewMemoCategory.textContent = `Category: ${note.category_name || 'None'}`;
+                viewMemoShare.innerHTML = note.share_id ? `Share: <a href="{{ url_for('share_note', share_id='') }}${note.share_id}" target="_blank">Link</a>` : '';
+                viewMemoCompleted.textContent = `Status: ${note.is_completed ? 'Completed' : 'Incomplete'}`;
+                viewMemoImages.innerHTML = '';
+                if (note.images?.length) {
+                    note.images.forEach(image => {
+                        const container = document.createElement('div');
+                        container.className = 'position-relative';
+                        const img = document.createElement('img');
+                        img.src = `data:image/${image.filename.split('.').pop().toLowerCase()};base64,${image.data}`;
+                        img.style.maxWidth = '100px';
+                        img.style.maxHeight = '100px';
+                        img.style.objectFit = 'contain';
+                        img.classList.add('img-thumbnail');
+                        img.style.cursor = 'pointer';
+                        img.onclick = () => {
+                            const enlargedImage = document.getElementById('enlargedImage');
+                            if (enlargedImage) {
+                                enlargedImage.src = img.src;
+                                modals.imageView.show();
                             }
-                        } catch (error) {
-                            console.error('Delete category error:', error);
-                            alert('Error deleting category: ' + error.message);
-                        }
-                    }
-                });
-            });
-        }
-        function attachReminderListeners() {
-            document.querySelectorAll('.reminder-item').forEach(reminder => {
-                reminder.addEventListener('click', () => {
-                    const noteId = reminder.dataset.noteId;
-                    document.querySelectorAll('.reminder-item').forEach(r => {
-                        r.classList.remove('clicked');
+                        };
+                        img.onerror = () => {
+                            showFlashMessage('danger', `Failed to load image: ${image.filename}`);
+                        };
+                        container.appendChild(img);
+                        viewMemoImages.appendChild(container);
                     });
-                    reminder.classList.add('clicked');
-                    currentlyClickedReminderId = noteId;
-                    const row = document.querySelector(`tr[data-task-id="${noteId}"]`);
-                    if (row) {
-                        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        row.style.backgroundColor = '#fff3cd';
-                        setTimeout(() => row.style.backgroundColor = '', 1000);
-                    }
-                });
-            });
+                } else {
+                    viewMemoImages.textContent = 'No images available.';
+                }
+                viewMemoContent.onclick = function(e) {
+                    if (e.target.tagName === 'A') return;
+                    modals.viewMemo.hide();
+                    const handler = function() {
+                        openEditMemoModal(note.id);
+                        document.getElementById('viewMemoModal').removeEventListener('hidden.bs.modal', handler);
+                    };
+                    document.getElementById('viewMemoModal').addEventListener('hidden.bs.modal', handler);
+                };
+                modals.viewMemo.show();
+            } catch (error) {
+                // Lỗi đã được xử lý trong fetchNoteData
+            }
         }
+
+        // Gắn sự kiện toggle hoàn thành
         function attachToggleSwitchListeners() {
             document.querySelectorAll('.complete-switch').forEach(switchEl => {
                 switchEl.addEventListener('change', async () => {
@@ -837,28 +1058,33 @@
                             switchEl.checked = !isChecked;
                         }
                     } catch (error) {
-                        console.error('Toggle error:', error);
+                        handleError(error, 'Error toggling note completion.');
                         switchEl.checked = !isChecked;
                     }
                 });
             });
         }
+
+        // Cập nhật sự kiện ghi chú
         function updateNotesEventListeners() {
             attachToggleSwitchListeners();
             document.querySelectorAll('.btn-delete-memo').forEach(button => {
                 button.removeEventListener('click', openEditMemoModal);
             });
         }
+
+        // Cập nhật nhắc nhở
         function updateReminders() {
+            if (!remindersDiv) return;
             const now = new Date();
-            const search = searchInput.value.toLowerCase();
-            const category_id = categorySelect.value;
-            const show_completed = showCompleted.checked;
-            const show_incomplete = showIncomplete.checked;
+            const search = searchInput?.value.toLowerCase() || '';
+            const category_id = categorySelect?.value || '';
+            const show_completed = showCompleted?.checked || false;
+            const show_incomplete = showIncomplete?.checked || false;
             let filteredNotes = notes.filter(note => {
                 const matchesSearch = !search ||
-                    (note.title.toLowerCase().includes(search) ||
-                     note.content.toLowerCase().includes(search));
+                    (note.title?.toLowerCase().includes(search) ||
+                     note.content?.toLowerCase().includes(search));
                 const matchesCategory = !category_id || note.category_id === parseInt(category_id);
                 const matchesCompletion =
                     (show_completed && note.is_completed) ||
@@ -882,236 +1108,215 @@
                 }
                 reminder.dataset.noteId = note.id;
                 const dueDateFormatted = formatDateJST(note.due_date);
-                reminder.textContent = `Reminder: "${note.title}" is due at ${dueDateFormatted}`;
+                reminder.textContent = `Reminder: "${note.title || ''}" is due at ${dueDateFormatted}`;
                 remindersDiv.appendChild(reminder);
             });
             attachReminderListeners();
         }
+
+        // Gắn sự kiện nhắc nhở
+        function attachReminderListeners() {
+            document.querySelectorAll('.reminder-item').forEach(reminder => {
+                reminder.addEventListener('click', () => {
+                    const noteId = reminder.dataset.noteId;
+                    document.querySelectorAll('.reminder-item').forEach(r => {
+                        r.classList.remove('clicked');
+                    });
+                    reminder.classList.add('clicked');
+                    currentlyClickedReminderId = noteId;
+                    const row = document.querySelector(`tr[data-task-id="${noteId}"]`);
+                    if (row) {
+                        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        row.style.backgroundColor = '#fff3cd';
+                        setTimeout(() => row.style.backgroundColor = '', 1000);
+                    }
+                });
+            });
+        }
+
+        // Cập nhật tìm kiếm
         async function updateSearch() {
             currentlyClickedReminderId = null;
-            const search = searchInput.value.toLowerCase();
-            const category_id = categorySelect.value;
-            const show_completed = showCompleted.checked ? 1 : 0;
-            const show_incomplete = showIncomplete.checked ? 1 : 0;
-            const params = new URLSearchParams({
-                search,
-                category_id,
-                show_completed,
-                show_incomplete
-            });
+            if (!notesContainer) return;
+            const loading = document.createElement('div');
+            loading.textContent = 'Loading...';
+            notesContainer.innerHTML = '';
+            notesContainer.appendChild(loading);
             try {
+                const search = searchInput?.value.toLowerCase() || '';
+                const category_id = categorySelect?.value || '';
+                const show_completed = showCompleted?.checked ? 1 : 0;
+                const show_incomplete = showIncomplete?.checked ? 1 : 0;
+                const params = new URLSearchParams({
+                    search,
+                    category_id,
+                    show_completed,
+                    show_incomplete
+                });
                 const response = await fetch(`/task?${params.toString()}`);
                 const html = await response.text();
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 const newNotesContainer = doc.getElementById('notesContainer');
-                notesContainer.innerHTML = newNotesContainer.innerHTML;
-                const newNotesData = doc.querySelector('script').textContent.match(/let notes = (\[.*?\]);/s);
+                if (newNotesContainer) {
+                    notesContainer.innerHTML = newNotesContainer.innerHTML;
+                }
+                const newNotesData = doc.querySelector('script')?.textContent.match(/let notes = (\[.*?\]);/s);
                 if (newNotesData) {
                     notes = JSON.parse(newNotesData[1]);
                 }
-                const newCategoriesData = doc.querySelector('script').textContent.match(/let categories = (\[.*?\]);/s);
+                const newCategoriesData = doc.querySelector('script')?.textContent.match(/let categories = (\[.*?\]);/s);
                 if (newCategoriesData) {
                     categories = JSON.parse(newCategoriesData[1]);
                     updateCategorySelect();
+                    updateAddMemoCategorySelect();
                 }
                 updateNotesEventListeners();
                 updateReminders();
                 updateDueDateDisplays();
                 toggleRemindersVisibility();
+                attachCategoryToggleListeners();
             } catch (error) {
-                console.error('Search error:', error);
+                handleError(error, 'Error searching notes.');
+            } finally {
+                loading.remove();
             }
         }
-        async function openEditMemoModal(noteId){
+
+        // Gợi ý triển khai API JSON cho updateSearch (tương lai)
+        /*
+        async function updateSearchWithJSON() {
             try {
-                const response = await fetch(`/edit_note/${noteId}`, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
+                const search = searchInput?.value.toLowerCase() || '';
+                const category_id = categorySelect?.value || '';
+                const show_completed = showCompleted?.checked ? 1 : 0;
+                const show_incomplete = showIncomplete?.checked ? 1 : 0;
+                const params = new URLSearchParams({ search, category_id, show_completed, show_incomplete });
+                const response = await fetch(`/api/notes?${params.toString()}`);
                 const data = await response.json();
                 if (data.status === 'success') {
-                    const note = data.note;
-                    document.getElementById('editMemoId').value = note.id;
-                    document.getElementById('editMemoTitle').value = note.title;
-                    document.getElementById('editMemoContent').value = note.content;
-                    document.getElementById('editMemoDueDate').value = note.due_date || '';
-                    document.getElementById('editMemoCategory').value = note.category_id;
-                    document.getElementById('editMemoShare').checked = !!note.share_id;
-                    document.getElementById('editMemoCompleted').checked = note.is_completed === true;
-                    const editImagePreview = document.getElementById('editImagePreview');
-                    editImagePreview.innerHTML = '';
-                    existingImagesEdit = note.images
-                        ? note.images.map((img, idx) => ({
-                            url: `data:image/${img.filename.split('.').pop()};base64,${img.data}`,
-                            originalIndex: idx
-                        }))
-                        : [];
-                    selectedFilesEdit = [];
-                    updateImagePreview(editImagePreview, existingImagesEdit, false);
-                    const categorySelect = document.getElementById('editMemoCategory');
-                    categorySelect.innerHTML = '';
-                    data.categories.forEach(category => {
-                        const option = document.createElement('option');
-                        option.value = category.id;
-                        option.textContent = category.name;
-                        if (category.id == note.category_id) {
-                            option.selected = true;
-                        }
-                        categorySelect.appendChild(option);
-                    });
-                    document.getElementById('editMemoImages').value = "";
-                    editMemoModal.show();
+                    notes = data.notes;
+                    categories = data.categories;
+                    // Cập nhật DOM dựa trên notes và categories
+                    updateCategorySelect();
+                    updateAddMemoCategorySelect();
+                    updateNotesEventListeners();
+                    updateReminders();
+                    updateDueDateDisplays();
+                    toggleRemindersVisibility();
+                    attachCategoryToggleListeners();
                 } else {
-                    showFlashMessage('danger', data.message || 'Failed to load note data.');
+                    throw new Error(data.message || 'Failed to fetch notes.');
                 }
             } catch (error) {
-                console.error('Error loading note:', error);
-                showFlashMessage('danger', 'Error loading note.');
+                handleError(error, 'Error searching notes.');
             }
         }
-        async function openViewMemoModal(noteId) {
-            try {
-                const response = await fetch(`/edit_note/${noteId}`, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                });
-                const data = await response.json();
-                if (data.status === 'success') {
-                    const note = data.note;
-                    document.getElementById('viewMemoTitle').textContent = note.title;
-                    document.getElementById('viewMemoContent').innerHTML = linkify(note.content);
-                    document.getElementById('viewMemoDueDate').textContent = note.due_date ? `Due: ${formatDateJST(note.due_date)}` : '';
-                    document.getElementById('viewMemoCategory').textContent = `Category: ${note.category_name ? note.category_name : 'None'}`;
-                    document.getElementById('viewMemoShare').innerHTML = note.share_id ? `Share: <a href="{{ url_for('share_note', share_id='') }}${note.share_id}" target="_blank">Link</a>` : '';
-                    document.getElementById('viewMemoCompleted').textContent = `Status: ${note.is_completed ? 'Completed' : 'Incomplete'}`;
-                    const viewMemoImages = document.getElementById('viewMemoImages');
-                    viewMemoImages.innerHTML = '';
-                    if (note.images && note.images.length) {
-                        note.images.forEach(image => {
-                            const container = document.createElement('div');
-                            container.className = 'position-relative';
-                            const img = document.createElement('img');
-                            img.src = `data:image/${image.filename.split('.').pop().toLowerCase()};base64,${image.data}`;
-                            img.style.maxWidth = '100px';
-                            img.style.maxHeight = '100px';
-                            img.style.objectFit = 'contain';
-                            img.classList.add('img-thumbnail');
-                            img.style.cursor = 'pointer';
-                            img.onclick = () => {
-                                const imageViewModal = new bootstrap.Modal(document.getElementById('imageViewModal'));
-                                document.getElementById('enlargedImage').src = img.src;
-                                imageViewModal.show();
-                            };
-                            img.onerror = () => {
-                                showFlashMessage('danger', `Failed to load image: ${image.filename}`);
-                            };
-                            container.appendChild(img);
-                            viewMemoImages.appendChild(container);
-                        });
-                    } else {
-                        viewMemoImages.textContent = 'No images available.';
-                    }
-                    const viewMemoContent = document.getElementById('viewMemoContent');
-                    viewMemoContent.onclick = function(e) {
-                        if (e.target.tagName === 'A') return;
-                        viewMemoModal.hide();
-                        const handler = function() {
-                            openEditMemoModal(note.id);
-                            document.getElementById('viewMemoModal').removeEventListener('hidden.bs.modal', handler);
-                        };
-                        document.getElementById('viewMemoModal').addEventListener('hidden.bs.modal', handler);
-                    };
-                    viewMemoModal.show();
-                } else {
-                    showFlashMessage('danger', data.message || 'Failed to load note data.');
-                }
-            } catch (error) {
-                showFlashMessage('danger', 'Error loading note.');
-            }
-        }
+        */
+
+        // Quản lý giao diện và hệ thống
+
+        // Ẩn/hiện nhắc nhở
         function toggleRemindersVisibility() {
-            remindersDiv.style.display = showReminders.checked ? 'block' : 'none';
-        }
-
-        updateDueDateDisplays();
-        toggleRemindersVisibility();
-
-        // Xử lý preview ảnh trong modal thêm ghi chú
-        document.getElementById('memoImages').addEventListener('change', function(e) {
-            const imagePreview = document.getElementById('imagePreview');
-            const files = Array.from(e.target.files);
-            selectedFilesAdd = [...selectedFilesAdd, ...files];
-            updateImagePreview(imagePreview, selectedFilesAdd, true);
-        });
-
-        // Xử lý preview ảnh trong modal chỉnh sửa ghi chú
-        document.getElementById('editMemoImages').addEventListener('change', function(e) {
-            const editImagePreview = document.getElementById('editImagePreview');
-            const files = Array.from(e.target.files);
-            selectedFilesEdit = [...selectedFilesEdit, ...files];
-            updateImagePreview(editImagePreview, [...existingImagesEdit, ...selectedFilesEdit], false);
-        });
-
-        // Xóa preview ảnh khi mở addMemoModal
-        document.getElementById('addMemoModal').addEventListener('show.bs.modal', function() {
-            const nowJST = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
-            const dateStr = nowJST.toISOString().slice(0, 16);
-            document.getElementById('memoDueDate').value = dateStr;
-            document.getElementById('addMemoForm').reset();
-            document.getElementById('memoDueDate').value = dateStr;
-            document.getElementById('imagePreview').innerHTML = '';
-            selectedFilesAdd = [];
-        });
-
-        // Initialize showIncomplete to ON if no query parameter
-        if (!{{ show_incomplete | tojson }}) {
-            showIncomplete.checked = true;
-            showCompleted.checked = false;
-            updateSearch();
-        }
-
-        searchInput.addEventListener('input', () => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(updateSearch, 300);
-        });
-        categorySelect.addEventListener('change', updateSearch);
-        showCompleted.addEventListener('change', () => {
-            updateSearch();
-        });
-        showIncomplete.addEventListener('change', () => {
-            updateSearch();
-        });
-        showReminders.addEventListener('change', () => {
-            toggleRemindersVisibility();
-        });
-
-        // Xử lý submit form Add Memo
-        document.getElementById('addMemoForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const form = this;
-            const formData = new FormData(form);
-            const dueDate = formData.get('due_date');
-            if (dueDate) {
-                formData.set('due_date', dueDate.slice(0, 16));
+            if (remindersDiv) {
+                remindersDiv.style.display = showReminders?.checked ? 'block' : 'none';
             }
-            formData.set('is_completed', formData.get('is_completed') ? '1' : '');
-            formData.set('share', formData.get('share') ? '1' : '');
-            formData.delete('images');
-            for (const file of selectedFilesAdd) {
-                try {
-                    if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
-                        // Gửi file HEIC gốc lên server
-                        formData.append('images', file);
-                    } else {
-                        const compressedFile = await compressImage(file, 0.2);
-                        formData.append('images', compressedFile);
+        }
+
+        // Cập nhật kích thước DB
+        async function updateDbSize() {
+            try {
+                const res = await fetch('/db_size');
+                const data = await res.json();
+                const dbSize = document.getElementById('dbSize');
+                if (dbSize) {
+                    dbSize.textContent = data.size_mb > 0 ? `${data.size_mb} MB` : `${data.size_kb} KB`;
+                }
+            } catch (error) {
+                handleError(error, 'Error fetching database size.');
+            }
+        }
+
+        // Xóa mục
+        async function deleteItem(endpoint, successMessage, updateCallback) {
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    updateCallback();
+                    showFlashMessage('success', successMessage);
+                } else {
+                    showFlashMessage('danger', data.message || `Failed to delete item.`);
+                }
+            } catch (error) {
+                handleError(error, `Error deleting item.`);
+            }
+        }
+
+        // Cập nhật theme
+        function updateTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        }
+
+        // Gắn sự kiện toggle danh mục
+        function attachCategoryToggleListeners() {
+            document.querySelectorAll('.toggle-category').forEach(button => {
+                button.addEventListener('click', () => {
+                    const categoryId = button.dataset.categoryId;
+                    const tableWrapper = document.getElementById(`category-table-${categoryId}`);
+                    const icon = document.getElementById(`toggle-icon-${categoryId}`);
+                    if (tableWrapper && icon) {
+                        tableWrapper.classList.toggle('collapsed');
+                        icon.classList.toggle('bi-chevron-down');
+                        icon.classList.toggle('bi-chevron-right');
                     }
-                } catch (err) {
-                    console.error('Image compression error:', err);
-                    showFlashMessage('danger', 'Failed to process image: ' + err.message);
-                    return;
+                });
+            });
+        }
+
+        // Khởi tạo sự kiện
+        document.addEventListener('DOMContentLoaded', () => {
+    // Xử lý backdrop cho addMemoModal
+    const addMemoModalEl = document.getElementById('addMemoModal');
+    if (addMemoModalEl) {
+        addMemoModalEl.addEventListener('show.bs.modal', () => {
+            cleanBackdrops();
+        });
+        addMemoModalEl.addEventListener('hidden.bs.modal', () => {
+            cleanBackdrops();
+            // Reset form và state khi đóng modal
+            const addMemoForm = document.getElementById('addMemoForm');
+            if (addMemoForm) {
+                addMemoForm.reset();
+                selectedFilesAdd = [];
+                const imagePreview = document.getElementById('imagePreview');
+                if (imagePreview) {
+                    imagePreview.innerHTML = '';
                 }
             }
+        });
+    }
+
+    // Khởi tạo theme
+    if (themeSelect) {
+        themeSelect.value = currentTheme;
+        updateTheme(currentTheme);
+        themeSelect.addEventListener('change', () => {
+            updateTheme(themeSelect.value);
+        });
+    }
+
+    // Xử lý submit form thêm ghi chú
+    const addMemoForm = document.getElementById('addMemoForm');
+    if (addMemoForm) {
+        addMemoForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
             try {
+                const formData = await prepareFormData(this, false, selectedFilesAdd);
                 const response = await fetch('{{ url_for("add_note") }}', {
                     method: 'POST',
                     body: formData,
@@ -1122,83 +1327,26 @@
                 } else {
                     const data = await response.json();
                     if (data.status === 'success') {
-                        addMemoModal.hide();
+                        modals.addMemo.hide();
                         updateSearch();
                     } else {
-                        showFlashMessage('danger', 'Failed to add memo: ' + (data.message || 'Unknown error'));
+                        showFlashMessage('danger', data.message || 'Failed to add memo.');
                     }
                 }
             } catch (error) {
-                console.error('Fetch error:', error);
-                showFlashMessage('danger', 'Error adding memo: ' + error.message);
+                handleError(error, 'Error adding memo.');
             }
         });
+    }
 
-        // Set default due_date to current time in JST
-        document.getElementById('addMemoModal').addEventListener('show.bs.modal', function() {
-            const nowJST = new Date(new Date().getTime() + 9 * 60 * 60 * 1000);
-            const dateStr = nowJST.toISOString().slice(0, 16);
-            document.getElementById('memoDueDate').value = dateStr;
-            document.getElementById('addMemoForm').reset();
-            document.getElementById('memoDueDate').value = dateStr;
-        });        
-
-        // Add Category
-        addCategoryForm.addEventListener('submit', async function(e) {
+    // Xử lý submit form chỉnh sửa ghi chú
+    if (editMemoForm) {
+        editMemoForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            const formData = new FormData(this);
+            const noteId = this.querySelector('#editMemoId')?.value;
+            if (!noteId) return;
             try {
-                const response = await fetch('{{ url_for("add_category") }}', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-                const data = await response.json();
-                if (data.status === 'success') {
-                    categories.push(data.category);
-                    updateCategoriesDisplay();
-                    updateCategorySelect();
-                    addCategoryForm.reset();
-                    showFlashMessage('success', 'Category added successfully');
-                } else {
-                    alert('Failed to add category: ' + (data.message || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Add category error:', error);
-                alert('Error adding category: ' + error.message);
-            }
-        });
-
-        updateReminders();
-
-        // Xử lý submit form Edit Memo
-        document.getElementById('editMemoForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            formData.set('is_completed', document.getElementById('editMemoCompleted').checked ? '1' : '0');
-            formData.set('share', document.getElementById('editMemoShare').checked ? '1' : '0');
-            const noteId = formData.get('id');
-            formData.delete('images');
-            for (const file of selectedFilesEdit) {
-                try {
-                    if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
-                        // Gửi file HEIC gốc lên server
-                        formData.append('images', file);
-                    } else {
-                        const compressedFile = await compressImage(file, 0.2);
-                        formData.append('images', compressedFile);
-                    }
-                } catch (err) {
-                    console.error('Image compression error:', err);
-                    showFlashMessage('danger', 'Failed to process image: ' + err.message);
-                    return;
-                }
-            }
-            existingImagesEdit.forEach(imgObj => formData.append('keep_images', imgObj.originalIndex));
-            console.log('Index ảnh giữ lại gửi về server:', existingImagesEdit.map(img => img.originalIndex));
-            try {
+                const formData = await prepareFormData(this, true, selectedFilesEdit, existingImagesEdit);
                 const response = await fetch(`/edit_note/${noteId}`, {
                     method: 'POST',
                     body: formData,
@@ -1206,106 +1354,159 @@
                 });
                 const data = await response.json();
                 if (data.status === 'success') {
-                    editMemoModal.hide();
+                    modals.editMemo.hide();
                     updateSearch();
-                    showFlashMessage('success', data.message);
+                    showFlashMessage('success', data.message || 'Memo updated successfully.');
                 } else {
                     showFlashMessage('danger', data.message || 'Failed to update note.');
                 }
             } catch (error) {
-                console.error('Fetch error:', error);
-                showFlashMessage('danger', 'Error updating memo: ' + error.message);
+                handleError(error, 'Error updating memo.');
             }
         });
+    }
 
-        document.querySelectorAll('.alert-dismissible').forEach(alert => {
-            setTimeout(() => {
-                alert.classList.remove('show');
-                setTimeout(() => alert.remove(), 150);
-            }, 3000);
-        });
-
-        function updateAddMemoCategorySelect() {
-            const memoCategory = document.getElementById('memoCategory');
-            if (!memoCategory) return;
-            memoCategory.innerHTML = '';
-            categories.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category.id;
-                option.textContent = category.name;
-                memoCategory.appendChild(option);
-            });
-        }
-
-        function updateDbSize() {
-            fetch('/db_size')
-                .then(res => res.json())
-                .then(data => {                    
-                    let text = '';
-                    if (data.size_mb > 0) {
-                        text = `${data.size_mb} MB`;
-                    } else {
-                        text = `${data.size_kb} KB`;
-                    }
-                    document.getElementById('dbSize').textContent = text;
-                });
-        }
-
-        updateDbSize();
-
-    
-
-        document.getElementById('linksForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const inputs = document.querySelectorAll('.link-input');
-            const links = [];
-            inputs.forEach(input => {
-                const val = input.value.trim();
-                if (val) links.push(val);
-            });
-            fetch('/links', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
-                body: JSON.stringify({links: links})
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Đóng modal hoặc thông báo thành công
-                    showFlashMessage && showFlashMessage('success', 'Links updated!');
-                    bootstrap.Modal.getInstance(document.getElementById('linksModal')).hide();
-                } else {
-                    alert('Failed to update links');
-                }
-            });
-        });
-
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.btn-delete-memo')) {
-                const noteId = e.target.closest('.btn-delete-memo').dataset.noteId;
-                const confirmModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
-                document.getElementById('confirmDeleteBtn').onclick = async function() {
-                    try {
-                        const response = await fetch(`/delete_note/${noteId}`, {
-                            method: 'POST',
-                            headers: {'X-Requested-With': 'XMLHttpRequest'}
-                        });
-                        const data = await response.json();
-                        if (data.status === 'success') {
-                            confirmModal.hide();
-                            updateSearch();
-                            showFlashMessage('success', 'Memo deleted successfully');
-                        } else {
-                            showFlashMessage('danger', data.message || 'Failed to delete memo.');
-                        }
-                    } catch (error) {
-                        showFlashMessage('danger', 'Error deleting memo: ' + error.message);
-                    }
+    // Xử lý xóa ghi chú
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-delete-memo')) {
+            const noteId = e.target.closest('.btn-delete-memo').dataset.noteId;
+            const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+            if (confirmDeleteBtn) {
+                confirmDeleteBtn.onclick = async function() {
+                    await deleteItem(`/delete_note/${noteId}`, 'Memo deleted successfully', () => {
+                        modals.confirmDelete.hide();
+                        updateSearch();
+                    });
                 };
-                confirmModal.show();
+                modals.confirmDelete.show();
+            }
+        }
+    });
+
+    // Xử lý submit form liên kết
+    const linksForm = document.getElementById('linksForm');
+    if (linksForm) {
+        linksForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            try {
+                const inputs = document.querySelectorAll('.link-input');
+                const links = Array.from(inputs).map(input => input.value.trim()).filter(val => val);
+                const res = await fetch('/links', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify({ links })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showFlashMessage('success', 'Links updated!');
+                    modals.links.hide();
+                } else {
+                    showFlashMessage('danger', data.message || 'Failed to update links.');
+                }
+            } catch (error) {
+                handleError(error, 'Error updating links.');
             }
         });
+    }
 
-        updateNotesEventListeners();
+    // Xử lý logout
+    const confirmLogoutBtn = document.getElementById('confirmLogoutBtn');
+    if (confirmLogoutBtn) {
+        confirmLogoutBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (response.ok) {
+                    window.location.href = '/login';
+                } else {
+                    throw new Error('Logout failed.');
+                }
+            } catch (error) {
+                handleError(error, 'Error logging out.');
+            }
+        });
+    }
+
+    // Xử lý tìm kiếm
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(updateSearch, 300));
+    }
+
+    // Xử lý chọn danh mục và trạng thái
+    if (categorySelect) {
+        categorySelect.addEventListener('change', updateSearch);
+    }
+    if (showCompleted) {
+        showCompleted.addEventListener('change', updateSearch);
+    }
+    if (showIncomplete) {
+        showIncomplete.addEventListener('change', updateSearch);
+    }
+    if (showReminders) {
+        showReminders.addEventListener('change', toggleRemindersVisibility);
+    }
+
+    // Xử lý chọn ảnh
+    const memoImages = document.getElementById('memoImages');
+    if (memoImages) {
+        memoImages.addEventListener('change', function() {
+            selectedFilesAdd = Array.from(this.files);
+            updateImagePreview(document.getElementById('imagePreview'), selectedFilesAdd, true);
+        });
+    }
+    const editMemoImages = document.getElementById('editMemoImages');
+    if (editMemoImages) {
+        editMemoImages.addEventListener('change', function() {
+            selectedFilesEdit = Array.from(this.files);
+            updateImagePreview(document.getElementById('editImagePreview'), [...existingImagesEdit, ...selectedFilesEdit], false);
+        });
+    }
+
+    // Xử lý thêm danh mục
+    if (addCategoryForm) {
+        addCategoryForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            if (this.dataset.categoryId) return; // Đang ở chế độ chỉnh sửa
+            const formData = new FormData(this);
+            try {
+                const response = await fetch('/add_category', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+                if (data.status === 'success') {
+                    categories.push(data.category);
+                    updateCategoriesDisplay();
+                    updateCategorySelect();
+                    updateAddMemoCategorySelect();
+                    this.reset();
+                    showFlashMessage('success', 'Category added successfully.');
+                } else {
+                    showFlashMessage('danger', data.message || 'Failed to add category.');
+                }
+            } catch (error) {
+                handleError(error, 'Error adding category.');
+            }
+        });
+    }
+
+    // Khởi tạo giao diện
+    updateCategorySelect();
+    updateAddMemoCategorySelect();
+    updateNotesEventListeners();
+    updateDbSize();
+    toggleRemindersVisibility();
+    attachCategoryToggleListeners();
+});
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const showIncomplete = document.getElementById('showIncomplete');
+    if (showIncomplete && !urlParams.has('show_incomplete')) {
+        showIncomplete.checked = true;
+    }
+});
     </script>
 {% endblock %}
