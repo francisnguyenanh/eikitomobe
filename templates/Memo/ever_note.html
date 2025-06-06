@@ -214,7 +214,10 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
     <!-- Main content -->
     <div class="evernote-main">
         <div class="evernote-toolbar">
-            <input type="text" class="form-control" id="note-title" placeholder="Tiêu đề ghi chú..." style="max-width:200px;" tabindex="1">
+            <div style="position: relative; display: inline-block; max-width:200px; width:100%;">
+                <input type="text" class="form-control" id="note-title" placeholder="Tiêu đề ghi chú..." style="padding-right:28px;" tabindex="1">
+                <button type="button" id="clear-title-btn" style="position:absolute; right:4px; top:50%; transform:translateY(-50%); border:none; background:transparent; padding:0; margin:0; font-size:1.1em; color:#888; cursor:pointer; z-index:2;" title="Xóa tiêu đề">&times;</button>
+            </div>
             <button class="btn btn-danger btn-sm" id="delete-note-btn" title="Xóa"><i class="bi bi-trash"></i></button>
             <div class="vr mx-2"></div>
             <!-- Toolbar định dạng -->
@@ -509,5 +512,9 @@ function autoLink(html) {
     linkifyNode(div);
     return div.innerHTML;
 }
+document.getElementById('clear-title-btn').onclick = function() {
+    document.getElementById('note-title').value = "";
+    document.getElementById('note-title').focus();
+};
 </script>
 {% endblock %}
