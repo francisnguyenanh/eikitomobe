@@ -1361,6 +1361,10 @@ def game_flip():
 def game_math():
     return render_template('Game/game_math.html')
 
+# app.py
+@app.route('/ever_note')
+def ever_note():
+    return render_template('Memo/ever_note.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

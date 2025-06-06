@@ -1,0 +1,282 @@
+{% extends "Memo/base.html" %}
+{% block title %}Ghi chú - Evernote Style{% endblock %}
+{% block content %}
+<style>
+/* Sidebar */
+.evernote-sidebar {
+    background: var(--card-bg, #f8f9fa);
+    border-right: 1px solid #e0e0e0;
+    min-width: 220px;
+    max-width: 260px;
+    height: 70vh;
+    overflow-y: auto;
+    padding: 0;
+}
+.evernote-sidebar .list-group-item {
+    background: transparent;
+    border: none;
+    color: var(--text-color, #222);
+    cursor: pointer;
+}
+.evernote-sidebar .list-group-item.active {
+    background: #e3f2fd;
+    color: #1976d2;
+    font-weight: bold;
+}
+.evernote-main {
+    flex: 1 1 0;
+    padding: 0 1.5rem;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    height: 70vh;
+}
+.evernote-editor {
+    flex: 1 1 0;
+    background: var(--card-bg, #fff);
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    padding: 1rem;
+    margin-top: 1rem;
+    overflow-y: auto;
+}
+.evernote-toolbar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+@media (max-width: 900px) {
+    .evernote-layout {
+        flex-direction: column;
+    }
+    .evernote-sidebar {
+        max-width: 100vw;
+        min-width: 0;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    .evernote-main {
+        padding: 0.5rem;
+        height: auto;
+    }
+}
+.evernote-editor[contenteditable="true"] {
+    min-height: 250px;
+    outline: none;
+    font-size: 1rem;
+    background: var(--card-bg, #fff);
+    color: var(--text-color, #222);
+}
+.evernote-toolbar .btn, .evernote-toolbar .form-select {
+    min-width: 36px;
+    padding: 0.25rem 0.5rem;
+}
+@media (min-width: 992px) {
+    .container.mt-4 {
+        height: calc(100vh - 90px) !important;
+        min-height: calc(100vh - 90px) !important;
+        max-width: 100vw !important;
+        width: 100vw !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+}
+.evernote-layout {
+    height: 100%;
+}
+.evernote-main {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-width: 0;
+    padding: 0 1.5rem;
+}
+.evernote-editor {
+    flex: 1 1 0;
+    min-height: 0;
+    height: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    background: var(--card-bg, #fff);
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+.evernote-sidebar {
+    height: 100%;
+    min-height: 0;
+}
+@media (max-width: 991.98px) {
+    html, body {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+    }
+    .container.mt-4 {
+        height: 100vh !important;
+        min-height: 100vh !important;
+        max-width: 100vw !important;
+        width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .evernote-layout {
+        flex-direction: column !important;
+        height: 100%;
+        min-height: 100%;
+        width: 100vw;
+        max-width: 100vw;
+    }
+    .evernote-sidebar {
+        max-width: 100vw;
+        min-width: 0;
+        width: 100vw;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+        flex-shrink: 0;
+    }
+    .evernote-main {
+        padding: 0.5rem;
+        height: 100%;
+        min-height: 0;
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        width: 100vw;
+        max-width: 100vw;
+    }
+    .evernote-editor {
+        flex: 1 1 0;
+        min-height: 0;
+        height: 100%;
+        max-height: 100%;
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+</style>
+<div class="evernote-layout d-flex">
+    <!-- Sidebar -->
+    <div class="evernote-sidebar">
+        <div class="d-flex justify-content-between align-items-center px-3 py-2">
+            <span class="fw-bold">Ghi chú</span>
+            <button class="btn btn-success btn-sm" id="add-note-btn"><i class="bi bi-plus"></i></button>
+        </div>
+        <ul class="list-group list-group-flush" id="note-list"></ul>
+    </div>
+    <!-- Main content -->
+    <div class="evernote-main">
+        <div class="evernote-toolbar">
+            <input type="text" class="form-control" id="note-title" placeholder="Tiêu đề ghi chú..." style="max-width:200px;">
+            <button class="btn btn-primary btn-sm" id="save-note-btn" title="Lưu"><i class="bi bi-save"></i></button>
+            <button class="btn btn-danger btn-sm" id="delete-note-btn" title="Xóa"><i class="bi bi-trash"></i></button>
+            <div class="vr mx-2"></div>
+            <!-- Toolbar định dạng -->
+            <button class="btn btn-light btn-sm" type="button" title="In đậm" onclick="format('bold')"><b>B</b></button>
+            <button class="btn btn-light btn-sm" type="button" title="In nghiêng" onclick="format('italic')"><i>I</i></button>
+            <button class="btn btn-light btn-sm" type="button" title="Gạch chân" onclick="format('underline')"><u>U</u></button>
+            <button class="btn btn-light btn-sm" type="button" title="Gạch bỏ" onclick="format('strikeThrough')"><s>S</s></button>
+            <select class="form-select form-select-sm" style="width:90px;display:inline-block;" onchange="format('formatBlock', this.value)">
+                <option value="p">Body</option>
+                <option value="h1">H1</option>
+                <option value="h2">H2</option>
+                <option value="h3">H3</option>
+            </select>
+            <input type="color" class="form-control form-control-color form-control-sm" title="Màu chữ" onchange="format('foreColor', this.value)" style="width:36px;">
+            <div class="vr mx-2"></div>
+            <!-- List, checklist, align -->
+            <button class="btn btn-light btn-sm" type="button" title="Danh sách số" onclick="format('insertOrderedList')"><i class="bi bi-list-ol"></i></button>
+            <button class="btn btn-light btn-sm" type="button" title="Danh sách chấm" onclick="format('insertUnorderedList')"><i class="bi bi-list-ul"></i></button>
+            <button class="btn btn-light btn-sm" type="button" title="Checklist" onclick="insertChecklist()"><i class="bi bi-check2-square"></i></button>
+            <button class="btn btn-light btn-sm" type="button" title="Căn trái" onclick="format('justifyLeft')"><i class="bi bi-text-left"></i></button>
+            <button class="btn btn-light btn-sm" type="button" title="Căn giữa" onclick="format('justifyCenter')"><i class="bi bi-text-center"></i></button>
+            <button class="btn btn-light btn-sm" type="button" title="Căn phải" onclick="format('justifyRight')"><i class="bi bi-text-right"></i></button>
+        </div>
+        <div id="evernote-editor" class="evernote-editor" contenteditable="true"></div>
+    </div>
+</div>
+<script>
+let notes = [
+    {id: 1, title: "Chào mừng", content: "<b>Đây là ghi chú đầu tiên của bạn!</b>"},
+    {id: 2, title: "Ý tưởng", content: "Bạn có thể <i>thêm, sửa, xóa</i> ghi chú như Evernote."}
+];
+let currentId = 1;
+
+function renderNoteList() {
+    const list = document.getElementById('note-list');
+    list.innerHTML = '';
+    notes.forEach(note => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item' + (note.id === currentId ? ' active' : '');
+        li.textContent = note.title || 'Không tiêu đề';
+        li.onclick = () => selectNote(note.id);
+        list.appendChild(li);
+    });
+}
+function selectNote(id) {
+    currentId = id;
+    const note = notes.find(n => n.id === id);
+    document.getElementById('note-title').value = note.title;
+    document.getElementById('evernote-editor').innerHTML = note.content;
+    renderNoteList();
+}
+function saveNote() {
+    const note = notes.find(n => n.id === currentId);
+    if (note) {
+        note.title = document.getElementById('note-title').value;
+        note.content = document.getElementById('evernote-editor').innerHTML;
+        renderNoteList();
+    }
+}
+function addNote() {
+    const newId = Date.now();
+    notes.unshift({id: newId, title: "Ghi chú mới", content: ""});
+    currentId = newId;
+    renderNoteList();
+    selectNote(newId);
+}
+function deleteNote() {
+    if (notes.length === 0) return;
+    const idx = notes.findIndex(n => n.id === currentId);
+    if (idx !== -1) {
+        notes.splice(idx, 1);
+        if (notes.length > 0) {
+            currentId = notes[0].id;
+            selectNote(currentId);
+        } else {
+            document.getElementById('note-title').value = '';
+            document.getElementById('evernote-editor').innerHTML = '';
+        }
+        renderNoteList();
+    }
+}
+// Định dạng rich text
+function format(cmd, value=null) {
+    document.execCommand(cmd, false, value);
+    document.getElementById('evernote-editor').focus();
+}
+document.getElementById('add-note-btn').onclick = addNote;
+document.getElementById('save-note-btn').onclick = saveNote;
+document.getElementById('delete-note-btn').onclick = deleteNote;
+document.getElementById('note-title').oninput = saveNote;
+document.getElementById('evernote-editor').oninput = saveNote;
+window.onload = function() {
+    renderNoteList();
+    selectNote(currentId);
+};
+function insertChecklist() {
+    // Chèn một checkbox vào vị trí con trỏ
+    document.execCommand('insertHTML', false, '<input type="checkbox" style="transform:scale(1.2);margin-right:6px;">');
+    document.getElementById('evernote-editor').focus();
+}
+
+</script>
+{% endblock %}
