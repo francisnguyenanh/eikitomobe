@@ -196,6 +196,26 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
     cursor: pointer;
     text-decoration: underline;
 }
+.evernote-sidebar.collapsed {
+    min-width: 45px !important;
+    max-width: 45px !important;
+    width: 45px !important;
+    transition: all 0.2s;
+    overflow-x: hidden;
+}
+.evernote-sidebar.collapsed .fw-bold,
+.evernote-sidebar.collapsed .list-group,
+.evernote-sidebar.collapsed .btn:not(#toggle-sidebar-btn) {
+    display: none !important;
+}
+.evernote-main.expanded {
+    padding-left: 0 !important;
+}
+.evernote-toolbar .btn.effect-click {
+    box-shadow: 0 0 0 0.2rem #90caf9;
+    background-color: #e3f2fd !important;
+    transition: box-shadow 0.2s, background-color 0.2s;
+}
 </style>
 <div class="evernote-layout d-flex">
     <!-- Sidebar -->
@@ -203,10 +223,15 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
         <div class="d-flex justify-content-between align-items-center px-3 py-2">
             <span class="fw-bold">List note</span>
             <div>
+                <!-- Nút collapse/expand chỉ hiện trên desktop -->
+                 <button class="btn btn-success btn-sm" id="add-note-btn"><i class="bi bi-plus"></i></button>
+                <button class="btn btn-outline-secondary btn-sm d-none d-lg-inline-block" id="toggle-sidebar-btn" title="Thu gọn/Mở rộng sidebar">
+                    <span id="toggle-sidebar-icon">&lt;</span>
+                </button>
                 <button class="btn btn-secondary btn-sm d-inline-block d-lg-none" id="toggle-list-btn" title="Ẩn/Hiện danh sách">
                     <i class="bi bi-chevron-bar-up" id="toggle-list-icon"></i>
                 </button>
-                <button class="btn btn-success btn-sm" id="add-note-btn"><i class="bi bi-plus"></i></button>
+                
             </div>
         </div>
         <ul class="list-group list-group-flush" id="note-list"></ul>
@@ -221,10 +246,10 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
             <button class="btn btn-danger btn-sm" id="delete-note-btn" title="Xóa"><i class="bi bi-trash"></i></button>
             <div class="vr mx-2"></div>
             <!-- Toolbar định dạng -->
-            <button class="btn btn-light btn-sm" type="button" title="In đậm" onclick="format('bold')"><b>B</b></button>
-            <button class="btn btn-light btn-sm" type="button" title="In nghiêng" onclick="format('italic')"><i>I</i></button>
-            <button class="btn btn-light btn-sm" type="button" title="Gạch chân" onclick="format('underline')"><u>U</u></button>
-            <button class="btn btn-light btn-sm" type="button" title="Gạch bỏ" onclick="format('strikeThrough')"><s>S</s></button>
+            <button class="btn btn-light btn-sm" type="button" id="bold-btn" title="In đậm" onmousedown="toggleFormat(event, 'bold', this)"><b>B</b></button>
+            <button class="btn btn-light btn-sm" type="button" id="italic-btn" title="In nghiêng" onmousedown="toggleFormat(event, 'italic', this)"><i>I</i></button>
+            <button class="btn btn-light btn-sm" type="button" id="underline-btn" title="Gạch chân" onmousedown="toggleFormat(event, 'underline', this)"><u>U</u></button>
+            <button class="btn btn-light btn-sm" type="button" id="strike-btn" title="Gạch bỏ" onmousedown="toggleFormat(event, 'strikeThrough', this)"><s>S</s></button>
             <select class="form-select form-select-sm" style="width:90px;display:inline-block;" onchange="format('formatBlock', this.value)">
                 <option value="p">Body</option>
                 <option value="h1">H1</option>
@@ -253,12 +278,12 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
             <input type="color" class="form-control form-control-color form-control-sm" title="Màu chữ" onchange="format('foreColor', this.value)" style="width:36px;">
             <div class="vr mx-2"></div>
             <!-- List, checklist, align -->
-            <button class="btn btn-light btn-sm" type="button" title="Danh sách số" onclick="format('insertOrderedList')"><i class="bi bi-list-ol"></i></button>
-            <button class="btn btn-light btn-sm" type="button" title="Danh sách chấm" onclick="format('insertUnorderedList')"><i class="bi bi-list-ul"></i></button>
-            <button class="btn btn-light btn-sm" type="button" title="Checklist" onclick="insertChecklist()"><i class="bi bi-check2-square"></i></button>
-            <button class="btn btn-light btn-sm" type="button" title="Căn trái" onclick="format('justifyLeft')"><i class="bi bi-text-left"></i></button>
-            <button class="btn btn-light btn-sm" type="button" title="Căn giữa" onclick="format('justifyCenter')"><i class="bi bi-text-center"></i></button>
-            <button class="btn btn-light btn-sm" type="button" title="Căn phải" onclick="format('justifyRight')"><i class="bi bi-text-right"></i></button>
+            <button class="btn btn-light btn-sm" type="button" id="ordered-btn" title="Danh sách số" onmousedown="toggleFormat(event, 'insertOrderedList', this)"><i class="bi bi-list-ol"></i></button>
+            <button class="btn btn-light btn-sm" type="button" id="unordered-btn" title="Danh sách chấm" onmousedown="toggleFormat(event, 'insertUnorderedList', this)"><i class="bi bi-list-ul"></i></button>
+            <button class="btn btn-light btn-sm" type="button" id="checklist-btn" title="Checklist" onmousedown="toggleChecklist(event, this)"><i class="bi bi-check2-square"></i></button>
+            <button class="btn btn-light btn-sm" type="button" id="left-btn" title="Căn trái" onmousedown="toggleFormat(event, 'justifyLeft', this)"><i class="bi bi-text-left"></i></button>
+            <button class="btn btn-light btn-sm" type="button" id="center-btn" title="Căn giữa" onmousedown="toggleFormat(event, 'justifyCenter', this)"><i class="bi bi-text-center"></i></button>
+            <button class="btn btn-light btn-sm" type="button" id="right-btn" title="Căn phải" onmousedown="toggleFormat(event, 'justifyRight', this)"><i class="bi bi-text-right"></i></button>
         </div>
         <div id="evernote-editor" class="evernote-editor" contenteditable="true" tabindex="2"></div>
     </div>
@@ -516,5 +541,115 @@ document.getElementById('clear-title-btn').onclick = function() {
     document.getElementById('note-title').value = "";
     document.getElementById('note-title').focus();
 };
+
+const sidebar = document.querySelector('.evernote-sidebar');
+const main = document.querySelector('.evernote-main');
+const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+const toggleSidebarIcon = document.getElementById('toggle-sidebar-icon');
+let sidebarCollapsed = false;
+
+toggleSidebarBtn.onclick = function() {
+    sidebarCollapsed = !sidebarCollapsed;
+    if (sidebarCollapsed) {
+        sidebar.classList.add('collapsed');
+        main.classList.add('expanded');
+        toggleSidebarIcon.textContent = '>';
+    } else {
+        sidebar.classList.remove('collapsed');
+        main.classList.remove('expanded');
+        toggleSidebarIcon.textContent = '<';
+    }
+};
+function toggleFormat(event, cmd, btn) {
+    event.preventDefault();
+    document.getElementById('evernote-editor').focus();
+    document.execCommand(cmd);
+    updateFormatButtons();
+    // Hiệu ứng click
+    btn.classList.add('effect-click');
+    setTimeout(() => {
+        btn.classList.remove('effect-click');
+    }, 200);
+}
+
+// Cập nhật trạng thái active cho các nút định dạng
+function updateFormatButtons() {
+    const editor = document.getElementById('evernote-editor');
+    const boldBtn = document.getElementById('bold-btn');
+    const italicBtn = document.getElementById('italic-btn');
+    const underlineBtn = document.getElementById('underline-btn');
+    const strikeBtn = document.getElementById('strike-btn');
+
+    const orderedBtn = document.getElementById('ordered-btn');
+    const unorderedBtn = document.getElementById('unordered-btn');
+    const leftBtn = document.getElementById('left-btn');
+    const centerBtn = document.getElementById('center-btn');
+    const rightBtn = document.getElementById('right-btn');
+
+    if (document.queryCommandState('bold')) {
+        boldBtn.classList.add('active');
+    } else {
+        boldBtn.classList.remove('active');
+    }
+    if (document.queryCommandState('italic')) {
+        italicBtn.classList.add('active');
+    } else {
+        italicBtn.classList.remove('active');
+    }
+    if (document.queryCommandState('underline')) {
+        underlineBtn.classList.add('active');
+    } else {
+        underlineBtn.classList.remove('active');
+    }
+    if (document.queryCommandState('strikeThrough')) {
+        strikeBtn.classList.add('active');
+    } else {
+        strikeBtn.classList.remove('active');
+    }
+
+
+    if (document.queryCommandState('insertOrderedList')) {
+        orderedBtn.classList.add('active');
+    } else {
+        orderedBtn.classList.remove('active');
+    }
+    if (document.queryCommandState('insertUnorderedList')) {
+        unorderedBtn.classList.add('active');
+    } else {
+        unorderedBtn.classList.remove('active');
+    }
+    if (document.queryCommandState('justifyLeft')) {
+        leftBtn.classList.add('active');
+    } else {
+        leftBtn.classList.remove('active');
+    }
+    if (document.queryCommandState('justifyCenter')) {
+        centerBtn.classList.add('active');
+    } else {
+        centerBtn.classList.remove('active');
+    }
+    if (document.queryCommandState('justifyRight')) {
+        rightBtn.classList.add('active');
+    } else {
+        rightBtn.classList.remove('active');
+    }
+}
+
+// Theo dõi khi thay đổi vùng chọn trong editor để cập nhật trạng thái nút
+document.getElementById('evernote-editor').addEventListener('keyup', updateFormatButtons);
+document.getElementById('evernote-editor').addEventListener('mouseup', updateFormatButtons);
+document.getElementById('evernote-editor').addEventListener('focus', updateFormatButtons);
+document.getElementById('evernote-editor').addEventListener('blur', updateFormatButtons);
+
+function toggleChecklist(event, btn) {
+    event.preventDefault();
+    document.execCommand('insertHTML', false, '<input type="checkbox" style="transform:scale(1.2);margin-right:6px;">');
+    document.getElementById('evernote-editor').focus();
+    btn.classList.add('effect-click');
+    setTimeout(() => {
+        btn.classList.remove('effect-click');
+    }, 200);
+}
+
 </script>
 {% endblock %}
