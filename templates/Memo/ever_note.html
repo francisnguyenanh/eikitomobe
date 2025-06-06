@@ -224,6 +224,25 @@
                 <option value="h2">H2</option>
                 <option value="h3">H3</option>
             </select>
+            <select class="form-select form-select-sm" style="width:80px;display:inline-block;" onchange="setFontSize(this.value)">
+                <option value="">Size</option>
+                <option value="9pt">9</option>
+                <option value="10pt">10</option>
+                <option value="11pt">11</option>
+                <option value="12pt">12</option>
+                <option value="14pt">14</option>
+                <option value="16pt">16</option>
+                <option value="18pt">18</option>
+                <option value="20pt">20</option>
+                <option value="24pt">24</option>
+                <option value="28pt">28</option>
+                <option value="32pt">32</option>
+                <option value="36pt">36</option>
+                <option value="40pt">40</option>
+                <option value="44pt">44</option>
+                <option value="48pt">48</option>
+                <option value="50pt">50</option>
+            </select>
             <input type="color" class="form-control form-control-color form-control-sm" title="Màu chữ" onchange="format('foreColor', this.value)" style="width:36px;">
             <div class="vr mx-2"></div>
             <!-- List, checklist, align -->
@@ -328,5 +347,19 @@ toggleListBtn.onclick = function() {
         toggleListIcon.classList.add('bi-chevron-bar-up');
     }
 };
+function setFontSize(size) {
+    if (!size) return;
+    document.execCommand('fontSize', false, 7); // 7 là lớn nhất, sẽ thay thế bằng span bên dưới
+    // Tìm tất cả thẻ font[size="7"] vừa được tạo và đổi sang span với style font-size
+    const editor = document.getElementById('evernote-editor');
+    const fonts = editor.querySelectorAll('font[size="7"]');
+    fonts.forEach(font => {
+        const span = document.createElement('span');
+        span.style.fontSize = size;
+        span.innerHTML = font.innerHTML;
+        font.parentNode.replaceChild(span, font);
+    });
+    editor.focus();
+}
 </script>
 {% endblock %}
