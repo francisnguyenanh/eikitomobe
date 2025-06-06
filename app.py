@@ -117,6 +117,14 @@ class Quote(db_quote.Model):
     id = db_quote.Column(db_quote.Integer, primary_key=True)
     content = db_quote.Column(db_quote.Text, nullable=False)
     category_id = db_quote.Column(db_quote.Integer, db_quote.ForeignKey('quote_category.id'), nullable=False)
+
+class EvernoteNote(db.Model):
+    __tablename__ = 'evernote_note'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
 # Khởi tạo DB Diary và slogan mặc định nếu chưa có
 with diary_app.app_context():
@@ -1365,6 +1373,50 @@ def game_math():
 @app.route('/ever_note')
 def ever_note():
     return render_template('Memo/ever_note.html')
+
+# Lấy tất cả ghi chú Evernote
+@app.route('/api/evernote_notes', methods=['GET'])
+def get_evernote_notes():
+    notes = EvernoteNote.query.order_by(EvernoteNote.id).all()  # Giữ nguyên thứ tự tạo
+    return jsonify([
+        {
+            'id': n.id,
+            'title': n.title,
+            'content': n.content,
+            'created_at': n.created_at.isoformat(),
+            'updated_at': n.updated_at.isoformat()
+        } for n in notes
+    ])
+
+# Thêm mới ghi chú Evernote
+@app.route('/api/evernote_notes', methods=['POST'])
+def add_evernote_note():
+    data = request.json
+    note = EvernoteNote(
+        title=data.get('title', ''),
+        content=data.get('content', '')
+    )
+    db.session.add(note)
+    db.session.commit()
+    return jsonify({'status': 'success', 'id': note.id})
+
+# Sửa ghi chú Evernote
+@app.route('/api/evernote_notes/<int:note_id>', methods=['PUT'])
+def update_evernote_note(note_id):
+    note = EvernoteNote.query.get_or_404(note_id)
+    data = request.json
+    note.title = data.get('title', note.title)
+    note.content = data.get('content', note.content)
+    db.session.commit()
+    return jsonify({'status': 'success'})
+
+# Xóa ghi chú Evernote
+@app.route('/api/evernote_notes/<int:note_id>', methods=['DELETE'])
+def delete_evernote_note(note_id):
+    note = EvernoteNote.query.get_or_404(note_id)
+    db.session.delete(note)
+    db.session.commit()
+    return jsonify({'status': 'success'})
 
 if __name__ == '__main__':
     app.run(debug=True)

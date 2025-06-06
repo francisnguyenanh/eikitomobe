@@ -1,11 +1,9 @@
 {% extends "Memo/base.html" %}
-{% block title %}Ghi chú - Evernote Style{% endblock %}
+{% block title %}Evernote{% endblock %}
 {% block content %}
 <style>
-/* Sidebar */
 .evernote-sidebar {
     background: var(--card-bg, #f8f9fa);
-    border-right: 1px solid #e0e0e0;
     min-width: 220px;
     max-width: 260px;
     height: 70vh;
@@ -19,7 +17,7 @@
     cursor: pointer;
 }
 .evernote-sidebar .list-group-item.active {
-    background: #e3f2fd;
+    background:var(--bg-color, #e3f2fd); ;
     color: #1976d2;
     font-weight: bold;
 }
@@ -191,12 +189,19 @@
         max-width: 100%;
     }
 }
+body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, "Noto Sans JP", "Noto Sans", "Meiryo", "Yu Gothic", "Tahoma", "sans-serif";
+}
+.evernote-editor a {
+    cursor: pointer;
+    text-decoration: underline;
+}
 </style>
 <div class="evernote-layout d-flex">
     <!-- Sidebar -->
     <div class="evernote-sidebar">
         <div class="d-flex justify-content-between align-items-center px-3 py-2">
-            <span class="fw-bold">Ghi chú</span>
+            <span class="fw-bold">List note</span>
             <div>
                 <button class="btn btn-secondary btn-sm d-inline-block d-lg-none" id="toggle-list-btn" title="Ẩn/Hiện danh sách">
                     <i class="bi bi-chevron-bar-up" id="toggle-list-icon"></i>
@@ -209,8 +214,7 @@
     <!-- Main content -->
     <div class="evernote-main">
         <div class="evernote-toolbar">
-            <input type="text" class="form-control" id="note-title" placeholder="Tiêu đề ghi chú..." style="max-width:200px;">
-            <button class="btn btn-primary btn-sm" id="save-note-btn" title="Lưu"><i class="bi bi-save"></i></button>
+            <input type="text" class="form-control" id="note-title" placeholder="Tiêu đề ghi chú..." style="max-width:200px;" tabindex="1">
             <button class="btn btn-danger btn-sm" id="delete-note-btn" title="Xóa"><i class="bi bi-trash"></i></button>
             <div class="vr mx-2"></div>
             <!-- Toolbar định dạng -->
@@ -253,16 +257,53 @@
             <button class="btn btn-light btn-sm" type="button" title="Căn giữa" onclick="format('justifyCenter')"><i class="bi bi-text-center"></i></button>
             <button class="btn btn-light btn-sm" type="button" title="Căn phải" onclick="format('justifyRight')"><i class="bi bi-text-right"></i></button>
         </div>
-        <div id="evernote-editor" class="evernote-editor" contenteditable="true"></div>
+        <div id="evernote-editor" class="evernote-editor" contenteditable="true" tabindex="2"></div>
     </div>
 </div>
-<script>
-let notes = [
-    {id: 1, title: "Chào mừng", content: "<b>Đây là ghi chú đầu tiên của bạn!</b>"},
-    {id: 2, title: "Ý tưởng", content: "Bạn có thể <i>thêm, sửa, xóa</i> ghi chú như Evernote."}
-];
-let currentId = 1;
 
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="deleteConfirmLabel">Xác nhận</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+      </div>
+      <div class="modal-body">
+        Bạn có chắc muốn xóa ghi chú này không?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-danger" id="confirm-delete-btn">Xóa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let notes = [];
+let currentId = null;
+
+// Lấy danh sách ghi chú từ API
+async function fetchNotes() {
+    const res = await fetch('/api/evernote_notes');
+    notes = await res.json();
+    renderNoteList();
+    if (notes.length > 0) {
+        // Nếu currentId vẫn còn tồn tại trong danh sách, giữ nguyên focus
+        const stillExists = notes.some(n => n.id === currentId);
+        if (!stillExists) {
+            currentId = notes[0].id;
+        }
+        selectNote(currentId);
+    } else {
+        currentId = null;
+        document.getElementById('note-title').value = '';
+        document.getElementById('evernote-editor').innerHTML = '';
+    }
+}
+
+// Render danh sách ghi chú
 function renderNoteList() {
     const list = document.getElementById('note-list');
     list.innerHTML = '';
@@ -274,62 +315,118 @@ function renderNoteList() {
         list.appendChild(li);
     });
 }
+
+// Chọn ghi chú
 function selectNote(id) {
     currentId = id;
     const note = notes.find(n => n.id === id);
+    if (!note) return;
     document.getElementById('note-title').value = note.title;
-    document.getElementById('evernote-editor').innerHTML = note.content;
+    document.getElementById('evernote-editor').innerHTML = autoLink(note.content);
     renderNoteList();
 }
-function saveNote() {
-    const note = notes.find(n => n.id === currentId);
-    if (note) {
-        note.title = document.getElementById('note-title').value;
-        note.content = document.getElementById('evernote-editor').innerHTML;
-        renderNoteList();
+
+let pendingDelete = false;
+
+async function saveNote() {
+    let title = document.getElementById('note-title').value.trim();
+    const content = document.getElementById('evernote-editor').innerHTML;
+
+    // Nếu tiêu đề rỗng, tự động sinh tiêu đề theo định dạng Note_yyyy/mm/dd_HHMM
+    if (title === "") {
+        const now = new Date();
+        const pad = n => n.toString().padStart(2, '0');
+        title = `Note_${now.getFullYear()}/${pad(now.getMonth() + 1)}/${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+        document.getElementById('note-title').value = title;
     }
-}
-function addNote() {
-    const newId = Date.now();
-    notes.unshift({id: newId, title: "Ghi chú mới", content: ""});
-    currentId = newId;
-    renderNoteList();
-    selectNote(newId);
-}
-function deleteNote() {
-    if (notes.length === 0) return;
-    const idx = notes.findIndex(n => n.id === currentId);
-    if (idx !== -1) {
-        notes.splice(idx, 1);
-        if (notes.length > 0) {
-            currentId = notes[0].id;
-            selectNote(currentId);
-        } else {
-            document.getElementById('note-title').value = '';
-            document.getElementById('evernote-editor').innerHTML = '';
+
+    // Nếu chưa có note nào được chọn, tự động tạo mới nếu có nội dung hoặc tiêu đề
+    if (!currentId) {
+        if (title !== "" || content !== "") {
+            // Tạo mới note
+            const res = await fetch('/api/evernote_notes', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({title: title, content: content})
+            });
+            const data = await res.json();
+            await fetchNotes();
+            selectNote(data.id);
         }
-        renderNoteList();
+        return;
+    }
+
+    // Nếu đã có note, cập nhật như bình thường
+    const note = notes.find(n => n.id === currentId);
+    if (!note) return;
+    note.title = title;
+    note.content = content;
+    await fetch(`/api/evernote_notes/${currentId}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title: note.title, content: note.content})
+    });
+    await fetchNotes();
+    selectNote(currentId);
+}
+
+// Thêm ghi chú mới
+async function addNote() {
+    // Lấy thời gian hiện tại và format thành yyyymmdd_HHMM
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, '0');
+    const title = `Note ${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+    const res = await fetch('/api/evernote_notes', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({title: title, content: ""})
+    });
+    const data = await res.json();
+    await fetchNotes();
+    selectNote(data.id);
+}
+
+// Xóa ghi chú
+async function deleteNote() {
+    if (!currentId) return;
+    await fetch(`/api/evernote_notes/${currentId}`, {method: 'DELETE'});
+    await fetchNotes();
+    if (notes.length > 0) {
+        selectNote(notes[0].id);
+    } else {
+        document.getElementById('note-title').value = '';
+        document.getElementById('evernote-editor').innerHTML = '';
     }
 }
+
 // Định dạng rich text
 function format(cmd, value=null) {
     document.execCommand(cmd, false, value);
     document.getElementById('evernote-editor').focus();
 }
-document.getElementById('add-note-btn').onclick = addNote;
-document.getElementById('save-note-btn').onclick = saveNote;
-document.getElementById('delete-note-btn').onclick = deleteNote;
-document.getElementById('note-title').oninput = saveNote;
-document.getElementById('evernote-editor').oninput = saveNote;
-window.onload = function() {
-    renderNoteList();
-    selectNote(currentId);
-};
+
+// Chèn checklist
 function insertChecklist() {
-    // Chèn một checkbox vào vị trí con trỏ
     document.execCommand('insertHTML', false, '<input type="checkbox" style="transform:scale(1.2);margin-right:6px;">');
     document.getElementById('evernote-editor').focus();
 }
+
+// Đổi font size theo số
+function setFontSize(size) {
+    if (!size) return;
+    document.execCommand('fontSize', false, 7);
+    const editor = document.getElementById('evernote-editor');
+    const fonts = editor.querySelectorAll('font[size="7"]');
+    fonts.forEach(font => {
+        const span = document.createElement('span');
+        span.style.fontSize = size;
+        span.innerHTML = font.innerHTML;
+        font.parentNode.replaceChild(span, font);
+    });
+    editor.focus();
+}
+
+// Collapse/expand note list trên mobile
 const noteList = document.getElementById('note-list');
 const toggleListBtn = document.getElementById('toggle-list-btn');
 const toggleListIcon = document.getElementById('toggle-list-icon');
@@ -347,19 +444,70 @@ toggleListBtn.onclick = function() {
         toggleListIcon.classList.add('bi-chevron-bar-up');
     }
 };
-function setFontSize(size) {
-    if (!size) return;
-    document.execCommand('fontSize', false, 7); // 7 là lớn nhất, sẽ thay thế bằng span bên dưới
-    // Tìm tất cả thẻ font[size="7"] vừa được tạo và đổi sang span với style font-size
-    const editor = document.getElementById('evernote-editor');
-    const fonts = editor.querySelectorAll('font[size="7"]');
-    fonts.forEach(font => {
-        const span = document.createElement('span');
-        span.style.fontSize = size;
-        span.innerHTML = font.innerHTML;
-        font.parentNode.replaceChild(span, font);
-    });
-    editor.focus();
+
+document.getElementById('add-note-btn').onclick = addNote;
+document.getElementById('delete-note-btn').onclick = function() {
+    pendingDelete = true;
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+};
+document.getElementById('evernote-editor').onblur = saveNote;
+
+window.onload = function() {
+    fetchNotes();
+};
+
+document.getElementById('confirm-delete-btn').onclick = async function() {
+    if (pendingDelete) {
+        await deleteNote();
+        pendingDelete = false;
+        bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+    }
+};
+function autoLink(html) {
+    // Tạo một DOM ảo để xử lý
+    const div = document.createElement('div');
+    div.innerHTML = html;
+
+    function linkifyNode(node) {
+        if (node.nodeType === 3) { // text node
+            const urlRegex = /((https?:\/\/)[^\s<]+)/g;
+            let text = node.nodeValue;
+            let match, lastIndex = 0;
+            const frag = document.createDocumentFragment();
+            while ((match = urlRegex.exec(text)) !== null) {
+                // Thêm text trước link
+                if (match.index > lastIndex) {
+                    frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+                }
+                // Thêm thẻ a
+                const a = document.createElement('a');
+                a.href = match[1];
+                a.target = "_blank";
+                a.rel = "noopener noreferrer";
+                a.textContent = match[1];
+                frag.appendChild(a);
+                lastIndex = urlRegex.lastIndex;
+            }
+            // Thêm phần còn lại
+            if (lastIndex < text.length) {
+                frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+            }
+            return frag.childNodes.length ? frag : node;
+        } else if (node.nodeType === 1 && node.tagName !== 'A') {
+            // Đệ quy cho các node con, trừ thẻ <a>
+            for (let i = 0; i < node.childNodes.length; i++) {
+                const replaced = linkifyNode(node.childNodes[i]);
+                if (replaced !== node.childNodes[i]) {
+                    node.replaceChild(replaced, node.childNodes[i]);
+                }
+            }
+        }
+        return node;
+    }
+
+    linkifyNode(div);
+    return div.innerHTML;
 }
 </script>
 {% endblock %}
