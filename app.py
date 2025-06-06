@@ -123,8 +123,9 @@ class EvernoteNote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)  # Sửa ở đây
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)  # Sửa ở đây
+    
     
 # Khởi tạo DB Diary và slogan mặc định nếu chưa có
 with diary_app.app_context():
@@ -1374,20 +1375,6 @@ def game_math():
 def ever_note():
     return render_template('Memo/ever_note.html')
 
-# Lấy tất cả ghi chú Evernote
-@app.route('/api/evernote_notes', methods=['GET'])
-def get_evernote_notes():
-    notes = EvernoteNote.query.order_by(EvernoteNote.id).all()  # Giữ nguyên thứ tự tạo
-    return jsonify([
-        {
-            'id': n.id,
-            'title': n.title,
-            'content': n.content,
-            'created_at': n.created_at.isoformat(),
-            'updated_at': n.updated_at.isoformat()
-        } for n in notes
-    ])
-
 # Thêm mới ghi chú Evernote
 @app.route('/api/evernote_notes', methods=['POST'])
 def add_evernote_note():
@@ -1418,5 +1405,18 @@ def delete_evernote_note(note_id):
     db.session.commit()
     return jsonify({'status': 'success'})
 
+@app.route('/api/evernote_notes', methods=['GET'])
+def get_evernote_notes():
+    notes = EvernoteNote.query.order_by(EvernoteNote.id).all()
+    return jsonify([
+        {
+            'id': n.id,
+            'title': n.title,
+            'content': n.content,
+            'created_at': n.created_at.isoformat(),
+            'updated_at': n.updated_at.isoformat()
+        } for n in notes
+    ])
+    
 if __name__ == '__main__':
     app.run(debug=True)

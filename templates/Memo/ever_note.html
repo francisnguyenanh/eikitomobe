@@ -307,6 +307,7 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
             <button class="btn btn-light btn-sm" type="button" id="right-btn" title="Căn phải" onmousedown="toggleFormat(event, 'justifyRight', this)"><i class="bi bi-text-right"></i></button>
         </div>
         <div id="evernote-editor" class="evernote-editor" contenteditable="true" tabindex="2"></div>
+        <div id="note-meta" style="font-size:0.95em; color:#888; margin-top:8px;"></div>
     </div>
 </div>
 
@@ -343,6 +344,7 @@ body, .evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
 <script>
 let notes = [];
 let currentId = null;
+let pendingDelete = false;
 
 // Lấy danh sách ghi chú từ API
 async function fetchNotes() {
@@ -384,9 +386,28 @@ function selectNote(id) {
     document.getElementById('note-title').value = note.title;
     document.getElementById('evernote-editor').innerHTML = autoLink(note.content);
     renderNoteList();
+
+    // Hiển thị ngày tạo và cập nhật
+    const metaDiv = document.getElementById('note-meta');
+    if (metaDiv && note.created_at && note.updated_at) {
+        metaDiv.textContent =
+            `Create ${formatDate(note.created_at)}\nUpdate ${formatDate(note.updated_at)}`;
+    } else if (metaDiv) {
+        metaDiv.textContent = '';
+    }
 }
 
-let pendingDelete = false;
+function formatDate(dtStr) {
+    const dt = new Date(dtStr);
+    const yyyy = dt.getFullYear();
+    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+    const dd = String(dt.getDate()).padStart(2, '0');
+    const HH = String(dt.getHours()).padStart(2, '0');
+    const MM = String(dt.getMinutes()).padStart(2, '0');
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    const aaa = days[dt.getDay()];
+    return `${yyyy}/${mm}/${dd} ${HH}:${MM}(${aaa})`;
+}
 
 // Thêm ghi chú mới
 async function addNote() {
