@@ -398,13 +398,16 @@ function selectNote(id) {
 }
 
 function formatDate(dtStr) {
+    // Parse ISO string về đối tượng Date (theo UTC)
     const dt = new Date(dtStr);
+
+    // Lấy các thành phần theo giờ local của máy client
     const yyyy = dt.getFullYear();
     const mm = String(dt.getMonth() + 1).padStart(2, '0');
     const dd = String(dt.getDate()).padStart(2, '0');
     const HH = String(dt.getHours()).padStart(2, '0');
     const MM = String(dt.getMinutes()).padStart(2, '0');
-    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const aaa = days[dt.getDay()];
     return `${yyyy}/${mm}/${dd} ${HH}:${MM}(${aaa})`;
 }
