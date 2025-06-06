@@ -162,13 +162,47 @@
         box-sizing: border-box;
     }
 }
+@media (max-width: 991.98px) {
+    #note-list.collapsed {
+        display: none !important;
+    }
+}
+@media (max-width: 991.98px) {
+    .evernote-toolbar {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        row-gap: 0.25rem;
+        padding: 0.25rem 0;
+    }
+    .evernote-toolbar > * {
+        margin-bottom: 0.25rem;
+        flex: 0 0 auto;
+    }
+    .evernote-toolbar input,
+    .evernote-toolbar select,
+    .evernote-toolbar button {
+        font-size: 0.95rem;
+        padding: 0.25rem 0.5rem;
+        min-width: 32px;
+        max-width: 100%;
+    }
+    .evernote-toolbar .form-control {
+        min-width: 120px;
+        max-width: 100%;
+    }
+}
 </style>
 <div class="evernote-layout d-flex">
     <!-- Sidebar -->
     <div class="evernote-sidebar">
         <div class="d-flex justify-content-between align-items-center px-3 py-2">
             <span class="fw-bold">Ghi chú</span>
-            <button class="btn btn-success btn-sm" id="add-note-btn"><i class="bi bi-plus"></i></button>
+            <div>
+                <button class="btn btn-secondary btn-sm d-inline-block d-lg-none" id="toggle-list-btn" title="Ẩn/Hiện danh sách">
+                    <i class="bi bi-chevron-bar-up" id="toggle-list-icon"></i>
+                </button>
+                <button class="btn btn-success btn-sm" id="add-note-btn"><i class="bi bi-plus"></i></button>
+            </div>
         </div>
         <ul class="list-group list-group-flush" id="note-list"></ul>
     </div>
@@ -277,6 +311,22 @@ function insertChecklist() {
     document.execCommand('insertHTML', false, '<input type="checkbox" style="transform:scale(1.2);margin-right:6px;">');
     document.getElementById('evernote-editor').focus();
 }
+const noteList = document.getElementById('note-list');
+const toggleListBtn = document.getElementById('toggle-list-btn');
+const toggleListIcon = document.getElementById('toggle-list-icon');
+let isListCollapsed = false;
 
+toggleListBtn.onclick = function() {
+    isListCollapsed = !isListCollapsed;
+    if (isListCollapsed) {
+        noteList.classList.add('collapsed');
+        toggleListIcon.classList.remove('bi-chevron-bar-up');
+        toggleListIcon.classList.add('bi-chevron-bar-down');
+    } else {
+        noteList.classList.remove('collapsed');
+        toggleListIcon.classList.remove('bi-chevron-bar-down');
+        toggleListIcon.classList.add('bi-chevron-bar-up');
+    }
+};
 </script>
 {% endblock %}
