@@ -235,87 +235,22 @@
     box-shadow: 0 2px 16px rgba(0,0,0,0.15);
 }
 @media (max-width: 991.98px) {
-    html, body {
-        height: 100%;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        overflow-x: hidden;
-    }
-    .container.mt-4 {
-        height: 100vh !important;
-        min-height: 100vh !important;
-        max-width: 100vw !important;
-        width: 100vw !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    .evernote-layout {
-        flex-direction: column !important;
-        height: 100%;
-        min-height: 100%;
-        width: 100vw;
-        max-width: 100vw;
-    }
-    .evernote-sidebar {
-        max-width: 100vw;
-        min-width: 0;
-        width: 100vw;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid #e0e0e0;
-        flex-shrink: 0;
-    }
-    .evernote-main {
-        padding: 0.5rem;
-        height: 100%;
-        min-height: 0;
-        flex: 1 1 0;
-        display: flex;
-        flex-direction: column;
-        width: 100vw;
-        max-width: 100vw;
-    }
-    /* Cố định toolbar */
+    /* CSS cho toolbar cố định */
     .evernote-toolbar {
         position: sticky;
         top: 0;
-        z-index: 1030;
+        z-index: 10;
         background: var(--card-bg, #fff);
-        padding: 0.5rem;
+        padding: 0.5rem 0;
         border-bottom: 1px solid #e0e0e0;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        flex-wrap: wrap;
-        gap: 0.25rem;
-        row-gap: 0.25rem;
+        transition: all 0.2s ease;
     }
-    .evernote-toolbar > * {
-        margin-bottom: 0.25rem;
-        flex: 0 0 auto;
-    }
-    .evernote-toolbar input,
-    .evernote-toolbar select,
-    .evernote-toolbar button {
-        font-size: 0.95rem;
-        padding: 0.25rem 0.5rem;
-        min-width: 32px;
-        max-width: 100%;
-    }
-    .evernote-toolbar .form-control {
-        min-width: 120px;
-        max-width: 100%;
-    }
+    
+    /* Đảm bảo editor có thể cuộn */
     .evernote-editor {
-        flex: 1 1 0;
-        min-height: 0;
-        height: 100%;
-        max-height: 100%;
-        margin-top: 0.5rem;
-        padding: 0.5rem;
-        padding-top: 1rem;
-        width: 100%;
-        box-sizing: border-box;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch; /* Hỗ trợ cuộn mượt trên iOS */
+        transition: height 0.1s ease;
     }
 }
 </style>
@@ -579,9 +514,6 @@ document.getElementById('delete-note-btn').onclick = function() {
 };
 document.getElementById('evernote-editor').onblur = saveNote;
 
-window.onload = function() {
-    fetchNotes();
-};
 
 document.getElementById('confirm-delete-btn').onclick = async function() {
     if (pendingDelete) {
@@ -1020,14 +952,32 @@ function showSaveStatus() {
     }, 1500);
 }
 
-// Xử lý khi bàn phím mobile xuất hiện
-function handleVisualViewport() {
+let originalEditorHeight; // Lưu chiều cao ban đầu
+
+function setupVisualViewportHandler() {
     if (window.visualViewport) {
+        // Lưu chiều cao ban đầu khi trang vừa load
+        originalEditorHeight = document.getElementById('evernote-editor').style.height;
+        
         window.visualViewport.addEventListener('resize', function() {
-            // Kiểm tra nếu viewport height nhỏ hơn window height (bàn phím xuất hiện)
-            if (window.visualViewport.height < window.innerHeight) {
-                document.querySelector('.evernote-toolbar').style.position = 'sticky';
-                document.querySelector('.evernote-toolbar').style.top = '0';
+            const editor = document.getElementById('evernote-editor');
+            const toolbar = document.querySelector('.evernote-toolbar');
+            
+            // Nếu viewport height nhỏ hơn 70% window height -> bàn phím hiện ra
+            if (window.visualViewport.height < window.innerHeight * 0.7) {
+                // Cố định toolbar
+                toolbar.style.position = 'sticky';
+                toolbar.style.top = '0';
+                toolbar.style.zIndex = '10';
+                
+                // Thu nhỏ editor để khớp với không gian còn lại
+                const availableHeight = window.visualViewport.height - toolbar.offsetHeight - 20;
+                editor.style.height = `${availableHeight}px`;
+                editor.style.maxHeight = `${availableHeight}px`;
+            } else {
+                // Bàn phím đã ẩn, khôi phục kích thước ban đầu
+                editor.style.height = originalEditorHeight || '100%';
+                editor.style.maxHeight = '100%';
             }
         });
     }
@@ -1036,7 +986,7 @@ function handleVisualViewport() {
 // Thêm vào window.onload
 window.onload = function() {
     fetchNotes();
-    handleVisualViewport();
+    setupVisualViewportHandler();
 };
 </script>
 {% endblock %}
