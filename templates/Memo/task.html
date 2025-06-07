@@ -64,7 +64,7 @@
             font-size: 1.5rem;
         }
         #viewMemoModal #viewMemoContent {
-            background-color: var(--card-bg);
+            background-color: var(--bg-color);
             padding: 18px;
             border-radius: 5px;
             min-height: 200px;
@@ -208,6 +208,51 @@
             padding-top: 2px;
             padding-bottom: 2px;
         }
+        /* Custom round checkbox */
+        .task-table input[type="checkbox"].task-complete,
+        .task-table input[type="checkbox"].form-check-input {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #0d6efd;
+            border-radius: 50%;
+            background: #fff;
+            outline: none;
+            cursor: pointer;
+            position: relative;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 0 0 rgba(13,110,253,0.3);
+            vertical-align: middle;
+        }
+
+        .task-table input[type="checkbox"].task-complete:checked,
+        .task-table input[type="checkbox"].form-check-input:checked {
+            background: #0d6efd;
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 4px rgba(13,110,253,0.15);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+
+        .task-table input[type="checkbox"].task-complete:checked::after,
+        .task-table input[type="checkbox"].form-check-input:checked::after {
+            content: '';
+            display: block;
+            width: 8px;
+            height: 8px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            transition: background 0.2s;
+        }
+
+        .task-table input[type="checkbox"].task-complete:active,
+        .task-table input[type="checkbox"].form-check-input:active {
+            box-shadow: 0 0 0 8px rgba(13,110,253,0.10);
+            border-color: #0a58ca;
+        }
     </style>
 
     <form class="mb-3" id="searchForm">
@@ -229,12 +274,6 @@
                     <input class="form-check-input" type="checkbox" id="showIncomplete" name="show_incomplete" value="1"
                         {% if show_incomplete is none or show_incomplete %}checked{% endif %}>
                     <label class="form-check-label" for="showIncomplete"><i class="bi bi-circle"></i> Incomplete</label>
-                </div>
-            </div>
-            <div class="col-md-2">
-                <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="checkbox" id="showReminders" name="show_reminders" value="1">
-                    <label class="form-check-label" for="showReminders"><i class="bi bi-bell"></i> Reminders</label>
                 </div>
             </div>
         </div>
@@ -262,18 +301,18 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for note in notes if note.category_id == category.id %}
+                        {% for note in notes_by_category.get(category.id, []) %}
                         <tr data-task-id="{{ note.id }}">
                             <td>
                                 <input type="checkbox" class="form-check-input task-complete complete-switch" data-note-id="{{ note.id }}" {% if note.is_completed %}checked{% endif %}>
                             </td>
-                            <td>
-                                <span class="task-title" onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">{{ note.title }}</span>
+                            <td onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">
+                                <span class="task-title">{{ note.title }}</span>
                             </td>
-                            <td>
+                            <td onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">
                                 <span class="task-content">{{ note.content|truncate(100) }}</span>
                             </td>
-                            <td>
+                            <td onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">
                                 <span class="task-due due-date" data-due-date="{{ note.due_date.isoformat() if note.due_date else '' }}">
                                     {{ note.due_date.strftime('%Y-%m-%d %H:%M') if note.due_date else '' }}
                                 </span>
@@ -281,7 +320,7 @@
                             <td>
                                 <a href="{{ url_for('export_note', id=note.id) }}" class="btn btn-sm me-1"><i class="bi bi-file-earmark-text"></i></a>
                                 <a href="{{ url_for('export_pdf', id=note.id) }}" class="btn btn-sm"><i class="bi bi-file-earmark-pdf"></i></a>
-                                 <i class="bi bi-trash delete-btn btn-delete-memo" data-note-id="{{ note.id }}" title="Xoá"></i>
+                                <i class="bi bi-trash delete-btn btn-delete-memo" data-note-id="{{ note.id }}" title="Xoá"></i>
                             </td>
                         </tr>
                         {% endfor %}
@@ -359,18 +398,6 @@
                                 <div class="mb-3">
                                     <select class="form-select" id="memoCategory" name="category_id" required>
                                     </select>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check form-switch mb-2">
-                                        <input class="form-check-input" type="checkbox" id="memoShare" name="share">
-                                        <label class="form-check-label" for="memoShare">Enable public sharing</label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check form-switch mb-2">
-                                        <input class="form-check-input" type="checkbox" id="memoCompleted" name="is_completed">
-                                        <label class="form-check-label" for="memoCompleted">Completed</label>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -473,18 +500,6 @@
                                 <div class="mb-3">
                                     <select class="form-select" id="editMemoCategory" name="category_id" required>
                                     </select>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check form-switch mb-2">
-                                        <input class="form-check-input" type="checkbox" id="editMemoShare" name="share">
-                                        <label class="form-check-label" for="editMemoShare">Enable public sharing</label>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check form-switch mb-2">
-                                        <input class="form-check-input" type="checkbox" id="editMemoCompleted" name="is_completed">
-                                        <label class="form-check-label" for="editMemoCompleted">Completed</label>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -619,12 +634,22 @@
         }
 
         function cleanBackdrops() {
+            // Xóa tất cả backdrop
             document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
                 backdrop.remove();
             });
+            
+            // Reset body classes và styles
             document.body.classList.remove('modal-open');
             document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
             document.body.removeAttribute('aria-hidden');
+            
+            // Reset tất cả modal aria-hidden
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.removeAttribute('aria-hidden');
+                modal.style.display = '';
+            });
         }
 
         // Tiện ích chung
@@ -981,14 +1006,6 @@
             if (!form) throw new Error('Form is not provided.');
             const formData = new FormData(form);
             if (isEdit) {
-                const editMemoCompleted = document.getElementById('editMemoCompleted');
-                const editMemoShare = document.getElementById('editMemoShare');
-                if (editMemoCompleted) {
-                    formData.set('is_completed', editMemoCompleted.checked ? '1' : '0');
-                }
-                if (editMemoShare) {
-                    formData.set('share', editMemoShare.checked ? '1' : '0');
-                }
                 existingImages.forEach(imgObj => formData.append('keep_images', imgObj.originalIndex));
             } else {
                 formData.set('is_completed', formData.get('is_completed') ? '1' : '');
@@ -1017,6 +1034,7 @@
 
         // Mở modal chỉnh sửa ghi chú
         async function openEditMemoModal(noteId) {
+            
             try {
                 const data = await fetchNoteData(noteId);
                 const note = data.note;
@@ -1025,8 +1043,6 @@
                 const editMemoContent = document.getElementById('editMemoContent');
                 const editMemoDueDate = document.getElementById('editMemoDueDate');
                 const editMemoCategory = document.getElementById('editMemoCategory');
-                const editMemoShare = document.getElementById('editMemoShare');
-                const editMemoCompleted = document.getElementById('editMemoCompleted');
                 const editImagePreview = document.getElementById('editImagePreview');
                 const editMemoImages = document.getElementById('editMemoImages');
                 if (!editMemoId || !editMemoTitle || !editMemoContent || !editMemoCategory || !editImagePreview || !editMemoImages) {
@@ -1036,8 +1052,6 @@
                 editMemoTitle.value = note.title || '';
                 editMemoContent.value = note.content || '';
                 editMemoDueDate.value = note.due_date || '';
-                editMemoShare.checked = !!note.share_id;
-                editMemoCompleted.checked = note.is_completed === true;
                 editImagePreview.innerHTML = '';
                 existingImagesEdit = note.images
                     ? note.images.map((img, idx) => ({
@@ -1060,7 +1074,7 @@
                 editMemoImages.value = '';
                 modals.editMemo.show();
             } catch (error) {
-                // Lỗi đã được xử lý trong fetchNoteData
+                console.log('mo modal edit memo loi', error);
             }
         }
 
@@ -1115,12 +1129,12 @@
                 }
                 viewMemoContent.onclick = function(e) {
                     if (e.target.tagName === 'A') return;
-                    modals.viewMemo.hide();
-                    const handler = function() {
+                    const handler = () => {
                         openEditMemoModal(note.id);
                         document.getElementById('viewMemoModal').removeEventListener('hidden.bs.modal', handler);
                     };
                     document.getElementById('viewMemoModal').addEventListener('hidden.bs.modal', handler);
+                    modals.viewMemo.hide();
                 };
                 modals.viewMemo.show();
             } catch (error) {
@@ -1165,6 +1179,7 @@
             document.querySelectorAll('.btn-delete-memo').forEach(button => {
                 button.removeEventListener('click', openEditMemoModal);
             });
+            highlightDueDates(); 
         }
 
         // Cập nhật nhắc nhở
@@ -1380,13 +1395,41 @@
             });
         }
 
+        function highlightDueDates() {
+            const now = new Date();
+            document.querySelectorAll('.task-due.due-date').forEach(el => {
+                const isoDate = el.getAttribute('data-due-date');
+                if (!isoDate) return;
+                const due = new Date(isoDate);
+                el.style.backgroundColor = ''; // reset
+                if (due < now) {
+                    // Quá hạn
+                    el.style.backgroundColor = '#ffd6d6'; // đỏ nhạt
+                } else if (due - now <= 24 * 60 * 60 * 1000) {
+                    // Sắp đến hạn (trong 1 ngày)
+                    el.style.backgroundColor = '#fff7cc'; // vàng nhạt
+                }
+            });
+        }
+
         // Khởi tạo sự kiện
         document.addEventListener('DOMContentLoaded', () => {
+             highlightDueDates();
     // Xử lý backdrop cho addMemoModal
     const addMemoModalEl = document.getElementById('addMemoModal');
     if (addMemoModalEl) {
         addMemoModalEl.addEventListener('show.bs.modal', () => {
             cleanBackdrops();
+            // Đặt giá trị mặc định cho memoDueDate là hôm nay 23:59
+            const memoDueDate = document.getElementById('memoDueDate');
+            if (memoDueDate) {
+                const now = new Date();
+                now.setHours(23, 59, 0, 0);
+                // Định dạng yyyy-MM-ddTHH:mm
+                const pad = n => n.toString().padStart(2, '0');
+                const val = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                memoDueDate.value = val;
+            }
         });
         addMemoModalEl.addEventListener('hidden.bs.modal', () => {
             cleanBackdrops();

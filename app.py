@@ -201,55 +201,82 @@ def root():
 @app.route('/task')
 @login_required
 def task():
-    search_query = request.args.get('search', '')
+    search_query = request.args.get('search', '').strip()
     category_id = request.args.get('category_id', type=int)
-    # Nếu không có show_incomplete trên URL, mặc định là 1 (ON)
-    show_completed = request.args.get('show_completed', type=int, default=0)
-    show_incomplete = request.args.get('show_incomplete', type=int)
-    if show_incomplete is None:
-        show_incomplete = 1
+    show_completed = request.args.get('show_completed', default=0, type=int)
+    show_incomplete = request.args.get('show_incomplete', default=1, type=int)
+
+    # Lấy danh sách category
+    categories = Category.query.order_by(Category.id).all()
+
+    # Query notes theo user
     notes_query = Note.query.filter_by(user_id=current_user.id)
-    if search_query:
-        notes_query = notes_query.filter(Note.title.contains(search_query) | Note.content.contains(search_query))
+
+    # Lọc theo category nếu có
     if category_id:
         notes_query = notes_query.filter_by(category_id=category_id)
+
+    # Lọc completed/incomplete
     if show_completed and not show_incomplete:
         notes_query = notes_query.filter_by(is_completed=True)
-    if not show_completed and not show_incomplete:
-        notes_query = notes_query.filter(False)  # Không trả về gì
     elif show_incomplete and not show_completed:
         notes_query = notes_query.filter_by(is_completed=False)
-    # Sort by due_date ascending, nulls last
+    # Nếu cả hai đều bật hoặc đều tắt thì không lọc gì thêm
+
+    # Lọc theo search
+    if search_query:
+        notes_query = notes_query.filter(
+            (Note.title.ilike(f'%{search_query}%')) |
+            (Note.content.ilike(f'%{search_query}%'))
+        )
+
+    # Sắp xếp theo due_date tăng dần, nulls_last để note không có due_date xuống cuối
     notes_query = notes_query.order_by(Note.due_date.asc().nulls_last())
+
     notes = notes_query.all()
-    # Convert notes to JSON-serializable format
+
+    # Group notes by category_id đã sort
+    notes_by_category = {}
+    for note in notes:
+        notes_by_category.setdefault(note.category_id, []).append(note)
+
+    # Chuẩn bị dữ liệu cho JS (nếu cần)
     notes_data = [
         {
-            'id': note.id,
-            'title': note.title,
-            'content': note.content,
-            'category_id': note.category_id,
-            'category_name': note.category.name if note.category else None,
-            'category_color': note.category.color if note.category else None,
-            'due_date': note.due_date.isoformat() if note.due_date else None,
-            'share_id': note.share_id,
-            'is_completed': note.is_completed,
-            'images': json.loads(note.images) if note.images else []
-        } for note in notes
+            "id": n.id,
+            "title": n.title,
+            "content": n.content,
+            "due_date": n.due_date.isoformat() if n.due_date else None,
+            "category_id": n.category_id,
+            "is_completed": n.is_completed,
+            "share_id": getattr(n, 'share_id', None),
+            "images": [
+                {
+                    "filename": img.get("filename"),
+                    "data": img.get("data")
+                } for img in (json.loads(n.images) if n.images else [])
+            ]
+        }
+        for n in notes
     ]
-    # Fetch categories and convert to JSON-serializable format
-    categories = Category.query.filter_by(user_id=current_user.id).all()
     categories_data = [
-        {'id': category.id, 'name': category.name, 'color': category.color or '#ffffff'}
-        for category in categories
+        {
+            "id": c.id,
+            "name": c.name,
+            "color": c.color
+        }
+        for c in categories
     ]
+
     now = datetime.now()
+
     return render_template(
         'Memo/task.html',
         notes=notes,
+        notes_by_category=notes_by_category,
         notes_data=notes_data,
         search_query=search_query,
-        categories=categories_data,  # Use serialized data
+        categories=categories_data,
         selected_category=category_id,
         show_completed=show_completed,
         show_incomplete=show_incomplete,
