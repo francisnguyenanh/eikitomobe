@@ -336,8 +336,7 @@ def add_note():
             due_date_utc = None
             if due_date:
                 try:
-                    due_date_obj = datetime.strptime(due_date, '%Y-%m-%dT%H:%M')
-                    due_date_utc = due_date_obj - timedelta(hours=9)  # Convert JST to UTC
+                    due_date_utc = datetime.strptime(due_date, '%Y-%m-%dT%H:%M')
                 except ValueError as e:
                     flash('Invalid due date format.', 'danger')
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -491,8 +490,7 @@ def edit_note(id):
             due_date_utc = None
             if due_date:
                 try:
-                    due_date_obj = datetime.strptime(due_date, '%Y-%m-%dT%H:%M')
-                    due_date_utc = due_date_obj - timedelta(hours=9)  # Convert JST to UTC
+                    due_date_utc = datetime.strptime(due_date, '%Y-%m-%dT%H:%M')
                 except ValueError as e:
                     app.logger.error(f"Invalid due date format: {due_date}")
                     flash('Invalid due date format.', 'danger')
