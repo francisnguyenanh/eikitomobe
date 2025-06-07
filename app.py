@@ -251,11 +251,11 @@ def task():
             "is_completed": n.is_completed,
             "share_id": getattr(n, 'share_id', None),
             "images": [
-                {
-                    "filename": img.get("filename"),
-                    "data": img.get("data")
-                } for img in (json.loads(n.images) if n.images else [])
-            ]
+            {
+                "filename": img.get("filename"),
+                "data": img.get("data")
+            } for img in (json.loads(n.images) if n.images else [])
+        ]
         }
         for n in notes
     ]
