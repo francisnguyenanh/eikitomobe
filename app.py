@@ -203,8 +203,11 @@ def root():
 def task():
     search_query = request.args.get('search', '')
     category_id = request.args.get('category_id', type=int)
+    # Nếu không có show_incomplete trên URL, mặc định là 1 (ON)
     show_completed = request.args.get('show_completed', type=int, default=0)
-    show_incomplete = request.args.get('show_incomplete', type=int, default=0)
+    show_incomplete = request.args.get('show_incomplete', type=int)
+    if show_incomplete is None:
+        show_incomplete = 1
     notes_query = Note.query.filter_by(user_id=current_user.id)
     if search_query:
         notes_query = notes_query.filter(Note.title.contains(search_query) | Note.content.contains(search_query))
@@ -212,6 +215,8 @@ def task():
         notes_query = notes_query.filter_by(category_id=category_id)
     if show_completed and not show_incomplete:
         notes_query = notes_query.filter_by(is_completed=True)
+    if not show_completed and not show_incomplete:
+        notes_query = notes_query.filter(False)  # Không trả về gì
     elif show_incomplete and not show_completed:
         notes_query = notes_query.filter_by(is_completed=False)
     # Sort by due_date ascending, nulls last

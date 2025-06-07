@@ -38,7 +38,7 @@
             color: #dc3545;
         }
         .card {
-            background-color: var(--card-bg);
+            background-color: var(--bg-color);
             font-family: 'Noto Sans JP', sans-serif;
         }
         .btn-primary {
@@ -112,7 +112,13 @@
         .category-table-wrapper.collapsed {
             display: none;
         }
-        
+        .table-hover.task-table.mb-4 {
+        background-color: var(--bg-color); !important;
+        }
+        .table-hover.task-table.mb-4 > tbody > tr > td,
+        .table-hover.task-table.mb-4 > thead > tr > th {
+            background-color: var(--bg-color); !important;
+        }
     </style>
 
     <form class="mb-3" id="searchForm">
@@ -146,7 +152,9 @@
     </form>
     <div id="reminders" class="mb-3"></div>
     <div id="notesContainer">
-        {% for category in categories %}
+    {% for category in categories %}
+        {% set has_notes = notes|selectattr('category_id', 'equalto', category.id)|list|length > 0 %}
+        {% if has_notes %}
             <div class="task-category d-flex align-items-center" style="color: {{ category.color or '#0d6efd' }}">
                 <button class="btn btn-link btn-sm p-0 me-2 toggle-category" type="button" data-category-id="{{ category.id }}">
                     <i class="bi bi-chevron-down" id="toggle-icon-{{ category.id }}"></i>
@@ -159,10 +167,10 @@
                         <tr>
                             <th style="width:40px"></th>
                             <th style="width:40px"></th>
-                            <th>Tiêu đề</th>
-                            <th>Nội dung</th>
-                            <th>Hạn</th>
-                            <th style="width:100px">Hành động</th>
+                            <th>Title</th>
+                            <th>Content</th>
+                            <th>Due</th>
+                            <th style="width:100px">Func</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -194,8 +202,9 @@
                     </tbody>
                 </table>
             </div>
-        {% endfor %}
-    </div>
+        {% endif %}
+    {% endfor %}
+</div>
 
     <div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -1036,32 +1045,31 @@
         // Gắn sự kiện toggle hoàn thành
         function attachToggleSwitchListeners() {
             document.querySelectorAll('.complete-switch').forEach(switchEl => {
-                switchEl.addEventListener('change', async () => {
+                // Đảm bảo không gắn nhiều lần
+                switchEl.removeEventListener('change', switchEl._toggleListener);
+                switchEl._toggleListener = async function () {
                     const noteId = parseInt(switchEl.dataset.noteId);
                     const isChecked = switchEl.checked;
                     try {
                         const response = await fetch(`/toggle_complete/${noteId}`, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' }
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
                         });
                         if (response.ok) {
-                            const note = notes.find(n => n.id === noteId);
-                            if (note) {
-                                note.is_completed = isChecked;
-                                updateReminders();
-                                if (showIncomplete.checked || showCompleted.checked) {
-                                    updateSearch();
-                                }
-                            }
+                            // Cập nhật lại bảng ghi chú và nhắc nhở theo điều kiện lọc hiện tại
+                            updateSearch();
                         } else {
-                            console.error('Toggle failed:', await response.json());
+                            // Nếu lỗi, trả lại trạng thái cũ
                             switchEl.checked = !isChecked;
+                            const data = await response.json();
+                            showFlashMessage('danger', data.message || 'Failed to update completion status.');
                         }
                     } catch (error) {
-                        handleError(error, 'Error toggling note completion.');
                         switchEl.checked = !isChecked;
+                        handleError(error, 'Error toggling note completion.');
                     }
-                });
+                };
+                switchEl.addEventListener('change', switchEl._toggleListener);
             });
         }
 
@@ -1084,12 +1092,20 @@
             let filteredNotes = notes.filter(note => {
                 const matchesSearch = !search ||
                     (note.title?.toLowerCase().includes(search) ||
-                     note.content?.toLowerCase().includes(search));
+                    note.content?.toLowerCase().includes(search));
                 const matchesCategory = !category_id || note.category_id === parseInt(category_id);
-                const matchesCompletion =
-                    (show_completed && note.is_completed) ||
-                    (show_incomplete && !note.is_completed) ||
-                    (!show_completed && !show_incomplete);
+
+                let matchesCompletion = true;
+                if (show_completed && !show_incomplete) {
+                    matchesCompletion = note.is_completed;
+                } else if (!show_completed && show_incomplete) {
+                    matchesCompletion = !note.is_completed;
+                } else if (show_completed && show_incomplete) {
+                    matchesCompletion = true;
+                } else if (!show_completed && !show_incomplete) {
+                    matchesCompletion = false;
+                }
+
                 return matchesSearch && matchesCategory && matchesCompletion;
             });
             const reminders = filteredNotes
