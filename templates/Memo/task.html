@@ -260,6 +260,25 @@
             font-size: 1.1rem;
             letter-spacing: 0.01em;
         }
+        .category-card {
+            background-color: var(--card-bg);
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+            padding: 20px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: slideIn 0.5s ease forwards;
+        }
+        .category-card .card-title {
+            font-family: 'Kosugi Maru', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        .category-card .card-text, .category-card .text-muted, .category-card .text-muted a, .category-card .card-body a {
+            font-family: 'Noto Sans JP', sans-serif;
+        }
     </style>
 
     <form class="mb-3" id="searchForm">
@@ -271,21 +290,18 @@
         </div>
         <div class="row">
             <div class="col-md-3">
+                <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#manageCategoriesModal">
+                    <i class="bi bi-tags"></i> Category
+                </button>
+            </div>
+            <div class="col-md-3">
                 <div class="form-check form-switch mb-2">
                     <input class="form-check-input" type="checkbox" id="showCompleted" name="show_completed" value="1" {% if show_completed %}checked{% endif %}>
                     <label class="form-check-label" for="showCompleted"><i class="bi bi-check2"></i> Completed</label>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="form-check form-switch mb-2">
-                    <input class="form-check-input" type="checkbox" id="showIncomplete" name="show_incomplete" value="1"
-                        {% if show_incomplete is none or show_incomplete %}checked{% endif %}>
-                    <label class="form-check-label" for="showIncomplete"><i class="bi bi-circle"></i> Incomplete</label>
-                </div>
-            </div>
         </div>
     </form>
-    <div id="reminders" class="mb-3"></div>
     <div id="notesContainer">
     {% for category in categories %}
         {% set has_notes = notes|selectattr('category_id', 'equalto', category.id)|list|length > 0 %}
@@ -520,7 +536,6 @@
                 <div class="modal-body">
                     <form id="addCategoryForm" class="mb-3">
                         <div class="mb-3">
-                            <label for="categoryName" class="form-label">Category Name</label>
                             <input type="text" class="form-control" id="categoryName" name="name" required>
                         </div>
                         <div class="row mb-3 align-items-end">
@@ -551,6 +566,7 @@
             </div>
         </div>
     </div>
+    
     <div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -613,10 +629,7 @@
         const searchInput = document.getElementById('searchInput');
         const categorySelect = document.getElementById('categorySelect');
         const showCompleted = document.getElementById('showCompleted');
-        const showIncomplete = document.getElementById('showIncomplete');
-        const showReminders = document.getElementById('showReminders');
         const notesContainer = document.getElementById('notesContainer');
-        const remindersDiv = document.getElementById('reminders');
         const addCategoryForm = document.getElementById('addCategoryForm');
         const categoriesContainer = document.getElementById('categoriesContainer');
 
@@ -1188,12 +1201,10 @@
 
         // Cập nhật nhắc nhở
         function updateReminders() {
-            if (!remindersDiv) return;
             const now = new Date();
             const search = searchInput?.value.toLowerCase() || '';
             const category_id = categorySelect?.value || '';
             const show_completed = showCompleted?.checked || false;
-            const show_incomplete = showIncomplete?.checked || false;
             let filteredNotes = notes.filter(note => {
                 const matchesSearch = !search ||
                     (note.title?.toLowerCase().includes(search) ||
@@ -1201,36 +1212,15 @@
                 const matchesCategory = !category_id || note.category_id === parseInt(category_id);
 
                 let matchesCompletion = true;
-                if (show_completed && !show_incomplete) {
-                    matchesCompletion = note.is_completed;
-                } else if (!show_completed && show_incomplete) {
-                    matchesCompletion = !note.is_completed;
-                } else if (show_completed && show_incomplete) {
+                if (show_completed) {
+                    // Hiện tất cả memo (cả completed và incomplete)
                     matchesCompletion = true;
-                } else if (!show_completed && !show_incomplete) {
-                    matchesCompletion = false;
+                } else {
+                    // Chỉ hiện memo chưa hoàn thành
+                    matchesCompletion = !note.is_completed;
                 }
 
                 return matchesSearch && matchesCategory && matchesCompletion;
-            });
-            const reminders = filteredNotes
-                .filter(note => {
-                    if (!note.due_date) return false;
-                    const dueDateJST = new Date(note.due_date);
-                    return dueDateJST <= now && !note.is_completed;
-                })
-                .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
-            remindersDiv.innerHTML = '';
-            reminders.forEach(note => {
-                const reminder = document.createElement('div');
-                reminder.className = 'alert alert-warning reminder-item';
-                if (note.id == currentlyClickedReminderId) {
-                    reminder.classList.add('clicked');
-                }
-                reminder.dataset.noteId = note.id;
-                const dueDateFormatted = formatDateJST(note.due_date);
-                reminder.textContent = `Reminder: "${note.title || ''}" is due at ${dueDateFormatted}`;
-                remindersDiv.appendChild(reminder);
             });
             attachReminderListeners();
         }
@@ -1259,20 +1249,15 @@
         async function updateSearch() {
             currentlyClickedReminderId = null;
             if (!notesContainer) return;
-            const loading = document.createElement('div');
-            loading.textContent = 'Loading...';
             notesContainer.innerHTML = '';
-            notesContainer.appendChild(loading);
             try {
                 const search = searchInput?.value.toLowerCase() || '';
                 const category_id = categorySelect?.value || '';
                 const show_completed = showCompleted?.checked ? 1 : 0;
-                const show_incomplete = showIncomplete?.checked ? 1 : 0;
                 const params = new URLSearchParams({
                     search,
                     category_id,
-                    show_completed,
-                    show_incomplete
+                    show_completed
                 });
                 const response = await fetch(`/task?${params.toString()}`);
                 const html = await response.text();
@@ -1293,14 +1278,13 @@
                     updateAddMemoCategorySelect();
                 }
                 updateNotesEventListeners();
-                updateReminders();
+                //updateReminders();
                 updateDueDateDisplays();
-                toggleRemindersVisibility();
                 attachCategoryToggleListeners();
             } catch (error) {
                 handleError(error, 'Error searching notes.');
             } finally {
-                loading.remove();
+                
             }
         }
 
@@ -1336,13 +1320,6 @@
         */
 
         // Quản lý giao diện và hệ thống
-
-        // Ẩn/hiện nhắc nhở
-        function toggleRemindersVisibility() {
-            if (remindersDiv) {
-                remindersDiv.style.display = showReminders?.checked ? 'block' : 'none';
-            }
-        }
 
         // Cập nhật kích thước DB
         async function updateDbSize() {
@@ -1590,12 +1567,6 @@
     if (showCompleted) {
         showCompleted.addEventListener('change', updateSearch);
     }
-    if (showIncomplete) {
-        showIncomplete.addEventListener('change', updateSearch);
-    }
-    if (showReminders) {
-        showReminders.addEventListener('change', toggleRemindersVisibility);
-    }
 
     // Xử lý chọn ảnh
     const memoImages = document.getElementById('memoImages');
@@ -1647,15 +1618,7 @@
     updateAddMemoCategorySelect();
     updateNotesEventListeners();
     updateDbSize();
-    toggleRemindersVisibility();
     attachCategoryToggleListeners();
-});
-document.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const showIncomplete = document.getElementById('showIncomplete');
-    if (showIncomplete && !urlParams.has('show_incomplete')) {
-        showIncomplete.checked = true;
-    }
 });
     </script>
 {% endblock %}
