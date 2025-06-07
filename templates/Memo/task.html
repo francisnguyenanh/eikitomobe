@@ -279,6 +279,19 @@
         .category-card .card-text, .category-card .text-muted, .category-card .text-muted a, .category-card .card-body a {
             font-family: 'Noto Sans JP', sans-serif;
         }
+        .category-label {
+            min-width: 120px;
+            max-width: 100%;
+            height: 38px;
+            padding: 0 16px;
+            font-size: 1rem;
+            text-align: center;
+            white-space: nowrap;
+            box-sizing: border-box;
+        }
+        .card-body {
+            padding: 0; inmportant;
+        }
     </style>
 
     <form class="mb-3" id="searchForm">
@@ -308,11 +321,20 @@
     {% for category in categories %}
         {% set has_notes = notes|selectattr('category_id', 'equalto', category.id)|list|length > 0 %}
         {% if has_notes %}
-            <div class="task-category d-flex align-items-center" style="color: {{ category.color or '#0d6efd' }}">
-                <button class="btn btn-link btn-sm p-0 me-2 toggle-category" type="button" data-category-id="{{ category.id }}">
+            <div class="task-category d-flex align-items-center">
+                <button
+                    class="btn btn-link btn-sm p-0 me-2 toggle-category"
+                    type="button"
+                    data-category-id="{{ category.id }}"
+                    style="
+                        background-color: {{ category.color or '#0d6efd' }};
+                        color: {{ category.color|contrast_text_color }};
+                        font-weight: bold;
+                        border: none;
+                    ">
                     <i class="bi bi-chevron-down" id="toggle-icon-{{ category.id }}"></i>
+                    {{ category.name }}
                 </button>
-                <span>{{ category.name }}</span>
             </div>
             <div class="category-table-wrapper" id="category-table-{{ category.id }}">
                 <table class="table table-hover task-table mb-4">
@@ -554,10 +576,25 @@
                             <div class="col-12 col-md-6 mb-3">
                                 <div class="card" style="background-color: {{ category.color or '#ffffff' }};">
                                     <div class="card-body d-flex justify-content-between align-items-center">
-                                        <span>{{ category.name }}</span>
-                                        <div>
-                                            <button class="btn btn-sm me-1 edit-category" data-category-id="{{ category.id }}" data-category-name="{{ category.name }}" data-category-color="{{ category.color or '#ffffff' }}"><i class="bi bi-pencil"></i></button>
-                                            <button class="btn btn-sm delete-category" data-category-id="{{ category.id }}"><i class="bi bi-trash"></i></button>
+                                        <div class="card-body d-flex justify-content-between align-items-center">
+                                            <span
+                                                class="category-label"
+                                                style="
+                                                    background-color: {{ category.color or '#0d6efd' }};
+                                                    color: {{ category.color|contrast_text_color }};
+                                                    font-weight: bold;
+                                                    display: inline-flex;
+                                                    align-items: center;
+                                                    justify-content: center;
+                                                    border-radius: 0.5rem;
+                                                    margin-right: 10px;
+                                                ">
+                                                {{ category.name }}
+                                            </span>
+                                            <div>
+                                                <button class="btn btn-sm me-1 edit-category" data-category-id="{{ category.id }}" data-category-name="{{ category.name }}" data-category-color="{{ category.color or '#ffffff' }}"><i class="bi bi-pencil"></i></button>
+                                                <button class="btn btn-sm delete-category" data-category-id="{{ category.id }}"><i class="bi bi-trash"></i></button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -672,6 +709,37 @@
         }
 
         // Tiện ích chung
+
+            function adjustCategoryButtonWidths() {
+            // Lấy tất cả các nút category name
+            const buttons = document.querySelectorAll('.toggle-category');
+            if (!buttons.length) return;
+            // Tìm độ dài lớn nhất của tên category
+            let maxLen = 0;
+            buttons.forEach(btn => {
+                const text = btn.textContent.trim();
+                if (text.length > maxLen) maxLen = text.length;
+            });
+            // Tạo một span ẩn để đo width thực tế
+            const span = document.createElement('span');
+            span.style.visibility = 'hidden';
+            span.style.position = 'absolute';
+            span.style.fontWeight = 'bold';
+            span.style.fontSize = getComputedStyle(buttons[0]).fontSize;
+            document.body.appendChild(span);
+            // Đo width lớn nhất
+            let maxWidth = 0;
+            buttons.forEach(btn => {
+                span.textContent = btn.textContent.trim();
+                const w = span.offsetWidth;
+                if (w > maxWidth) maxWidth = w;
+            });
+            document.body.removeChild(span);
+            // Đặt width cho tất cả nút
+            buttons.forEach(btn => {
+                btn.style.width = (maxWidth + 32) + 'px'; // +32 cho icon và padding
+            });
+        }
 
         // Xử lý lỗi và hiển thị thông báo flash
         function handleError(error, defaultMessage = 'An error occurred') {
@@ -933,18 +1001,14 @@
                     const categoryName = button.dataset.categoryName;
                     const categoryColor = button.dataset.categoryColor;
                     if (!addCategoryForm) return;
-                    addCategoryForm.innerHTML = `
-                        <div class="mb-3">
-                            <label for="categoryName" class="form-label">Category Name</label>
-                            <input type="text" class="form-control" id="categoryName" name="name" value="${categoryName}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="categoryColor" class="form-label">Color</label>
-                            <input type="color" class="form-control form-control-color" id="categoryColor" name="color" value="${categoryColor}">
-                        </div>
-                        <button type="submit" class="btn btn-primary">Update Category</button>
-                    `;
+                    // Gán giá trị vào input thay vì thay đổi innerHTML
+                    addCategoryForm.querySelector('#categoryName').value = categoryName;
+                    addCategoryForm.querySelector('#categoryColor').value = categoryColor;
+                    // Đổi text nút
+                    const submitBtn = addCategoryForm.querySelector('button[type="submit"]');
+                    submitBtn.textContent = 'Update Category';
                     addCategoryForm.dataset.categoryId = categoryId;
+
                     addCategoryForm.onsubmit = async function(e) {
                         e.preventDefault();
                         const formData = new FormData(this);
@@ -963,18 +1027,9 @@
                                 updateCategoriesDisplay();
                                 updateCategorySelect();
                                 updateAddMemoCategorySelect();
+                                // Reset form về trạng thái thêm mới
                                 addCategoryForm.reset();
-                                addCategoryForm.innerHTML = `
-                                    <div class="mb-3">
-                                        <label for="categoryName" class="form-label">Category Name</label>
-                                        <input type="text" class="form-control" id="categoryName" name="name" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="categoryColor" class="form-label">Color</label>
-                                        <input type="color" class="form-control form-control-color" id="categoryColor" name="color" value="#ffffff">
-                                    </div>
-                                    <button type="submit" class="btn btn-primary">Add Category</button>
-                                `;
+                                submitBtn.textContent = 'Add Category';
                                 delete addCategoryForm.dataset.categoryId;
                                 showFlashMessage('success', 'Category updated successfully');
                             } else {
@@ -1366,8 +1421,10 @@
         // Gắn sự kiện toggle danh mục
         function attachCategoryToggleListeners() {
             document.querySelectorAll('.toggle-category').forEach(button => {
-                button.addEventListener('click', () => {
-                    const categoryId = button.dataset.categoryId;
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                newButton.addEventListener('click', () => {
+                    const categoryId = newButton.dataset.categoryId;
                     const tableWrapper = document.getElementById(`category-table-${categoryId}`);
                     const icon = document.getElementById(`toggle-icon-${categoryId}`);
                     if (tableWrapper && icon) {
@@ -1377,6 +1434,7 @@
                     }
                 });
             });
+            adjustCategoryButtonWidths();
         }
 
         function highlightDueDates() {
@@ -1624,6 +1682,9 @@
     updateNotesEventListeners();
     updateDbSize();
     attachCategoryToggleListeners();
+    // Gọi hàm này sau khi render hoặc updateSearch
+    adjustCategoryButtonWidths();
+
 });
     </script>
 {% endblock %}

@@ -1450,5 +1450,21 @@ def get_evernote_notes():
         } for n in notes
     ])
     
+    
+def contrast_text_color(hex_color):
+    if not hex_color:
+        return "#000"
+    hex_color = hex_color.lstrip('#')
+    if len(hex_color) != 6:
+        return "#000"
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    luminance = 0.299 * r + 0.587 * g + 0.114 * b
+    return "#000" if luminance > 186 else "#fff"
+
+app.jinja_env.filters['contrast_text_color'] = contrast_text_color
+
+
 if __name__ == '__main__':
     app.run(debug=True)
