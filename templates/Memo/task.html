@@ -292,7 +292,29 @@
         .card-body {
             padding: 0; inmportant;
         }
+        #calendarModal .modal-dialog {
+            width: 90vw;
+            max-width: 90vw;
+            height: 90vh;
+            max-height: 90vh;
+            margin: auto;
+        }
 
+        #calendarModal .modal-content {
+            height: 90vh;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #calendarModal .modal-body {
+            flex: 1 1 auto;
+            overflow: auto;
+        }
+        #calendar {
+            height: 80vh;
+            min-height: 400px;
+        }
     </style>
 
     <form class="mb-3" id="searchForm">
@@ -306,6 +328,9 @@
                 <input type="text" class="form-control" id="searchInput" name="search" placeholder="Search notes..." value="{{ search_query }}">
             </div>
             <div class="col-auto">
+                <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#calendarModal" id="openCalendarBtn">
+                    <i class="bi bi-calendar-event"></i> Calendar
+                </button>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#manageCategoriesModal">
                     <i class="bi bi-tags"></i> Category
                 </button>
@@ -318,6 +343,20 @@
             </div>
         </div>
     </form>
+
+    <div class="modal fade" id="calendarModal" tabindex="-1" aria-labelledby="calendarModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="calendarModalLabel">Calendar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="calendar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="notesContainer">
     {% for category in categories %}
         {% set has_notes = notes|selectattr('category_id', 'equalto', category.id)|list|length > 0 %}
@@ -1674,6 +1713,77 @@
             }
         });
     }
+
+    const calendarModalEl = document.getElementById('calendarModal');
+if (calendarModalEl) {
+    calendarModalEl.addEventListener('show.bs.modal', () => {
+        cleanBackdrops();
+    });
+}
+
+    const calendarModal = document.getElementById('calendarModal');
+    if (calendarModal) {
+        calendarModal.addEventListener('shown.bs.modal', function () {
+            renderCalendar();
+        });
+    }
+
+    function renderCalendar() {
+    const calendarEl = document.getElementById('calendar');
+    if (!calendarEl) return;
+
+    // Xóa calendar cũ nếu có
+    calendarEl.innerHTML = '';
+
+    // Chuẩn bị events từ notes
+    const events = (notes || []).filter(n => n.due_date).map(note => ({
+        id: String(note.id),
+        title: categories.find(c => c.id === note.category_id)?.name || 'No Category',
+        start: note.due_date,
+        backgroundColor: categories.find(c => c.id === note.category_id)?.color || '#0d6efd',
+        borderColor: categories.find(c => c.id === note.category_id)?.color || '#0d6efd',
+        textColor: '#fff',
+        extendedProps: {
+            noteId: note.id,
+            content: note.content?.substring(0, 50) + (note.content?.length > 50 ? '...' : '')
+        }
+    }));
+
+    // Khởi tạo FullCalendar
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+        },
+        themeSystem: 'bootstrap5',
+        events: events,
+        displayEventTime: false,
+        eventClick: function(info) {
+            openViewMemoModal(info.event.id);
+        },
+        eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        },
+        eventDidMount: function(info) {
+            // Thêm tooltip để hiển thị nội dung ghi chú
+            if (info.event.extendedProps?.content) {
+                const tooltip = new bootstrap.Tooltip(info.el, {
+                    title: info.event.extendedProps.content,
+                    placement: 'top',
+                    trigger: 'hover',
+                    container: 'body'
+                });
+            }
+        }
+    });
+
+    calendar.render();
+}
+
 
     attachCategoryEventListeners();
     
