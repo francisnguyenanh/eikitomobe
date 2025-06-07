@@ -253,6 +253,13 @@
             box-shadow: 0 0 0 8px rgba(13,110,253,0.10);
             border-color: #0a58ca;
         }
+        #viewMemoModal .modal-body,
+        #viewMemoModal #viewMemoTitle,
+        #viewMemoModal #viewMemoContent {
+            font-family: 'Noto Sans JP', 'Noto Sans', 'Segoe UI', Arial, 'Hiragino Kaku Gothic Pro', 'Meiryo', 'MS PGothic', 'Tahoma', 'Geneva', sans-serif !important;
+            font-size: 1.1rem;
+            letter-spacing: 0.01em;
+        }
     </style>
 
     <form class="mb-3" id="searchForm">
@@ -440,9 +447,6 @@
     <div class="modal fade" id="imageViewModal" tabindex="-1" aria-labelledby="imageViewModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
                 <div class="modal-body text-center">
                     <img id="enlargedImage" src="" style="max-width: 100%; max-height: 80vh; object-fit: contain;">
                 </div>
