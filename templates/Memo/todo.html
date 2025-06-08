@@ -731,11 +731,44 @@ function toggleTodo(todoId, event) {
     checkbox.classList.add('completing');
     todoItem.classList.add('completing');
     
-    // Remove animation classes after animation completes
-    setTimeout(() => {
-        checkbox.classList.remove('completing');
-        todoItem.classList.remove('completing');
-    }, 600);
+    // Optimistically update the local data
+    todo.completed = !todo.completed;
+    
+    // Update progress immediately without reloading
+    const dateStr = todo.date;
+    const dayTodos = todos.filter(t => t.date === dateStr);
+    const newProgress = calculateDayProgress(dayTodos);
+    
+    // Update progress bar immediately
+    const dayHeader = document.querySelector(`[onclick="openTodoModal('${dateStr}')"]`);
+    if (dayHeader) {
+        dayHeader.style.setProperty('--progress-width', `${newProgress}%`);
+        const progressText = dayHeader.querySelector('.progress-text');
+        if (progressText) {
+            progressText.textContent = `${newProgress}%`;
+        }
+        
+        // Update text color based on new progress
+        const content = dayHeader.querySelector('.day-header-content');
+        if (newProgress > 50) {
+            content.style.color = 'white';
+            content.style.textShadow = '0 1px 2px rgba(0,0,0,0.3)';
+        } else {
+            content.style.color = 'inherit';
+            content.style.textShadow = 'none';
+        }
+    }
+    
+    // Update todo item appearance
+    if (todo.completed) {
+        todoItem.classList.add('completed');
+        checkbox.classList.add('completed');
+        checkbox.innerHTML = '<i class="bi bi-check"></i>';
+    } else {
+        todoItem.classList.remove('completed');
+        checkbox.classList.remove('completed');
+        checkbox.innerHTML = '';
+    }
     
     fetch(`/api/todos/${todoId}`, {
         method: 'PUT',
@@ -743,26 +776,62 @@ function toggleTodo(todoId, event) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            completed: !todo.completed
+            completed: todo.completed
         })
     })
     .then(response => response.json())
     .then(result => {
         if (result.error) {
+            // Revert changes on error
+            todo.completed = !todo.completed;
             alert('Error: ' + result.error);
-            // Remove animation classes on error
+            
+            // Revert UI changes
+            if (todo.completed) {
+                todoItem.classList.add('completed');
+                checkbox.classList.add('completed');
+                checkbox.innerHTML = '<i class="bi bi-check"></i>';
+            } else {
+                todoItem.classList.remove('completed');
+                checkbox.classList.remove('completed');
+                checkbox.innerHTML = '';
+            }
+            
+            // Revert progress
+            const revertedProgress = calculateDayProgress(dayTodos);
+            if (dayHeader) {
+                dayHeader.style.setProperty('--progress-width', `${revertedProgress}%`);
+                const progressText = dayHeader.querySelector('.progress-text');
+                if (progressText) {
+                    progressText.textContent = `${revertedProgress}%`;
+                }
+            }
+        }
+        
+        // Remove animation classes after animation completes
+        setTimeout(() => {
             checkbox.classList.remove('completing');
             todoItem.classList.remove('completing');
-        } else {
-            // Delay reload to show animation
-            setTimeout(() => {
-                loadTodos(); // Reload todos
-            }, 300);
-        }
+        }, 600);
     })
     .catch(error => {
         console.error('Error toggling todo:', error);
         alert('Server connection error!');
+        
+        // Revert changes on error
+        todo.completed = !todo.completed;
+        
+        // Revert UI changes
+        if (todo.completed) {
+            todoItem.classList.add('completed');
+            checkbox.classList.add('completed');
+            checkbox.innerHTML = '<i class="bi bi-check"></i>';
+        } else {
+            todoItem.classList.remove('completed');
+            checkbox.classList.remove('completed');
+            checkbox.innerHTML = '';
+        }
+        
         // Remove animation classes on error
         checkbox.classList.remove('completing');
         todoItem.classList.remove('completing');
