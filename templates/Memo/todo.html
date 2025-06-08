@@ -2,6 +2,9 @@
 {% block title %}TODO Weekly{% endblock %}
 {% block content %}
 <style>
+/* =================
+   LAYOUT & CONTAINER
+   ================= */
 .todo-calendar {
     background: var(--card-bg);
     border-radius: 10px;
@@ -9,6 +12,9 @@
     padding: 1rem;
 }
 
+/* =================
+   WEEK HEADER
+   ================= */
 .week-header {
     display: flex;
     justify-content: space-between;
@@ -17,6 +23,10 @@
     padding: 0.5rem;
     background: var(--bg-color);
     border-radius: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .week-navigation {
@@ -24,6 +34,9 @@
     gap: 0.5rem;
 }
 
+/* =================
+   DAY COLUMN & HEADER
+   ================= */
 .day-column {
     border: 1px solid #e0e0e0;
     border-radius: 8px;
@@ -45,10 +58,32 @@
     margin-bottom: 0.5rem;
     cursor: pointer;
     transition: background-color 0.2s;
+    position: relative;
+    overflow: hidden;
 }
 
 .day-header:hover {
     background: var(--bg-color);
+}
+
+.day-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: var(--progress-width, 0%);
+    background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+    transition: width 0.3s ease;
+    z-index: 1;
+    border-radius: 6px;
+}
+
+.day-header-content {
+    position: relative;
+    z-index: 2;
+    color: inherit;
+    transition: color 0.3s ease;
 }
 
 .day-name {
@@ -63,28 +98,27 @@
     color: #333;
 }
 
+.progress-text {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
 .day-progress {
     margin-bottom: 0.5rem;
     text-align: center;
+    display: none; /* Hide the progress bar */
 }
 
-.day-progress .progress {
-    margin-bottom: 0.25rem;
-}
-
-.day-progress .text-muted {
-    display: block;
-    text-align: center;
-    font-size: 0.75rem;
-}
-
+/* =================
+   TODO ITEMS
+   ================= */
 .todo-item {
     display: flex;
     align-items: center;
     padding: 0.4rem;
     margin-bottom: 0.3rem;
     border-radius: 6px;
-    transition: all 0.2s;
+    transition: all 0.4s ease;
     position: relative;
     cursor: pointer;
 }
@@ -92,7 +126,11 @@
 .todo-item.completed {
     opacity: 0.6;
     text-decoration: line-through;
-    cursor: default; /* Remove cursor pointer for completed todos */
+    cursor: default;
+}
+
+.todo-item.completing {
+    animation: todoCompleting 0.6s ease;
 }
 
 /* Priority colors as background */
@@ -111,6 +149,14 @@
     border: 1px solid rgba(40, 167, 69, 0.3);
 }
 
+.todo-title {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+/* =================
+   CHECKBOX
+   ================= */
 .todo-checkbox {
     width: 18px;
     height: 18px;
@@ -121,20 +167,55 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.todo-checkbox::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    background: #28a745;
+    border-radius: 50%;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    z-index: 1;
 }
 
 .todo-checkbox.completed {
     background: #28a745;
     border-color: #28a745;
     color: white;
+    transform: scale(1.1);
 }
 
-.todo-title {
-    flex: 1;
-    font-size: 0.9rem;
+.todo-checkbox.completed::before {
+    width: 100%;
+    height: 100%;
 }
 
+.todo-checkbox.completing {
+    animation: checkboxPulse 0.6s ease;
+}
+
+.todo-checkbox i {
+    position: relative;
+    z-index: 2;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s ease;
+}
+
+.todo-checkbox.completed i {
+    opacity: 1;
+    transform: scale(1);
+    animation: checkmarkAppear 0.4s ease 0.2s both;
+}
+
+/* =================
+   TODO ACTIONS
+   ================= */
 .todo-actions {
     display: flex;
     gap: 0.2rem;
@@ -164,6 +245,9 @@
     background: #c82333;
 }
 
+/* =================
+   ADD TODO BUTTON
+   ================= */
 .add-todo-btn {
     width: 100%;
     padding: 0.5rem;
@@ -181,6 +265,9 @@
     background: rgba(0,123,255,0.05);
 }
 
+/* =================
+   MODAL ELEMENTS
+   ================= */
 .priority-selector {
     display: flex;
     gap: 0.5rem;
@@ -251,43 +338,39 @@
     pointer-events: none;
 }
 
-/* Mobile responsive */
-@media (max-width: 768px) {
-    .day-column {
-        min-height: 300px;
-    }
-    
-    .week-header {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .week-navigation {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    /* Make delete button more prominent on mobile */
-    .todo-action-btn.delete {
-        width: 24px;
-        height: 24px;
-    }
-}
-.week-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    padding: 0.5rem;
-    background: var(--bg-color);
-    border-radius: 8px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+/* =================
+   ANIMATIONS
+   ================= */
+@keyframes checkboxPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); box-shadow: 0 0 0 10px rgba(40, 167, 69, 0.3); }
+    100% { transform: scale(1.1); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
 }
 
-/* Mobile responsive - cập nhật phần mobile */
+@keyframes checkmarkAppear {
+    0% { 
+        opacity: 0;
+        transform: scale(0) rotate(-45deg);
+    }
+    50% { 
+        opacity: 1;
+        transform: scale(1.2) rotate(-15deg);
+    }
+    100_ { 
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+@keyframes todoCompleting {
+    0% { transform: translateX(0); }
+    50% { transform: translateX(10px) scale(1.02); }
+    100% { transform: translateX(0); }
+}
+
+/* =================
+   MOBILE RESPONSIVE
+   ================= */
 @media (max-width: 768px) {
     .day-column {
         min-height: 300px;
@@ -324,203 +407,6 @@
     .todo-calendar {
         padding-top: 0;
     }
-}
-
-.day-header {
-    text-align: center;
-    padding: 0.5rem;
-    background: var(--card-bg);
-    border-radius: 6px;
-    margin-bottom: 0.5rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    position: relative;
-    overflow: hidden;
-}
-
-.day-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: var(--progress-width, 0%);
-    background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
-    transition: width 0.3s ease;
-    z-index: 1;
-    border-radius: 6px;
-}
-
-.day-header-content {
-    position: relative;
-    z-index: 2;
-    color: inherit;
-    transition: color 0.3s ease;
-}
-
-.day-header:hover {
-    background: var(--bg-color);
-}
-
-.day-progress {
-    margin-bottom: 0.5rem;
-    text-align: center;
-    display: none; /* Hide the progress bar */
-}
-
-.progress-text {
-    font-size: 0.7rem;
-    opacity: 0.8;
-}
-
-.day-header {
-    text-align: center;
-    padding: 0.5rem;
-    background: var(--card-bg);
-    border-radius: 6px;
-    margin-bottom: 0.5rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    position: relative;
-    overflow: hidden;
-}
-
-.day-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: var(--progress-width, 0%);
-    background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
-    transition: width 0.3s ease;
-    z-index: 1;
-    border-radius: 6px;
-}
-
-.day-header-content {
-    position: relative;
-    z-index: 2;
-    color: inherit;
-    transition: color 0.3s ease;
-}
-
-.day-header:hover {
-    background: var(--bg-color);
-}
-
-.day-progress {
-    margin-bottom: 0.5rem;
-    text-align: center;
-    display: none; /* Hide the progress bar */
-}
-
-.progress-text {
-    font-size: 0.7rem;
-    opacity: 0.8;
-}
-.todo-checkbox {
-    width: 18px;
-    height: 18px;
-    border: 2px solid #ccc;
-    border-radius: 50%;
-    margin-right: 0.5rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.todo-checkbox::before {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 0;
-    background: #28a745;
-    border-radius: 50%;
-    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    z-index: 1;
-}
-
-.todo-checkbox.completed {
-    background: #28a745;
-    border-color: #28a745;
-    color: white;
-    transform: scale(1.1);
-}
-
-.todo-checkbox.completed::before {
-    width: 100%;
-    height: 100%;
-}
-
-.todo-checkbox.completing {
-    animation: checkboxPulse 0.6s ease;
-}
-
-.todo-checkbox i {
-    position: relative;
-    z-index: 2;
-    opacity: 0;
-    transform: scale(0);
-    transition: all 0.3s ease;
-}
-
-.todo-checkbox.completed i {
-    opacity: 1;
-    transform: scale(1);
-    animation: checkmarkAppear 0.4s ease 0.2s both;
-}
-
-@keyframes checkboxPulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.3); box-shadow: 0 0 0 10px rgba(40, 167, 69, 0.3); }
-    100% { transform: scale(1.1); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
-}
-
-@keyframes checkmarkAppear {
-    0% { 
-        opacity: 0;
-        transform: scale(0) rotate(-45deg);
-    }
-    50% { 
-        opacity: 1;
-        transform: scale(1.2) rotate(-15deg);
-    }
-    100% { 
-        opacity: 1;
-        transform: scale(1) rotate(0deg);
-    }
-}
-
-.todo-item {
-    display: flex;
-    align-items: center;
-    padding: 0.4rem;
-    margin-bottom: 0.3rem;
-    border-radius: 6px;
-    transition: all 0.4s ease;
-    position: relative;
-    cursor: pointer;
-}
-
-.todo-item.completed {
-    opacity: 0.6;
-    text-decoration: line-through;
-    cursor: default;
-}
-
-.todo-item.completing {
-    animation: todoCompleting 0.6s ease;
-}
-
-@keyframes todoCompleting {
-    0% { transform: translateX(0); }
-    50% { transform: translateX(10px) scale(1.02); }
-    100% { transform: translateX(0); }
 }
 </style>
 
