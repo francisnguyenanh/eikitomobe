@@ -65,6 +65,17 @@
 
 .day-progress {
     margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.day-progress .progress {
+    margin-bottom: 0.25rem;
+}
+
+.day-progress .text-muted {
+    display: block;
+    text-align: center;
+    font-size: 0.75rem;
 }
 
 .todo-item {
@@ -72,11 +83,10 @@
     align-items: center;
     padding: 0.4rem;
     margin-bottom: 0.3rem;
-    background: #f8f9fa;
     border-radius: 6px;
-    border-left: 3px solid transparent;
     transition: all 0.2s;
     position: relative;
+    cursor: pointer;
 }
 
 .todo-item.completed {
@@ -84,21 +94,20 @@
     text-decoration: line-through;
 }
 
+/* Priority colors as background */
 .todo-item.priority-high {
-    border-left-color: #dc3545;
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
 }
 
 .todo-item.priority-medium {
-    border-left-color: #ffc107;
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
 }
 
 .todo-item.priority-low {
-    border-left-color: #28a745;
-}
-
-.todo-item:hover .todo-actions {
-    opacity: 1;
-    visibility: visible;
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid rgba(40, 167, 69, 0.3);
 }
 
 .todo-checkbox {
@@ -125,9 +134,11 @@
     font-size: 0.9rem;
 }
 
+/* Remove priority icon on mobile, always show delete */
 .priority-icon {
     font-size: 0.8rem;
     margin-left: 0.3rem;
+    color: #666;
 }
 
 .priority-icon.high {
@@ -145,9 +156,6 @@
 .todo-actions {
     display: flex;
     gap: 0.2rem;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.2s;
     margin-left: 0.3rem;
     z-index: 10;
 }
@@ -163,15 +171,6 @@
     cursor: pointer;
     font-size: 0.7rem;
     transition: all 0.2s;
-}
-
-.todo-action-btn.edit {
-    background: #007bff;
-    color: white;
-}
-
-.todo-action-btn.edit:hover {
-    background: #0056b3;
 }
 
 .todo-action-btn.delete {
@@ -258,6 +257,14 @@
     border-color: #007bff;
 }
 
+#saveTodo:disabled,
+#saveTodo.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Mobile responsive */
 @media (max-width: 768px) {
     .day-column {
         min-height: 300px;
@@ -272,26 +279,17 @@
         flex-wrap: wrap;
         justify-content: center;
     }
-}
-.day-progress {
-    margin-bottom: 0.5rem;
-    text-align: center; /* Căn giữa cho toàn bộ progress section */
-}
-
-.day-progress .progress {
-    margin-bottom: 0.25rem; /* Khoảng cách nhỏ giữa progress bar và text */
-}
-
-.day-progress .text-muted {
-    display: block;
-    text-align: center;
-    font-size: 0.75rem;
-}
-#saveTodo:disabled,
-#saveTodo.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    pointer-events: none;
+    
+    /* Hide priority icon on mobile */
+    .priority-icon {
+        display: none;
+    }
+    
+    /* Make delete button more prominent on mobile */
+    .todo-action-btn.delete {
+        width: 24px;
+        height: 24px;
+    }
 }
 </style>
 
@@ -326,16 +324,22 @@
 <div class="modal fade" id="todoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="todoModalTitle">Add TODO</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
             <div class="modal-body">
                 <form id="todoForm">
                     <input type="hidden" id="todoId">
                     <input type="hidden" id="todoDate">
                     
                     <div class="mb-3">
+                        <label class="form-label">Title</label>
                         <input type="text" class="form-control" id="todoTitle" required>
                     </div>
 
                     <div class="mb-3">
+                        <label class="form-label">Priority</label>
                         <div class="priority-selector">
                             <div class="priority-option low" data-priority="low">
                                 <i class="bi bi-arrow-down"></i>
@@ -350,6 +354,7 @@
                     </div>
 
                     <div class="mb-3" id="repeatSection">
+                        <label class="form-label">Repeat</label>
                         <div class="repeat-options">
                             <div class="repeat-option selected" data-repeat="none">None</div>
                             <div class="repeat-option" data-repeat="daily">Daily</div>
@@ -382,6 +387,7 @@
                 </form>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="saveTodo">Save</button>
             </div>
         </div>
@@ -401,6 +407,7 @@
                 <p class="fw-bold" id="deleteTodoTitle"></p>
             </div>
             <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
             </div>
         </div>
@@ -411,17 +418,28 @@
 <div class="modal fade" id="updateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Repeating TODO</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
             <div class="modal-body">
-                <p>You want to update:</p>
+                <p>This TODO is part of a repeating series. You want to update:</p>
                 <div class="d-grid gap-2">
                     <button type="button" class="btn btn-outline-primary" id="updateSingle">
-                        <i class="bi bi-file-text"></i> Only
+                        <i class="bi bi-file-text"></i> Only This TODO
                     </button>
                     <button type="button" class="btn btn-primary" id="updateAll">
-                        <i class="bi bi-files"></i> All
+                        <i class="bi bi-files"></i> All TODOs in Series
                     </button>
                 </div>
                 <hr>
+                <small class="text-muted">
+                    <strong>Only This TODO:</strong> Only change current TODO<br>
+                    <strong>All TODOs:</strong> Change all TODOs with same title and repeat pattern
+                </small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
     </div>
@@ -431,17 +449,24 @@
 <div class="modal fade" id="deleteRepeatModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Repeating TODO</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
             <div class="modal-body">
-                <p>You want to delete:</p>
+                <p>This TODO is part of a repeating series. You want to delete:</p>
                 <p class="fw-bold" id="deleteRepeatTodoTitle"></p>
                 <div class="d-grid gap-2">
                     <button type="button" class="btn btn-outline-danger" id="deleteSingle">
-                        <i class="bi bi-file-text"></i> Only
+                        <i class="bi bi-file-text"></i> Only This TODO
                     </button>
                     <button type="button" class="btn btn-danger" id="deleteAllRepeat">
-                        <i class="bi bi-files"></i> All
+                        <i class="bi bi-files"></i> All TODOs in Series
                     </button>
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         </div>
     </div>
@@ -605,42 +630,42 @@ async function performSave(todoId, todoData, updateAll = false) {
     }
 }
 
-// Toggle todo completion
-async function toggleTodo(todoId, event) {
-    // Don't toggle if clicking on action buttons
-    if (event && (event.target.closest('.todo-actions') || event.target.closest('.todo-action-btn'))) {
-        return;
-    }
+// Toggle todo completion - only when clicking checkbox
+function toggleTodo(todoId, event) {
+    event.stopPropagation(); // Prevent opening edit modal
     
     const todo = todos.find(t => t.id === parseInt(todoId));
     if (!todo) return;
     
-    try {
-        const response = await fetch(`/api/todos/${todoId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                completed: !todo.completed
-            })
-        });
-        
-        if (response.ok) {
-            loadTodos(); // Reload todos
-        } else {
-            const result = await response.json();
+    fetch(`/api/todos/${todoId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            completed: !todo.completed
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
             alert('Error: ' + result.error);
+        } else {
+            loadTodos(); // Reload todos
         }
-    } catch (error) {
+    })
+    .catch(error => {
         console.error('Error toggling todo:', error);
         alert('Server connection error!');
-    }
+    });
 }
 
-// Edit todo
+// Edit todo - when clicking on todo item (not checkbox or delete button)
 function editTodo(todoId, event) {
-    event.stopPropagation(); // Prevent toggle
+    // Don't open edit if clicking on checkbox or delete button
+    if (event.target.closest('.todo-checkbox') || event.target.closest('.todo-action-btn')) {
+        return;
+    }
     
     const todo = todos.find(t => t.id === parseInt(todoId));
     if (!todo) return;
@@ -651,8 +676,8 @@ function editTodo(todoId, event) {
 let todoToDelete = null;
 
 // Delete todo
-async function deleteTodo(todoId, event) {
-    event.stopPropagation(); // Prevent toggle
+function deleteTodo(todoId, event) {
+    event.stopPropagation(); // Prevent opening edit modal
     
     const todo = todos.find(t => t.id === parseInt(todoId));
     if (!todo) return;
@@ -705,16 +730,14 @@ function renderTodoItem(todo) {
     
     return `
         <div class="todo-item priority-${todo.priority} ${todo.completed ? 'completed' : ''}" 
-             onclick="toggleTodo('${todo.id}', event)">
-            <div class="todo-checkbox ${todo.completed ? 'completed' : ''}">
+             onclick="editTodo('${todo.id}', event)">
+            <div class="todo-checkbox ${todo.completed ? 'completed' : ''}" 
+                 onclick="toggleTodo('${todo.id}', event)">
                 ${todo.completed ? '<i class="bi bi-check"></i>' : ''}
             </div>
             <div class="todo-title">${todo.title}</div>
             <i class="bi ${priorityIcons[todo.priority]} priority-icon ${todo.priority}"></i>
             <div class="todo-actions">
-                <button class="todo-action-btn edit" onclick="editTodo('${todo.id}', event)" title="Edit">
-                    <i class="bi bi-pencil"></i>
-                </button>
                 <button class="todo-action-btn delete" onclick="deleteTodo('${todo.id}', event)" title="Delete">
                     <i class="bi bi-trash"></i>
                 </button>
@@ -778,6 +801,10 @@ function renderCalendar() {
                 <div class="todos-list" id="todos-${date.toISOString().split('T')[0]}">
                     ${dayTodos.map(todo => renderTodoItem(todo)).join('')}
                 </div>
+                
+                <button class="add-todo-btn" onclick="openTodoModal('${date.toISOString().split('T')[0]}')">
+                    <i class="bi bi-plus"></i> Add TODO
+                </button>
             </div>
         `;
         
@@ -805,6 +832,11 @@ function openTodoModal(date, todoId = null) {
             if (repeatSection) repeatSection.style.display = 'none';
             endDateSection.style.display = 'none';
             customRepeatSection.style.display = 'none';
+            
+            document.getElementById('todoModalTitle').innerHTML = `
+                Edit TODO 
+                <small class="text-muted">(Only title and priority can be edited)</small>
+            `;
         }
     } else {
         // Reset form for new todo
@@ -817,6 +849,8 @@ function openTodoModal(date, todoId = null) {
         
         // Show repeat fields when creating new
         if (repeatSection) repeatSection.style.display = 'block';
+        
+        document.getElementById('todoModalTitle').textContent = 'Add TODO';
     }
     
     updatePrioritySelection();
@@ -863,7 +897,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     loadTodos(); // Load from server
     
-    // Title input validation - thêm event listener cho input title
+    // Title input validation
     document.getElementById('todoTitle').addEventListener('input', updateSaveButtonState);
 
     // Week navigation
