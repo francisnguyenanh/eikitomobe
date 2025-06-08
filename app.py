@@ -140,6 +140,22 @@ class EvernoteNote(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)  # Sửa ở đây
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)  # Sửa ở đây
     
+class Todo(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    priority = db.Column(db.String(10), nullable=False, default='medium')  # low, medium, high
+    repeat_type = db.Column(db.String(20), nullable=True)  # none, daily, weekly, monthly, custom
+    repeat_interval = db.Column(db.Integer, nullable=True)  # cho custom repeat
+    repeat_unit = db.Column(db.String(10), nullable=True)  # days, weeks, months
+    end_date = db.Column(db.Date, nullable=True)
+    completed = db.Column(db.Boolean, default=False, nullable=False)
+    user_id = db.Column(db.String(80), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    parent_id = db.Column(db.Integer, db.ForeignKey('todo.id'), nullable=True)  # Cho repeat todos
+    
+    # Relationship cho parent-child todos
+    children = db.relationship('Todo', backref=db.backref('parent', remote_side=[id]))
 
     
 # Khởi tạo DB Diary và slogan mặc định nếu chưa có
@@ -1486,6 +1502,278 @@ def contrast_text_color(hex_color):
 
 app.jinja_env.filters['contrast_text_color'] = contrast_text_color
 
+@app.route('/todo')
+@login_required
+def todo():
+    theme = session.get('theme', 'light')
+    return render_template('Memo/todo.html', theme=theme)
+
+# API endpoints cho TODO
+@app.route('/api/todos', methods=['GET'])
+@login_required
+def get_todos():
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    query = Todo.query.filter_by(user_id=current_user.id)
+    
+    if start_date and end_date:
+        try:
+            start = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end = datetime.strptime(end_date, '%Y-%m-%d').date()
+            query = query.filter(Todo.date >= start, Todo.date <= end)
+        except ValueError:
+            return jsonify({'error': 'Invalid date format'}), 400
+    
+    todos = query.all()
+    
+    return jsonify([{
+        'id': todo.id,
+        'title': todo.title,
+        'date': todo.date.isoformat(),
+        'priority': todo.priority,
+        'repeat_type': todo.repeat_type,
+        'repeat_interval': todo.repeat_interval,
+        'repeat_unit': todo.repeat_unit,
+        'end_date': todo.end_date.isoformat() if todo.end_date else None,
+        'completed': todo.completed,
+        'parent_id': todo.parent_id
+    } for todo in todos])
+
+@app.route('/api/todos', methods=['POST'])
+@login_required
+def add_todo():
+    try:
+        data = request.json
+        
+        # Validate required fields
+        if not data.get('title') or not data.get('date'):
+            return jsonify({'error': 'Title and date are required'}), 400
+        
+        # Parse date
+        try:
+            todo_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'error': 'Invalid date format'}), 400
+        
+        # Create main todo
+        todo = Todo(
+            title=data['title'],
+            date=todo_date,
+            priority=data.get('priority', 'medium'),
+            repeat_type=data.get('repeat_type', 'none'),
+            repeat_interval=data.get('repeat_interval'),
+            repeat_unit=data.get('repeat_unit'),
+            end_date=datetime.strptime(data['end_date'], '%Y-%m-%d').date() if data.get('end_date') else None,
+            completed=False,
+            user_id=current_user.id
+        )
+        
+        db.session.add(todo)
+        db.session.commit()
+        
+        # Generate repeat todos if needed
+        if data.get('repeat_type') != 'none':
+            generate_repeat_todos(todo)
+        
+        return jsonify({
+            'id': todo.id,
+            'title': todo.title,
+            'date': todo.date.isoformat(),
+            'priority': todo.priority,
+            'repeat_type': todo.repeat_type,
+            'completed': todo.completed
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error adding todo: {str(e)}")
+        return jsonify({'error': 'Failed to add todo'}), 500
+
+@app.route('/api/todos/<int:todo_id>', methods=['PUT'])
+@login_required
+def update_todo(todo_id):
+    try:
+        todo = Todo.query.get_or_404(todo_id)
+        
+        # Check ownership
+        if todo.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        data = request.json
+        update_all = data.get('update_all', False)
+        
+        if update_all:
+            # Update all related todos (same parent or children)
+            related_todos = []
+            
+            if todo.parent_id:
+                # This is a child todo, get parent and all siblings
+                parent = Todo.query.get(todo.parent_id)
+                if parent:
+                    related_todos.append(parent)
+                    related_todos.extend(Todo.query.filter_by(parent_id=todo.parent_id).all())
+            else:
+                # This is a parent todo, get all children
+                related_todos.append(todo)
+                related_todos.extend(Todo.query.filter_by(parent_id=todo.id).all())
+            
+            # Update all related todos (except completed status and date)
+            for related_todo in related_todos:
+                if 'title' in data:
+                    related_todo.title = data['title']
+                if 'priority' in data:
+                    related_todo.priority = data['priority']
+                # Don't update repeat settings for existing todos
+                # Don't update completed status or date for other todos
+        else:
+            # Update only this todo
+            if 'completed' in data:
+                todo.completed = data['completed']
+            if 'title' in data:
+                todo.title = data['title']
+            if 'priority' in data:
+                todo.priority = data['priority']
+            if 'date' in data:
+                try:
+                    todo.date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+                except ValueError:
+                    return jsonify({'error': 'Invalid date format'}), 400
+        
+        db.session.commit()
+        
+        return jsonify({
+            'id': todo.id,
+            'title': todo.title,
+            'date': todo.date.isoformat(),
+            'priority': todo.priority,
+            'completed': todo.completed,
+            'updated_count': len(related_todos) if update_all else 1
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating todo: {str(e)}")
+        return jsonify({'error': 'Failed to update todo'}), 500
+
+@app.route('/api/todos/<int:todo_id>', methods=['DELETE'])
+@login_required
+def delete_todo(todo_id):
+    try:
+        todo = Todo.query.get_or_404(todo_id)
+        
+        # Check ownership
+        if todo.user_id != current_user.id:
+            return jsonify({'error': 'Unauthorized'}), 403
+        
+        delete_all = request.args.get('delete_all') == 'true'
+        app.logger.info(f"Deleting todo {todo_id}, delete_all={delete_all}, parent_id={todo.parent_id}")
+        
+        deleted_count = 1
+        
+        if delete_all:
+            # Delete all related todos
+            if todo.parent_id:
+                # This is a child todo, delete parent and all siblings
+                parent = Todo.query.get(todo.parent_id)
+                if parent:
+                    # Count siblings before deleting
+                    sibling_count = Todo.query.filter_by(parent_id=todo.parent_id).count()
+                    app.logger.info(f"Found {sibling_count} siblings to delete")
+                    deleted_count = sibling_count + 1  # siblings + parent
+                    
+                    # Delete all siblings
+                    Todo.query.filter_by(parent_id=todo.parent_id).delete()
+                    # Delete parent
+                    db.session.delete(parent)
+                    app.logger.info(f"Deleted parent and {sibling_count} siblings")
+                else:
+                    # If no parent found, just delete this todo
+                    db.session.delete(todo)
+                    deleted_count = 1
+                    app.logger.info("No parent found, deleted only current todo")
+            else:
+                # This is a parent todo, delete all children
+                children_count = Todo.query.filter_by(parent_id=todo.id).count()
+                app.logger.info(f"Found {children_count} children to delete")
+                deleted_count = children_count + 1  # children + parent
+                
+                # Delete all children
+                Todo.query.filter_by(parent_id=todo.id).delete()
+                # Delete parent (this todo)
+                db.session.delete(todo)
+                app.logger.info(f"Deleted parent and {children_count} children")
+        else:
+            # Delete only this todo
+            db.session.delete(todo)
+            deleted_count = 1
+            app.logger.info("Deleted single todo")
+        
+        db.session.commit()
+        app.logger.info(f"Successfully deleted {deleted_count} todos")
+        
+        return jsonify({
+            'message': f'Deleted {deleted_count} todo(s) successfully'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting todo: {str(e)}")
+        return jsonify({'error': 'Failed to delete todo'}), 500
+
+def generate_repeat_todos(base_todo):
+    """Generate repeat todos based on base todo settings"""
+    if base_todo.repeat_type == 'none':
+        return
+    
+    current_date = base_todo.date
+    end_date = base_todo.end_date or (current_date + timedelta(days=365))  # Default 1 year
+    
+    while True:
+        # Calculate next date
+        if base_todo.repeat_type == 'daily':
+            current_date += timedelta(days=1)
+        elif base_todo.repeat_type == 'weekly':
+            current_date += timedelta(weeks=1)
+        elif base_todo.repeat_type == 'monthly':
+            # Add one month (approximate)
+            if current_date.month == 12:
+                current_date = current_date.replace(year=current_date.year + 1, month=1)
+            else:
+                current_date = current_date.replace(month=current_date.month + 1)
+        elif base_todo.repeat_type == 'custom':
+            if base_todo.repeat_unit == 'days':
+                current_date += timedelta(days=base_todo.repeat_interval)
+            elif base_todo.repeat_unit == 'weeks':
+                current_date += timedelta(weeks=base_todo.repeat_interval)
+            elif base_todo.repeat_unit == 'months':
+                for _ in range(base_todo.repeat_interval):
+                    if current_date.month == 12:
+                        current_date = current_date.replace(year=current_date.year + 1, month=1)
+                    else:
+                        current_date = current_date.replace(month=current_date.month + 1)
+        
+        # Stop if we exceed end date
+        if current_date > end_date:
+            break
+        
+        # Create repeat todo
+        repeat_todo = Todo(
+            title=base_todo.title,
+            date=current_date,
+            priority=base_todo.priority,
+            repeat_type=base_todo.repeat_type,
+            repeat_interval=base_todo.repeat_interval,
+            repeat_unit=base_todo.repeat_unit,
+            end_date=base_todo.end_date,
+            completed=False,
+            user_id=base_todo.user_id,
+            parent_id=base_todo.id
+        )
+        
+        db.session.add(repeat_todo)
+    
+    db.session.commit()
 
 if __name__ == '__main__':
     app.run(debug=True)

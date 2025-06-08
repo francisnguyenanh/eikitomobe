@@ -1,0 +1,1007 @@
+{% extends "Memo/base.html" %}
+{% block title %}TODO Weekly{% endblock %}
+{% block content %}
+<style>
+.todo-calendar {
+    background: var(--card-bg);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 1rem;
+}
+
+.week-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background: var(--bg-color);
+    border-radius: 8px;
+}
+
+.week-navigation {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.day-column {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    min-height: 400px;
+    padding: 0.5rem;
+    background: #fff;
+    transition: box-shadow 0.2s;
+}
+
+.day-column:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.day-header {
+    text-align: center;
+    padding: 0.5rem;
+    background: var(--card-bg);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.day-header:hover {
+    background: var(--bg-color);
+}
+
+.day-name {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.day-date {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.day-progress {
+    margin-bottom: 0.5rem;
+}
+
+.todo-item {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem;
+    margin-bottom: 0.3rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+.todo-item.completed {
+    opacity: 0.6;
+    text-decoration: line-through;
+}
+
+.todo-item.priority-high {
+    border-left-color: #dc3545;
+}
+
+.todo-item.priority-medium {
+    border-left-color: #ffc107;
+}
+
+.todo-item.priority-low {
+    border-left-color: #28a745;
+}
+
+.todo-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.todo-checkbox.completed {
+    background: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.todo-title {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.priority-icon {
+    font-size: 0.8rem;
+    margin-left: 0.3rem;
+}
+
+.priority-icon.high {
+    color: #dc3545;
+}
+
+.priority-icon.medium {
+    color: #ffc107;
+}
+
+.priority-icon.low {
+    color: #28a745;
+}
+
+.add-todo-btn {
+    width: 100%;
+    padding: 0.5rem;
+    border: 2px dashed #ccc;
+    background: transparent;
+    border-radius: 6px;
+    color: #666;
+    transition: all 0.2s;
+    margin-top: 0.5rem;
+}
+
+.add-todo-btn:hover {
+    border-color: #007bff;
+    color: #007bff;
+    background: rgba(0,123,255,0.05);
+}
+
+.priority-selector {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin: 1rem 0;
+}
+
+.priority-option {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fff;
+}
+
+.priority-option.selected {
+    border-color: #007bff;
+    background: #e3f2fd;
+}
+
+.priority-option.high {
+    color: #dc3545;
+}
+
+.priority-option.medium {
+    color: #ffc107;
+}
+
+.priority-option.low {
+    color: #28a745;
+}
+
+.repeat-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.repeat-option {
+    padding: 0.3rem 0.6rem;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.8rem;
+}
+
+.repeat-option.selected {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+@media (max-width: 768px) {
+    .day-column {
+        min-height: 300px;
+    }
+    
+    .week-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .week-navigation {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+/* Thêm vào phần <style> */
+.todo-item {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem;
+    margin-bottom: 0.3rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.todo-item:hover .todo-actions {
+    opacity: 1;
+    visibility: visible;
+}
+
+.todo-actions {
+    display: flex;
+    gap: 0.2rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s;
+    margin-left: 0.3rem;
+}
+
+.todo-action-btn {
+    width: 20px;
+    height: 20px;
+    border: none;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.7rem;
+    transition: all 0.2s;
+}
+
+.todo-action-btn.edit {
+    background: #007bff;
+    color: white;
+}
+
+.todo-action-btn.edit:hover {
+    background: #0056b3;
+}
+
+.todo-action-btn.delete {
+    background: #dc3545;
+    color: white;
+}
+
+.todo-action-btn.delete:hover {
+    background: #c82333;
+}
+
+/* Prevent action propagation */
+.todo-actions {
+    z-index: 10;
+}
+
+
+</style>
+
+<div class="container mt-4">
+    <div class="todo-calendar">
+        <!-- Week Header -->
+        <div class="week-header">
+            <div class="week-navigation">
+                <button class="btn btn-outline-primary btn-sm" id="prevWeek">
+                    <i class="bi bi-chevron-left"></i> Tuần trước
+                </button>
+                <button class="btn btn-primary btn-sm" id="thisWeek">
+                    Tuần này
+                </button>
+                <button class="btn btn-outline-primary btn-sm" id="nextWeek">
+                    Tuần sau <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+            <div class="week-info">
+                <h5 id="weekRange" class="mb-0"></h5>
+            </div>
+        </div>
+
+        <!-- Days Grid -->
+        <div class="row g-2" id="daysGrid">
+            <!-- Days will be generated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit TODO Modal -->
+<div class="modal fade" id="todoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="todoModalTitle">Thêm TODO</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="todoForm">
+                    <input type="hidden" id="todoId">
+                    <input type="hidden" id="todoDate">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tiêu đề</label>
+                        <input type="text" class="form-control" id="todoTitle" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Độ ưu tiên</label>
+                        <div class="priority-selector">
+                            <div class="priority-option low" data-priority="low">
+                                <i class="bi bi-arrow-down"></i>
+                            </div>
+                            <div class="priority-option medium selected" data-priority="medium">
+                                <i class="bi bi-dash"></i>
+                            </div>
+                            <div class="priority-option high" data-priority="high">
+                                <i class="bi bi-arrow-up"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Lặp lại</label>
+                        <div class="repeat-options">
+                            <div class="repeat-option selected" data-repeat="none">Không</div>
+                            <div class="repeat-option" data-repeat="daily">Hàng ngày</div>
+                            <div class="repeat-option" data-repeat="weekly">Hàng tuần</div>
+                            <div class="repeat-option" data-repeat="monthly">Hàng tháng</div>
+                            <div class="repeat-option" data-repeat="custom">Tùy chỉnh</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="endDateSection" style="display: none;">
+                        <label class="form-label">Ngày kết thúc</label>
+                        <input type="date" class="form-control" id="todoEndDate">
+                    </div>
+
+                    <div class="mb-3" id="customRepeatSection" style="display: none;">
+                        <label class="form-label">Lặp lại mỗi</label>
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="number" class="form-control" id="customInterval" min="1" value="1">
+                            </div>
+                            <div class="col-6">
+                                <select class="form-select" id="customUnit">
+                                    <option value="days">Ngày</option>
+                                    <option value="weeks">Tuần</option>
+                                    <option value="months">Tháng</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="saveTodo">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc muốn xóa TODO này?</p>
+                <p class="fw-bold" id="deleteTodoTitle"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Xóa</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Thêm sau deleteModal -->
+<!-- Update Confirmation Modal -->
+<div class="modal fade" id="updateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Cập nhật TODO lặp lại</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>TODO này thuộc một chuỗi lặp lại. Bạn muốn cập nhật:</p>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary" id="updateSingle">
+                        <i class="bi bi-file-text"></i> Chỉ TODO này
+                    </button>
+                    <button type="button" class="btn btn-primary" id="updateAll">
+                        <i class="bi bi-files"></i> Tất cả TODO trong chuỗi lặp lại
+                    </button>
+                </div>
+                <hr>
+                <small class="text-muted">
+                    <strong>Chỉ TODO này:</strong> Chỉ thay đổi TODO hiện tại<br>
+                    <strong>Tất cả:</strong> Thay đổi tất cả TODO có cùng tiêu đề và lặp lại
+                </small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteRepeatModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xóa TODO lặp lại</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>TODO này thuộc một chuỗi lặp lại. Bạn muốn xóa:</p>
+                <p class="fw-bold" id="deleteRepeatTodoTitle"></p>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-danger" id="deleteSingle">
+                        <i class="bi bi-file-text"></i> Chỉ TODO này
+                    </button>
+                    <button type="button" class="btn btn-danger" id="deleteAllRepeat">
+                        <i class="bi bi-files"></i> Tất cả TODO trong chuỗi lặp lại
+                    </button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+let currentWeekStart = new Date();
+let todos = [];
+let selectedPriority = 'medium';
+let selectedRepeat = 'none';
+
+// Set current week start to Monday
+function setToMonday(date) {
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(date.setDate(diff));
+}
+
+// Load todos from server
+async function loadTodos() {
+    try {
+        const weekEnd = new Date(currentWeekStart);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        
+        const response = await fetch(`/api/todos?start_date=${currentWeekStart.toISOString().split('T')[0]}&end_date=${weekEnd.toISOString().split('T')[0]}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+            todos = data;
+            renderCalendar();
+        } else {
+            console.error('Error loading todos:', data.error);
+            alert('Không thể tải danh sách TODO!');
+        }
+    } catch (error) {
+        console.error('Error loading todos:', error);
+        alert('Lỗi kết nối server!');
+    }
+}
+
+let pendingTodoUpdate = null;
+
+// Cập nhật hàm saveTodo
+async function saveTodo() {
+    const title = document.getElementById('todoTitle').value.trim();
+    const date = document.getElementById('todoDate').value;
+    const todoId = document.getElementById('todoId').value;
+    
+    if (!title) return;
+    
+    const todoData = {
+        title,
+        date,
+        priority: selectedPriority,
+        repeat_type: selectedRepeat
+    };
+    
+    if (selectedRepeat !== 'none') {
+        todoData.end_date = document.getElementById('todoEndDate').value;
+        
+        if (selectedRepeat === 'custom') {
+            todoData.repeat_interval = parseInt(document.getElementById('customInterval').value);
+            todoData.repeat_unit = document.getElementById('customUnit').value;
+        }
+    }
+    
+    // Nếu là edit todo và todo có repeat (có parent_id hoặc có children)
+    if (todoId) {
+        const currentTodo = todos.find(t => t.id === parseInt(todoId));
+        const hasRepeat = currentTodo && (currentTodo.parent_id || currentTodo.repeat_type !== 'none');
+        
+        if (hasRepeat) {
+            // Lưu dữ liệu để xử lý sau khi người dùng chọn
+            pendingTodoUpdate = {
+                todoId,
+                todoData,
+                currentTodo
+            };
+            
+            // Ẩn modal todo và hiện modal xác nhận
+            bootstrap.Modal.getInstance(document.getElementById('todoModal')).hide();
+            new bootstrap.Modal(document.getElementById('updateModal')).show();
+            return;
+        }
+    }
+    
+    // Thực hiện save bình thường
+    await performSave(todoId, todoData, false);
+}
+
+// Hàm thực hiện save
+async function performSave(todoId, todoData, updateAll = false) {
+    try {
+        let response;
+        if (todoId) {
+            // Thêm flag updateAll vào request
+            if (updateAll) {
+                todoData.update_all = true;
+            }
+            
+            response = await fetch(`/api/todos/${todoId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(todoData)
+            });
+        } else {
+            // Create new todo
+            response = await fetch('/api/todos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(todoData)
+            });
+        }
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            loadTodos(); // Reload todos from server
+            
+            // Đóng tất cả modal
+            const todoModal = bootstrap.Modal.getInstance(document.getElementById('todoModal'));
+            const updateModal = bootstrap.Modal.getInstance(document.getElementById('updateModal'));
+            
+            if (todoModal) todoModal.hide();
+            if (updateModal) updateModal.hide();
+            
+        } else {
+            alert('Lỗi: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error saving todo:', error);
+        alert('Lỗi kết nối server!');
+    }
+}
+
+// Update toggle function to handle event propagation
+async function toggleTodo(todoId, event) {
+    // Don't toggle if clicking on action buttons
+    if (event && (event.target.closest('.todo-actions') || event.target.closest('.todo-action-btn'))) {
+        return;
+    }
+    
+    const todo = todos.find(t => t.id === parseInt(todoId));
+    if (!todo) return;
+    
+    try {
+        const response = await fetch(`/api/todos/${todoId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                completed: !todo.completed
+            })
+        });
+        
+        if (response.ok) {
+            loadTodos(); // Reload todos
+        } else {
+            const result = await response.json();
+            alert('Lỗi: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error toggling todo:', error);
+        alert('Lỗi kết nối server!');
+    }
+}
+
+// Calculate progress for a day
+function calculateDayProgress(dayTodos) {
+    if (dayTodos.length === 0) return 0;
+    
+    let totalWeight = 0;
+    let completedWeight = 0;
+    
+    dayTodos.forEach(todo => {
+        let weight = 1;
+        if (todo.priority === 'high') weight = 3;
+        else if (todo.priority === 'medium') weight = 2;
+        
+        totalWeight += weight;
+        if (todo.completed) completedWeight += weight;
+    });
+    
+    return Math.round((completedWeight / totalWeight) * 100);
+}
+
+// Render todo item
+// Thay thế hàm renderTodoItem
+function renderTodoItem(todo) {
+    const priorityIcons = {
+        high: 'bi-arrow-up',
+        medium: 'bi-dash',
+        low: 'bi-arrow-down'
+    };
+    
+    return `
+        <div class="todo-item priority-${todo.priority} ${todo.completed ? 'completed' : ''}" 
+             onclick="toggleTodo('${todo.id}', event)">
+            <div class="todo-checkbox ${todo.completed ? 'completed' : ''}">
+                ${todo.completed ? '<i class="bi bi-check"></i>' : ''}
+            </div>
+            <div class="todo-title">${todo.title}</div>
+            <i class="bi ${priorityIcons[todo.priority]} priority-icon ${todo.priority}"></i>
+            <div class="todo-actions">
+                <button class="todo-action-btn edit" onclick="editTodo('${todo.id}', event)" title="Sửa">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="todo-action-btn delete" onclick="deleteTodo('${todo.id}', event)" title="Xóa">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Format date and other utility functions remain the same...
+function formatDate(date) {
+    return date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit'
+    });
+}
+
+function getDayName(dayIndex) {
+    const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+    return days[dayIndex];
+}
+
+// Render calendar
+function renderCalendar() {
+    const daysGrid = document.getElementById('daysGrid');
+    daysGrid.innerHTML = '';
+    
+    // Update week range
+    const weekEnd = new Date(currentWeekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    document.getElementById('weekRange').textContent = 
+        `${formatDate(currentWeekStart)} - ${formatDate(weekEnd)}`;
+    
+    // Render 7 days
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(currentWeekStart);
+        date.setDate(date.getDate() + i);
+        
+        const dayTodos = todos.filter(todo => 
+            todo.date === date.toISOString().split('T')[0]
+        );
+        
+        const progress = calculateDayProgress(dayTodos);
+        
+        const col = document.createElement('div');
+        col.className = 'col-md col-sm-6';
+        col.innerHTML = `
+            <div class="day-column">
+                <div class="day-header" onclick="openTodoModal('${date.toISOString().split('T')[0]}')">
+                    <div class="day-name">${getDayName(date.getDay())}</div>
+                    <div class="day-date">${date.getDate()}</div>
+                </div>
+                
+                <div class="day-progress">
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar" style="width: ${progress}%"></div>
+                    </div>
+                    <small class="text-muted">${progress}% hoàn thành</small>
+                </div>
+                
+                <div class="todos-list" id="todos-${date.toISOString().split('T')[0]}">
+                    ${dayTodos.map(todo => renderTodoItem(todo)).join('')}
+                </div>
+                
+                <button class="add-todo-btn" onclick="openTodoModal('${date.toISOString().split('T')[0]}')">
+                    <i class="bi bi-plus"></i> Thêm TODO
+                </button>
+            </div>
+        `;
+        
+        daysGrid.appendChild(col);
+    }
+}
+
+// Open TODO modal and other functions remain the same...
+// Cập nhật hàm openTodoModal
+function openTodoModal(date, todoId = null) {
+    document.getElementById('todoDate').value = date;
+    document.getElementById('todoId').value = todoId || '';
+    
+    // Lấy các elements cần ẩn/hiện
+    const repeatSection = document.querySelector('.mb-3:has(.repeat-options)');
+    const endDateSection = document.getElementById('endDateSection');
+    const customRepeatSection = document.getElementById('customRepeatSection');
+    
+    if (todoId) {
+        const todo = todos.find(t => t.id === parseInt(todoId));
+        if (todo) {
+            document.getElementById('todoTitle').value = todo.title;
+            selectedPriority = todo.priority;
+            
+            // Ẩn các trường repeat khi edit
+            if (repeatSection) repeatSection.style.display = 'none';
+            endDateSection.style.display = 'none';
+            customRepeatSection.style.display = 'none';
+            
+            document.getElementById('todoModalTitle').textContent = 'Sửa TODO';
+        }
+    } else {
+        // Reset form for new todo
+        document.getElementById('todoTitle').value = '';
+        document.getElementById('todoEndDate').value = '';
+        document.getElementById('customInterval').value = '1';
+        document.getElementById('customUnit').value = 'days';
+        selectedPriority = 'medium';
+        selectedRepeat = 'none';
+        
+        // Hiện lại các trường repeat khi tạo mới
+        if (repeatSection) repeatSection.style.display = 'block';
+        
+        document.getElementById('todoModalTitle').textContent = 'Thêm TODO';
+    }
+    
+    updatePrioritySelection();
+    
+    // Chỉ update repeat selection khi tạo mới
+    if (!todoId) {
+        updateRepeatSelection();
+    }
+    
+    new bootstrap.Modal(document.getElementById('todoModal')).show();
+}
+
+// Update priority selection
+function updatePrioritySelection() {
+    document.querySelectorAll('.priority-option').forEach(option => {
+        option.classList.toggle('selected', 
+            option.dataset.priority === selectedPriority);
+    });
+}
+
+// Update repeat selection
+function updateRepeatSelection() {
+    document.querySelectorAll('.repeat-option').forEach(option => {
+        option.classList.toggle('selected', 
+            option.dataset.repeat === selectedRepeat);
+    });
+    
+    const showEndDate = selectedRepeat !== 'none';
+    const showCustom = selectedRepeat === 'custom';
+    
+    document.getElementById('endDateSection').style.display = 
+        showEndDate ? 'block' : 'none';
+    document.getElementById('customRepeatSection').style.display = 
+        showCustom ? 'block' : 'none';
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Set current week to Monday
+    currentWeekStart = setToMonday(new Date());
+    
+    loadTodos(); // Load from server instead of localStorage
+    
+    // Week navigation
+    document.getElementById('prevWeek').onclick = () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+        loadTodos();
+    };
+    
+    document.getElementById('nextWeek').onclick = () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+        loadTodos();
+    };
+    
+    document.getElementById('thisWeek').onclick = () => {
+        currentWeekStart = setToMonday(new Date());
+        loadTodos();
+    };
+    
+    // Priority selection
+    document.querySelectorAll('.priority-option').forEach(option => {
+        option.onclick = () => {
+            selectedPriority = option.dataset.priority;
+            updatePrioritySelection();
+        };
+    });
+    
+    // Repeat selection
+    document.querySelectorAll('.repeat-option').forEach(option => {
+        option.onclick = () => {
+            selectedRepeat = option.dataset.repeat;
+            updateRepeatSelection();
+        };
+    });
+    
+    // Save todo
+    document.getElementById('saveTodo').onclick = saveTodo;
+
+    // Update single todo
+    document.getElementById('updateSingle').onclick = async function() {
+        if (!pendingTodoUpdate) return;
+        
+        await performSave(
+            pendingTodoUpdate.todoId, 
+            pendingTodoUpdate.todoData, 
+            false
+        );
+        
+        pendingTodoUpdate = null;
+    };
+    
+    // Update all related todos
+    document.getElementById('updateAll').onclick = async function() {
+        if (!pendingTodoUpdate) return;
+        
+        await performSave(
+            pendingTodoUpdate.todoId, 
+            pendingTodoUpdate.todoData, 
+            true
+        );
+        
+        pendingTodoUpdate = null;
+    };
+
+    // Delete single todo from repeat chain
+    document.getElementById('deleteSingle').onclick = async function() {
+        if (!todoToDelete) return;
+        
+        try {
+            const response = await fetch(`/api/todos/${todoToDelete}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                loadTodos();
+                bootstrap.Modal.getInstance(document.getElementById('deleteRepeatModal')).hide();
+            } else {
+                const result = await response.json();
+                alert('Lỗi xóa TODO: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error deleting todo:', error);
+            alert('Lỗi kết nối server khi xóa TODO!');
+        }
+        
+        todoToDelete = null;
+    };
+    
+    // Delete all todos in repeat chain
+    document.getElementById('deleteAllRepeat').onclick = async function() {
+        if (!todoToDelete) return;
+        
+        try {
+            const response = await fetch(`/api/todos/${todoToDelete}?delete_all=true`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                loadTodos();
+                bootstrap.Modal.getInstance(document.getElementById('deleteRepeatModal')).hide();
+            } else {
+                const result = await response.json();
+                alert('Lỗi xóa TODO: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error deleting todo:', error);
+            alert('Lỗi kết nối server khi xóa TODO!');
+        }
+        
+        todoToDelete = null;
+    };
+    
+    // Confirm delete handler
+    document.getElementById('confirmDelete').onclick = async function() {
+        if (!todoToDelete) return;
+        
+        try {
+            const response = await fetch(`/api/todos/${todoToDelete}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                loadTodos(); // Reload todos
+                bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+            } else {
+                const result = await response.json();
+                alert('Lỗi xóa TODO: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error deleting todo:', error);
+            alert('Lỗi kết nối server khi xóa TODO!');
+        }
+        
+        todoToDelete = null;
+    };
+});
+// Thêm vào phần <script>
+
+// Edit todo
+function editTodo(todoId, event) {
+    event.stopPropagation(); // Prevent toggle
+    
+    const todo = todos.find(t => t.id === parseInt(todoId));
+    if (!todo) return;
+    
+    openTodoModal(todo.date, todoId);
+}
+
+let todoToDelete = null;
+
+async function deleteTodo(todoId, event) {
+    event.stopPropagation(); // Prevent toggle
+    
+    const todo = todos.find(t => t.id === parseInt(todoId));
+    if (!todo) return;
+    
+    const hasRepeat = todo.parent_id || todo.repeat_type !== 'none';
+    
+    if (hasRepeat) {
+        // Store todo to delete
+        todoToDelete = todoId;
+        document.getElementById('deleteRepeatTodoTitle').textContent = todo.title;
+        
+        // Show repeat delete modal
+        new bootstrap.Modal(document.getElementById('deleteRepeatModal')).show();
+    } else {
+        // Store todo to delete
+        todoToDelete = todoId;
+        document.getElementById('deleteTodoTitle').textContent = todo.title;
+        
+        // Show normal delete modal
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+}
+
+
+</script>
+{% endblock %}
