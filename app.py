@@ -671,15 +671,23 @@ def get_image(note_id, filename):
     image_data = base64.b64decode(image['data'])
     return send_file(BytesIO(image_data), mimetype=f'image/{filename.split(".")[-1].lower()}')
 
-@app.route('/toggle_complete/<int:id>', methods=['POST'])
-@login_required
-def toggle_complete(id):
-    note = Note.query.get_or_404(id)
-    if note.user_id != current_user.id:
-        return jsonify({'error': 'Unauthorized'}), 403
-    note.is_completed = not note.is_completed
-    db.session.commit()
-    return jsonify({'is_completed': note.is_completed})
+@app.route('/toggle_complete/<int:note_id>', methods=['POST'])
+def toggle_complete(note_id):
+    try:
+        note = Note.query.get_or_404(note_id)
+        note.is_completed = not note.is_completed
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Completion status updated',
+            'is_completed': note.is_completed
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 @app.route('/delete_note/<int:id>', methods=['POST'])
 @login_required
@@ -1462,6 +1470,7 @@ def add_evernote_note():
         'created_at': note.created_at.isoformat() if note.created_at else None,
         'updated_at': note.updated_at.isoformat() if note.updated_at else None
     })
+
 
 # Sửa ghi chú Evernote
 @app.route('/api/evernote_notes/<int:note_id>', methods=['PUT'])
