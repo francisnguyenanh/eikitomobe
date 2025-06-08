@@ -325,6 +325,55 @@
         padding-top: 0;
     }
 }
+
+.day-header {
+    text-align: center;
+    padding: 0.5rem;
+    background: var(--card-bg);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.day-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: var(--progress-width, 0%);
+    background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+    transition: width 0.3s ease;
+    z-index: 1;
+    border-radius: 6px;
+}
+
+.day-header-content {
+    position: relative;
+    z-index: 2;
+    color: inherit;
+    transition: color 0.3s ease;
+}
+
+.day-header:hover {
+    background: var(--bg-color);
+}
+
+.day-progress {
+    margin-bottom: 0.5rem;
+    text-align: center;
+    display: none; /* Hide the progress bar */
+}
+
+.progress-text {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+
 </style>
 
 <div class="container mt-4">
@@ -808,16 +857,12 @@ function renderCalendar() {
         col.className = 'col-md col-sm-6';
         col.innerHTML = `
             <div class="day-column">
-                <div class="day-header" onclick="openTodoModal('${date.toISOString().split('T')[0]}')">
-                    <div class="day-name">${getDayName(date.getDay())}</div>
-                    <div class="day-date">${date.getDate()}</div>
-                </div>
-                
-                <div class="day-progress">
-                    <div class="progress" style="height: 6px;">
-                        <div class="progress-bar" style="width: ${progress}%"></div>
+                <div class="day-header" onclick="openTodoModal('${date.toISOString().split('T')[0]}')" style="--progress: ${progress}%">
+                    <div class="day-header-content">
+                        <div class="day-name">${getDayName(date.getDay())}</div>
+                        <div class="day-date">${date.getDate()}</div>
+                        <small class="progress-text">${progress}%</small>
                     </div>
-                    <small class="text-muted">${progress}%</small>
                 </div>
                 
                 <div class="todos-list" id="todos-${date.toISOString().split('T')[0]}">
@@ -827,8 +872,33 @@ function renderCalendar() {
             </div>
         `;
         
+        // Set the progress width after adding to DOM
+        const dayHeader = col.querySelector('.day-header');
+        const progressBar = dayHeader.querySelector('::before');
+        
+        // Use CSS custom property to set width
+        dayHeader.style.setProperty('--progress-width', `${progress}%`);
+        
         daysGrid.appendChild(col);
     }
+    
+    // Apply progress styles after DOM update
+    setTimeout(() => {
+        document.querySelectorAll('.day-header').forEach(header => {
+            const progress = parseFloat(header.style.getPropertyValue('--progress').replace('%', ''));
+            header.style.setProperty('--progress-width', `${progress}%`);
+            
+            // Update text color based on progress
+            const content = header.querySelector('.day-header-content');
+            if (progress > 50) {
+                content.style.color = 'white';
+                content.style.textShadow = '0 1px 2px rgba(0,0,0,0.3)';
+            } else {
+                content.style.color = 'inherit';
+                content.style.textShadow = 'none';
+            }
+        });
+    }, 10);
 }
 
 // Open TODO modal
