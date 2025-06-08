@@ -4,93 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>友部 瑛希</title>
-
-
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&family=Shippori+Mincho+B1:wght@700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     
-
     <style>
+        /* ===== CSS VARIABLES ===== */
         :root {
-            --bg-color: #f8f9fa; /* Light */
+            --bg-color: #f8f9fa;
             --card-bg: #f8f9fa;
             --quote-text-color: #ff8c00;
+            --primary-color: #0d6efd;
+            --text-color: #212529;
         }
+        
         [data-theme="dark"] {
             --bg-color: #23272b;
             --card-bg: #495057;
-            --quote-text-color: #ff8c00;
+            --text-color: #fff;
         }
-        [data-theme="blue"] {
-            --bg-color: #e3f0fc;
-            --card-bg: #d6e4f0;
-            --quote-text-color: #ff8c00;
-        }
-        [data-theme="green"] {
-            --bg-color: #eafaf1;
-            --card-bg: #d4edda;
-            --quote-text-color: #ff8c00;
-        }
-        [data-theme="purple"] {
-            --bg-color: #f3e6fa;
-            --card-bg: #e1bee7;
-            --quote-text-color: #ff8c00;
-        }
-        [data-theme="red"] {
-            --bg-color: #fff0f0;
-            --card-bg: #f5c6cb;
-            --quote-text-color: #ff8c00;
-        }
-        [data-theme="orange"] {
-            --bg-color: #fff7e6;
-            --card-bg: #ffe5b4;
-            --quote-text-color: #ff8c00;
-        }
-        [data-theme="yellow"] {
-            --bg-color: #fffbe6;
-            --card-bg: #fff3cd;
-            --quote-text-color: #ff8c00;
-        }
-        [data-theme="pink"] {
-            --bg-color: #fff0f6;
-            --card-bg: #f8c1d0;
-            --quote-text-color: #ff8c00;
-        }
-        [data-theme="cyan"] {
-            --bg-color: #e0fcff;
-            --card-bg: #b2ebf2;
-            --quote-text-color: #ff8c00;
-        }
+        
+        [data-theme="blue"] { --bg-color: #e3f0fc; --card-bg: #d6e4f0; }
+        [data-theme="green"] { --bg-color: #eafaf1; --card-bg: #d4edda; }
+        [data-theme="purple"] { --bg-color: #f3e6fa; --card-bg: #e1bee7; }
+        [data-theme="red"] { --bg-color: #fff0f0; --card-bg: #f5c6cb; }
+        [data-theme="orange"] { --bg-color: #fff7e6; --card-bg: #ffe5b4; }
+        [data-theme="yellow"] { --bg-color: #fffbe6; --card-bg: #fff3cd; }
+        [data-theme="pink"] { --bg-color: #fff0f6; --card-bg: #f8c1d0; }
+        [data-theme="cyan"] { --bg-color: #e0fcff; --card-bg: #b2ebf2; }
+
+        /* ===== BASE STYLES ===== */
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
             font-family: 'Noto Sans JP', sans-serif;
-        }
-        .card {
-            background-color: var(--card-bg);
-            font-family: 'Noto Sans JP', sans-serif;
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-        .card-title {
-            color: var(--primary-color);
-        }
-        @media (max-width: 576px) {
-            .card-title { font-size: 1.1rem; }
-            .card-text { font-size: 1rem; }
-            .navbar-brand { font-size: 1.1rem; }
-            .container, .container-fluid { padding-left: 8px !important; padding-right: 8px !important; }
-            .modal-content { font-size: 1rem; }
-        }
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Noto Sans JP', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
             {% if bg_image_url %}
             background-image: url('{{ bg_image_url }}');
             background-size: contain;
@@ -99,12 +51,21 @@
             background-attachment: fixed;
             {% endif %}
         }
-        @media (max-width: 576px) {
-            body {
-                background-attachment: scroll;
-                background-size: contain;
-            }
+
+        body.no-bg-image {
+            background-image: none !important;
+            background-color: var(--bg-color) !important;
         }
+
+        body.no-bg-image .container.py-4 {
+            min-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ===== CARD STYLES ===== */
         .card {
             background-color: transparent !important;
             border: none;
@@ -112,11 +73,13 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
             margin-bottom: 2rem;
         }
+
         .card-body {
             position: relative;
             overflow: hidden;
             background-color: transparent !important;
         }
+
         .card-body::before {
             content: "";
             position: absolute;
@@ -126,86 +89,21 @@
             pointer-events: none;
             z-index: 0;
         }
+
         .card-body > * {
             position: relative;
             z-index: 1;
         }
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+
+        .card-title {
+            color: var(--primary-color);
         }
+
+        /* ===== LAYOUT STYLES ===== */
         .container.py-4 {
             margin-bottom: 0;
         }
-        .quote-content {
-            font-size: 1.7rem;
-            font-family: 'Noto Sans', 'Noto Sans JP', 'Roboto', Arial, sans-serif;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: var(--quote-text-color);
-        }
-        .quote-author {
-            font-family: 'Kosugi Maru', 'Noto Sans JP', sans-serif;
-            font-style: italic;
-            color: var(--primary-color);
-            text-align: right;
-            font-size: 1.1rem;
-        }
-        @media (max-width: 576px) {
-            .quote-content {
-                font-size: 1.15rem;
-            }
-            .quote-author {
-                font-size: 0.95rem;
-            }
-        }
-        body.no-bg-image {
-            background-image: none !important;
-            background-color: var(--bg-color) !important;
-        }
-        body.no-bg-image .container.py-4 {
-            min-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        body.no-bg-image .row.g-3,
-        body.no-bg-image .col-12 {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        body.no-bg-image .card {
-            width: 100%;
-            max-width: 600px;
-        }
-        .brand-shodo {
-            font-family: 'Shippori Mincho B1', 'Kosugi Maru', 'Noto Sans JP', serif;
-            font-weight: 700;
-            font-size: 1.5rem;
-            letter-spacing: 0.08em;
-            color: #222;
-            text-shadow: 0 2px 8px rgba(0,0,0,0.07);
-            line-height: 0.2;
-        }
-        @media (max-width: 576px) {
-            .brand-shodo { font-size: 1.3rem; }
-        }
-        input.link-input[readonly] {
-            cursor: default !important;
-        }
-        .circle-visual:hover #mindCircleHover {
-            opacity: 0.15;
-            filter: blur(2px);
-            transition: opacity 0.2s, filter 0.2s;
-        }
-        .circle-visual:active #mindCircleHover {
-            opacity: 0.25;
-            filter: blur(0.5px);
-        }
+
         .center-quote {
             min-height: 70vh;
             display: flex;
@@ -213,42 +111,87 @@
             justify-content: center;
             align-items: center;
         }
-        #linksTreeContainer .list-group-item {
-            cursor: grab;
+
+        /* ===== TYPOGRAPHY STYLES ===== */
+        .brand-shodo {
+            font-family: 'Shippori Mincho B1', 'Kosugi Maru', 'Noto Sans JP', serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            letter-spacing: 0.08em;
+            color: #222;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            line-height: 1.2;
         }
-        #linksTreeContainer .list-group-item:active {
-            cursor: grabbing;
+
+        .quote-content {
+            font-size: 1.7rem;
+            font-family: 'Noto Sans', 'Noto Sans JP', 'Roboto', Arial, sans-serif;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--quote-text-color);
+            cursor: pointer;
         }
+
+        .quote-author {
+            font-family: 'Kosugi Maru', 'Noto Sans JP', sans-serif;
+            font-style: italic;
+            color: var(--primary-color);
+            text-align: right;
+            font-size: 1.1rem;
+        }
+
+        /* ===== MODAL STYLES ===== */
         #linksModal .modal-dialog {
             max-height: 90vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
+
         #linksModal .modal-content {
             max-height: 90vh;
             overflow: hidden;
             display: flex;
             flex-direction: column;
         }
+
         #linksModal .modal-body {
             overflow-y: auto;
             max-height: 85vh;
         }
+
+        #cardListModal .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        /* ===== LINKS TREE STYLES ===== */
         .folder-header {
             background: #e3f2fd !important;
             border-radius: 6px;
             padding: 4px 8px;
             font-weight: bold;
         }
+
+        #linksTreeContainer .list-group-item {
+            cursor: grab;
+        }
+
+        #linksTreeContainer .list-group-item:active {
+            cursor: grabbing;
+        }
+
         .list-group-item.dragging {
             opacity: 0.5;
             background: #b3e5fc !important;
         }
+
         .list-group-item.drag-over {
             border-top: 2px solid #1976d2;
             background: #e3f2fd !important;
         }
+
+        /* ===== QR CODE STYLES ===== */
         .qr-container {
             display: flex;
             flex-direction: column;
@@ -260,33 +203,79 @@
             cursor: pointer;
             transition: background-color 0.2s;
         }
+
         .qr-container:hover {
             background-color: #f8f9fa;
         }
+
         .qr-canvas {
             margin-bottom: 8px;
         }
+
         .qr-filename {
             font-size: 0.9rem;
             color: #666;
             text-align: center;
         }
-        #cardListModal .modal-body {
-            max-height: 70vh;
-            overflow-y: auto;
+
+        /* ===== MINDFULNESS STYLES ===== */
+        .circle-visual:hover #mindCircleHover {
+            opacity: 0.15;
+            filter: blur(2px);
+            transition: opacity 0.2s, filter 0.2s;
+        }
+
+        .circle-visual:active #mindCircleHover {
+            opacity: 0.25;
+            filter: blur(0.5px);
+        }
+
+        /* ===== RESPONSIVE STYLES ===== */
+        @media (max-width: 576px) {
+            .card-title { font-size: 1.1rem; }
+            .card-text { font-size: 1rem; }
+            .navbar-brand { font-size: 1.1rem; }
+            .brand-shodo { font-size: 1.3rem; }
+            .quote-content { font-size: 1.15rem; }
+            .quote-author { font-size: 0.95rem; }
+            
+            .container, .container-fluid { 
+                padding-left: 8px !important; 
+                padding-right: 8px !important; 
+            }
+            
+            .modal-content { font-size: 1rem; }
+            
+            body {
+                background-attachment: scroll;
+                background-size: contain;
+            }
+
+            body.no-bg-image .row.g-3,
+            body.no-bg-image .col-12 {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            body.no-bg-image .card {
+                width: 100%;
+                max-width: 600px;
+            }
+        }
+
+        /* ===== UTILITY STYLES ===== */
+        input.link-input[readonly] {
+            cursor: default !important;
         }
     </style>
 </head>
 <body>
- 
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
         <div class="container-fluid">
-            <nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
-                <div class="container-fluid">
-                    <a class="navbar-brand brand-shodo" href="#" id="showCardListModal">友部 瑛希</a>
-                </div>
-            </nav>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <a class="navbar-brand brand-shodo" href="#" id="showCardListModal">友部 瑛希</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -316,7 +305,7 @@
                             <i class="bi bi-eye"></i> Eyes 
                         </a>
                     </li>
-                    <li class="nav-item dropdown">
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('game_flip') }}">
                             <i class="bi bi-controller"></i> Game
                         </a>
@@ -341,23 +330,6 @@
         </div>
     </nav>
 
-    <!-- Thêm sau nav -->
-    <div class="modal fade" id="cardListModal" tabindex="-1" aria-labelledby="cardListModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="cardListModalLabel">Name Cards</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p class="text-muted small mb-3">Click vào mã QR để copy link card vào clipboard</p>
-                <div id="cardList" class="row g-3"></div>
-            </div>
-            </div>
-        </div>
-    </div>
-
-
     <div class="container py-4 center-quote">
         <div class="row g-3">
             <div class="col-12">
@@ -377,690 +349,854 @@
         </div>
     </div>
 
-    <!-- Links Modal -->
-    <div class="modal fade" id="linksModal" tabindex="-1" aria-labelledby="linksModalLabel" aria-hidden="true">
+    <!-- Modals -->
+    <div class="modal fade" id="cardListModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Name Cards</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">Click vào mã QR để copy link card vào clipboard</p>
+                    <div id="cardList" class="row g-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="linksModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-            <div class="modal-body">
-                <div id="linksTreeContainer"></div>
+                <div class="modal-body">
+                    <div id="linksTreeContainer"></div>
+                </div>
             </div>
-            </div>
         </div>
-        </div>
-
-    <!-- Confirm Logout Modal -->
-    <div class="modal fade" id="confirmLogoutModal" tabindex="-1" aria-labelledby="confirmLogoutModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="confirmLogoutModalLabel">Confirm Logout</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            Are you sure you want to logout?
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-danger" id="confirmLogoutBtn">Logout</button>
-          </div>
-        </div>
-      </div>
     </div>
 
-    <!-- Settings Modal -->
+    <div class="modal fade" id="confirmLogoutModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Logout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to logout?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmLogoutBtn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <!-- filepath: /Users/eikitomobe/Documents/3.Học tập/Lập trình/VS code/EikiTomobe/eikitomobe/templates/home.html -->
-<div class="modal fade" id="settingsModal" tabindex="-1" aria-labelledby="settingsModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-body">
-                <!-- Nav tabs -->
-                <ul class="nav nav-tabs" id="settingsTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#generalTab" type="button" role="tab" aria-controls="generalTab" aria-selected="true">
-                            Theme
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="password-tab" data-bs-toggle="tab" data-bs-target="#passwordTab" type="button" role="tab" aria-controls="passwordTab" aria-selected="false">
-                            Password
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#uploadTab" type="button" role="tab" aria-controls="uploadTab" aria-selected="false">
-                            Background
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="avatar-tab" data-bs-toggle="tab" data-bs-target="#avatarTab" type="button" role="tab" aria-controls="avatarTab" aria-selected="false">
-                            Avatar
-                        </button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profileTab" type="button" role="tab" aria-controls="profileTab" aria-selected="false">
-                            Card
-                        </button>
-                    </li>
-                </ul>
-                <!-- Tab panes -->
-                <div class="tab-content mt-3">
-                    <!-- General Tab -->
-                    <div class="tab-pane fade show active" id="generalTab" role="tabpanel" aria-labelledby="general-tab">
-                        <div class="mb-3">
-                            <label for="themeSelect" class="form-label">Theme</label>
-                            <select class="form-select" id="themeSelect">
-                                <option value="light">Light</option>
-                                <option value="dark">Dark</option>
-                                <option value="blue">Blue</option>
-                                <option value="green">Green</option>
-                                <option value="purple">Purple</option>
-                                <option value="red">Red</option>
-                                <option value="orange">Orange</option>
-                                <option value="yellow">Yellow</option>
-                                <option value="pink">Pink</option>
-                                <option value="cyan">Cyan</option>
-                            </select>
-                        </div>
-                    </div>
-                    <!-- Password Tab -->
-                    <div class="tab-pane fade" id="passwordTab" role="tabpanel" aria-labelledby="password-tab">
-                        <form method="POST" action="{{ url_for('change_password') }}">
+    <div class="modal fade" id="settingsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" id="settingsTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#generalTab" type="button">Theme</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="password-tab" data-bs-toggle="tab" data-bs-target="#passwordTab" type="button">Password</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#uploadTab" type="button">Background</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="avatar-tab" data-bs-toggle="tab" data-bs-target="#avatarTab" type="button">Avatar</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profileTab" type="button">Card</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3">
+                        <div class="tab-pane fade show active" id="generalTab">
                             <div class="mb-3">
-                                <label for="new_password" class="form-label">Change Password</label>
-                                <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                <label for="themeSelect" class="form-label">Theme</label>
+                                <select class="form-select" id="themeSelect">
+                                    <option value="light">Light</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="blue">Blue</option>
+                                    <option value="green">Green</option>
+                                    <option value="purple">Purple</option>
+                                    <option value="red">Red</option>
+                                    <option value="orange">Orange</option>
+                                    <option value="yellow">Yellow</option>
+                                    <option value="pink">Pink</option>
+                                    <option value="cyan">Cyan</option>
+                                </select>
                             </div>
-                            <button type="submit" class="btn btn-primary">Save Password</button>
-                        </form>
-                    </div>
-                    <!-- Upload Tab -->
-                    <div class="tab-pane fade" id="uploadTab" role="tabpanel" aria-labelledby="upload-tab">
-                        <form action="{{ url_for('upload_bg') }}" method="post" enctype="multipart/form-data" class="mb-3 text-center">
-                            <input type="file" name="bg_image" accept="image/*" class="form-control d-inline-block mb-2" style="max-width:500px;display:inline-block;">
-                            <button type="submit" class="btn btn-primary mt-2">Upload</button>
-                        </form>
-                        <div class="form-check form-switch mt-3">
-                            <input class="form-check-input" type="checkbox" id="toggleBgImage">
-                            <label class="form-check-label" for="toggleBgImage">Hiển thị hình nền</label>
                         </div>
-                        <div class="form-check form-switch mt-3">
-                            <input class="form-check-input" type="checkbox" id="toggleQuote" checked>
-                            <label class="form-check-label" for="toggleQuote">Hiển thị quote</label>
+                        <div class="tab-pane fade" id="passwordTab">
+                            <form method="POST" action="{{ url_for('change_password') }}">
+                                <div class="mb-3">
+                                    <label for="new_password" class="form-label">Change Password</label>
+                                    <input type="password" class="form-control" id="new_password" name="new_password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Password</button>
+                            </form>
                         </div>
-                    </div>
-                    <div class="tab-pane fade" id="avatarTab" role="tabpanel" aria-labelledby="avatar-tab">
-                        <form action="{{ url_for('upload_avatar') }}" method="post" enctype="multipart/form-data" class="mb-3 text-center">
-                            <input type="file" name="avatar_image" accept="image/*,.heic" class="form-control d-inline-block mb-2" style="max-width:5.3.3/dist/js/bootstrap.bundle.min.js00px;display:inline-block;" required>
-                            <button type="submit" class="btn btn-primary mt-2">Upload</button>
-                        </form>
-                    </div>
-                    <div class="tab-pane fade" id="profileTab" role="tabpanel" aria-labelledby="profile-tab">
-                        <form id="profileForm" class="mb-3">
-                            <div class="mb-2">
-                                <label class="form-label">Name</label>
-                                <input type="text" class="form-control" name="name" id="profileName" required>
+                        <div class="tab-pane fade" id="uploadTab">
+                            <form action="{{ url_for('upload_bg') }}" method="post" enctype="multipart/form-data" class="mb-3 text-center">
+                                <input type="file" name="bg_image" accept="image/*" class="form-control d-inline-block mb-2" style="max-width:500px;">
+                                <button type="submit" class="btn btn-primary mt-2">Upload</button>
+                            </form>
+                            <div class="form-check form-switch mt-3">
+                                <input class="form-check-input" type="checkbox" id="toggleBgImage">
+                                <label class="form-check-label" for="toggleBgImage">Hiển thị hình nền</label>
                             </div>
-                            <div class="mb-2">
-                                <label class="form-label">Job</label>
-                                <input type="text" class="form-control" name="job" id="profileJob">
+                            <div class="form-check form-switch mt-3">
+                                <input class="form-check-input" type="checkbox" id="toggleQuote" checked>
+                                <label class="form-check-label" for="toggleQuote">Hiển thị quote</label>
                             </div>
-                            <div class="mb-2">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" name="email" id="profileEmail">
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Phone</label>
-                                <input type="text" class="form-control" name="phone" id="profilePhone">
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">SNS</label>
-                                <input type="text" class="form-control" name="sns" id="profileSNS">
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label">Slogan</label>
-                                <input type="text" class="form-control" name="slogan" id="profileSlogan">
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Update</button>
-                        </form>
-                        <div id="profileMsg" class="text-success text-center"></div>
+                        </div>
+                        <div class="tab-pane fade" id="avatarTab">
+                            <form action="{{ url_for('upload_avatar') }}" method="post" enctype="multipart/form-data" class="mb-3 text-center">
+                                <input type="file" name="avatar_image" accept="image/*,.heic" class="form-control d-inline-block mb-2" style="max-width:500px;" required>
+                                <button type="submit" class="btn btn-primary mt-2">Upload</button>
+                            </form>
+                        </div>
+                        <div class="tab-pane fade" id="profileTab">
+                            <form id="profileForm" class="mb-3">
+                                <div class="mb-2">
+                                    <label class="form-label">Name</label>
+                                    <input type="text" class="form-control" name="name" id="profileName" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Job</label>
+                                    <input type="text" class="form-control" name="job" id="profileJob">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" name="email" id="profileEmail">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Phone</label>
+                                    <input type="text" class="form-control" name="phone" id="profilePhone">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">SNS</label>
+                                    <input type="text" class="form-control" name="sns" id="profileSNS">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Slogan</label>
+                                    <input type="text" class="form-control" name="slogan" id="profileSlogan">
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Update</button>
+                            </form>
+                            <div id="profileMsg" class="text-success text-center"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Mindfulness Modal -->
-    <div class="modal fade" id="mindfulnessModal" tabindex="-1" aria-labelledby="mindfulnessModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-md modal-dialog-centered" style="max-width:420px;">
-        <div class="modal-content" style="background: var(--card-bg);">
-        <div class="modal-body">
-            <!-- Tabs -->
-            <ul class="nav nav-tabs" id="mindTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="mind-main-tab" data-bs-toggle="tab" data-bs-target="#mindMainTab" type="button" role="tab">Practice</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="mind-setting-tab" data-bs-toggle="tab" data-bs-target="#mindSettingTab" type="button" role="tab">Setting</button>
-            </li>
-            </ul>
-            <div class="tab-content mt-3">
-            <!-- Practice Tab -->
-            <div class="tab-pane fade show active text-center" id="mindMainTab" role="tabpanel">
-                
-                <div class="mb-2">
-                <span id="mindTimer" style="font-size:2.2rem;font-weight:bold;">00:00:00</span>
+    <div class="modal fade" id="mindfulnessModal" tabindex="-1">
+        <div class="modal-dialog modal-md modal-dialog-centered" style="max-width:420px;">
+            <div class="modal-content" style="background: var(--card-bg);">
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" id="mindTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="mind-main-tab" data-bs-toggle="tab" data-bs-target="#mindMainTab" type="button">Practice</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="mind-setting-tab" data-bs-toggle="tab" data-bs-target="#mindSettingTab" type="button">Setting</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3">
+                        <div class="tab-pane fade show active text-center" id="mindMainTab">
+                            <div class="mb-2">
+                                <span id="mindTimer" style="font-size:2.2rem;font-weight:bold;">00:00:00</span>
+                            </div>
+                            <div class="mb-2">
+                                <span id="mindBreakInfo" style="font-size:1.1rem;color:var(--primary-color);"></span>
+                            </div>
+                            <div class="mb-2 d-flex justify-content-center">
+                                <svg id="mindCircleSvg" class="circle-visual" width="120" height="120" viewBox="0 0 120 120" style="cursor:pointer;">
+                                    <circle cx="60" cy="60" r="50" stroke="#0d6efd" stroke-width="6" fill="none" opacity="0.15"/>
+                                    <circle id="mindCircleProgress" cx="60" cy="60" r="50" stroke="#0d6efd" stroke-width="6" fill="none"
+                                        stroke-dasharray="314" stroke-dashoffset="314" stroke-linecap="round"
+                                        transform="rotate(-90 60 60)" />
+                                    <circle id="mindCircleDot" r="8" fill="#0d6efd" cx="60" cy="10"/>
+                                    <circle id="mindCircleHover" cx="60" cy="60" r="40" fill="#0d6efd" opacity="0" />
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="mindSettingTab">
+                            <form id="mindSettingForm">
+                                <div class="mb-2">
+                                    <label class="form-label">Thời gian (phút)</label>
+                                    <select id="mindDuration" class="form-select">
+                                        {% for i in range(5, 301, 5) %}
+                                        <option value="{{ i }}">{{ i // 60 }}h {{ i % 60 }}m</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Số lần nghỉ (break)</label>
+                                    <select id="mindBreaks" class="form-select">
+                                        {% for i in range(1, 11) %}
+                                        <option value="{{ i }}">{{ i }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Mỗi lần nghỉ: <span id="mindBreakLength">0</span> phút</label>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-                <div class="mb-2">
-                <span id="mindBreakInfo" style="font-size:1.1rem;color:var(--primary-color);"></span>
-                </div>
-                <div class="mb-2 d-flex justify-content-center">
-                    <svg id="mindCircleSvg" class="circle-visual" width="120" height="120" viewBox="0 0 120 120" style="cursor:pointer;">
-                        <circle cx="60" cy="60" r="50" stroke="#0d6efd" stroke-width="6" fill="none" opacity="0.15"/>
-                        <circle id="mindCircleProgress" cx="60" cy="60" r="50" stroke="#0d6efd" stroke-width="6" fill="none"
-                            stroke-dasharray="314" stroke-dashoffset="314" stroke-linecap="round"
-                            transform="rotate(-90 60 60)" />
-                        <circle id="mindCircleDot" r="8" fill="#0d6efd" cx="60" cy="10"/>
-                        <circle id="mindCircleHover" cx="60" cy="60" r="40" fill="#0d6efd" opacity="0" />
-                    </svg>
-                </div>
-            </div>
-            <!-- Setting Tab -->
-            <div class="tab-pane fade" id="mindSettingTab" role="tabpanel">
-                <form id="mindSettingForm">
-                <div class="mb-2">
-                    <label class="form-label">Thời gian (phút)</label>
-                    <select id="mindDuration" class="form-select">
-                    {% for i in range(5, 301, 5) %}
-                    <option value="{{ i }}">{{ i // 60 }}h {{ i % 60 }}m</option>
-                    {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-2">
-                    <label class="form-label">Số lần nghỉ (break)</label>
-                    <select id="mindBreaks" class="form-select">
-                    {% for i in range(1, 11) %}
-                    <option value="{{ i }}">{{ i }}</option>
-                    {% endfor %}
-                    </select>
-                </div>
-                <div class="mb-2">
-                    <label class="form-label">Mỗi lần nghỉ: <span id="mindBreakLength">0</span> phút</label>
-                </div>
-                </form>
-            </div>
             </div>
         </div>
-        </div>
-    </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-    // --- Mindfulness Timer Logic ---
-    const circleSvg = document.getElementById('mindCircleSvg');
-    const circleProgress = document.getElementById('mindCircleProgress');
-    const circleDot = document.getElementById('mindCircleDot');
-    const circleLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    circleLabel.setAttribute('id', 'mindCircleLabel');
-    circleLabel.setAttribute('x', '60');
-    circleLabel.setAttribute('y', '68');
-    circleLabel.setAttribute('text-anchor', 'middle');
-    circleLabel.setAttribute('font-size', '1.2rem');
-    circleLabel.setAttribute('font-family', 'inherit');
-    circleLabel.setAttribute('fill', '#0d6efd');
-    circleLabel.style.cursor = 'pointer';
-    circleSvg.appendChild(circleLabel);
+        // ===== APPLICATION STATE =====
+        const AppState = {
+            BG_IMAGE_URL: "{{ bg_image_url|default('') }}",
+            isRunning: false,
+            timer: null,
+            totalSec: 0,
+            remainSec: 0,
+            isPaused: false,
+            breakCount: 1,
+            breakLength: 0,
+            currentBreak: 0,
+            startTimestamp: null,
+            pausedAt: null
+        };
 
-    const RADIUS = 50;
-    const CIRCUM = 2 * Math.PI * RADIUS;
+        // ===== CONSTANTS =====
+        const RADIUS = 50;
+        const CIRCUM = 2 * Math.PI * RADIUS;
 
-    const BG_IMAGE_URL = "{{ bg_image_url|default('') }}";
+        // ===== UTILITY FUNCTIONS =====
+        const Utils = {
+            formatTime(sec) {
+                const h = Math.floor(sec / 3600);
+                const m = Math.floor((sec % 3600) / 60);
+                const s = sec % 60;
+                return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            },
 
-    let isRunning = false;
-    let timer = null, totalSec = 0, remainSec = 0, isPaused = false, breakCount = 1, breakLength = 0, currentBreak = 0;
-    let startTimestamp = null;
-    let pausedAt = null;
+            playBell() {
+                try {
+                    const audio = new Audio('/static/bell.mp3');
+                    audio.play().catch(() => {}); // Ignore audio errors
+                } catch (e) {}
+            },
 
-    const timerDisplay = document.getElementById('mindTimer');
-    const breakInfo = document.getElementById('mindBreakInfo');
-    const durationSel = document.getElementById('mindDuration');
-    const breaksSel = document.getElementById('mindBreaks');
-    const breakLenSpan = document.getElementById('mindBreakLength');
+            showFlashMessage(message, type = 'success') {
+                const alert = document.createElement('div');
+                alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+                alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 300px;';
+                alert.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+                document.body.appendChild(alert);
+                setTimeout(() => alert.remove(), 3000);
+            },
 
-    function updateCircle(progress) {
-        const offset = CIRCUM - progress * CIRCUM;
-        circleProgress.setAttribute('stroke-dashoffset', offset);
-        const angle = -Math.PI / 2 + 2 * Math.PI * progress;
-        const cx = 60 + RADIUS * Math.cos(angle);
-        const cy = 60 + RADIUS * Math.sin(angle);
-        circleDot.setAttribute('cx', cx);
-        circleDot.setAttribute('cy', cy);
-    }
-
-    function playBell() {
-        const audio = new Audio('/static/bell.mp3');
-        audio.play();
-    }
-
-    function updateBreakLength() {
-        const duration = parseInt(durationSel.value) || 5;
-        const breaks = parseInt(breaksSel.value) || 1;
-        breakLength = Math.floor(duration / breaks);
-        breakLenSpan.textContent = breakLength;
-    }
-    durationSel.addEventListener('change', updateBreakLength);
-    breaksSel.addEventListener('change', updateBreakLength);
-    updateBreakLength();
-
-    function formatTime(sec) {
-        const h = Math.floor(sec / 3600);
-        const m = Math.floor((sec % 3600) / 60);
-        const s = sec % 60;
-        return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-    }
-
-    function showCircleLabel(text) {
-        circleLabel.textContent = text;
-    }
-
-    function startTimer() {
-        totalSec = parseInt(durationSel.value) * 60;
-        remainSec = totalSec;
-        breakCount = parseInt(breaksSel.value);
-        breakLength = Math.floor((parseInt(durationSel.value)) / breakCount);
-        currentBreak = 1;
-        isPaused = false;
-        isRunning = true;
-        startTimestamp = performance.now();
-        pausedAt = null;
-        showCircleLabel('stop');
-        requestAnimationFrame(tick);
-        playBell();
-    }
-    function tick(now) {
-        if (isPaused) {
-            pausedAt = now;
-            return;
-        }
-        if (!startTimestamp) startTimestamp = now;
-        let elapsed = Math.floor((now - startTimestamp) / 1000);
-        if (pausedAt) {
-            startTimestamp += (now - pausedAt);
-            pausedAt = null;
-        }
-        remainSec = Math.max(0, totalSec - elapsed);
-        timerDisplay.textContent = formatTime(remainSec);
-
-        let progress = Math.min(1, (totalSec - remainSec) / totalSec);
-        updateCircle(progress);
-
-        const breakInterval = Math.floor(totalSec / breakCount);
-        const nextBreak = totalSec - (currentBreak * breakInterval);
-        if (remainSec === nextBreak && currentBreak <= breakCount) {
-            breakInfo.textContent = `Break ${currentBreak} - ${breakLength} phút`;
-            currentBreak++;
-        } else if (remainSec > 0) {
-            breakInfo.textContent = '';
-        }
-
-        if (remainSec <= 0) {
-            timerDisplay.textContent = "00:00:00";
-            breakInfo.textContent = "Hoàn thành!";
-            updateCircle(1);
-            isRunning = false;
-            showCircleLabel('start');
-            playBell();
-            return;
-        }
-        timer = requestAnimationFrame(tick);
-    }
-        function stopTimer(playSound = true) {
-            cancelAnimationFrame(timer);
-            timerDisplay.textContent = "00:00:00";
-            breakInfo.textContent = '';
-            updateCircle(0);
-            isRunning = false;
-            showCircleLabel('start');
-            if (playSound) playBell();
-        }
-
-
-    // Vòng tròn: hover hiệu ứng nổi
-    circleSvg.addEventListener('mouseenter', function() {
-        circleSvg.classList.add('circle-hover');
-    });
-    circleSvg.addEventListener('mouseleave', function() {
-        circleSvg.classList.remove('circle-hover');
-    });
-
-    // Click vào vòng tròn: start/stop
-    circleSvg.addEventListener('click', function() {
-        if (isRunning) {
-            stopTimer();
-        } else {
-            stopTimer();
-            startTimer();
-        }
-    });
-
-    // Khi mở modal, reset về trạng thái ban đầu (KHÔNG phát âm thanh)
-    document.getElementById('mindfulnessModal').addEventListener('shown.bs.modal', function () {
-        stopTimer(false);
-        showCircleLabel('start');
-    });
-
-    // Khi đóng modal, reset timer (KHÔNG phát âm thanh)
-    document.getElementById('mindfulnessModal').addEventListener('hidden.bs.modal', function () {
-        stopTimer(false);
-        showCircleLabel('start');
-    });
-
-    // Click vào quote mở modal mindfulness
-    document.querySelectorAll('.quote-content').forEach(function(el) {
-        el.style.cursor = 'pointer';
-        el.addEventListener('click', function() {
-            var modal = new bootstrap.Modal(document.getElementById('mindfulnessModal'));
-            modal.show();
-        });
-    });
-});
-
-        // --- UI Settings (Background & Quote toggle) ---
-        document.getElementById('upload-tab').addEventListener('shown.bs.tab', function () {
-            fetch('/ui_settings')
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('toggleBgImage').checked = !!data.show_bg_image;
-                    document.getElementById('toggleQuote').checked = !!data.show_quote;
-                    // Áp dụng ngay trạng thái background
-                    applyBgImage(!!data.show_bg_image);
-                    applyQuote(!!data.show_quote);
-                });
-        });
-        document.getElementById('toggleBgImage').addEventListener('change', function() {
-            saveUiSettings();
-            applyBgImage(this.checked);
-        });
-        document.getElementById('toggleQuote').addEventListener('change', function() {
-            saveUiSettings();
-            applyQuote(this.checked);
-        });
-        function saveUiSettings() {
-            fetch('/ui_settings', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    show_bg_image: document.getElementById('toggleBgImage').checked,
-                    show_quote: document.getElementById('toggleQuote').checked
-                })
-            });
-        }
-        function applyBgImage(show) {
-            if (show) {
-                document.body.classList.remove('no-bg-image');
-                if (BG_IMAGE_URL) {
-                    document.body.style.backgroundImage = "url('" + BG_IMAGE_URL + "')";
+            copyToClipboard(text, container) {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(text)
+                        .then(() => this.showCopySuccess(container))
+                        .catch(() => this.copyFallback(text));
+                } else {
+                    this.copyFallback(text);
                 }
-            } else {
-                document.body.classList.add('no-bg-image');
-                document.body.style.backgroundImage = "none";
+            },
+
+            showCopySuccess(container) {
+                const originalBg = container.style.backgroundColor;
+                container.style.backgroundColor = '#d4edda';
+                container.style.borderColor = '#c3e6cb';
+                
+                const tooltip = document.createElement('div');
+                tooltip.textContent = 'Copied!';
+                tooltip.style.cssText = `
+                    position: absolute; background: #28a745; color: white; padding: 4px 8px;
+                    border-radius: 4px; font-size: 0.8rem; z-index: 1000; pointer-events: none;
+                    top: -30px; left: 50%; transform: translateX(-50%);
+                `;
+                container.style.position = 'relative';
+                container.appendChild(tooltip);
+                
+                setTimeout(() => {
+                    container.style.backgroundColor = originalBg;
+                    container.style.borderColor = '#e0e0e0';
+                    if (tooltip.parentNode) tooltip.remove();
+                }, 1500);
+            },
+
+            copyFallback(text) {
+                const tempInput = document.createElement('input');
+                tempInput.value = text;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                try {
+                    document.execCommand('copy');
+                    this.showFlashMessage('Link đã được copy vào clipboard!');
+                } catch (err) {
+                    alert('Không thể copy link. Link: ' + text);
+                }
+                document.body.removeChild(tempInput);
             }
-        }
-        function applyQuote(show) {
-            document.querySelectorAll('.card.shadow-sm').forEach(function(card) {
-                card.style.display = show ? '' : 'none';
-            });
-        }
+        };
 
-        
+        // ===== API FUNCTIONS =====
+        const API = {
+            async fetchWithErrorHandling(url, options = {}) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    console.error('API Error:', error);
+                    Utils.showFlashMessage('Network error occurred', 'danger');
+                    throw error;
+                }
+            },
 
-        document.getElementById('showLinksBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            fetch('/links')
-                .then(res => res.json())
-                .then(data => {
-                    let linksTree = data.links_tree || [];
-                    renderLinksTree(linksTree);
-                    const modal = new bootstrap.Modal(document.getElementById('linksModal'));
-                    modal.show();
+            async getUISettings() {
+                return this.fetchWithErrorHandling('/ui_settings');
+            },
+
+            async updateUISettings(settings) {
+                return this.fetchWithErrorHandling('/ui_settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(settings)
                 });
-        });
+            },
 
-        function renderLinksTree(treeData) {
-            const container = document.getElementById('linksTreeContainer');
-            container.innerHTML = '';
+            async getCardList() {
+                return this.fetchWithErrorHandling('/card_list');
+            },
 
-            // Đảm bảo luôn có 1 thư mục trống cuối cùng
-            let last = treeData[treeData.length - 1];
-            if (!last || (last.name.trim() !== '' || (last.children && last.children.length > 0 && last.children.some(l => l.url && l.url.trim() !== '')))) {
-                treeData.push({name: '', children: []});
+            async getCardHash(filename) {
+                return this.fetchWithErrorHandling(`/get_card_hash/${filename}`);
+            },
+
+            async getLinksTree() {
+                return this.fetchWithErrorHandling('/links');
+            },
+
+            async updateLinksTree(tree) {
+                return this.fetchWithErrorHandling('/links', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({links_tree: tree})
+                });
+            },
+
+            async getCardInfo() {
+                return this.fetchWithErrorHandling('/get_card_info');
+            },
+
+            async updateCardInfo(data) {
+                return this.fetchWithErrorHandling('/update_card_info', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
             }
+        };
 
-            treeData.forEach((folder, folderIdx) => {
+        // ===== MINDFULNESS TIMER =====
+        const MindfulnessTimer = {
+            init() {
+                this.setupElements();
+                this.setupEventListeners();
+                this.updateBreakLength();
+            },
+
+            setupElements() {
+                this.circleSvg = document.getElementById('mindCircleSvg');
+                this.circleProgress = document.getElementById('mindCircleProgress');
+                this.circleDot = document.getElementById('mindCircleDot');
+                this.timerDisplay = document.getElementById('mindTimer');
+                this.breakInfo = document.getElementById('mindBreakInfo');
+                this.durationSel = document.getElementById('mindDuration');
+                this.breaksSel = document.getElementById('mindBreaks');
+                this.breakLenSpan = document.getElementById('mindBreakLength');
+
+                // Add SVG label
+                const circleLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                circleLabel.setAttribute('id', 'mindCircleLabel');
+                circleLabel.setAttribute('x', '60');
+                circleLabel.setAttribute('y', '68');
+                circleLabel.setAttribute('text-anchor', 'middle');
+                circleLabel.setAttribute('font-size', '1.2rem');
+                circleLabel.setAttribute('font-family', 'inherit');
+                circleLabel.setAttribute('fill', '#0d6efd');
+                circleLabel.style.cursor = 'pointer';
+                circleLabel.textContent = 'start';
+                this.circleSvg.appendChild(circleLabel);
+                this.circleLabel = circleLabel;
+            },
+
+            setupEventListeners() {
+                this.durationSel.addEventListener('change', () => this.updateBreakLength());
+                this.breaksSel.addEventListener('change', () => this.updateBreakLength());
+                
+                this.circleSvg.addEventListener('click', () => {
+                    if (AppState.isRunning) {
+                        this.stopTimer();
+                    } else {
+                        this.stopTimer();
+                        this.startTimer();
+                    }
+                });
+
+                // Modal events
+                document.getElementById('mindfulnessModal').addEventListener('shown.bs.modal', () => {
+                    this.stopTimer(false);
+                });
+                
+                document.getElementById('mindfulnessModal').addEventListener('hidden.bs.modal', () => {
+                    this.stopTimer(false);
+                });
+            },
+
+            updateBreakLength() {
+                const duration = parseInt(this.durationSel.value) || 5;
+                const breaks = parseInt(this.breaksSel.value) || 1;
+                AppState.breakLength = Math.floor(duration / breaks);
+                this.breakLenSpan.textContent = AppState.breakLength;
+            },
+
+            updateCircle(progress) {
+                const offset = CIRCUM - progress * CIRCUM;
+                this.circleProgress.setAttribute('stroke-dashoffset', offset);
+                const angle = -Math.PI / 2 + 2 * Math.PI * progress;
+                const cx = 60 + RADIUS * Math.cos(angle);
+                const cy = 60 + RADIUS * Math.sin(angle);
+                this.circleDot.setAttribute('cx', cx);
+                this.circleDot.setAttribute('cy', cy);
+            },
+
+            startTimer() {
+                AppState.totalSec = parseInt(this.durationSel.value) * 60;
+                AppState.remainSec = AppState.totalSec;
+                AppState.breakCount = parseInt(this.breaksSel.value);
+                AppState.breakLength = Math.floor((parseInt(this.durationSel.value)) / AppState.breakCount);
+                AppState.currentBreak = 1;
+                AppState.isPaused = false;
+                AppState.isRunning = true;
+                AppState.startTimestamp = performance.now();
+                AppState.pausedAt = null;
+                this.circleLabel.textContent = 'stop';
+                requestAnimationFrame(() => this.tick());
+                Utils.playBell();
+            },
+
+            tick() {
+                if (AppState.isPaused) {
+                    AppState.pausedAt = performance.now();
+                    return;
+                }
+                
+                const now = performance.now();
+                if (!AppState.startTimestamp) AppState.startTimestamp = now;
+                
+                let elapsed = Math.floor((now - AppState.startTimestamp) / 1000);
+                if (AppState.pausedAt) {
+                    AppState.startTimestamp += (now - AppState.pausedAt);
+                    AppState.pausedAt = null;
+                }
+                
+                AppState.remainSec = Math.max(0, AppState.totalSec - elapsed);
+                this.timerDisplay.textContent = Utils.formatTime(AppState.remainSec);
+
+                let progress = Math.min(1, (AppState.totalSec - AppState.remainSec) / AppState.totalSec);
+                this.updateCircle(progress);
+
+                const breakInterval = Math.floor(AppState.totalSec / AppState.breakCount);
+                const nextBreak = AppState.totalSec - (AppState.currentBreak * breakInterval);
+                if (AppState.remainSec === nextBreak && AppState.currentBreak <= AppState.breakCount) {
+                    this.breakInfo.textContent = `Break ${AppState.currentBreak} - ${AppState.breakLength} phút`;
+                    AppState.currentBreak++;
+                } else if (AppState.remainSec > 0) {
+                    this.breakInfo.textContent = '';
+                }
+
+                if (AppState.remainSec <= 0) {
+                    this.timerDisplay.textContent = "00:00:00";
+                    this.breakInfo.textContent = "Hoàn thành!";
+                    this.updateCircle(1);
+                    AppState.isRunning = false;
+                    this.circleLabel.textContent = 'start';
+                    Utils.playBell();
+                    return;
+                }
+                
+                AppState.timer = requestAnimationFrame(() => this.tick());
+            },
+
+            stopTimer(playSound = true) {
+                cancelAnimationFrame(AppState.timer);
+                this.timerDisplay.textContent = "00:00:00";
+                this.breakInfo.textContent = '';
+                this.updateCircle(0);
+                AppState.isRunning = false;
+                this.circleLabel.textContent = 'start';
+                if (playSound) Utils.playBell();
+            }
+        };
+
+        // ===== UI SETTINGS MANAGER =====
+        const UISettingsManager = {
+            init() {
+                this.setupEventListeners();
+            },
+
+            setupEventListeners() {
+                document.getElementById('upload-tab').addEventListener('shown.bs.tab', async () => {
+                    try {
+                        const data = await API.getUISettings();
+                        document.getElementById('toggleBgImage').checked = !!data.show_bg_image;
+                        document.getElementById('toggleQuote').checked = !!data.show_quote;
+                        this.applyBgImage(!!data.show_bg_image);
+                        this.applyQuote(!!data.show_quote);
+                    } catch (error) {
+                        console.error('Failed to load UI settings:', error);
+                    }
+                });
+
+                document.getElementById('toggleBgImage').addEventListener('change', (e) => {
+                    this.saveSettings();
+                    this.applyBgImage(e.target.checked);
+                });
+
+                document.getElementById('toggleQuote').addEventListener('change', (e) => {
+                    this.saveSettings();
+                    this.applyQuote(e.target.checked);
+                });
+            },
+
+            async saveSettings() {
+                try {
+                    await API.updateUISettings({
+                        show_bg_image: document.getElementById('toggleBgImage').checked,
+                        show_quote: document.getElementById('toggleQuote').checked
+                    });
+                } catch (error) {
+                    console.error('Failed to save UI settings:', error);
+                }
+            },
+
+            applyBgImage(show) {
+                if (show) {
+                    document.body.classList.remove('no-bg-image');
+                    if (AppState.BG_IMAGE_URL) {
+                        document.body.style.backgroundImage = `url('${AppState.BG_IMAGE_URL}')`;
+                    }
+                } else {
+                    document.body.classList.add('no-bg-image');
+                    document.body.style.backgroundImage = "none";
+                }
+            },
+
+            applyQuote(show) {
+                document.querySelectorAll('.card.shadow-sm').forEach(card => {
+                    card.style.display = show ? '' : 'none';
+                });
+            }
+        };
+
+        // ===== THEME MANAGER =====
+        const ThemeManager = {
+            init() {
+                this.themeSelect = document.getElementById('themeSelect');
+                this.currentTheme = localStorage.getItem('theme') || '{{ theme|default("light") }}';
+                document.documentElement.setAttribute('data-theme', this.currentTheme);
+                this.themeSelect.value = this.currentTheme;
+                
+                this.themeSelect.addEventListener('change', () => this.changeTheme());
+            },
+
+            async changeTheme() {
+                const theme = this.themeSelect.value;
+                document.documentElement.setAttribute('data-theme', theme);
+                localStorage.setItem('theme', theme);
+                
+                try {
+                    await fetch('/set_theme', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({theme: theme})
+                    });
+                    location.reload();
+                } catch (error) {
+                    console.error('Failed to save theme:', error);
+                    Utils.showFlashMessage('Failed to save theme', 'danger');
+                }
+            }
+        };
+
+        // ===== LINKS MANAGER =====
+        const LinksManager = {
+            init() {
+                document.getElementById('showLinksBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showLinksModal();
+                });
+            },
+
+            async showLinksModal() {
+                try {
+                    const data = await API.getLinksTree();
+                    this.renderLinksTree(data.links_tree || []);
+                    new bootstrap.Modal(document.getElementById('linksModal')).show();
+                } catch (error) {
+                    console.error('Failed to load links:', error);
+                }
+            },
+
+            renderLinksTree(treeData) {
+                const container = document.getElementById('linksTreeContainer');
+                container.innerHTML = '';
+
+                // Ensure there's always an empty folder at the end
+                let last = treeData[treeData.length - 1];
+                if (!last || (last.name.trim() !== '' || (last.children && last.children.length > 0 && last.children.some(l => l.url && l.url.trim() !== '')))) {
+                    treeData.push({name: '', children: []});
+                }
+
+                treeData.forEach((folder, folderIdx) => this.renderFolder(folder, folderIdx, treeData, container));
+            },
+
+            renderFolder(folder, folderIdx, treeData, container) {
                 const folderDiv = document.createElement('div');
                 folderDiv.className = 'mb-2 border rounded p-2 bg-light';
 
                 // Folder header
+                const header = this.createFolderHeader(folder, folderIdx, treeData);
+                folderDiv.appendChild(header);
+
+                // Links list
+                const linksUl = this.createLinksList(folder, folderIdx, treeData);
+                folderDiv.appendChild(linksUl);
+
+                container.appendChild(folderDiv);
+            },
+
+            createFolderHeader(folder, folderIdx, treeData) {
                 const header = document.createElement('div');
                 header.className = 'd-flex align-items-center mb-1 folder-header';
-                header.style.background = '#e3f2fd'; // Màu xanh nhạt
-                header.style.borderRadius = '6px';
-                header.style.padding = '4px 8px';
-                header.style.fontWeight = 'bold';
 
-                // Collapse/expand button
+                // Toggle button
                 const toggleBtn = document.createElement('button');
                 toggleBtn.className = 'btn btn-sm btn-link px-1 py-0';
-                // Mặc định là mở
-                let collapsed = false;
                 toggleBtn.innerHTML = '<i class="bi bi-caret-down-fill"></i>';
-                toggleBtn.onclick = function() {
-                    collapsed = !collapsed;
-                    linksUl.style.display = collapsed ? 'none' : '';
-                    toggleBtn.innerHTML = collapsed
-                        ? '<i class="bi bi-caret-right-fill"></i>'
-                        : '<i class="bi bi-caret-down-fill"></i>';
-                };
                 header.appendChild(toggleBtn);
 
-                // Folder name (editable)
+                // Folder name input
                 const folderName = document.createElement('input');
                 folderName.type = 'text';
                 folderName.value = folder.name;
                 folderName.className = 'form-control form-control-sm d-inline-block mx-1';
                 folderName.style.width = '120px';
                 folderName.placeholder = 'Tên thư mục...';
-                folderName.onblur = function() {
+                header.appendChild(folderName);
+
+                // Setup toggle functionality
+                let collapsed = false;
+                const linksUl = header.nextElementSibling;
+                toggleBtn.onclick = () => {
+                    collapsed = !collapsed;
+                    if (linksUl) linksUl.style.display = collapsed ? 'none' : '';
+                    toggleBtn.innerHTML = collapsed ? '<i class="bi bi-caret-right-fill"></i>' : '<i class="bi bi-caret-down-fill"></i>';
+                };
+
+                folderName.onblur = () => {
                     folder.name = folderName.value.trim();
-                    // Nếu là thư mục không phải cuối cùng và tên rỗng thì xoá luôn cả thư mục (bất kể có link con hay không)
                     if (folderIdx !== treeData.length - 1 && folder.name === '') {
                         treeData.splice(folderIdx, 1);
                     }
-                    saveLinksTree();
-                    renderLinksTree(treeData);
+                    this.saveLinksTree(treeData);
+                    this.renderLinksTree(treeData);
                 };
-                header.appendChild(folderName);
 
-                folderDiv.appendChild(header);
+                return header;
+            },
 
-                // Links list
+            createLinksList(folder, folderIdx, treeData) {
                 const linksUl = document.createElement('ul');
                 linksUl.className = 'list-group';
                 linksUl.style.minHeight = '10px';
-                // Mặc định HIỆN (mở)
-                linksUl.style.display = '';
 
                 folder.children = folder.children || [];
-                // Render các link đã có
+                
+                // Render existing links
                 folder.children.forEach((link, linkIdx) => {
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item d-flex align-items-center';
-                    li.draggable = true;
-
-                    // Drag events
-                    li.ondragstart = function(e) {
-                        e.dataTransfer.setData('text/plain', JSON.stringify({fromFolder: folderIdx, fromLink: linkIdx}));
-                        li.classList.add('dragging');
-                    };
-                    li.ondragend = function() {
-                        li.classList.remove('dragging');
-                        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-                    };
-                    li.ondragover = function(e) {
-                        e.preventDefault();
-                        li.classList.add('drag-over');
-                    };
-                    li.ondragleave = function() {
-                        li.classList.remove('drag-over');
-                    };
-                    li.ondrop = function(e) {
-                        e.preventDefault();
-                        li.classList.remove('drag-over');
-                        const {fromFolder, fromLink} = JSON.parse(e.dataTransfer.getData('text/plain'));
-                        if (fromFolder == folderIdx && fromLink == linkIdx) return;
-                        const moved = treeData[fromFolder].children.splice(fromLink, 1)[0];
-                        folder.children.splice(linkIdx, 0, moved);
-                        renderLinksTree(treeData);
-                        saveLinksTree();
-                    };
-
-                    // Link input
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.className = 'form-control form-control-sm me-2';
-                    input.value = link.url;
-                    input.placeholder = 'Link...';
-                    input.onblur = function() {
-                        link.url = input.value.trim();
-                        // Nếu link con bị xoá hết nội dung thì xoá luôn nút con đó
-                        if (!link.url) {
-                            folder.children.splice(linkIdx, 1);
-                        }
-                        saveLinksTree();
-                        renderLinksTree(treeData);
-                    };
-                    li.appendChild(input);
-
-                    // Open link button
-                    if (link.url) {
-                        const openBtn = document.createElement('button');
-                        openBtn.className = 'btn btn-sm btn-primary me-2';
-                        openBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
-                        openBtn.onclick = function() {
-                            let url = link.url.trim();
-                            if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-                            window.open(url, '_blank');
-                        };
-                        li.appendChild(openBtn);
-                    }
-
+                    const li = this.createLinkItem(link, linkIdx, folder, folderIdx, treeData);
                     linksUl.appendChild(li);
                 });
 
-                // Luôn render thêm 1 dòng link trống cuối cùng
-                const emptyLi = document.createElement('li');
-                emptyLi.className = 'list-group-item d-flex align-items-center';
-                const emptyInput = document.createElement('input');
-                emptyInput.type = 'text';
-                emptyInput.className = 'form-control form-control-sm me-2';
-                emptyInput.placeholder = 'Link...';
-                emptyInput.onblur = function() {
-                    const val = emptyInput.value.trim();
-                    if (val) {
-                        folder.children.push({url: val});
-                        saveLinksTree();
-                        renderLinksTree(treeData);
-                    }
-                };
-                emptyLi.appendChild(emptyInput);
+                // Add empty link input
+                const emptyLi = this.createEmptyLinkItem(folder, treeData);
                 linksUl.appendChild(emptyLi);
 
-                // Drag over folder to move link here
-                linksUl.ondragover = function(e) { e.preventDefault(); };
-                linksUl.ondrop = function(e) {
+                // Setup drag and drop for folder
+                linksUl.ondragover = (e) => e.preventDefault();
+                linksUl.ondrop = (e) => {
                     e.preventDefault();
                     const {fromFolder, fromLink} = JSON.parse(e.dataTransfer.getData('text/plain'));
                     if (fromFolder == folderIdx) return;
                     const moved = treeData[fromFolder].children.splice(fromLink, 1)[0];
                     folder.children.push(moved);
-                    renderLinksTree(treeData);
-                    saveLinksTree();
+                    this.renderLinksTree(treeData);
+                    this.saveLinksTree(treeData);
                 };
 
-                folderDiv.appendChild(linksUl);
-                container.appendChild(folderDiv);
-            });
+                return linksUl;
+            },
 
-            // Không còn nút Thêm thư mục
+            createLinkItem(link, linkIdx, folder, folderIdx, treeData) {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex align-items-center';
+                li.draggable = true;
 
-            // Lưu lại tree sau mỗi thao tác
-            function saveLinksTree() {
-                fetch('/links', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({links_tree: treeData})
-                });
+                // Setup drag events
+                this.setupLinkDragEvents(li, folderIdx, linkIdx, folder, treeData);
+
+                // Link input
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'form-control form-control-sm me-2';
+                input.value = link.url;
+                input.placeholder = 'Link...';
+                input.onblur = () => {
+                    link.url = input.value.trim();
+                    if (!link.url) {
+                        folder.children.splice(linkIdx, 1);
+                    }
+                    this.saveLinksTree(treeData);
+                    this.renderLinksTree(treeData);
+                };
+                li.appendChild(input);
+
+                // Open button
+                if (link.url) {
+                    const openBtn = document.createElement('button');
+                    openBtn.className = 'btn btn-sm btn-primary me-2';
+                    openBtn.innerHTML = '<i class="bi bi-box-arrow-up-right"></i>';
+                    openBtn.onclick = () => {
+                        let url = link.url.trim();
+                        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+                        window.open(url, '_blank');
+                    };
+                    li.appendChild(openBtn);
+                }
+
+                return li;
+            },
+
+            createEmptyLinkItem(folder, treeData) {
+                const emptyLi = document.createElement('li');
+                emptyLi.className = 'list-group-item d-flex align-items-center';
+                
+                const emptyInput = document.createElement('input');
+                emptyInput.type = 'text';
+                emptyInput.className = 'form-control form-control-sm me-2';
+                emptyInput.placeholder = 'Link...';
+                emptyInput.onblur = () => {
+                    const val = emptyInput.value.trim();
+                    if (val) {
+                        folder.children.push({url: val});
+                        this.saveLinksTree(treeData);
+                        this.renderLinksTree(treeData);
+                    }
+                };
+                emptyLi.appendChild(emptyInput);
+                
+                return emptyLi;
+            },
+
+            setupLinkDragEvents(li, folderIdx, linkIdx, folder, treeData) {
+                li.ondragstart = (e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({fromFolder: folderIdx, fromLink: linkIdx}));
+                    li.classList.add('dragging');
+                };
+
+                li.ondragend = () => {
+                    li.classList.remove('dragging');
+                    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                };
+
+                li.ondragover = (e) => {
+                    e.preventDefault();
+                    li.classList.add('drag-over');
+                };
+
+                li.ondragleave = () => {
+                    li.classList.remove('drag-over');
+                };
+
+                li.ondrop = (e) => {
+                    e.preventDefault();
+                    li.classList.remove('drag-over');
+                    const {fromFolder, fromLink} = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    if (fromFolder == folderIdx && fromLink == linkIdx) return;
+                    const moved = treeData[fromFolder].children.splice(fromLink, 1)[0];
+                    folder.children.splice(linkIdx, 0, moved);
+                    this.renderLinksTree(treeData);
+                    this.saveLinksTree(treeData);
+                };
+            },
+
+            async saveLinksTree(treeData) {
+                try {
+                    await API.updateLinksTree(treeData);
+                } catch (error) {
+                    console.error('Failed to save links tree:', error);
+                }
             }
-        }
-
-        
-
-        // --- Logout Modal logic ---
-        document.getElementById('logoutBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            const modal = new bootstrap.Modal(document.getElementById('confirmLogoutModal'));
-            modal.show();
-        });
-        document.getElementById('confirmLogoutBtn').onclick = function() {
-            fetch('{{ url_for("logout") }}', {
-                method: 'POST',
-                headers: {'X-Requested-With': 'XMLHttpRequest'}
-            }).then(() => {
-                window.location.href = '{{ url_for("login") }}';
-            });
         };
 
-        // --- Theme select logic for Settings Modal ---
-        const themeSelect = document.getElementById('themeSelect');
-        const currentTheme = localStorage.getItem('theme') || '{{ theme|default("light") }}';
-        document.documentElement.setAttribute('data-theme', currentTheme);
-        themeSelect.value = currentTheme;
-        themeSelect.addEventListener('change', () => {
-            const theme = themeSelect.value;
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-            fetch('/set_theme', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({theme: theme})
-            }).then(res => res.json())
-            .then(() => {
-                location.reload(); // Reload to apply new theme from session
-            });
-        });
+        // ===== CARD LIST MANAGER =====
+        const CardListManager = {
+            init() {
+                document.getElementById('showCardListModal').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showCardListModal();
+                });
+            },
 
-        // --- Card List Modal logic ---
-        // ...existing code...
+            async showCardListModal() {
+                try {
+                    const data = await API.getCardList();
+                    this.renderCardList(data.files);
+                    new bootstrap.Modal(document.getElementById('cardListModal')).show();
+                } catch (error) {
+                    console.error('Error loading card list:', error);
+                    Utils.showFlashMessage('Không thể tải danh sách card!', 'danger');
+                }
+            },
 
-// --- Card List Modal logic (với QR API) ---
-document.getElementById('showCardListModal').addEventListener('click', function(e) {
-    e.preventDefault();
-    fetch('/card_list')
-        .then(res => res.json())
-        .then(data => {
-            const cardList = document.getElementById('cardList');
-            cardList.innerHTML = '';
-            cardList.className = 'row g-3';
-            
-            data.files.forEach(file => {
+            renderCardList(files) {
+                const cardList = document.getElementById('cardList');
+                cardList.innerHTML = '';
+                cardList.className = 'row g-3';
+                
+                files.forEach(file => this.renderCardItem(file, cardList));
+            },
+
+            async renderCardItem(file, container) {
                 const colDiv = document.createElement('div');
                 colDiv.className = 'col-6 col-md-4';
                 
                 const qrContainer = document.createElement('div');
                 qrContainer.className = 'qr-container';
                 
-                // Sử dụng img thay vì canvas
                 const qrImg = document.createElement('img');
                 qrImg.className = 'qr-canvas';
                 qrImg.style.width = '120px';
@@ -1073,173 +1209,135 @@ document.getElementById('showCardListModal').addEventListener('click', function(
                 qrContainer.appendChild(qrImg);
                 qrContainer.appendChild(filename);
                 colDiv.appendChild(qrContainer);
-                cardList.appendChild(colDiv);
+                container.appendChild(colDiv);
                 
-                // Lấy hash và tạo QR code bằng API
-                fetch(`/get_card_hash/${file}`)
-                .then(res => res.json())
-                .then(data => {
+                try {
+                    const data = await API.getCardHash(file);
                     if (data.hash) {
                         const publicUrl = `${window.location.origin}/public_card/${data.hash}`;
-                        
-                        // Sử dụng Google Charts QR API
                         const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(publicUrl)}`;
                         qrImg.src = qrApiUrl;
                         
-                        qrImg.onerror = function() {
-                            // Fallback nếu API lỗi
-                            qrImg.style.display = 'none';
-                            const errorText = document.createElement('div');
-                            errorText.textContent = 'QR Error';
-                            errorText.style.color = 'red';
-                            qrContainer.insertBefore(errorText, filename);
-                        };
-                        
-                        // Click để copy link
-                        qrContainer.onclick = function() {
-                            copyToClipboard(publicUrl, qrContainer);
-                        };
+                        qrImg.onerror = () => this.showErrorFallback(qrImg, qrContainer, filename, 'QR Error');
+                        qrContainer.onclick = () => Utils.copyToClipboard(publicUrl, qrContainer);
                     } else {
-                        showErrorFallback(qrImg, qrContainer, filename, 'Link Error');
+                        this.showErrorFallback(qrImg, qrContainer, filename, 'Link Error');
                     }
-                })
-                .catch(err => {
-                    console.error('Error getting card hash:', err);
-                    showErrorFallback(qrImg, qrContainer, filename, 'Hash Error');
-                });
-            });
-            
-            new bootstrap.Modal(document.getElementById('cardListModal')).show();
-        })
-        .catch(err => {
-            console.error('Error loading card list:', err);
-            alert('Không thể tải danh sách card!');
-        });
-});
+                } catch (error) {
+                    console.error('Error getting card hash:', error);
+                    this.showErrorFallback(qrImg, qrContainer, filename, 'Hash Error');
+                }
+            },
 
-// Các hàm helper (giữ nguyên)
-function showErrorFallback(element, qrContainer, filename, errorMsg) {
-    element.style.display = 'none';
-    const errorText = document.createElement('div');
-    errorText.textContent = errorMsg;
-    errorText.style.color = 'red';
-    errorText.style.fontSize = '0.8rem';
-    errorText.style.textAlign = 'center';
-    qrContainer.insertBefore(errorText, filename);
-}
+            showErrorFallback(element, qrContainer, filename, errorMsg) {
+                element.style.display = 'none';
+                const errorText = document.createElement('div');
+                errorText.textContent = errorMsg;
+                errorText.style.color = 'red';
+                errorText.style.fontSize = '0.8rem';
+                errorText.style.textAlign = 'center';
+                qrContainer.insertBefore(errorText, filename);
+            }
+        };
 
-function copyToClipboard(text, container) {
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(text)
-            .then(() => {
-                showCopySuccess(container);
-            })
-            .catch(() => {
-                copyFallback(text);
-            });
-    } else {
-        copyFallback(text);
-    }
-}
+        // ===== PROFILE MANAGER =====
+        const ProfileManager = {
+            init() {
+                document.getElementById('profile-tab').addEventListener('shown.bs.tab', () => this.loadProfileData());
+                document.getElementById('profileForm').addEventListener('submit', (e) => this.saveProfile(e));
+            },
 
-function showCopySuccess(container) {
-    const originalBg = container.style.backgroundColor;
-    container.style.backgroundColor = '#d4edda';
-    container.style.borderColor = '#c3e6cb';
-    
-    const tooltip = document.createElement('div');
-    tooltip.textContent = 'Copied!';
-    tooltip.style.cssText = `
-        position: absolute;
-        background: #28a745;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        z-index: 1000;
-        pointer-events: none;
-        top: -30px;
-        left: 50%;
-        transform: translateX(-50%);
-    `;
-    container.style.position = 'relative';
-    container.appendChild(tooltip);
-    
-    setTimeout(() => {
-        container.style.backgroundColor = originalBg;
-        container.style.borderColor = '#e0e0e0';
-        if (tooltip.parentNode) {
-            tooltip.remove();
-        }
-    }, 1500);
-}
-
-function copyFallback(text) {
-    const tempInput = document.createElement('input');
-    tempInput.value = text;
-    document.body.appendChild(tempInput);
-    tempInput.select();
-    try {
-        document.execCommand('copy');
-        alert('Link đã được copy vào clipboard!');
-    } catch (err) {
-        alert('Không thể copy link. Link: ' + text);
-    }
-    document.body.removeChild(tempInput);
-}
-
-// ...existing code...              
-
-        // --- Card Info (Profile Tab) ---
-        document.getElementById('profile-tab').addEventListener('shown.bs.tab', function () {
-            fetch('/get_card_info')
-                .then(res => res.json())
-                .then(data => {
+            async loadProfileData() {
+                try {
+                    const data = await API.getCardInfo();
                     document.getElementById('profileName').value = data.Name || '';
                     document.getElementById('profileJob').value = data.Job || '';
                     document.getElementById('profileEmail').value = data.Email || '';
                     document.getElementById('profilePhone').value = data.Phone || '';
                     document.getElementById('profileSNS').value = data.SNS || '';
                     document.getElementById('profileSlogan').value = data.SubSlogan || '';
-                });
-        });
-        document.getElementById('profileForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const data = {
-                Name: document.getElementById('profileName').value,
-                Job: document.getElementById('profileJob').value,
-                Email: document.getElementById('profileEmail').value,
-                Phone: document.getElementById('profilePhone').value,
-                SNS: document.getElementById('profileSNS').value,
-                SubSlogan: document.getElementById('profileSlogan').value
-            };
-            fetch('/update_card_info', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            })
-            .then(res => res.json())
-            .then(resp => {
-                if(resp.status === 'success') {
-                    document.getElementById('profileMsg').textContent = 'Cập nhật thành công!';
-                    setTimeout(() => { document.getElementById('profileMsg').textContent = ''; }, 2000);
+                } catch (error) {
+                    console.error('Failed to load profile data:', error);
                 }
-            });
-        });
+            },
 
-        // --- Navbar auto close on outside click (mobile UX) ---
-        document.addEventListener('click', function(event) {
-            const navbarCollapse = document.getElementById('navbarNav');
-            const navbarToggler = document.querySelector('.navbar-toggler');
-            // Nếu menu đang mở và click ngoài menu + ngoài nút toggler thì đóng menu
-            if (navbarCollapse.classList.contains('show')) {
-                if (
-                    !navbarCollapse.contains(event.target) &&
-                    !navbarToggler.contains(event.target)
-                ) {
-                    new bootstrap.Collapse(navbarCollapse).hide();
+            async saveProfile(e) {
+                e.preventDefault();
+                const data = {
+                    Name: document.getElementById('profileName').value,
+                    Job: document.getElementById('profileJob').value,
+                    Email: document.getElementById('profileEmail').value,
+                    Phone: document.getElementById('profilePhone').value,
+                    SNS: document.getElementById('profileSNS').value,
+                    SubSlogan: document.getElementById('profileSlogan').value
+                };
+                
+                try {
+                    const response = await API.updateCardInfo(data);
+                    if (response.status === 'success') {
+                        const msgElement = document.getElementById('profileMsg');
+                        msgElement.textContent = 'Cập nhật thành công!';
+                        setTimeout(() => { msgElement.textContent = ''; }, 2000);
+                    }
+                } catch (error) {
+                    console.error('Failed to save profile:', error);
+                    Utils.showFlashMessage('Failed to save profile', 'danger');
                 }
             }
+        };
+
+        // ===== AUTH MANAGER =====
+        const AuthManager = {
+            init() {
+                document.getElementById('logoutBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    new bootstrap.Modal(document.getElementById('confirmLogoutModal')).show();
+                });
+
+                document.getElementById('confirmLogoutBtn').onclick = async () => {
+                    try {
+                        await fetch('{{ url_for("logout") }}', {
+                            method: 'POST',
+                            headers: {'X-Requested-With': 'XMLHttpRequest'}
+                        });
+                        window.location.href = '{{ url_for("login") }}';
+                    } catch (error) {
+                        console.error('Logout failed:', error);
+                        window.location.href = '{{ url_for("login") }}'; // Fallback
+                    }
+                };
+            }
+        };
+
+        // ===== MAIN APPLICATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize all managers
+            MindfulnessTimer.init();
+            UISettingsManager.init();
+            ThemeManager.init();
+            LinksManager.init();
+            CardListManager.init();
+            ProfileManager.init();
+            AuthManager.init();
+
+            // Quote click to open mindfulness modal
+            document.querySelectorAll('.quote-content').forEach(el => {
+                el.addEventListener('click', () => {
+                    new bootstrap.Modal(document.getElementById('mindfulnessModal')).show();
+                });
+            });
+
+            // Navbar auto-close on outside click (mobile UX)
+            document.addEventListener('click', (event) => {
+                const navbarCollapse = document.getElementById('navbarNav');
+                const navbarToggler = document.querySelector('.navbar-toggler');
+                
+                if (navbarCollapse.classList.contains('show')) {
+                    if (!navbarCollapse.contains(event.target) && !navbarToggler.contains(event.target)) {
+                        new bootstrap.Collapse(navbarCollapse).hide();
+                    }
+                }
+            });
         });
     </script>
 </body>
