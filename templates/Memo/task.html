@@ -210,7 +210,65 @@
             white-space: pre-wrap;
             word-wrap: break-word;
             border: 1px solid #ddd;
+            transition: background-color 0.2s ease;
         }
+
+        /* Mobile-specific modal improvements */
+        @media (max-width: 768px) {
+        #viewMemoModal #viewMemoContent {
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        #viewMemoModal #viewMemoContent:hover {
+            background-color: #f8f9fa;
+        }
+        
+        #viewMemoModal #viewMemoContent:active {
+            background-color: #e9ecef;
+        }
+        
+        /* Remove the tap indicator since it's obvious now */
+        /* #viewMemoModal #viewMemoContent::after - commented out */
+        
+        /* Improve touch targets */
+        #viewMemoModal .btn {
+            min-height: 44px;
+            padding: 12px 20px;
+            font-size: 1rem;
+        }
+        
+        #viewMemoModal .modal-body {
+            padding: 1.5rem;
+        }
+        
+        #viewMemoModal .nav-tabs .nav-link {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+        
+        /* Better spacing for mobile */
+        #viewMemoModal .tab-content {
+            margin-top: 1rem;
+        }
+        
+        #viewMemoModal #viewMemoTitle {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+        
+        #viewMemoModal p {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+        }
+    }
 
         /* === CALENDAR MODAL RESPONSIVE === */
         #calendarModal .modal-dialog {
@@ -615,6 +673,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             <div class="modal-body">
                 <div id="calendar"></div>
+
             </div>
         </div>
     </div>
@@ -1091,7 +1150,20 @@ const api = {
                 return null;
             }
             
-            return await response.json();
+            const result = await response.json();
+            
+            // If the response includes updated note data, update local state
+            if (result?.note && options.method === 'POST') {
+                const noteIndex = state.notes.findIndex(n => n.id == result.note.id);
+                if (noteIndex !== -1) {
+                    state.notes[noteIndex] = result.note;
+                } else if (result.status === 'success' && url.includes('/add_note')) {
+                    // Add new note to state
+                    state.notes.push(result.note);
+                }
+            }
+            
+            return result;
         } catch (error) {
             ui.showFlashMessage('danger', error.message || 'Network error occurred');
             throw error;
@@ -1224,8 +1296,15 @@ const eventHandlers = {
 
 // === MANAGERS ===
 const noteManager = {
-    async openViewModal(noteId) {
+    // Add a property to track if we're in calendar mode
+    isInCalendarMode: false,
+    calendarInstance: null, // Store calendar instance
+
+    async openViewModal(noteId, fromCalendar = false) {
         try {
+            // Track if opened from calendar
+            this.isInCalendarMode = fromCalendar;
+            
             const data = await api.fetchNoteData(noteId);
             const note = data.note;
             
@@ -1240,7 +1319,47 @@ const noteManager = {
             });
             
             const contentEl = document.querySelector('#viewMemoContent');
-            if (contentEl) contentEl.innerHTML = utils.linkify(note.content || '');
+            if (contentEl) {
+                contentEl.innerHTML = utils.linkify(note.content || '');
+                
+                // Remove any existing click handlers
+                contentEl.onclick = null;
+                contentEl.removeEventListener('click', contentEl._editHandler);
+                
+                // Create new click handler
+                contentEl._editHandler = (e) => {
+                    // Don't trigger if clicking on a link
+                    if (e.target.tagName === 'A') return;
+                    
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Open edit modal and track calendar mode
+                    modals.viewMemo.hide();
+                    setTimeout(() => this.openEditModal(noteId, this.isInCalendarMode), 300);
+                };
+                
+                // Add click event listener
+                contentEl.addEventListener('click', contentEl._editHandler);
+                
+                // Add visual feedback for mobile
+                const isMobile = window.innerWidth <= 768;
+                if (isMobile) {
+                    contentEl.style.cursor = 'pointer';
+                    contentEl.title = 'Tap to edit';
+                    
+                    // Add touch feedback
+                    contentEl.addEventListener('touchstart', () => {
+                        contentEl.style.backgroundColor = '#f8f9fa';
+                    });
+                    
+                    contentEl.addEventListener('touchend', () => {
+                        setTimeout(() => {
+                            contentEl.style.backgroundColor = '';
+                        }, 150);
+                    });
+                }
+            }
             
             const shareEl = document.querySelector('#viewMemoShare');
             if (shareEl) {
@@ -1250,11 +1369,15 @@ const noteManager = {
             
             this.populateImages('#viewMemoImages', note.images, true);
             
-            contentEl.onclick = (e) => {
-                if (e.target.tagName === 'A') return;
-                modals.viewMemo.hide();
-                setTimeout(() => this.openEditModal(noteId), 300);
-            };
+            // Store noteId for edit button and track calendar mode
+            const editBtn = document.querySelector('#viewMemoModal .btn-primary');
+            if (editBtn) {
+                editBtn.dataset.noteId = noteId;
+                editBtn.onclick = () => {
+                    modals.viewMemo.hide();
+                    setTimeout(() => this.openEditModal(noteId, this.isInCalendarMode), 300);
+                };
+            }
             
             modals.viewMemo.show();
         } catch (error) {
@@ -1262,8 +1385,11 @@ const noteManager = {
         }
     },
 
-    async openEditModal(noteId) {
+    async openEditModal(noteId, fromCalendar = false) {
         try {
+            // Track if opened from calendar
+            this.isInCalendarMode = fromCalendar;
+            
             const data = await api.fetchNoteData(noteId);
             const note = data.note;
             
@@ -1297,6 +1423,73 @@ const noteManager = {
             modals.editMemo.show();
         } catch (error) {
             console.error('Error opening edit modal:', error);
+        }
+    },
+    async backToCalendar() {
+        if (this.isInCalendarMode) {
+            // Refresh data first
+            await this.refreshData();
+            
+            // Show calendar modal again
+            modals.calendar.show();
+            
+            // Update calendar to reflect any changes
+            setTimeout(() => {
+                renderCalendar();
+            }, 300);
+        } else {
+            // Reset calendar mode when not from calendar
+            this.isInCalendarMode = false;
+        }
+    },
+
+    // Add method to refresh data from server
+    async refreshData() {
+        try {
+            const response = await fetch('/task', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            
+            if (response.ok) {
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Parse updated data from script
+                const scriptContent = doc.querySelector('script')?.textContent;
+                if (scriptContent) {
+                    try {
+                        const notesMatch = scriptContent.match(/notes_data\s*=\s*(\[.*?\]);/s);
+                        const categoriesMatch = scriptContent.match(/categories\s*=\s*(\[.*?\]);/s);
+                        
+                        if (notesMatch) {
+                            state.notes = JSON.parse(notesMatch[1]);
+                        }
+                        if (categoriesMatch) {
+                            state.categories = JSON.parse(categoriesMatch[1]);
+                        }
+                    } catch (parseError) {
+                        console.warn('Could not parse updated data:', parseError);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+        }
+    },
+
+    // Add method to handle back to calendar
+    backToCalendar() {
+        if (this.isInCalendarMode) {
+            // Show calendar modal again
+            modals.calendar.show();
+            // Update calendar to reflect any changes
+            setTimeout(() => {
+                renderCalendar();
+            }, 300);
+        } else {
+            // Reset calendar mode when not from calendar
+            this.isInCalendarMode = false;
         }
     },
 
@@ -1532,6 +1725,11 @@ function renderCalendar() {
     const calendarEl = document.getElementById('calendar');
     if (!calendarEl) return;
     
+    // Destroy existing calendar if any
+    if (noteManager.calendarInstance) {
+        noteManager.calendarInstance.destroy();
+    }
+    
     calendarEl.innerHTML = '';
     
     const events = state.notes
@@ -1540,7 +1738,7 @@ function renderCalendar() {
             const category = state.categories.find(c => c.id === note.category_id);
             return {
                 id: String(note.id),
-                title: note.title || 'Untitled', // Show note title instead of category
+                title: note.title || 'Untitled',
                 start: note.due_date,
                 backgroundColor: category?.color || '#0d6efd',
                 borderColor: category?.color || '#0d6efd',
@@ -1614,29 +1812,8 @@ function renderCalendar() {
         },
         
         eventClick: info => {
-            // Close any existing modal first
-            const existingModals = document.querySelectorAll('.modal.show');
-            existingModals.forEach(modal => {
-                const bsModal = bootstrap.Modal.getInstance(modal);
-                if (bsModal) bsModal.hide();
-            });
-            
-            setTimeout(() => {
-                if (isMobile) {
-                    // On mobile, show a confirmation with more details
-                    const note = state.notes.find(n => n.id == info.event.id);
-                    if (note) {
-                        const message = `${note.title}\n\nCategory: ${info.event.extendedProps.categoryName}\nDue: ${utils.formatDateJST(note.due_date)}\n\nTap OK to view details`;
-                        if (confirm(message)) {
-                            modals.calendar.hide();
-                            setTimeout(() => noteManager.openViewModal(info.event.id), 300);
-                        }
-                    }
-                } else {
-                    modals.calendar.hide();
-                    setTimeout(() => noteManager.openViewModal(info.event.id), 300);
-                }
-            }, 100);
+            // DON'T close calendar modal - just open view modal on top
+            noteManager.openViewModal(info.event.id, true); // Pass true to indicate from calendar
         },
         
         eventDidMount: info => {
@@ -1689,6 +1866,8 @@ function renderCalendar() {
     });
     
     calendar.render();
+    // Store calendar instance
+    noteManager.calendarInstance = calendar;
     
     // Add mobile-specific event listeners
     if (isMobile) {
@@ -1776,26 +1955,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (form) form.addEventListener('submit', handler);
     };
     
-    setupFormHandler(SELECTORS.forms.addMemo, async (e) => {
-        e.preventDefault();
-        try {
-            const formData = await api.prepareFormData(e.target, false, state.selectedFilesAdd);
-            const data = await api.request('{{ url_for("add_note") }}', {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (data?.status === 'success') {
-                modals.addMemo.hide();
-                noteManager.updateSearch();
-            } else {
-                ui.showFlashMessage('danger', data?.message || 'Failed to add memo');
-            }
-        } catch (error) {
-            ui.showFlashMessage('danger', 'Error adding memo');
-        }
-    });
-    
     setupFormHandler(SELECTORS.forms.editMemo, async (e) => {
         e.preventDefault();
         const noteId = e.target.querySelector('#editMemoId')?.value;
@@ -1810,8 +1969,26 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data?.status === 'success') {
                 modals.editMemo.hide();
-                noteManager.updateSearch();
-                ui.showFlashMessage('success', 'Memo updated successfully');
+                
+                // Update local state with new data
+                const noteIndex = state.notes.findIndex(n => n.id == noteId);
+                if (noteIndex !== -1 && data.note) {
+                    state.notes[noteIndex] = data.note;
+                }
+                
+                // Check if we should go back to calendar or main view
+                if (noteManager.isInCalendarMode) {
+                    ui.showFlashMessage('success', 'Memo updated successfully');
+                    
+                    // Refresh calendar data and re-render
+                    await noteManager.refreshData();
+                    setTimeout(() => {
+                        noteManager.backToCalendar();
+                    }, 300);
+                } else {
+                    noteManager.updateSearch();
+                    ui.showFlashMessage('success', 'Memo updated successfully');
+                }
             } else {
                 ui.showFlashMessage('danger', data?.message || 'Failed to update memo');
             }
@@ -1819,6 +1996,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ui.showFlashMessage('danger', 'Error updating memo');
         }
     });
+    
     
     setupFormHandler(SELECTORS.forms.addCategory, async (e) => {
         e.preventDefault();
@@ -1899,11 +2077,66 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
+
     // Setup calendar modal
     const calendarModal = document.getElementById('calendarModal');
     if (calendarModal) {
         calendarModal.addEventListener('show.bs.modal', cleanBackdrops);
         calendarModal.addEventListener('shown.bs.modal', renderCalendar);
+        
+        // Add event listener for when calendar modal is closed
+        calendarModal.addEventListener('hidden.bs.modal', async () => {
+            cleanBackdrops();
+            
+            // Reset calendar mode
+            noteManager.isInCalendarMode = false;
+            
+            // Refresh main screen data when calendar is closed
+            try {
+                await noteManager.refreshData();
+                noteManager.updateSearch(); // Refresh the main view
+                ui.showFlashMessage('info', 'Data refreshed');
+            } catch (error) {
+                console.error('Error refreshing main screen:', error);
+            }
+        });
+    }
+
+    // Setup modal event listeners
+    const viewMemoModal = document.getElementById('viewMemoModal');
+    if (viewMemoModal) {
+        viewMemoModal.addEventListener('hidden.bs.modal', () => {
+            cleanBackdrops();
+            // If opened from calendar, go back to calendar
+            if (noteManager.isInCalendarMode) {
+                setTimeout(() => {
+                    noteManager.backToCalendar();
+                }, 300);
+            }
+        });
+    }
+
+    const editMemoModal = document.getElementById('editMemoModal');
+    if (editMemoModal) {
+        editMemoModal.addEventListener('hidden.bs.modal', () => {
+            cleanBackdrops();
+            // Reset state when edit modal is closed
+            const form = document.querySelector(SELECTORS.forms.editMemo);
+            if (form) {
+                form.reset();
+                state.selectedFilesEdit = [];
+                state.existingImagesEdit = [];
+                const preview = document.querySelector(SELECTORS.containers.editImagePreview);
+                if (preview) preview.innerHTML = '';
+            }
+            
+            // If opened from calendar and not submitted, go back to calendar
+            if (noteManager.isInCalendarMode) {
+                setTimeout(() => {
+                    noteManager.backToCalendar();
+                }, 300);
+            }
+        });
     }
     
     // Initialize UI
@@ -1912,9 +2145,10 @@ document.addEventListener('DOMContentLoaded', () => {
     api.updateDbSize();
     ui.highlightDueDates();
     
+
     // Make functions globally available
-    window.openViewMemoModal = noteManager.openViewModal.bind(noteManager);
-    window.openEditMemoModal = noteManager.openEditModal.bind(noteManager);
+    window.openViewMemoModal = (noteId) => noteManager.openViewModal(noteId, false); // Default not from calendar
+    window.openEditMemoModal = (noteId) => noteManager.openEditModal(noteId, false); // Default not from calendar
 });
 </script>
 {% endblock %}
