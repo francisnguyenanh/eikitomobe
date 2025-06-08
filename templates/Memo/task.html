@@ -212,12 +212,13 @@
             border: 1px solid #ddd;
         }
 
+        /* === CALENDAR MODAL RESPONSIVE === */
         #calendarModal .modal-dialog {
-            width: 90vw;
-            max-width: 90vw;
+            width: 95vw;
+            max-width: 95vw;
             height: 90vh;
             max-height: 90vh;
-            margin: auto;
+            margin: 5vh auto;
         }
 
         #calendarModal .modal-content {
@@ -229,12 +230,198 @@
 
         #calendarModal .modal-body {
             flex: 1 1 auto;
-            overflow: auto;
+            overflow: hidden;
+            padding: 0.5rem;
         }
 
         #calendar {
-            height: 80vh;
+            height: calc(90vh - 60px);
             min-height: 400px;
+        }
+
+        /* Mobile-specific calendar adjustments */
+        @media (max-width: 768px) {
+            #calendarModal .modal-dialog {
+                width: 100vw;
+                max-width: 100vw;
+                height: 100vh;
+                max-height: 100vh;
+                margin: 0;
+                border-radius: 0;
+            }
+
+            #calendarModal .modal-content {
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+                border: none;
+                position: relative;
+            }
+
+            #calendarModal .modal-body {
+                padding: 0.25rem;
+                overflow: hidden;
+                padding-top: 50px; /* Space for close button */
+            }
+
+            #calendar {
+                height: calc(100vh - 60px);
+                min-height: calc(100vh - 60px);
+            }
+
+            /* Enhanced close button for mobile */
+            #calendarModal .btn-close {
+                position: fixed;
+                top: 15px;
+                right: 15px;
+                z-index: 1070;
+                background: rgba(0,0,0,0.8);
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid rgba(255,255,255,0.3);
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            }
+
+            #calendarModal .btn-close:hover,
+            #calendarModal .btn-close:focus {
+                background: rgba(0,0,0,0.9);
+                border-color: rgba(255,255,255,0.5);
+                transform: scale(1.1);
+            }
+
+            #calendarModal .btn-close::before {
+                content: '×';
+                color: white;
+                font-size: 24px;
+                font-weight: bold;
+                line-height: 1;
+            }
+
+            /* Additional mobile close button */
+            #calendarModal .mobile-close-btn {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 1070;
+                background: #dc3545;
+                color: white;
+                border: none;
+                border-radius: 25px;
+                padding: 12px 24px;
+                font-size: 16px;
+                font-weight: 500;
+                box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            #calendarModal .mobile-close-btn:hover,
+            #calendarModal .mobile-close-btn:active {
+                background: #c82333;
+                transform: translateX(-50%) scale(1.05);
+                box-shadow: 0 6px 20px rgba(220, 53, 69, 0.6);
+            }
+
+            /* FullCalendar mobile optimizations */
+            .fc .fc-toolbar {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .fc .fc-toolbar-chunk {
+                display: flex;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
+
+            .fc .fc-button-group {
+                margin: 0 0.25rem;
+            }
+
+            .fc .fc-button {
+                font-size: 0.8rem;
+                padding: 0.25rem 0.5rem;
+            }
+
+            .fc .fc-toolbar-title {
+                font-size: 1.1rem;
+                margin: 0.25rem 0;
+            }
+
+            /* Mobile day grid adjustments */
+            .fc .fc-daygrid-day {
+                min-height: 60px;
+            }
+
+            .fc .fc-daygrid-day-number {
+                font-size: 0.9rem;
+                padding: 0.25rem;
+            }
+
+            .fc .fc-event {
+                font-size: 0.75rem;
+                margin: 1px 0;
+                padding: 1px 3px;
+            }
+
+            .fc .fc-event-title {
+                font-weight: normal;
+            }
+
+            /* Mobile week/day view adjustments */
+            .fc .fc-timegrid-slot {
+                height: 2em;
+            }
+
+            .fc .fc-timegrid-slot-label {
+                font-size: 0.8rem;
+            }
+
+            /* Mobile list view adjustments */
+            .fc .fc-list-event {
+                font-size: 0.9rem;
+            }
+
+            .fc .fc-list-event-time {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Tablet adjustments */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            #calendarModal .modal-dialog {
+                width: 90vw;
+                max-width: 90vw;
+                height: 85vh;
+                max-height: 85vh;
+            }
+
+            #calendarModal .modal-content {
+                height: 85vh;
+                max-height: 85vh;
+            }
+
+            #calendar {
+                height: calc(85vh - 50px);
+            }
+
+            .fc .fc-button {
+                font-size: 0.9rem;
+                padding: 0.375rem 0.75rem;
+            }
+
+            .fc .fc-toolbar-title {
+                font-size: 1.25rem;
+            }
         }
 
         /* === IMAGE COMPONENTS === */
@@ -423,14 +610,15 @@
     <!-- Modals -->
     <!-- Calendar Modal -->
     <div class="modal fade" id="calendarModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <div id="calendar"></div>
-                </div>
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-body">
+                <div id="calendar"></div>
             </div>
         </div>
     </div>
+</div>
 
         <!-- Add Memo Modal -->
     {% if categories %}
@@ -1352,42 +1540,206 @@ function renderCalendar() {
             const category = state.categories.find(c => c.id === note.category_id);
             return {
                 id: String(note.id),
-                title: category?.name || 'No Category',
+                title: note.title || 'Untitled', // Show note title instead of category
                 start: note.due_date,
                 backgroundColor: category?.color || '#0d6efd',
                 borderColor: category?.color || '#0d6efd',
                 textColor: '#fff',
                 extendedProps: {
                     noteId: note.id,
-                    content: note.content?.substring(0, 50) + (note.content?.length > 50 ? '...' : '')
+                    content: note.content?.substring(0, 50) + (note.content?.length > 50 ? '...' : ''),
+                    categoryName: category?.name || 'No Category'
                 }
             };
         });
     
+    // Detect device type
+    const isMobile = window.innerWidth <= 768;
+    const isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
+    
     const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
+        initialView: isMobile ? 'listMonth' : 'dayGridMonth',
         headerToolbar: {
-            left: 'prev,next today',
+            left: isMobile ? 'prev,next' : 'prev,next today',
             center: 'title',
-            right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+            right: isMobile ? 'dayGridMonth,timeGridWeek,timeGridDay,listMonth' : 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
         },
         themeSystem: 'bootstrap5',
         events: events,
-        displayEventTime: false,
-        eventClick: info => noteManager.openViewModal(info.event.id),
+        displayEventTime: true,
+        height: 'auto',
+        aspectRatio: isMobile ? 0.8 : (isTablet ? 1.35 : 1.6),
+        
+        // Mobile-specific settings
+        dayMaxEvents: isMobile ? 1 : 3,
+        moreLinkClick: 'popover',
+        eventTextColor: '#fff',
+        
+        // Touch/mobile interaction
+        selectable: true,
+        selectMirror: true,
+        
+        // Mobile-optimized view configurations
+        views: {
+            dayGridMonth: {
+                dayMaxEvents: isMobile ? 1 : 3,
+                eventDisplay: 'block',
+                dayHeaderFormat: isMobile ? { weekday: 'short' } : { weekday: 'short', day: 'numeric' }
+            },
+            timeGridWeek: {
+                slotMinTime: '06:00:00',
+                slotMaxTime: '23:00:00',
+                slotDuration: isMobile ? '01:00:00' : '00:30:00',
+                slotLabelInterval: isMobile ? '02:00:00' : '01:00:00',
+                allDaySlot: true,
+                nowIndicator: true,
+                dayHeaderFormat: isMobile ? { weekday: 'short', day: 'numeric' } : { weekday: 'short', month: 'short', day: 'numeric' },
+                eventMinHeight: isMobile ? 20 : 30
+            },
+            timeGridDay: {
+                slotMinTime: '06:00:00',
+                slotMaxTime: '23:00:00',
+                slotDuration: isMobile ? '01:00:00' : '00:30:00',
+                slotLabelInterval: isMobile ? '01:00:00' : '00:30:00',
+                allDaySlot: true,
+                nowIndicator: true,
+                dayHeaderFormat: { weekday: 'long', month: 'short', day: 'numeric' },
+                eventMinHeight: isMobile ? 25 : 35
+            },
+            listMonth: {
+                listDayFormat: isMobile ? { weekday: 'short', day: 'numeric' } : { weekday: 'long', month: 'short', day: 'numeric' },
+                listDaySideFormat: false,
+                noEventsContent: 'No tasks scheduled for this month'
+            }
+        },
+        
+        eventClick: info => {
+            // Close any existing modal first
+            const existingModals = document.querySelectorAll('.modal.show');
+            existingModals.forEach(modal => {
+                const bsModal = bootstrap.Modal.getInstance(modal);
+                if (bsModal) bsModal.hide();
+            });
+            
+            setTimeout(() => {
+                if (isMobile) {
+                    // On mobile, show a confirmation with more details
+                    const note = state.notes.find(n => n.id == info.event.id);
+                    if (note) {
+                        const message = `${note.title}\n\nCategory: ${info.event.extendedProps.categoryName}\nDue: ${utils.formatDateJST(note.due_date)}\n\nTap OK to view details`;
+                        if (confirm(message)) {
+                            modals.calendar.hide();
+                            setTimeout(() => noteManager.openViewModal(info.event.id), 300);
+                        }
+                    }
+                } else {
+                    modals.calendar.hide();
+                    setTimeout(() => noteManager.openViewModal(info.event.id), 300);
+                }
+            }, 100);
+        },
+        
         eventDidMount: info => {
-            if (info.event.extendedProps?.content) {
+            // Add tooltips for desktop, enhance mobile display
+            if (!isMobile && info.event.extendedProps?.content) {
                 new bootstrap.Tooltip(info.el, {
-                    title: info.event.extendedProps.content,
+                    title: `${info.event.extendedProps.categoryName}: ${info.event.extendedProps.content}`,
                     placement: 'top',
                     trigger: 'hover',
                     container: 'body'
                 });
             }
+            
+            // Enhanced mobile event styling
+            if (isMobile) {
+                info.el.style.fontSize = '0.75rem';
+                info.el.style.padding = '1px 3px';
+                info.el.style.margin = '1px 0';
+                info.el.style.borderRadius = '3px';
+                
+                // Add category info for mobile
+                const titleEl = info.el.querySelector('.fc-event-title');
+                if (titleEl && info.event.extendedProps?.categoryName) {
+                    titleEl.innerHTML = `<small style="opacity: 0.8;">${info.event.extendedProps.categoryName}:</small><br>${info.event.title}`;
+                }
+            }
+        },
+        
+        // Responsive view switching
+        windowResize: function() {
+            const newIsMobile = window.innerWidth <= 768;
+            if (newIsMobile !== isMobile) {
+                // Reload calendar with new mobile settings
+                renderCalendar();
+            }
+        },
+        
+        // Custom event rendering for better mobile experience
+        eventContent: function(arg) {
+            if (isMobile) {
+                return {
+                    html: `<div style="font-size: 0.7rem; line-height: 1.1;">
+                            <div style="font-weight: bold; margin-bottom: 1px;">${arg.event.title}</div>
+                            <div style="opacity: 0.8; font-size: 0.65rem;">${arg.event.extendedProps.categoryName}</div>
+                           </div>`
+                };
+            }
+            return false; // Use default rendering for desktop
         }
     });
     
     calendar.render();
+    
+    // Add mobile-specific event listeners
+    if (isMobile) {
+        // Enhanced swipe gestures for navigation
+        let startX = null;
+        let startY = null;
+        
+        calendarEl.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+        
+        calendarEl.addEventListener('touchend', (e) => {
+            if (!startX || !startY) return;
+            
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const diffX = startX - endX;
+            const diffY = startY - endY;
+            
+            // Only trigger if horizontal swipe is dominant and significant
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 80) {
+                if (diffX > 0) {
+                    calendar.next(); // Swipe left = next
+                } else {
+                    calendar.prev(); // Swipe right = previous
+                }
+            }
+            
+            startX = null;
+            startY = null;
+        });
+        
+        // Add double tap to change view on mobile
+        let lastTap = 0;
+        calendarEl.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            
+            if (tapLength < 500 && tapLength > 0) {
+                // Double tap detected - cycle through views
+                const currentView = calendar.view.type;
+                const mobileViews = ['listMonth', 'dayGridMonth', 'timeGridWeek', 'timeGridDay'];
+                const currentIndex = mobileViews.indexOf(currentView);
+                const nextIndex = (currentIndex + 1) % mobileViews.length;
+                calendar.changeView(mobileViews[nextIndex]);
+            }
+            
+            lastTap = currentTime;
+        });
+    }
 }
 
 // === INITIALIZATION ===
