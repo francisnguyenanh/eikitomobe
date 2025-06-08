@@ -273,6 +273,58 @@
         height: 24px;
     }
 }
+.week-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background: var(--bg-color);
+    border-radius: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile responsive - cập nhật phần mobile */
+@media (max-width: 768px) {
+    .day-column {
+        min-height: 300px;
+    }
+    
+    .week-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--bg-color);
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        margin-bottom: 1rem;
+    }
+    
+    .week-navigation {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    /* Make delete button more prominent on mobile */
+    .todo-action-btn.delete {
+        width: 24px;
+        height: 24px;
+    }
+    
+    /* Ensure container has proper spacing for sticky header */
+    .container {
+        padding-top: 0;
+    }
+    
+    .todo-calendar {
+        padding-top: 0;
+    }
+}
 </style>
 
 <div class="container mt-4">
