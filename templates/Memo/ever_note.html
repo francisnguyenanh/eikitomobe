@@ -253,6 +253,9 @@
         transition: height 0.1s ease;
     }
 }
+.evernote-editor input[type="checkbox"] {
+    cursor: pointer;
+}
 </style>
 <div class="evernote-layout d-flex">
     <!-- Sidebar -->
@@ -375,6 +378,37 @@ function syncCheckboxStates(editor) {
         }
     });
 }
+let checklistActive = false;
+
+// 2. Sửa hàm toggleChecklist để bật/tắt trạng thái
+function toggleChecklist(event, btn) {
+    event.preventDefault();
+    checklistActive = !checklistActive;
+    btn.classList.toggle('active', checklistActive);
+    btn.classList.add('effect-click');
+    setTimeout(() => {
+        btn.classList.remove('effect-click');
+    }, 200);
+
+    // Nếu vừa bật, chèn checkbox vào vị trí hiện tại
+    if (checklistActive) {
+        document.execCommand('insertHTML', false, '<input type="checkbox" style="transform:scale(1.2);margin-right:6px;">');
+    }
+    document.getElementById('evernote-editor').focus();
+}
+document.getElementById('evernote-editor').addEventListener('keydown', function(e) {
+    if (checklistActive && e.key === 'Enter') {
+        e.preventDefault();
+        // Chèn dòng mới với checkbox
+        document.execCommand('insertHTML', false, '<br><input type="checkbox" style="transform:scale(1.2);margin-right:6px;">');
+        // Đảm bảo con trỏ sau checkbox
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            range.collapse(false);
+        }
+    }
+});
 // Lấy danh sách ghi chú từ API
 async function fetchNotes() {
     const res = await fetch('/api/evernote_notes');
@@ -681,15 +715,6 @@ document.getElementById('evernote-editor').addEventListener('mouseup', updateFor
 document.getElementById('evernote-editor').addEventListener('focus', updateFormatButtons);
 document.getElementById('evernote-editor').addEventListener('blur', updateFormatButtons);
 
-function toggleChecklist(event, btn) {
-    event.preventDefault();
-    document.execCommand('insertHTML', false, '<input type="checkbox" style="transform:scale(1.2);margin-right:6px;">');
-    document.getElementById('evernote-editor').focus();
-    btn.classList.add('effect-click');
-    setTimeout(() => {
-        btn.classList.remove('effect-click');
-    }, 200);
-}
 let searchResults = [];
 let currentSearchIndex = -1;
 
