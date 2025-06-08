@@ -256,61 +256,7 @@
 .evernote-editor input[type="checkbox"] {
     cursor: pointer;
 }
-/* Cập nhật CSS cho evernote-toolbar */
-.evernote-toolbar {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: var(--card-bg, #fff);
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #e0e0e0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
 
-/* Mobile responsive cho evernote-toolbar */
-@media (max-width: 991.98px) {
-    .evernote-toolbar {
-        position: sticky;
-        top: 0;
-        z-index: 100;
-        background: var(--card-bg, #fff);
-        padding: 0.5rem 0;
-        border-bottom: 1px solid #e0e0e0;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-        flex-wrap: wrap;
-        gap: 0.25rem;
-        row-gap: 0.25rem;
-    }
-    
-    .evernote-toolbar > * {
-        margin-bottom: 0.25rem;
-        flex: 0 0 auto;
-    }
-    
-    .evernote-toolbar input,
-    .evernote-toolbar select,
-    .evernote-toolbar button {
-        font-size: 0.95rem;
-        padding: 0.25rem 0.5rem;
-        min-width: 32px;
-        max-width: 100%;
-    }
-    
-    .evernote-toolbar .form-control {
-        min-width: 120px;
-        max-width: 100%;
-    }
-    
-    /* Đảm bảo editor có thể cuộn */
-    .evernote-editor {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch; /* Hỗ trợ cuộn mượt trên iOS */
-        transition: height 0.1s ease;
-    }
-}
 </style>
 <div class="evernote-layout d-flex">
     <!-- Sidebar -->
