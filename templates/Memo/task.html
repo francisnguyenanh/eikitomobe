@@ -1296,14 +1296,19 @@ const eventHandlers = {
 
 // === MANAGERS ===
 const noteManager = {
-    // Add a property to track if we're in calendar mode
+    // Add properties to track calendar state
     isInCalendarMode: false,
-    calendarInstance: null, // Store calendar instance
+    calendarInstance: null,
+    currentCalendarView: null, // Store current view type
 
     async openViewModal(noteId, fromCalendar = false) {
         try {
-            // Track if opened from calendar
+            // Track if opened from calendar and save current view
             this.isInCalendarMode = fromCalendar;
+            if (fromCalendar && this.calendarInstance) {
+                this.currentCalendarView = this.calendarInstance.view.type;
+                console.log('Saved calendar view:', this.currentCalendarView); // Debug log
+            }
             
             const data = await api.fetchNoteData(noteId);
             const note = data.note;
@@ -1387,8 +1392,9 @@ const noteManager = {
 
     async openEditModal(noteId, fromCalendar = false) {
         try {
-            // Track if opened from calendar
+            // Track if opened from calendar - preserve current view
             this.isInCalendarMode = fromCalendar;
+            console.log('Edit modal opened, calendar mode:', this.isInCalendarMode, 'view:', this.currentCalendarView); // Debug log
             
             const data = await api.fetchNoteData(noteId);
             const note = data.note;
@@ -1425,21 +1431,39 @@ const noteManager = {
             console.error('Error opening edit modal:', error);
         }
     },
+
+    // XÓA HÀM backToCalendar() THỨ 2 và chỉ giữ lại hàm này
     async backToCalendar() {
         if (this.isInCalendarMode) {
+            console.log('Returning to calendar, restoring view:', this.currentCalendarView); // Debug log
+            
             // Refresh data first
             await this.refreshData();
             
             // Show calendar modal again
             modals.calendar.show();
             
-            // Update calendar to reflect any changes
+            // Update calendar and restore previous view
             setTimeout(() => {
                 renderCalendar();
+                
+                // Restore the previous view after calendar is rendered
+                if (this.currentCalendarView && this.calendarInstance) {
+                    console.log('Restoring calendar view to:', this.currentCalendarView); // Debug log
+                    setTimeout(() => {
+                        try {
+                            this.calendarInstance.changeView(this.currentCalendarView);
+                            console.log('Successfully restored view to:', this.currentCalendarView); // Debug log
+                        } catch (error) {
+                            console.error('Error restoring calendar view:', error);
+                        }
+                    }, 500); // Increased timeout to ensure calendar is fully rendered
+                }
             }, 300);
         } else {
             // Reset calendar mode when not from calendar
             this.isInCalendarMode = false;
+            this.currentCalendarView = null;
         }
     },
 
@@ -1475,21 +1499,6 @@ const noteManager = {
             }
         } catch (error) {
             console.error('Error refreshing data:', error);
-        }
-    },
-
-    // Add method to handle back to calendar
-    backToCalendar() {
-        if (this.isInCalendarMode) {
-            // Show calendar modal again
-            modals.calendar.show();
-            // Update calendar to reflect any changes
-            setTimeout(() => {
-                renderCalendar();
-            }, 300);
-        } else {
-            // Reset calendar mode when not from calendar
-            this.isInCalendarMode = false;
         }
     },
 
@@ -1956,46 +1965,47 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     setupFormHandler(SELECTORS.forms.editMemo, async (e) => {
-        e.preventDefault();
-        const noteId = e.target.querySelector('#editMemoId')?.value;
-        if (!noteId) return;
+    e.preventDefault();
+    const noteId = e.target.querySelector('#editMemoId')?.value;
+    if (!noteId) return;
+    
+    try {
+        const formData = await api.prepareFormData(e.target, true, state.selectedFilesEdit, state.existingImagesEdit);
+        const data = await api.request(`/edit_note/${noteId}`, {
+            method: 'POST',
+            body: formData
+        });
         
-        try {
-            const formData = await api.prepareFormData(e.target, true, state.selectedFilesEdit, state.existingImagesEdit);
-            const data = await api.request(`/edit_note/${noteId}`, {
-                method: 'POST',
-                body: formData
-            });
+        if (data?.status === 'success') {
+            modals.editMemo.hide();
             
-            if (data?.status === 'success') {
-                modals.editMemo.hide();
-                
-                // Update local state with new data
-                const noteIndex = state.notes.findIndex(n => n.id == noteId);
-                if (noteIndex !== -1 && data.note) {
-                    state.notes[noteIndex] = data.note;
-                }
-                
-                // Check if we should go back to calendar or main view
-                if (noteManager.isInCalendarMode) {
-                    ui.showFlashMessage('success', 'Memo updated successfully');
-                    
-                    // Refresh calendar data and re-render
-                    await noteManager.refreshData();
-                    setTimeout(() => {
-                        noteManager.backToCalendar();
-                    }, 300);
-                } else {
-                    noteManager.updateSearch();
-                    ui.showFlashMessage('success', 'Memo updated successfully');
-                }
-            } else {
-                ui.showFlashMessage('danger', data?.message || 'Failed to update memo');
+            // Update local state with new data
+            const noteIndex = state.notes.findIndex(n => n.id == noteId);
+            if (noteIndex !== -1 && data.note) {
+                state.notes[noteIndex] = data.note;
             }
-        } catch (error) {
-            ui.showFlashMessage('danger', 'Error updating memo');
+            
+            // Check if we should go back to calendar or main view
+            if (noteManager.isInCalendarMode) {
+                console.log('Form submitted, returning to calendar with view:', noteManager.currentCalendarView); // Debug log
+                ui.showFlashMessage('success', 'Memo updated successfully');
+                
+                // Refresh calendar data and re-render with previous view
+                setTimeout(async () => {
+                    await noteManager.refreshData();
+                    noteManager.backToCalendar();
+                }, 300);
+            } else {
+                noteManager.updateSearch();
+                ui.showFlashMessage('success', 'Memo updated successfully');
+            }
+        } else {
+            ui.showFlashMessage('danger', data?.message || 'Failed to update memo');
         }
-    });
+    } catch (error) {
+        ui.showFlashMessage('danger', 'Error updating memo');
+    }
+});
     
     
     setupFormHandler(SELECTORS.forms.addCategory, async (e) => {
@@ -2080,16 +2090,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup calendar modal
     const calendarModal = document.getElementById('calendarModal');
-    if (calendarModal) {
-        calendarModal.addEventListener('show.bs.modal', cleanBackdrops);
-        calendarModal.addEventListener('shown.bs.modal', renderCalendar);
+if (calendarModal) {
+    calendarModal.addEventListener('show.bs.modal', cleanBackdrops);
+    calendarModal.addEventListener('shown.bs.modal', renderCalendar);
+    
+    // Add event listener for when calendar modal is closed
+    calendarModal.addEventListener('hidden.bs.modal', async () => {
+        cleanBackdrops();
         
-        // Add event listener for when calendar modal is closed
-        calendarModal.addEventListener('hidden.bs.modal', async () => {
-            cleanBackdrops();
-            
-            // Reset calendar mode
-            noteManager.isInCalendarMode = false;
+        // Reset calendar mode and view state ONLY when modal is truly closed
+        if (!noteManager.isInCalendarMode) {
+            console.log('Calendar modal closed, resetting state'); // Debug log
+            noteManager.currentCalendarView = null;
             
             // Refresh main screen data when calendar is closed
             try {
@@ -2099,15 +2111,27 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('Error refreshing main screen:', error);
             }
-        });
-    }
+        } else {
+            console.log('Calendar modal hidden but still in calendar mode'); // Debug log
+        }
+        
+        // Always reset when truly closing calendar
+        setTimeout(() => {
+            if (!document.getElementById('calendarModal').classList.contains('show')) {
+                noteManager.isInCalendarMode = false;
+                noteManager.currentCalendarView = null;
+                console.log('Calendar truly closed, state reset'); // Debug log
+            }
+        }, 500);
+    });
+}
 
     // Setup modal event listeners
     const viewMemoModal = document.getElementById('viewMemoModal');
     if (viewMemoModal) {
         viewMemoModal.addEventListener('hidden.bs.modal', () => {
             cleanBackdrops();
-            // If opened from calendar, go back to calendar
+            // If opened from calendar, go back to calendar with preserved view
             if (noteManager.isInCalendarMode) {
                 setTimeout(() => {
                     noteManager.backToCalendar();
@@ -2130,7 +2154,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (preview) preview.innerHTML = '';
             }
             
-            // If opened from calendar and not submitted, go back to calendar
+            // If opened from calendar and not submitted, go back to calendar with preserved view
             if (noteManager.isInCalendarMode) {
                 setTimeout(() => {
                     noteManager.backToCalendar();
