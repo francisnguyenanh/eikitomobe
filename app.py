@@ -62,13 +62,27 @@ login_manager.login_view = 'login'
 logging.basicConfig(level=logging.DEBUG)
 
 def load_config():
+    import os
+    if not os.path.exists('config.txt'):
+        with open('config.txt', 'w', encoding='utf-8') as f:
+            json.dump({"theme": "light"}, f, ensure_ascii=False, indent=2)
+        return {"theme": "light"}
     with open('config.txt', encoding='utf-8') as f:
-        return json.load(f)
+        config = json.load(f)
+    if "theme" not in config:
+        config["theme"] = "light"
+        with open('config.txt', 'w', encoding='utf-8') as f:
+            json.dump(config, f, ensure_ascii=False, indent=2)
+    return config
 
 def save_config(config):
     with open('config.txt', 'w', encoding='utf-8') as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
         
+def get_theme():
+    config = load_config()
+    return config.get('theme', 'light')
+
 # User model
 class User(UserMixin):
     def __init__(self):
@@ -126,6 +140,7 @@ class EvernoteNote(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)  # Sửa ở đây
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)  # Sửa ở đây
     
+
     
 # Khởi tạo DB Diary và slogan mặc định nếu chưa có
 with diary_app.app_context():
@@ -165,10 +180,14 @@ quote_app.jinja_env.filters['nl2br'] = nl2br
 
     
 @app.route('/set_theme', methods=['POST'])
+@login_required
 def set_theme():
     theme = request.json.get('theme')
     if theme:
         session['theme'] = theme
+        config = load_config()
+        config['theme'] = theme
+        save_config(config)
         return jsonify({'status': 'success'})
     return jsonify({'status': 'error', 'message': 'No theme provided'}), 400
 
@@ -886,6 +905,8 @@ def login():
         if verify_password(password):
             user = User()
             login_user(user)
+            # Lấy theme từ config và lưu vào session
+            session['theme'] = get_theme()
             return redirect(url_for('home'))
         flash('Invalid password', 'danger')
     return render_template('login.html')
@@ -1402,8 +1423,10 @@ def game_math():
 
 # app.py
 @app.route('/ever_note')
+@login_required
 def ever_note():
-    return render_template('Memo/ever_note.html')
+    theme = session.get('theme', 'light')
+    return render_template('Memo/ever_note.html', theme=theme)
 
 # Thêm mới ghi chú Evernote
 @app.route('/api/evernote_notes', methods=['POST'])

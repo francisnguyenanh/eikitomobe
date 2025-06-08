@@ -365,6 +365,16 @@ let notes = [];
 let currentId = null;
 let pendingDelete = false;
 
+function syncCheckboxStates(editor) {
+    const checkboxes = editor.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            cb.setAttribute('checked', 'checked');
+        } else {
+            cb.removeAttribute('checked');
+        }
+    });
+}
 // Lấy danh sách ghi chú từ API
 async function fetchNotes() {
     const res = await fetch('/api/evernote_notes');
@@ -876,6 +886,8 @@ let lastSavedContent = "";
 // Hàm kiểm tra thay đổi và autosave
 function autoSaveNote() {
     const title = document.getElementById('note-title').value.trim();
+    const editor = document.getElementById('evernote-editor');
+    syncCheckboxStates(editor); // <-- Gọi ở đây
     const content = document.getElementById('evernote-editor').innerHTML;
     if (title !== lastSavedTitle || content !== lastSavedContent) {
         saveNote();
@@ -890,6 +902,8 @@ setInterval(autoSaveNote, 5000);
 // Sau khi lưu thành công, cập nhật lại giá trị đã lưu
 async function saveNote() {
     let title = document.getElementById('note-title').value.trim();
+    const editor = document.getElementById('evernote-editor');
+    syncCheckboxStates(editor); // <-- Gọi ở đây
     const content = document.getElementById('evernote-editor').innerHTML;
 
     // Nếu tiêu đề rỗng, tự động sinh tiêu đề theo định dạng Note_yyyy/mm/dd_HHMM
