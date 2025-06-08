@@ -2,61 +2,51 @@
 {% block title %}Evernote{% endblock %}
 {% block content %}
 <style>
+/* Sidebar styles */
 .evernote-sidebar {
     background: var(--card-bg, #f8f9fa);
     min-width: 220px;
     max-width: 260px;
-    height: 70vh;
+    min-height: calc(100vh - 120px);
     overflow-y: auto;
     padding: 0;
 }
+
 .evernote-sidebar .list-group-item {
     background: transparent;
     border: none;
     color: var(--text-color, #222);
     cursor: pointer;
 }
+
 .evernote-sidebar .list-group-item.active {
-    background:var(--bg-color, #e3f2fd); ;
+    background: var(--bg-color, #e3f2fd);
     color: #1976d2;
     font-weight: bold;
 }
+
+/* Main content styles */
 .evernote-main {
     flex: 1 1 0;
     padding: 0 1.5rem;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    height: 70vh;
+    min-height: calc(100vh - 120px);
 }
+
+/* Editor styles - loại bỏ overflow riêng */
 .evernote-editor {
     flex: 1 1 0;
     background: var(--bg-color, #fff);
     padding: 1rem;
     margin-top: 1rem;
-    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    min-height: 250px;
+    overflow: visible; /* Không có scroll riêng */
 }
-.evernote-toolbar {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-}
-@media (max-width: 900px) {
-    .evernote-layout {
-        flex-direction: column;
-    }
-    .evernote-sidebar {
-        max-width: 100vw;
-        min-width: 0;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid #e0e0e0;
-    }
-    .evernote-main {
-        padding: 0.5rem;
-        height: auto;
-    }
-}
+
 .evernote-editor[contenteditable="true"] {
     min-height: 250px;
     outline: none;
@@ -64,134 +54,47 @@
     background: var(--bg-color, #fff);
     color: var(--text-color, #222);
 }
-.evernote-toolbar .btn, .evernote-toolbar .form-select {
+
+/* Toolbar styles */
+.evernote-toolbar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--card-bg, #fff);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.evernote-toolbar .btn, 
+.evernote-toolbar .form-select {
     min-width: 36px;
     padding: 0.25rem 0.5rem;
 }
-@media (min-width: 992px) {
-    .container.mt-4 {
-        height: calc(100vh - 90px) !important;
-        min-height: calc(100vh - 90px) !important;
-        max-width: 100vw !important;
-        width: 100vw !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-    }
-}
+
+/* Layout styles */
 .evernote-layout {
-    height: 100%;
+    min-height: calc(100vh - 90px);
 }
+
+/* Font family */
+.evernote-editor, 
+.evernote-toolbar, 
+.evernote-sidebar, 
 .evernote-main {
-    flex: 1 1 0;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-width: 0;
-    padding: 0 1.5rem;
-}
-.evernote-editor {
-    flex: 1 1 0;
-    min-height: 0;
-    height: 100%;
-    max-height: 100%;
-    overflow-y: auto;
-    background: var(--bg-color, #fff);
-    padding: 1rem;
-    margin-top: 1rem;
-}
-.evernote-sidebar {
-    height: 100%;
-    min-height: 0;
-}
-@media (max-width: 991.98px) {
-    html, body {
-        height: 100%;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        overflow-x: hidden;
-    }
-    .container.mt-4 {
-        height: 100vh !important;
-        min-height: 100vh !important;
-        max-width: 100vw !important;
-        width: 100vw !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-    .evernote-layout {
-        flex-direction: column !important;
-        height: 100%;
-        min-height: 100%;
-        width: 100vw;
-        max-width: 100vw;
-    }
-    .evernote-sidebar {
-        max-width: 100vw;
-        min-width: 0;
-        width: 100vw;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid #e0e0e0;
-        flex-shrink: 0;
-    }
-    .evernote-main {
-        padding: 0.5rem;
-        height: 100%;
-        min-height: 0;
-        flex: 1 1 0;
-        display: flex;
-        flex-direction: column;
-        width: 100vw;
-        max-width: 100vw;
-    }
-    .evernote-editor {
-        flex: 1 1 0;
-        min-height: 0;
-        height: 100%;
-        max-height: 100%;
-        margin-top: 0.5rem;
-        padding: 0.5rem;
-        width: 100%;
-        box-sizing: border-box;
-    }
-}
-@media (max-width: 991.98px) {
-    #note-list.collapsed {
-        display: none !important;
-    }
-}
-@media (max-width: 991.98px) {
-    .evernote-toolbar {
-        flex-wrap: wrap;
-        gap: 0.25rem;
-        row-gap: 0.25rem;
-        padding: 0.25rem 0;
-    }
-    .evernote-toolbar > * {
-        margin-bottom: 0.25rem;
-        flex: 0 0 auto;
-    }
-    .evernote-toolbar input,
-    .evernote-toolbar select,
-    .evernote-toolbar button {
-        font-size: 0.95rem;
-        padding: 0.25rem 0.5rem;
-        min-width: 32px;
-        max-width: 100%;
-    }
-    .evernote-toolbar .form-control {
-        min-width: 120px;
-        max-width: 100%;
-    }
-}
-.evernote-editor, .evernote-toolbar, .evernote-sidebar, .evernote-main {
     font-family: "Segoe UI", "Helvetica Neue", Arial, "Noto Sans JP", "Noto Sans", "Meiryo", "Yu Gothic", "Tahoma", "sans-serif";
 }
+
+/* Editor links */
 .evernote-editor a {
     cursor: pointer;
     text-decoration: underline;
 }
+
+/* Sidebar collapse/expand */
 .evernote-sidebar.collapsed {
     min-width: 45px !important;
     max-width: 45px !important;
@@ -199,24 +102,32 @@
     transition: all 0.2s;
     overflow-x: hidden;
 }
+
 .evernote-sidebar.collapsed .fw-bold,
 .evernote-sidebar.collapsed .list-group,
 .evernote-sidebar.collapsed .btn:not(#toggle-sidebar-btn) {
     display: none !important;
 }
+
 .evernote-main.expanded {
     padding-left: 0 !important;
 }
+
+/* Button effects */
 .evernote-toolbar .btn.effect-click {
     box-shadow: 0 0 0 0.2rem #90caf9;
     background-color: #e3f2fd !important;
     transition: box-shadow 0.2s, background-color 0.2s;
 }
+
+/* Search highlight */
 .search-highlight {
     background: yellow;
     color: #222;
     border-radius: 2px;
 }
+
+/* Search modal */
 #searchModal .modal-dialog {
     position: fixed;
     top: 20px;
@@ -227,59 +138,19 @@
     width: 320px;
     max-width: 90vw;
 }
+
 #searchModal .modal-content {
     box-shadow: 0 2px 16px rgba(0,0,0,0.15);
 }
-@media (max-width: 991.98px) {
-    /* CSS cho toolbar cố định */
-    .evernote-toolbar {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: var(--card-bg, #fff);
-        padding: 0.5rem 0;
-        border-bottom: 1px solid #e0e0e0;
-        transition: all 0.2s ease;
-    }
-    
-    /* Đảm bảo editor có thể cuộn */
-    .evernote-editor {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch; /* Hỗ trợ cuộn mượt trên iOS */
-        transition: height 0.1s ease;
-    }
-}
+
+/* Checkbox styles */
 .evernote-editor input[type="checkbox"] {
     cursor: pointer;
 }
-/* Cập nhật CSS cho evernote-editor */
-.evernote-editor {
-    flex: 1 1 0;
-    background: var(--bg-color, #fff);
-    padding: 1rem;
-    margin-top: 1rem;
-    /* Loại bỏ overflow-y: auto để không có scroll riêng */
-    /* overflow-y: auto; */
-    min-height: 250px; /* Đảm bảo có chiều cao tối thiểu */
-}
 
-.evernote-main {
-    flex: 1 1 0;
-    padding: 0 1.5rem;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    /* Loại bỏ height cố định để container tự mở rộng */
-    /* height: 70vh; */
-    min-height: 70vh; /* Đảm bảo chiều cao tối thiểu */
-}
-
-/* Desktop styles */
+/* Desktop responsive */
 @media (min-width: 992px) {
     .container.mt-4 {
-        /* Loại bỏ height cố định */
-        /* height: calc(100vh - 90px) !important; */
-        /* min-height: calc(100vh - 90px) !important; */
         max-width: 100vw !important;
         width: 100vw !important;
         padding-left: 0 !important;
@@ -287,7 +158,6 @@
     }
     
     .evernote-layout {
-        /* height: 100%; */
         min-height: calc(100vh - 90px);
     }
     
@@ -295,7 +165,6 @@
         flex: 1 1 0;
         display: flex;
         flex-direction: column;
-        /* height: 100%; */
         min-height: calc(100vh - 90px);
         min-width: 0;
         padding: 0 1.5rem;
@@ -303,24 +172,22 @@
     
     .evernote-editor {
         flex: 1 1 0;
-        /* min-height: 0; */
-        /* height: 100%; */
-        /* max-height: 100%; */
-        /* overflow-y: auto; */
         background: var(--bg-color, #fff);
         padding: 1rem;
         margin-top: 1rem;
-        min-height: 400px; /* Chiều cao tối thiểu */
+        min-height: 400px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: visible; /* Không có scroll riêng */
     }
     
     .evernote-sidebar {
-        /* height: 100%; */
         min-height: calc(100vh - 90px);
-        /* min-height: 0; */
+        overflow-y: auto;
     }
 }
 
-/* Mobile styles */
+/* Mobile responsive */
 @media (max-width: 991.98px) {
     html, body {
         height: auto; /* Thay đổi từ 100% sang auto */
@@ -331,9 +198,6 @@
     }
     
     .container.mt-4 {
-        /* Loại bỏ height cố định cho mobile */
-        /* height: 100vh !important; */
-        /* min-height: 100vh !important; */
         max-width: 100vw !important;
         width: 100vw !important;
         margin: 0 !important;
@@ -342,8 +206,6 @@
     
     .evernote-layout {
         flex-direction: column !important;
-        /* height: 100%; */
-        /* min-height: 100%; */
         width: 100vw;
         max-width: 100vw;
     }
@@ -356,12 +218,11 @@
         border-right: none;
         border-bottom: 1px solid #e0e0e0;
         flex-shrink: 0;
+        overflow: visible; /* Không overflow riêng */
     }
     
     .evernote-main {
         padding: 0.5rem;
-        /* height: 100%; */
-        /* min-height: 0; */
         flex: 1 1 0;
         display: flex;
         flex-direction: column;
@@ -371,24 +232,21 @@
     
     .evernote-editor {
         flex: 1 1 0;
-        /* min-height: 0; */
-        /* height: 100%; */
-        /* max-height: 100%; */
         margin-top: 0.5rem;
         padding: 0.5rem;
         width: 100%;
         box-sizing: border-box;
-        min-height: 300px; /* Chiều cao tối thiểu cho mobile */
-        /* overflow-y: auto; */
-        /* -webkit-overflow-scrolling: touch; */
-        /* transition: height 0.1s ease; */
+        min-height: 300px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: visible; /* Loại bỏ hoàn toàn overflow riêng */
     }
     
-    /* Sticky toolbar */
+    /* Sticky toolbar trên mobile */
     .evernote-toolbar {
         position: sticky;
         top: 0;
-        z-index: 100; /* Tăng z-index để consistent */
+        z-index: 100;
         background: var(--card-bg, #fff);
         padding: 0.5rem 0;
         border-bottom: 1px solid #e0e0e0;
@@ -398,8 +256,172 @@
         gap: 0.25rem;
         row-gap: 0.25rem;
     }
+    
+    .evernote-toolbar > * {
+        margin-bottom: 0.25rem;
+        flex: 0 0 auto;
+    }
+    
+    .evernote-toolbar input,
+    .evernote-toolbar select,
+    .evernote-toolbar button {
+        font-size: 0.95rem;
+        padding: 0.25rem 0.5rem;
+        min-width: 32px;
+        max-width: 100%;
+    }
+    
+    .evernote-toolbar .form-control {
+        min-width: 120px;
+        max-width: 100%;
+    }
+    
+    /* Hide note list on mobile when collapsed */
+    #note-list.collapsed {
+        display: none !important;
+    }
 }
 
+/* Mobile navigation styles */
+@media (max-width: 900px) {
+    .evernote-layout {
+        flex-direction: column;
+    }
+    
+    .evernote-sidebar {
+        max-width: 100vw;
+        min-width: 0;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .evernote-main {
+        padding: 0.5rem;
+        height: auto;
+    }
+}
+/* Cập nhật CSS cho toolbar và note-meta */
+.evernote-toolbar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 200; /* Tăng z-index cao hơn */
+    background: var(--card-bg, #fff);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Editor styles - đảm bảo có z-index thấp hơn toolbar */
+.evernote-editor {
+    flex: 1 1 0;
+    background: var(--bg-color, #fff);
+    padding: 1rem;
+    margin-top: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    min-height: 250px;
+    overflow: visible;
+    position: relative;
+    z-index: 1; /* Z-index thấp hơn toolbar */
+}
+
+/* Note meta styles - đảm bảo không vướng toolbar */
+#note-meta {
+    font-size: 0.95em;
+    color: #888;
+    margin-top: 8px;
+    position: relative;
+    z-index: 1; /* Z-index thấp hơn toolbar */
+    background: var(--bg-color, #fff); /* Đảm bảo có background */
+    padding: 0.5rem 0;
+}
+
+/* Desktop responsive */
+@media (min-width: 992px) {
+    .evernote-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 200; /* Tăng z-index */
+        background: var(--card-bg, #fff);
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e0e0e0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .evernote-editor {
+        flex: 1 1 0;
+        background: var(--bg-color, #fff);
+        padding: 1rem;
+        margin-top: 1rem;
+        min-height: 400px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: visible;
+        position: relative;
+        z-index: 1;
+    }
+}
+
+/* Mobile responsive */
+@media (max-width: 991.98px) {
+    .evernote-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 200; /* Tăng z-index cao hơn */
+        background: var(--card-bg, #fff);
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #e0e0e0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s ease;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        row-gap: 0.25rem;
+    }
+    
+    .evernote-editor {
+        flex: 1 1 0;
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        width: 100%;
+        box-sizing: border-box;
+        min-height: 300px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: visible;
+        position: relative;
+        z-index: 1;
+    }
+    
+    #note-meta {
+        font-size: 0.875em;
+        color: #888;
+        margin-top: 0.5rem;
+        position: relative;
+        z-index: 1;
+        background: var(--bg-color, #fff);
+        padding: 0.25rem 0;
+    }
+}
+
+/* Đảm bảo main container có stacking context đúng */
+.evernote-main {
+    flex: 1 1 0;
+    padding: 0 1.5rem;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 120px);
+    position: relative; /* Tạo stacking context */
+}
+.editor-container {
+    flex: 1 1 0;
+    position: relative;
+    z-index: 1; /* Z-index thấp hơn toolbar */
+}
 </style>
 <div class="evernote-layout d-flex">
     <!-- Sidebar -->
@@ -472,8 +494,10 @@
             <button class="btn btn-light btn-sm" type="button" id="center-btn" title="Căn giữa" onmousedown="toggleFormat(event, 'justifyCenter', this)"><i class="bi bi-text-center"></i></button>
             <button class="btn btn-light btn-sm" type="button" id="right-btn" title="Căn phải" onmousedown="toggleFormat(event, 'justifyRight', this)"><i class="bi bi-text-right"></i></button>
         </div>
-        <div id="evernote-editor" class="evernote-editor" contenteditable="true" tabindex="2"></div>
-        <div id="note-meta" style="font-size:0.95em; color:#888; margin-top:8px;"></div>
+        <div class="editor-container">
+            <div id="evernote-editor" class="evernote-editor" contenteditable="true" tabindex="2"></div>
+            <div id="note-meta"></div>
+        </div>
     </div>
 </div>
 
