@@ -1454,7 +1454,14 @@ def add_evernote_note():
     )
     db.session.add(note)
     db.session.commit()
-    return jsonify({'status': 'success', 'id': note.id})
+    
+    # Trả về với thông tin thời gian
+    return jsonify({
+        'status': 'success', 
+        'id': note.id,
+        'created_at': note.created_at.isoformat() if note.created_at else None,
+        'updated_at': note.updated_at.isoformat() if note.updated_at else None
+    })
 
 # Sửa ghi chú Evernote
 @app.route('/api/evernote_notes/<int:note_id>', methods=['PUT'])
@@ -1463,8 +1470,13 @@ def update_evernote_note(note_id):
     data = request.json
     note.title = data.get('title', note.title)
     note.content = data.get('content', note.content)
+    # updated_at sẽ tự động cập nhật nhờ onupdate=datetime.now
     db.session.commit()
-    return jsonify({'status': 'success'})
+    
+    return jsonify({
+        'status': 'success',
+        'updated_at': note.updated_at.isoformat() if note.updated_at else None
+    })
 
 # Xóa ghi chú Evernote
 @app.route('/api/evernote_notes/<int:note_id>', methods=['DELETE'])
@@ -1482,8 +1494,8 @@ def get_evernote_notes():
             'id': n.id,
             'title': n.title,
             'content': n.content,
-            'created_at': n.created_at.isoformat(),
-            'updated_at': n.updated_at.isoformat()
+            'created_at': n.created_at.isoformat() if n.created_at else None,
+            'updated_at': n.updated_at.isoformat() if n.updated_at else None
         } for n in notes
     ])
     
