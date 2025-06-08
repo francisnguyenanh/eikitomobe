@@ -92,6 +92,7 @@
 .todo-item.completed {
     opacity: 0.6;
     text-decoration: line-through;
+    cursor: default; /* Remove cursor pointer for completed todos */
 }
 
 /* Priority colors as background */
@@ -132,25 +133,6 @@
 .todo-title {
     flex: 1;
     font-size: 0.9rem;
-}
-
-/* Remove priority icon on mobile, always show delete */
-.priority-icon {
-    font-size: 0.8rem;
-    margin-left: 0.3rem;
-    color: #666;
-}
-
-.priority-icon.high {
-    color: #dc3545;
-}
-
-.priority-icon.medium {
-    color: #ffc107;
-}
-
-.priority-icon.low {
-    color: #28a745;
 }
 
 .todo-actions {
@@ -207,33 +189,38 @@
 }
 
 .priority-option {
-    width: 50px;
-    height: 50px;
-    border: 2px solid #ccc;
+    width: 60px;
+    height: 60px;
+    border: 3px solid transparent;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s;
-    background: #fff;
+    position: relative;
+    font-weight: bold;
+    color: white;
+    font-size: 0.8rem;
 }
 
 .priority-option.selected {
     border-color: #007bff;
-    background: #e3f2fd;
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,123,255,0.3);
 }
 
 .priority-option.high {
-    color: #dc3545;
+    background: #dc3545;
 }
 
 .priority-option.medium {
-    color: #ffc107;
+    background: #ffc107;
+    color: #333;
 }
 
 .priority-option.low {
-    color: #28a745;
+    background: #28a745;
 }
 
 .repeat-options {
@@ -278,11 +265,6 @@
     .week-navigation {
         flex-wrap: wrap;
         justify-content: center;
-    }
-    
-    /* Hide priority icon on mobile */
-    .priority-icon {
-        display: none;
     }
     
     /* Make delete button more prominent on mobile */
@@ -342,13 +324,13 @@
                         <label class="form-label">Priority</label>
                         <div class="priority-selector">
                             <div class="priority-option low" data-priority="low">
-                                <i class="bi bi-arrow-down"></i>
+                                LOW
                             </div>
                             <div class="priority-option medium selected" data-priority="medium">
-                                <i class="bi bi-dash"></i>
+                                MED
                             </div>
                             <div class="priority-option high" data-priority="high">
-                                <i class="bi bi-arrow-up"></i>
+                                HIGH
                             </div>
                         </div>
                     </div>
@@ -670,6 +652,11 @@ function editTodo(todoId, event) {
     const todo = todos.find(t => t.id === parseInt(todoId));
     if (!todo) return;
     
+    // Don't open edit modal if todo is completed
+    if (todo.completed) {
+        return;
+    }
+    
     openTodoModal(todo.date, todoId);
 }
 
@@ -722,12 +709,6 @@ function calculateDayProgress(dayTodos) {
 
 // Render todo item
 function renderTodoItem(todo) {
-    const priorityIcons = {
-        high: 'bi-arrow-up',
-        medium: 'bi-dash',
-        low: 'bi-arrow-down'
-    };
-    
     return `
         <div class="todo-item priority-${todo.priority} ${todo.completed ? 'completed' : ''}" 
              onclick="editTodo('${todo.id}', event)">
@@ -736,7 +717,6 @@ function renderTodoItem(todo) {
                 ${todo.completed ? '<i class="bi bi-check"></i>' : ''}
             </div>
             <div class="todo-title">${todo.title}</div>
-            <i class="bi ${priorityIcons[todo.priority]} priority-icon ${todo.priority}"></i>
             <div class="todo-actions">
                 <button class="todo-action-btn delete" onclick="deleteTodo('${todo.id}', event)" title="Delete">
                     <i class="bi bi-trash"></i>
