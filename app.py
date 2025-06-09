@@ -34,6 +34,15 @@ import shutil
 import hashlib
 import json
 
+try:
+    from PIL import Image as PILImage
+except ImportError:
+    import subprocess
+    import sys
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
+    from PIL import Image as PILImage
+    
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///memo.db'

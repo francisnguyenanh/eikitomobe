@@ -321,6 +321,17 @@
     border-top: 1px solid #e0e0e0;
     padding-top: 15px;
     margin-top: 15px;
+    order: 999; /* Đảm bảo luôn ở cuối */
+}
+
+.evernote-editor {
+    /* ... existing styles ... */
+    display: flex;
+    flex-direction: column;
+}
+
+.evernote-editor > *:not(.images-section) {
+    order: 1; /* Text content có order thấp hơn */
 }
 </style>
 
@@ -459,6 +470,14 @@ const ImageManager = {
     async uploadImages(files, noteId) {
         if (!files || files.length === 0) return;
         
+        // LƯU VỊ TRÍ CURSOR TRƯỚC KHI UPLOAD
+        const editor = document.getElementById('evernote-editor');
+        const selection = window.getSelection();
+        let savedRange = null;
+        if (selection.rangeCount > 0) {
+            savedRange = selection.getRangeAt(0).cloneRange();
+        }
+        
         // Hiển thị loading
         this.showUploadStatus('Đang upload ảnh...');
         
@@ -477,9 +496,38 @@ const ImageManager = {
                 const result = await response.json();
                 this.showUploadStatus(`Upload thành công ${result.processed_count} ảnh!`, 'success');
                 
-                // Cập nhật state và reload note
-                await NoteManager.loadNotes();
-                NoteManager.selectNote(noteId);
+                // Cập nhật state local
+                AppState.currentImages = result.images || [];
+                
+                // Cập nhật ảnh trong editor
+                this.updateImagesInEditor(AppState.currentImages);
+                
+                // KHÔI PHỤC VỊ TRÍ CURSOR
+                if (savedRange) {
+                    try {
+                        selection.removeAllRanges();
+                        selection.addRange(savedRange);
+                    } catch (e) {
+                        // Nếu không thể khôi phục range cũ, đặt cursor ở cuối text content
+                        const textNodes = this.getTextNodes(editor);
+                        if (textNodes.length > 0) {
+                            const lastTextNode = textNodes[textNodes.length - 1];
+                            const range = document.createRange();
+                            range.setStart(lastTextNode, lastTextNode.textContent.length);
+                            range.collapse(true);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        }
+                    }
+                    editor.focus();
+                }
+                
+                // Reload notes để cập nhật sidebar (không reload selectNote)
+                const oldCurrentId = AppState.currentId;
+                AppState.notes = await API.fetchNotes();
+                NoteManager.renderNoteList();
+                AppState.currentId = oldCurrentId;
+                
                 return result;
             } else {
                 const error = await response.json();
@@ -489,6 +537,33 @@ const ImageManager = {
             console.error('Error uploading images:', error);
             this.showUploadStatus('Lỗi upload ảnh!', 'error');
         }
+    },
+
+    // THÊM HÀM HỖ TRỢ: Lấy tất cả text nodes trong editor (trừ images-section)
+    getTextNodes(element) {
+        const textNodes = [];
+        const walker = document.createTreeWalker(
+            element,
+            NodeFilter.SHOW_TEXT,
+            {
+                acceptNode: function(node) {
+                    // Bỏ qua text nodes trong images-section
+                    const parent = node.parentElement;
+                    if (parent && (parent.closest('.images-section') || parent.classList.contains('images-section'))) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            }
+        );
+        
+        let node;
+        while (node = walker.nextNode()) {
+            if (node.textContent.trim()) {
+                textNodes.push(node);
+            }
+        }
+        return textNodes;
     },
     
     // Hiển thị trạng thái upload
@@ -533,10 +608,13 @@ const ImageManager = {
     // Xử lý paste ảnh từ clipboard
     async handlePaste(event, noteId) {
         const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+        let hasImage = false;
         
         for (let item of items) {
             if (item.type.indexOf('image') !== -1) {
+                // Có ảnh - xử lý upload ảnh
                 event.preventDefault();
+                hasImage = true;
                 const file = item.getAsFile();
                 if (file && noteId) {
                     this.showUploadStatus('Đang xử lý ảnh từ clipboard...');
@@ -545,9 +623,15 @@ const ImageManager = {
                 break;
             }
         }
+        
+        // Nếu không có ảnh, để browser xử lý paste text bình thường
+        if (!hasImage) {
+            // Không preventDefault - để text được paste vào vị trí cursor hiện tại
+            console.log('Pasting text content...');
+        }
     },
     
-    // Hiển thị ảnh trong editor
+    // THÊM HÀM displayImages - HÀM NÀY BỊ THIẾU
     displayImages(images) {
         if (!images || images.length === 0) return '';
         
@@ -563,8 +647,57 @@ const ImageManager = {
             </div>`;
         }).join('');
     },
+    // THÊM HÀM MỚI: Đảm bảo chỉ có 1 images-section
+    ensureSingleImagesSection() {
+        const editor = document.getElementById('evernote-editor');
+        const imagesSections = editor.querySelectorAll('.images-section');
+        
+        // Nếu có nhiều hơn 1 images-section
+        if (imagesSections.length > 1) {
+            // Xóa tất cả trừ section cuối cùng
+            for (let i = 0; i < imagesSections.length - 1; i++) {
+                imagesSections[i].remove();
+            }
+        }
+    },
+
+    // Cập nhật ảnh trong editor hiện tại
+    updateImagesInEditor(images) {
+    const editor = document.getElementById('evernote-editor');
     
-    // Xóa ảnh
+    // CHỈ XÓA images-section, KHÔNG XÓA text content
+    const existingSections = editor.querySelectorAll('.images-section');
+    existingSections.forEach(section => section.remove());
+    
+    // Nếu có ảnh, thêm vào cuối editor
+    if (images && images.length > 0) {
+        const imagesHTML = '<div class="images-section">' + this.displayImages(images) + '</div>';
+        editor.insertAdjacentHTML('beforeend', imagesHTML);
+        
+        // NẾU EDITOR TRỐNG (chỉ có images-section), đặt cursor ở đầu để user có thể gõ text
+        const textContent = editor.innerText.trim();
+        if (!textContent || textContent === '') {
+            // Tạo một đoạn văn trống ở đầu editor
+            const p = document.createElement('p');
+            p.innerHTML = '<br>'; // Placeholder để cursor có thể focus
+            editor.insertBefore(p, editor.firstChild);
+            
+            // Đặt cursor vào đoạn văn trống
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.setStart(p, 0);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            editor.focus();
+        }
+        
+    }
+    // Cập nhật state
+    AppState.currentImages = images || [];
+},
+    
+    // Xóa ảnh - SỬA LẠI HÀM NÀY (BỊ TRÙNG LẶP)
     async deleteImage(imageId, noteId) {
         if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return;
         
@@ -575,9 +708,18 @@ const ImageManager = {
             
             if (response.ok) {
                 this.showUploadStatus('Xóa ảnh thành công!', 'success');
-                // Reload note để cập nhật
-                await NoteManager.loadNotes();
-                NoteManager.selectNote(noteId);
+                
+                // Cập nhật state local (xóa ảnh khỏi currentImages)
+                AppState.currentImages = AppState.currentImages.filter(img => img.id !== imageId);
+                
+                // Cập nhật ảnh trong editor ngay lập tức
+                this.updateImagesInEditor(AppState.currentImages);
+                
+                // Reload notes để cập nhật sidebar
+                const oldCurrentId = AppState.currentId;
+                AppState.notes = await API.fetchNotes();
+                NoteManager.renderNoteList();
+                AppState.currentId = oldCurrentId;
             } else {
                 this.showUploadStatus('Lỗi xóa ảnh!', 'error');
             }
@@ -586,6 +728,7 @@ const ImageManager = {
             this.showUploadStatus('Lỗi xóa ảnh!', 'error');
         }
     },
+    
     
     // Thêm input file cho upload ảnh
     createImageUpload() {
@@ -728,7 +871,6 @@ const API = {
     }
 };
 
-// ===== NOTE MANAGEMENT =====
 const NoteManager = {
     async loadNotes() {
         AppState.notes = await API.fetchNotes();
@@ -768,19 +910,35 @@ const NoteManager = {
         
         document.getElementById('note-title').value = note.title;
         
-        // Hiển thị content và ảnh
+        // Hiển thị content (KHÔNG bao gồm ảnh)
         const editor = document.getElementById('evernote-editor');
-        let content = Utils.autoLink(note.content);
+        const content = Utils.autoLink(note.content);
+        editor.innerHTML = content;
         
-        // Thêm ảnh vào cuối content
+        // Cập nhật ảnh riêng biệt
         if (note.images && note.images.length > 0) {
             AppState.currentImages = note.images;
-            content += '<div class="images-section">' + ImageManager.displayImages(note.images) + '</div>';
+            ImageManager.updateImagesInEditor(note.images);
         } else {
             AppState.currentImages = [];
+            // Xóa các images-section cũ nếu có
+            const existingSections = editor.querySelectorAll('.images-section');
+            existingSections.forEach(section => section.remove());
         }
         
-        editor.innerHTML = content;
+        // NẾU KHÔNG CÓ TEXT CONTENT, TẠO PLACEHOLDER ĐỂ USER CÓ THỂ GÕ
+        if (!content.trim()) {
+            const p = document.createElement('p');
+            p.innerHTML = '<br>';
+            if (editor.querySelector('.images-section')) {
+                // Nếu có ảnh, đặt paragraph trước images-section
+                editor.insertBefore(p, editor.querySelector('.images-section'));
+            } else {
+                // Nếu không có ảnh, đặt paragraph ở đầu
+                editor.appendChild(p);
+            }
+        }
+        
         this.renderNoteList();
 
         const metaDiv = document.getElementById('note-meta');
@@ -962,10 +1120,11 @@ const SaveManager = {
         // Lấy content nhưng loại bỏ phần images-section để không lưu trong content
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = editor.innerHTML;
-        const imagesSection = tempDiv.querySelector('.images-section');
-        if (imagesSection) {
-            imagesSection.remove();
-        }
+        
+        // XÓA TẤT CẢ images-section khỏi content trước khi lưu
+        const imagesSections = tempDiv.querySelectorAll('.images-section');
+        imagesSections.forEach(section => section.remove());
+        
         const content = tempDiv.innerHTML;
 
         if (title === "") {
@@ -984,7 +1143,6 @@ const SaveManager = {
             if (note) {
                 note.title = title;
                 note.content = content;
-                // Không cần truyền images vì đã được xử lý riêng trong upload
                 await API.updateNote(AppState.currentId, title, content);
             }
         }
@@ -992,6 +1150,13 @@ const SaveManager = {
         AppState.lastSavedTitle = title;
         AppState.lastSavedContent = content;
         this.showSaveStatus();
+        
+        // SAU KHI LÀM AUTO SAVE, ĐẢM BẢO CHỈ CÓ 1 IMAGES-SECTION
+        setTimeout(() => {
+            if (AppState.currentImages && AppState.currentImages.length > 0) {
+                ImageManager.updateImagesInEditor(AppState.currentImages);
+            }
+        }, 100);
     },
 
     autoSave: Utils.debounce(function() {
@@ -1001,10 +1166,11 @@ const SaveManager = {
         // Lấy content mà không có images-section
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = editor.innerHTML;
-        const imagesSection = tempDiv.querySelector('.images-section');
-        if (imagesSection) {
-            imagesSection.remove();
-        }
+        
+        // XÓA TẤT CẢ images-section khỏi content
+        const imagesSections = tempDiv.querySelectorAll('.images-section');
+        imagesSections.forEach(section => section.remove());
+        
         const content = tempDiv.innerHTML;
         
         if (title !== AppState.lastSavedTitle || content !== AppState.lastSavedContent) {
@@ -1220,11 +1386,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup editor events
     const editor = document.getElementById('evernote-editor');
+    // THÊM MUTATION OBSERVER ở đây - ngay sau dòng const editor = document.getElementById('evernote-editor');
+    const observer = new MutationObserver((mutations) => {
+        let needsCleanup = false;
+        
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'childList') {
+                // Kiểm tra xem có images-section nào được thêm không
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1 && (
+                        node.classList?.contains('images-section') || 
+                        node.querySelector?.('.images-section')
+                    )) {
+                        needsCleanup = true;
+                    }
+                });
+            }
+        });
+        
+        if (needsCleanup) {
+            // Delay để tránh infinite loop
+            setTimeout(() => {
+                ImageManager.ensureSingleImagesSection();
+            }, 10);
+        }
+    });
+
+    // Bắt đầu observe
+    observer.observe(editor, {
+        childList: true,
+        subtree: true
+    });
+
+    // Thêm event listener cho paste ảnh
+    editor.addEventListener('paste', (e) => {
+        console.log('Paste event triggered', e);
+        if (AppState.currentId) {
+            console.log('Current note ID:', AppState.currentId);
+            ImageManager.handlePaste(e, AppState.currentId);
+        } else {
+            console.log('No current note selected');
+        }
+    });
+
     editor.onblur = () => SaveManager.saveNote();
     editor.addEventListener('keyup', Editor.updateFormatButtons);
     editor.addEventListener('mouseup', Editor.updateFormatButtons);
     editor.addEventListener('focus', Editor.updateFormatButtons);
-    editor.addEventListener('input', SaveManager.autoSave);
+    editor.addEventListener('input', (e) => {
+    // Đảm bảo chỉ có 1 images-section sau mỗi thay đổi
+    setTimeout(() => {
+        ImageManager.ensureSingleImagesSection();
+    }, 10);
+    
+    // Gọi autoSave
+    SaveManager.autoSave();
+});
     
     // Thêm event listener cho paste ảnh
     editor.addEventListener('paste', (e) => {
@@ -1256,9 +1473,12 @@ document.addEventListener('DOMContentLoaded', () => {
     uploadBtn.title = 'Upload ảnh';
     uploadBtn.innerHTML = '<i class="bi bi-image"></i>';
     uploadBtn.onclick = () => {
+        console.log('Upload button clicked');
         if (AppState.currentId) {
+            console.log('Opening file dialog for note:', AppState.currentId);
             imageUploadInput.click();
         } else {
+            console.log('No current note selected');
             alert('Vui lòng chọn hoặc tạo note trước');
         }
     };
