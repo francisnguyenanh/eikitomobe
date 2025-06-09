@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ note.title }} - Ghi chú chia sẻ</title>
+    <title>{{ note.title }} - Shared Note</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <style>
@@ -145,9 +145,9 @@
             <div class="note-title">{{ note.title }}</div>
             <div class="note-meta">
                 <i class="bi bi-calendar3"></i>
-                Tạo: {{ note.created_at.strftime('%d/%m/%Y %H:%M') if note.created_at }}
+                Created: {{ note.created_at.strftime('%m/%d/%Y %H:%M') if note.created_at }}
                 {% if note.updated_at and note.updated_at != note.created_at %}
-                    | Cập nhật: {{ note.updated_at.strftime('%d/%m/%Y %H:%M') }}
+                    | Updated: {{ note.updated_at.strftime('%m/%d/%Y %H:%M') }}
                 {% endif %}
             </div>
         </div>
@@ -158,7 +158,7 @@
         
         {% if images %}
         <div class="note-images">
-            <h5><i class="bi bi-images"></i> Hình ảnh đính kèm</h5>
+            <h5><i class="bi bi-images"></i> Attached Images</h5>
             {% for image in images %}
             <div class="image-container">
                 <img src="{{ url_for('get_shared_evernote_image', share_id=note.share_id, image_id=image.id) }}" 
@@ -170,7 +170,7 @@
         {% endif %}
         
         <div class="powered-by">
-            <i class="bi bi-share"></i> Được chia sẻ từ EikiTomobe Note
+            <i class="bi bi-share"></i> Shared from 友部　瑛稀
         </div>
     </div>
 
