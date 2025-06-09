@@ -1544,29 +1544,29 @@ def upload_evernote_images(note_id):
                 if ext in allowed_extensions:
                     try:
                         if ext == '.heic':
-                            # Xử lý HEIC với Wand
+                            # Xử lý HEIC với Wand - giảm còn 30% size
                             with Image(file=file) as img:
                                 img.format = 'jpeg'
-                                img.compression_quality = 50
-                                img.resize(int(img.width * 0.5), int(img.height * 0.5))
+                                img.compression_quality = 30  # Giảm quality cho HEIC
+                                img.resize(int(img.width * 0.3), int(img.height * 0.3))  # Giảm size 30%
                                 output = io.BytesIO()
                                 img.save(file=output)
                                 image_data = output.getvalue()
                             filename = normalized_filename.replace('.heic', '.jpg')
                         else:
-                            # Xử lý ảnh thường với PIL
+                            # Xử lý ảnh thường với PIL - giảm còn 70% size
                             from PIL import Image as PILImage
                             image = PILImage.open(file)
                             
-                            # Resize xuống 50%
-                            new_size = (int(image.width * 0.5), int(image.height * 0.5))
+                            # Resize xuống 70%
+                            new_size = (int(image.width * 0.7), int(image.height * 0.7))
                             image = image.resize(new_size, PILImage.Resampling.LANCZOS)
                             
-                            # Compress và save
+                            # Compress và save với quality 70
                             output = io.BytesIO()
                             if image.mode in ("RGBA", "P"):
                                 image = image.convert("RGB")
-                            image.save(output, format='JPEG', quality=50, optimize=True)
+                            image.save(output, format='JPEG', quality=70, optimize=True)
                             image_data = output.getvalue()
                             filename = normalized_filename
                         

@@ -333,6 +333,98 @@
 .evernote-editor > *:not(.images-section) {
     order: 1; /* Text content có order thấp hơn */
 }
+/* ===== IMAGE LIGHTBOX STYLES ===== */
+.image-lightbox {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    padding-top: 50px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.9);
+}
+
+.lightbox-content {
+    margin: auto;
+    display: block;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 80%;
+    object-fit: contain;
+    border-radius: 8px;
+    animation: zoom 0.3s;
+}
+
+@keyframes zoom {
+    from {transform: scale(0.1)}
+    to {transform: scale(1)}
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+    z-index: 10001;
+}
+
+.lightbox-close:hover,
+.lightbox-close:focus {
+    color: #bbb;
+    text-decoration: none;
+}
+
+.lightbox-caption {
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 700px;
+    text-align: center;
+    color: #ccc;
+    padding: 10px 0;
+    height: 150px;
+}
+
+/* Cập nhật style cho ảnh có thể click */
+.image-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s, cursor 0.2s;
+    cursor: pointer; /* Thêm cursor pointer */
+}
+
+.image-container:hover img {
+    transform: scale(1.02);
+}
+
+/* Responsive cho mobile */
+@media (max-width: 768px) {
+    .lightbox-content {
+        width: 95%;
+        max-height: 70%;
+    }
+    
+    .lightbox-close {
+        top: 10px;
+        right: 20px;
+        font-size: 30px;
+    }
+    
+    .lightbox-caption {
+        font-size: 14px;
+        padding: 5px 0;
+        height: 100px;
+    }
+}
 </style>
 
 <div class="evernote-layout d-flex">
@@ -345,7 +437,6 @@
             </span>
             <div>
                 <button class="btn btn-success btn-sm" id="add-note-btn"><i class="bi bi-plus"></i></button>
-                <button class="btn btn-danger btn-sm" id="delete-note-btn" title="Xóa"><i class="bi bi-trash"></i></button>
                 <button class="btn btn-outline-secondary btn-sm d-none d-lg-inline-block" id="toggle-sidebar-btn" title="Thu gọn/Mở rộng sidebar">
                     <span id="toggle-sidebar-icon">&lt;</span>
                 </button>
@@ -364,6 +455,7 @@
                 <input type="text" class="form-control" id="note-title" placeholder="Tiêu đề ghi chú..." style="padding-right:28px;" tabindex="1">
                 <button type="button" id="clear-title-btn" style="position:absolute; right:4px; top:50%; transform:translateY(-50%); border:none; background:transparent; padding:0; margin:0; font-size:1.1em; color:#888; cursor:pointer; z-index:2;" title="Xóa tiêu đề">&times;</button>
             </div>
+            <button class="btn btn-danger btn-sm" id="delete-note-btn" title="Xóa"><i class="bi bi-trash"></i></button>
             <button type="button" id="search-btn" class="btn btn-light btn-sm" title="Tìm kiếm"><i class="bi bi-search"></i></button>
             <div class="vr mx-2"></div>
             
@@ -415,6 +507,13 @@
         <div id="evernote-editor" class="evernote-editor" contenteditable="true" tabindex="2"></div>
         <div id="note-meta" style="font-size:0.95em; color:#888; margin-top:8px;"></div>
     </div>
+</div>
+
+<!-- Thêm Image Lightbox Modal -->
+<div id="imageLightbox" class="image-lightbox">
+    <span class="lightbox-close">&times;</span>
+    <img class="lightbox-content" id="lightboxImg">
+    <div class="lightbox-caption" id="lightboxCaption"></div>
 </div>
 
 <!-- Modals -->
@@ -638,14 +737,38 @@ const ImageManager = {
         return images.map(img => {
             return `<div class="image-container" style="margin: 10px 0; position: relative; display: inline-block;">
                 <img src="data:image/jpeg;base64,${img.data}" 
-                     style="max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
-                     alt="${img.filename}">
+                     style="max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer;" 
+                     alt="${img.filename}"
+                     onclick="ImageManager.showLightbox('data:image/jpeg;base64,${img.data}', '${img.filename}')">
                 <button type="button" class="delete-image-btn" 
                         onclick="ImageManager.deleteImage('${img.id}', ${AppState.currentId})"
                         style="position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.8); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px; line-height: 1;"
                         title="Xóa ảnh">×</button>
             </div>`;
         }).join('');
+    },
+    
+    // THÊM HÀM MỚI: Hiển thị ảnh trong lightbox
+    showLightbox(imageSrc, filename) {
+        const lightbox = document.getElementById('imageLightbox');
+        const lightboxImg = document.getElementById('lightboxImg');
+        const lightboxCaption = document.getElementById('lightboxCaption');
+        
+        lightbox.style.display = 'block';
+        lightboxImg.src = imageSrc;
+        lightboxCaption.textContent = filename || 'Image';
+        
+        // Disable body scroll
+        document.body.style.overflow = 'hidden';
+    },
+    
+    // THÊM HÀM MỚI: Đóng lightbox
+    closeLightbox() {
+        const lightbox = document.getElementById('imageLightbox');
+        lightbox.style.display = 'none';
+        
+        // Re-enable body scroll
+        document.body.style.overflow = '';
     },
     // THÊM HÀM MỚI: Đảm bảo chỉ có 1 images-section
     ensureSingleImagesSection() {
@@ -1383,6 +1506,27 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('note-title').value = "";
         document.getElementById('note-title').focus();
     };
+
+    // Setup lightbox events
+    const lightbox = document.getElementById('imageLightbox');
+    const lightboxClose = document.querySelector('.lightbox-close');
+    
+    // Đóng lightbox khi click vào nút close
+    lightboxClose.onclick = () => ImageManager.closeLightbox();
+    
+    // Đóng lightbox khi click vào background
+    lightbox.onclick = (e) => {
+        if (e.target === lightbox) {
+            ImageManager.closeLightbox();
+        }
+    };
+    
+    // Đóng lightbox khi nhấn ESC
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            ImageManager.closeLightbox();
+        }
+    });
 
     // Setup editor events
     const editor = document.getElementById('evernote-editor');
