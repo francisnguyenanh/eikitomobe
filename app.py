@@ -148,7 +148,8 @@ class EvernoteNote(db.Model):
     content = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    images = db.Column(db.Text, nullable=True)  # Thêm field lưu ảnh dạng JSON
+    images = db.Column(db.Text, nullable=True)
+    share_id = db.Column(db.String(36), nullable=True, unique=True)  # Thêm field này
     
 class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -668,6 +669,71 @@ def edit_note(id):
     categories = Category.query.filter_by(user_id=current_user.id).all()
     return redirect(url_for('task'))
 
+# API tạo share link
+@app.route('/api/evernote_notes/<int:note_id>/share', methods=['POST'])
+@login_required
+def create_evernote_share_link(note_id):
+    try:
+        note = EvernoteNote.query.get_or_404(note_id)
+        
+        # Tạo share_id nếu chưa có
+        if not note.share_id:
+            note.share_id = str(uuid4())
+            db.session.commit()
+        
+        # Tạo URL chia sẻ
+        share_url = url_for('view_shared_evernote', share_id=note.share_id, _external=True)
+        
+        return jsonify({
+            'status': 'success',
+            'share_url': share_url,
+            'share_id': note.share_id
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error creating share link: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# Route hiển thị note được chia sẻ (không cần login)
+@app.route('/shared/evernote/<share_id>')
+def view_shared_evernote(share_id):
+    try:
+        note = EvernoteNote.query.filter_by(share_id=share_id).first_or_404()
+        
+        # Parse images
+        images = json.loads(note.images) if note.images else []
+        
+        return render_template('Memo/shared_evernote.html', 
+                             note=note, 
+                             images=images)
+        
+    except Exception as e:
+        app.logger.error(f"Error viewing shared note: {str(e)}")
+        return render_template('error.html', 
+                             error_message="Ghi chú không tồn tại hoặc đã bị xóa"), 404
+
+# API lấy ảnh từ shared note (không cần login)
+@app.route('/shared/evernote/<share_id>/image/<string:image_id>')
+def get_shared_evernote_image(share_id, image_id):
+    try:
+        note = EvernoteNote.query.filter_by(share_id=share_id).first_or_404()
+        images = json.loads(note.images) if note.images else []
+        
+        image = next((img for img in images if img.get('id') == image_id), None)
+        if not image:
+            return jsonify({'status': 'error', 'message': 'Image not found'}), 404
+            
+        image_data = base64.b64decode(image['data'])
+        return send_file(
+            BytesIO(image_data), 
+            mimetype='image/jpeg',
+            as_attachment=False,
+            download_name=image['filename']
+        )
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    
 @app.route('/get_image/<int:note_id>/<string:filename>')
 @login_required
 def get_image(note_id, filename):

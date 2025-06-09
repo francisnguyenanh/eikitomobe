@@ -41,9 +41,9 @@
 }
 
 .evernote-sidebar.collapsed {
-    min-width: 45px !important;
-    max-width: 45px !important;
-    width: 45px !important;
+    min-width: 55px !important;
+    max-width: 55px !important;
+    width: 55px !important;
     overflow-x: hidden;
 }
 
@@ -51,6 +51,28 @@
 .evernote-sidebar.collapsed .list-group,
 .evernote-sidebar.collapsed .btn:not(#toggle-sidebar-btn) {
     display: none !important;
+}
+
+/* Desktop button spacing */
+@media (min-width: 992px) {
+    .evernote-sidebar .d-flex > div {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 0.25rem !important;
+        align-items: center !important;
+    }
+    
+    .evernote-sidebar .btn-sm {
+        min-width: 32px !important;
+        height: 32px !important;
+        padding: 0.25rem !important;
+        margin: 0 !important;
+        font-size: 0.875rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+    }
 }
 
 /* ===== MAIN CONTENT STYLES ===== */
@@ -337,6 +359,40 @@
         flex-shrink: 0;
     }
     
+    /* Hide desktop toggle button on mobile */
+    #toggle-sidebar-btn {
+        display: none !important;
+    }
+    
+    /* Mobile button spacing improvements */
+    .evernote-sidebar .d-flex > div {
+        gap: 0.75rem !important;
+        display: flex !important;
+        flex-wrap: wrap;
+        justify-content: space-between !important; /* Thêm dòng này */
+        width: 100% !important; /* Đảm bảo chiếm full width */
+    }
+    
+    .evernote-sidebar .btn-sm {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        padding: 0.5rem !important;
+        margin: 0.25rem !important;
+        font-size: 1.1rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    /* Specific spacing for action buttons */
+    #add-note-btn,
+    #share-link-btn, 
+    #delete-note-btn,
+    #toggle-list-btn {
+        margin-right: 0.5rem !important;
+        margin-left: 0.25rem !important;
+    }
+    
     .evernote-main {
         padding: 0.5rem;
         height: 100%;
@@ -413,26 +469,83 @@
         height: 100px;
     }
 }
+/* Icon link styles */
+.btn-link-share {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+}
+
+.btn-link-share:hover {
+    background: linear-gradient(45deg, #0056b3, #004085);
+    color: white;
+    transform: scale(1.05);
+}
+
+.btn-link-share.effect-click {
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+    background: linear-gradient(45deg, #0056b3, #004085);
+}
+@media (min-width: 992px) {
+    .evernote-sidebar .d-flex > div {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 0.25rem !important;
+        align-items: center !important;
+        justify-content: space-between !important; /* Thêm dòng này */
+    }
+    
+    .evernote-sidebar .btn-sm {
+        min-width: 32px !important;
+        height: 32px !important;
+        padding: 0.25rem !important;
+        margin: 0 !important;
+        font-size: 0.875rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+    }
+    
+    /* Hide mobile toggle button on desktop */
+    #toggle-list-btn {
+        display: none !important;
+    }
+    /* Đảm bảo các button action (add, share, delete) nhóm lại với nhau */
+    .evernote-sidebar .d-flex > div > .btn:not(#toggle-list-btn) {
+        margin-right: 0.25rem !important;
+        margin-left: 0 !important;
+    }
+    #toggle-list-btn {
+        margin-left: auto !important;
+        margin-right: 0 !important;
+    }
+    
+}
+.evernote-sidebar .d-flex {
+    display: block !important;
+}
+
 </style>
 
 <div class="evernote-layout d-flex">
     <!-- Sidebar -->
     <div class="evernote-sidebar">
         <div class="d-flex justify-content-between align-items-center px-3 py-2">
-            <span class="fw-bold">Note</span>
-            <span id="save-status" style="margin-left:8px; color:#43a047; font-size:1.2em; display:none;">
-                <i class="bi bi-cloud-check-fill"></i>
-            </span>
-            <div>
-                <button class="btn btn-success btn-sm" id="add-note-btn"><i class="bi bi-plus"></i></button>
-                <button class="btn btn-danger btn-sm" id="delete-note-btn" title="Xóa"><i class="bi bi-trash"></i></button>
-                <button class="btn btn-outline-secondary btn-sm d-none d-lg-inline-block" id="toggle-sidebar-btn" title="Thu gọn/Mở rộng sidebar">
-                    <span id="toggle-sidebar-icon">&lt;</span>
-                </button>
-                <button class="btn btn-secondary btn-sm d-inline-block d-lg-none" id="toggle-list-btn" title="Ẩn/Hiện danh sách">
-                    <i class="bi bi-chevron-bar-up" id="toggle-list-icon"></i>
-                </button>
-            </div>
+                <span id="save-status" style="margin-left:8px; color:#43a047; font-size:1.2em; display:none;">
+                    <i class="bi bi-cloud-check-fill"></i>
+                </span>
+                <div>
+                    <button class="btn btn-success btn-sm" id="add-note-btn"><i class="bi bi-plus"></i></button>
+                    <button class="btn btn-link-share btn-sm" id="share-link-btn" title="Tạo link chia sẻ"><i class="bi bi-link-45deg"></i></button>
+                    <button class="btn btn-danger btn-sm" id="delete-note-btn" title="Xóa"><i class="bi bi-trash"></i></button>
+                    <button class="btn btn-outline-secondary btn-sm d-none d-lg-block" id="toggle-sidebar-btn" title="Thu gọn/Mở rộng sidebar">
+                        <span id="toggle-sidebar-icon">&lt;</span>
+                    </button>
+                    <button class="btn btn-secondary btn-sm d-lg-none" id="toggle-list-btn" title="Ẩn/Hiện danh sách">
+                        <i class="bi bi-chevron-bar-up" id="toggle-list-icon"></i>
+                    </button>
+                </div>
         </div>
         <ul class="list-group list-group-flush" id="note-list"></ul>
     </div>
@@ -497,6 +610,34 @@
     </div>
 </div>
 
+<!-- Share Link Modal -->
+<div class="modal fade" id="shareLinkModal" tabindex="-1" aria-labelledby="shareLinkLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div id="share-link-content">
+                    <p>Đang tạo link chia sẻ...</p>
+                </div>
+                <div id="share-link-result" style="display: none;">
+                    <div class="mb-3">
+                        <label for="share-link-input" class="form-label">Link chia sẻ:</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="share-link-input" readonly>
+                            <button class="btn btn-outline-secondary" type="button" id="copy-link-btn">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        Link này cho phép mọi người xem nội dung ghi chú mà không cần đăng nhập.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Thêm Image Lightbox Modal -->
 <div id="imageLightbox" class="image-lightbox">
     <span class="lightbox-close">&times;</span>
@@ -549,6 +690,68 @@ const AppState = {
     searchModalInstance: null,
     originalEditorHeight: null,
     currentImages: []  // Thêm để track ảnh hiện tại
+};
+
+// ===== SHARE LINK FUNCTIONS =====
+const ShareLink = {
+    async generateShareLink(noteId) {
+        try {
+            const response = await fetch(`/api/evernote_notes/${noteId}/share`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                return result.share_url;
+            } else {
+                const error = await response.json();
+                throw new Error(error.message || 'Không thể tạo link chia sẻ');
+            }
+        } catch (error) {
+            console.error('Error generating share link:', error);
+            throw error;
+        }
+    },
+
+    showShareModal(shareUrl) {
+        const modal = new bootstrap.Modal(document.getElementById('shareLinkModal'));
+        const linkInput = document.getElementById('share-link-input');
+        const resultDiv = document.getElementById('share-link-result');
+        const contentDiv = document.getElementById('share-link-content');
+        
+        linkInput.value = shareUrl;
+        contentDiv.style.display = 'none';
+        resultDiv.style.display = 'block';
+        
+        modal.show();
+    },
+
+    copyToClipboard() {
+        const linkInput = document.getElementById('share-link-input');
+        linkInput.select();
+        linkInput.setSelectionRange(0, 99999); // For mobile devices
+        
+        try {
+            document.execCommand('copy');
+            const copyBtn = document.getElementById('copy-link-btn');
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = '<i class="bi bi-check"></i> Đã copy!';
+            copyBtn.classList.add('btn-success');
+            copyBtn.classList.remove('btn-outline-secondary');
+            
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+                copyBtn.classList.remove('btn-success');
+                copyBtn.classList.add('btn-outline-secondary');
+            }, 2000);
+        } catch (err) {
+            console.error('Could not copy text: ', err);
+            alert('Không thể copy link. Vui lòng copy thủ công.');
+        }
+    }
 };
 
 // ===== IMAGE FUNCTIONS =====
@@ -1516,6 +1719,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Setup share link button
+    document.getElementById('share-link-btn').onclick = async () => {
+        const btn = document.getElementById('share-link-btn');
+        btn.classList.add('effect-click');
+        setTimeout(() => btn.classList.remove('effect-click'), 200);
+
+        if (!AppState.currentId) {
+            alert('Vui lòng chọn ghi chú để chia sẻ');
+            return;
+        }
+
+        // Show modal with loading
+        const modal = new bootstrap.Modal(document.getElementById('shareLinkModal'));
+        const resultDiv = document.getElementById('share-link-result');
+        const contentDiv = document.getElementById('share-link-content');
+        
+        resultDiv.style.display = 'none';
+        contentDiv.style.display = 'block';
+        contentDiv.innerHTML = '<p><i class="bi bi-hourglass-split"></i> Đang tạo link chia sẻ...</p>';
+        
+        modal.show();
+
+        try {
+            const shareUrl = await ShareLink.generateShareLink(AppState.currentId);
+            ShareLink.showShareModal(shareUrl);
+        } catch (error) {
+            contentDiv.innerHTML = `<p class="text-danger"><i class="bi bi-exclamation-triangle"></i> Lỗi: ${error.message}</p>`;
+        }
+    };
+
+    // Setup copy button
+    document.getElementById('copy-link-btn').onclick = () => {
+        ShareLink.copyToClipboard();
+    };
     // Setup editor events
     const editor = document.getElementById('evernote-editor');
     // THÊM MUTATION OBSERVER ở đây - ngay sau dòng const editor = document.getElementById('evernote-editor');
