@@ -97,6 +97,8 @@
     outline: none;
     font-size: 1rem;
     color: var(--text-color, #222);
+    display: flex;
+    flex-direction: column;
 }
 
 .evernote-editor a {
@@ -106,6 +108,10 @@
 
 .evernote-editor input[type="checkbox"] {
     cursor: pointer;
+}
+
+.evernote-editor > *:not(.images-section) {
+    order: 1; /* Text content có order thấp hơn */
 }
 
 /* ===== SEARCH STYLES ===== */
@@ -128,6 +134,119 @@
 
 #searchModal .modal-content {
     box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+}
+
+/* ===== IMAGE STYLES ===== */
+.image-container {
+    margin: 10px 5px;
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: top;
+}
+
+.image-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s, cursor 0.2s;
+    cursor: pointer;
+    display: block;
+    margin: 0 auto;
+}
+
+.image-container:hover img {
+    transform: scale(1.02);
+}
+
+.delete-image-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.image-container:hover .delete-image-btn {
+    opacity: 1;
+}
+
+.images-section {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 15px;
+    margin-top: 15px;
+    order: 999; /* Đảm bảo luôn ở cuối */
+    background: var(--card-bg);
+    text-align: center; /* Căn giữa các ảnh */
+}
+
+/* ===== IMAGE LIGHTBOX STYLES ===== */
+.image-lightbox {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    padding-top: 50px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.9);
+}
+
+.lightbox-content {
+    margin: auto;
+    display: block;
+    width: 90%;
+    max-width: 1200px;
+    max-height: 80%;
+    object-fit: contain;
+    border-radius: 8px;
+    animation: zoom 0.3s;
+}
+
+@keyframes zoom {
+    from {transform: scale(0.1)}
+    to {transform: scale(1)}
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+    z-index: 10001;
+}
+
+.lightbox-close:hover,
+.lightbox-close:focus {
+    color: #bbb;
+    text-decoration: none;
+}
+
+.lightbox-caption {
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 700px;
+    text-align: center;
+    color: #ccc;
+    padding: 10px 0;
+    height: 150px;
 }
 
 /* ===== DESKTOP STYLES ===== */
@@ -158,6 +277,26 @@
     .evernote-sidebar {
         height: 100%;
         min-height: 0;
+    }
+}
+
+/* ===== TABLET STYLES ===== */
+@media (max-width: 900px) and (min-width: 576px) {
+    .evernote-layout {
+        flex-direction: column;
+    }
+    
+    .evernote-sidebar {
+        max-width: 100vw;
+        min-width: 0;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .evernote-main {
+        padding: 0.5rem;
+        height: auto;
     }
 }
 
@@ -255,160 +394,8 @@
     #note-list.collapsed {
         display: none !important;
     }
-}
-
-/* ===== TABLET STYLES ===== */
-@media (max-width: 900px) and (min-width: 576px) {
-    .evernote-layout {
-        flex-direction: column;
-    }
     
-    .evernote-sidebar {
-        max-width: 100vw;
-        min-width: 0;
-        height: auto;
-        border-right: none;
-        border-bottom: 1px solid #e0e0e0;
-    }
-    
-    .evernote-main {
-        padding: 0.5rem;
-        height: auto;
-    }
-}
-/* ===== IMAGE STYLES ===== */
-.image-container {
-    margin: 10px 0;
-    position: relative;
-    display: inline-block;
-    max-width: 100%;
-}
-
-.image-container img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.2s;
-}
-
-.image-container:hover img {
-    transform: scale(1.02);
-}
-
-.delete-image-btn {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background: rgba(255, 0, 0, 0.8);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    cursor: pointer;
-    font-size: 12px;
-    line-height: 1;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.image-container:hover .delete-image-btn {
-    opacity: 1;
-}
-
-.images-section {
-    border-top: 1px solid #e0e0e0;
-    padding-top: 15px;
-    margin-top: 15px;
-    order: 999; /* Đảm bảo luôn ở cuối */
-    background: var(--card-bg);
-}
-
-.evernote-editor {
-    /* ... existing styles ... */
-    display: flex;
-    flex-direction: column;
-}
-
-.evernote-editor > *:not(.images-section) {
-    order: 1; /* Text content có order thấp hơn */
-}
-/* ===== IMAGE LIGHTBOX STYLES ===== */
-.image-lightbox {
-    display: none;
-    position: fixed;
-    z-index: 10000;
-    padding-top: 50px;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.9);
-}
-
-.lightbox-content {
-    margin: auto;
-    display: block;
-    width: 90%;
-    max-width: 1200px;
-    max-height: 80%;
-    object-fit: contain;
-    border-radius: 8px;
-    animation: zoom 0.3s;
-}
-
-@keyframes zoom {
-    from {transform: scale(0.1)}
-    to {transform: scale(1)}
-}
-
-.lightbox-close {
-    position: absolute;
-    top: 15px;
-    right: 35px;
-    color: #f1f1f1;
-    font-size: 40px;
-    font-weight: bold;
-    transition: 0.3s;
-    cursor: pointer;
-    z-index: 10001;
-}
-
-.lightbox-close:hover,
-.lightbox-close:focus {
-    color: #bbb;
-    text-decoration: none;
-}
-
-.lightbox-caption {
-    margin: auto;
-    display: block;
-    width: 80%;
-    max-width: 700px;
-    text-align: center;
-    color: #ccc;
-    padding: 10px 0;
-    height: 150px;
-}
-
-/* Cập nhật style cho ảnh có thể click */
-.image-container img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transition: transform 0.2s, cursor 0.2s;
-    cursor: pointer; /* Thêm cursor pointer */
-}
-
-.image-container:hover img {
-    transform: scale(1.02);
-}
-
-/* Responsive cho mobile */
-@media (max-width: 768px) {
+    /* Mobile lightbox adjustments */
     .lightbox-content {
         width: 95%;
         max-height: 70%;
