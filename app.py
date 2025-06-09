@@ -137,8 +137,9 @@ class EvernoteNote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)  # Sửa ở đây
-    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)  # Sửa ở đây
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    images = db.Column(db.Text, nullable=True)  # Thêm field lưu ảnh dạng JSON
     
 class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -1458,12 +1459,12 @@ def add_evernote_note():
     data = request.json
     note = EvernoteNote(
         title=data.get('title', ''),
-        content=data.get('content', '')
+        content=data.get('content', ''),
+        images=data.get('images')  # Thêm images
     )
     db.session.add(note)
     db.session.commit()
     
-    # Trả về với thông tin thời gian
     return jsonify({
         'status': 'success', 
         'id': note.id,
@@ -1479,7 +1480,8 @@ def update_evernote_note(note_id):
     data = request.json
     note.title = data.get('title', note.title)
     note.content = data.get('content', note.content)
-    # updated_at sẽ tự động cập nhật nhờ onupdate=datetime.now
+    if 'images' in data:  # Cập nhật images nếu có
+        note.images = data['images']
     db.session.commit()
     
     return jsonify({
@@ -1504,9 +1506,129 @@ def get_evernote_notes():
             'title': n.title,
             'content': n.content,
             'created_at': n.created_at.isoformat() if n.created_at else None,
-            'updated_at': n.updated_at.isoformat() if n.updated_at else None
+            'updated_at': n.updated_at.isoformat() if n.updated_at else None,
+            'images': json.loads(n.images) if n.images else []  # Thêm images
         } for n in notes
     ])
+
+@app.route('/api/evernote_notes/<int:note_id>/upload_images', methods=['POST'])
+@login_required
+def upload_evernote_images(note_id):
+    try:
+        note = EvernoteNote.query.get_or_404(note_id)
+        files = request.files.getlist('images')
+        
+        if not files or not any(file.filename for file in files):
+            return jsonify({'status': 'error', 'message': 'No files uploaded'}), 400
+        
+        # Lấy ảnh hiện có
+        existing_images = json.loads(note.images) if note.images else []
+        new_images = existing_images[:] if existing_images else []
+        processed_count = 0
+        
+        for file in files:
+            if file and file.filename:
+                allowed_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.heic', '.webp'}
+                normalized_filename = normalize_filename(file.filename)
+                ext = os.path.splitext(normalized_filename.lower())[1]
+                
+                if ext in allowed_extensions:
+                    try:
+                        if ext == '.heic':
+                            # Xử lý HEIC với Wand
+                            with Image(file=file) as img:
+                                img.format = 'jpeg'
+                                img.compression_quality = 50
+                                img.resize(int(img.width * 0.5), int(img.height * 0.5))
+                                output = io.BytesIO()
+                                img.save(file=output)
+                                image_data = output.getvalue()
+                            filename = normalized_filename.replace('.heic', '.jpg')
+                        else:
+                            # Xử lý ảnh thường với PIL
+                            from PIL import Image as PILImage
+                            image = PILImage.open(file)
+                            
+                            # Resize xuống 50%
+                            new_size = (int(image.width * 0.5), int(image.height * 0.5))
+                            image = image.resize(new_size, PILImage.Resampling.LANCZOS)
+                            
+                            # Compress và save
+                            output = io.BytesIO()
+                            if image.mode in ("RGBA", "P"):
+                                image = image.convert("RGB")
+                            image.save(output, format='JPEG', quality=50, optimize=True)
+                            image_data = output.getvalue()
+                            filename = normalized_filename
+                        
+                        image_base64 = b64encode(image_data).decode('utf-8')
+                        new_images.append({
+                            'id': str(uuid4()),
+                            'filename': filename,
+                            'data': image_base64
+                        })
+                        processed_count += 1
+                        
+                    except Exception as e:
+                        app.logger.error(f"Error processing image {normalized_filename}: {str(e)}")
+                else:
+                    app.logger.warning(f"Invalid file type: {normalized_filename}")
+        
+        # Cập nhật DB ngay lập tức
+        note.images = json.dumps(new_images) if new_images else None
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Processed {processed_count} images',
+            'processed_count': processed_count,
+            'images': new_images
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error in upload_evernote_images: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# API để lấy ảnh từ Evernote note
+@app.route('/api/evernote_notes/<int:note_id>/image/<string:image_id>')
+def get_evernote_image(note_id, image_id):
+    try:
+        note = EvernoteNote.query.get_or_404(note_id)
+        images = json.loads(note.images) if note.images else []
+        
+        image = next((img for img in images if img.get('id') == image_id), None)
+        if not image:
+            return jsonify({'status': 'error', 'message': 'Image not found'}), 404
+            
+        image_data = base64.b64decode(image['data'])
+        return send_file(
+            BytesIO(image_data), 
+            mimetype='image/jpeg',
+            as_attachment=False,
+            download_name=image['filename']
+        )
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# API xóa ảnh khỏi note
+@app.route('/api/evernote_notes/<int:note_id>/delete_image/<string:image_id>', methods=['DELETE'])
+@login_required
+def delete_evernote_image(note_id, image_id):
+    try:
+        note = EvernoteNote.query.get_or_404(note_id)
+        images = json.loads(note.images) if note.images else []
+        
+        # Lọc bỏ ảnh cần xóa
+        new_images = [img for img in images if img.get('id') != image_id]
+        
+        note.images = json.dumps(new_images) if new_images else None
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+        
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
     
     
 def contrast_text_color(hex_color):

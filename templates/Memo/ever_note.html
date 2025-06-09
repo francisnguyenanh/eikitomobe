@@ -276,6 +276,52 @@
         height: auto;
     }
 }
+/* ===== IMAGE STYLES ===== */
+.image-container {
+    margin: 10px 0;
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.image-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.image-container:hover img {
+    transform: scale(1.02);
+}
+
+.delete-image-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.image-container:hover .delete-image-btn {
+    opacity: 1;
+}
+
+.images-section {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 15px;
+    margin-top: 15px;
+}
 </style>
 
 <div class="evernote-layout d-flex">
@@ -403,7 +449,163 @@ const AppState = {
     lastSavedTitle: "",
     lastSavedContent: "",
     searchModalInstance: null,
-    originalEditorHeight: null
+    originalEditorHeight: null,
+    currentImages: []  // Thêm để track ảnh hiện tại
+};
+
+// ===== IMAGE FUNCTIONS =====
+const ImageManager = {
+    // Upload ảnh từ file input
+    async uploadImages(files, noteId) {
+        if (!files || files.length === 0) return;
+        
+        // Hiển thị loading
+        this.showUploadStatus('Đang upload ảnh...');
+        
+        const formData = new FormData();
+        Array.from(files).forEach(file => {
+            formData.append('images', file);
+        });
+        
+        try {
+            const response = await fetch(`/api/evernote_notes/${noteId}/upload_images`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                this.showUploadStatus(`Upload thành công ${result.processed_count} ảnh!`, 'success');
+                
+                // Cập nhật state và reload note
+                await NoteManager.loadNotes();
+                NoteManager.selectNote(noteId);
+                return result;
+            } else {
+                const error = await response.json();
+                this.showUploadStatus(`Lỗi upload: ${error.message}`, 'error');
+            }
+        } catch (error) {
+            console.error('Error uploading images:', error);
+            this.showUploadStatus('Lỗi upload ảnh!', 'error');
+        }
+    },
+    
+    // Hiển thị trạng thái upload
+    showUploadStatus(message, type = 'info') {
+        // Tạo hoặc cập nhật status element
+        let statusDiv = document.getElementById('upload-status');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.id = 'upload-status';
+            statusDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 10px 15px;
+                border-radius: 5px;
+                z-index: 9999;
+                font-size: 14px;
+                max-width: 300px;
+            `;
+            document.body.appendChild(statusDiv);
+        }
+        
+        // Set style based on type
+        const styles = {
+            info: 'background: #e3f2fd; color: #1976d2; border: 1px solid #90caf9;',
+            success: 'background: #e8f5e8; color: #2e7d32; border: 1px solid #81c784;',
+            error: 'background: #ffebee; color: #c62828; border: 1px solid #ef9a9a;'
+        };
+        
+        statusDiv.style.cssText += styles[type] || styles.info;
+        statusDiv.textContent = message;
+        statusDiv.style.display = 'block';
+        
+        // Auto hide after 3 seconds
+        setTimeout(() => {
+            if (statusDiv) {
+                statusDiv.style.display = 'none';
+            }
+        }, 3000);
+    },
+    
+    // Xử lý paste ảnh từ clipboard
+    async handlePaste(event, noteId) {
+        const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+        
+        for (let item of items) {
+            if (item.type.indexOf('image') !== -1) {
+                event.preventDefault();
+                const file = item.getAsFile();
+                if (file && noteId) {
+                    this.showUploadStatus('Đang xử lý ảnh từ clipboard...');
+                    await this.uploadImages([file], noteId);
+                }
+                break;
+            }
+        }
+    },
+    
+    // Hiển thị ảnh trong editor
+    displayImages(images) {
+        if (!images || images.length === 0) return '';
+        
+        return images.map(img => {
+            return `<div class="image-container" style="margin: 10px 0; position: relative; display: inline-block;">
+                <img src="data:image/jpeg;base64,${img.data}" 
+                     style="max-width: 100%; height: auto; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" 
+                     alt="${img.filename}">
+                <button type="button" class="delete-image-btn" 
+                        onclick="ImageManager.deleteImage('${img.id}', ${AppState.currentId})"
+                        style="position: absolute; top: 5px; right: 5px; background: rgba(255,0,0,0.8); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px; line-height: 1;"
+                        title="Xóa ảnh">×</button>
+            </div>`;
+        }).join('');
+    },
+    
+    // Xóa ảnh
+    async deleteImage(imageId, noteId) {
+        if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return;
+        
+        try {
+            const response = await fetch(`/api/evernote_notes/${noteId}/delete_image/${imageId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                this.showUploadStatus('Xóa ảnh thành công!', 'success');
+                // Reload note để cập nhật
+                await NoteManager.loadNotes();
+                NoteManager.selectNote(noteId);
+            } else {
+                this.showUploadStatus('Lỗi xóa ảnh!', 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting image:', error);
+            this.showUploadStatus('Lỗi xóa ảnh!', 'error');
+        }
+    },
+    
+    // Thêm input file cho upload ảnh
+    createImageUpload() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = 'image/*';
+        input.style.display = 'none';
+        
+        input.addEventListener('change', async (e) => {
+            if (AppState.currentId && e.target.files.length > 0) {
+                await this.uploadImages(e.target.files, AppState.currentId);
+            }
+            // Reset input để có thể chọn lại cùng file
+            e.target.value = '';
+        });
+        
+        document.body.appendChild(input);
+        return input;
+    }
 };
 
 // ===== UTILITY FUNCTIONS =====
@@ -511,10 +713,12 @@ const API = {
     },
 
     async updateNote(id, title, content) {
+        const requestData = {title, content};
+        
         const res = await fetch(`/api/evernote_notes/${id}`, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({title, content})
+            body: JSON.stringify(requestData)
         });
         return await res.json();
     },
@@ -541,6 +745,7 @@ const NoteManager = {
             document.getElementById('note-title').value = '';
             document.getElementById('evernote-editor').innerHTML = '';
             document.getElementById('note-meta').textContent = '';
+            AppState.currentImages = [];
         }
     },
 
@@ -562,12 +767,24 @@ const NoteManager = {
         if (!note) return;
         
         document.getElementById('note-title').value = note.title;
-        document.getElementById('evernote-editor').innerHTML = Utils.autoLink(note.content);
+        
+        // Hiển thị content và ảnh
+        const editor = document.getElementById('evernote-editor');
+        let content = Utils.autoLink(note.content);
+        
+        // Thêm ảnh vào cuối content
+        if (note.images && note.images.length > 0) {
+            AppState.currentImages = note.images;
+            content += '<div class="images-section">' + ImageManager.displayImages(note.images) + '</div>';
+        } else {
+            AppState.currentImages = [];
+        }
+        
+        editor.innerHTML = content;
         this.renderNoteList();
 
         const metaDiv = document.getElementById('note-meta');
         if (metaDiv && note.created_at && note.updated_at) {
-            // Sử dụng Utils.formatDate để hiển thị thời gian với giờ phút
             const createTime = Utils.formatDate(note.created_at);
             const updateTime = Utils.formatDate(note.updated_at);
             metaDiv.innerHTML = `Create: ${createTime}<br>Update: ${updateTime}`;
@@ -591,9 +808,11 @@ const NoteManager = {
         if (AppState.notes.length > 0) {
             this.selectNote(AppState.notes[0].id);
         } else {
+            AppState.currentId = null;
             document.getElementById('note-title').value = '';
             document.getElementById('evernote-editor').innerHTML = '';
             document.getElementById('note-meta').textContent = '';
+            AppState.currentImages = [];
         }
     }
 };
@@ -739,7 +958,15 @@ const SaveManager = {
         let title = document.getElementById('note-title').value.trim();
         const editor = document.getElementById('evernote-editor');
         Editor.syncCheckboxStates(editor);
-        const content = editor.innerHTML;
+        
+        // Lấy content nhưng loại bỏ phần images-section để không lưu trong content
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = editor.innerHTML;
+        const imagesSection = tempDiv.querySelector('.images-section');
+        if (imagesSection) {
+            imagesSection.remove();
+        }
+        const content = tempDiv.innerHTML;
 
         if (title === "") {
             title = `Note_${new Date().toLocaleString('sv-SE').replace(/[:\s]/g, '_').slice(0, -3)}`;
@@ -757,6 +984,7 @@ const SaveManager = {
             if (note) {
                 note.title = title;
                 note.content = content;
+                // Không cần truyền images vì đã được xử lý riêng trong upload
                 await API.updateNote(AppState.currentId, title, content);
             }
         }
@@ -768,7 +996,16 @@ const SaveManager = {
 
     autoSave: Utils.debounce(function() {
         const title = document.getElementById('note-title').value.trim();
-        const content = document.getElementById('evernote-editor').innerHTML;
+        const editor = document.getElementById('evernote-editor');
+        
+        // Lấy content mà không có images-section
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = editor.innerHTML;
+        const imagesSection = tempDiv.querySelector('.images-section');
+        if (imagesSection) {
+            imagesSection.remove();
+        }
+        const content = tempDiv.innerHTML;
         
         if (title !== AppState.lastSavedTitle || content !== AppState.lastSavedContent) {
             SaveManager.saveNote();
@@ -989,6 +1226,13 @@ document.addEventListener('DOMContentLoaded', () => {
     editor.addEventListener('focus', Editor.updateFormatButtons);
     editor.addEventListener('input', SaveManager.autoSave);
     
+    // Thêm event listener cho paste ảnh
+    editor.addEventListener('paste', (e) => {
+        if (AppState.currentId) {
+            ImageManager.handlePaste(e, AppState.currentId);
+        }
+    });
+
     editor.addEventListener('keydown', (e) => {
         if (AppState.checklistActive && e.key === 'Enter') {
             e.preventDefault();
@@ -1001,8 +1245,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Tạo input file cho upload ảnh
+    const imageUploadInput = ImageManager.createImageUpload();
+    
+    // Thêm button upload ảnh vào toolbar
+    const toolbar = document.querySelector('.evernote-toolbar');
+    const uploadBtn = document.createElement('button');
+    uploadBtn.className = 'btn btn-light btn-sm';
+    uploadBtn.type = 'button';
+    uploadBtn.title = 'Upload ảnh';
+    uploadBtn.innerHTML = '<i class="bi bi-image"></i>';
+    uploadBtn.onclick = () => {
+        if (AppState.currentId) {
+            imageUploadInput.click();
+        } else {
+            alert('Vui lòng chọn hoặc tạo note trước');
+        }
+    };
+    
+    // Thêm vào toolbar sau button search
+    const searchBtn = document.getElementById('search-btn');
+    searchBtn.parentNode.insertBefore(uploadBtn, searchBtn.nextSibling);
+
+
     // Load initial data
     NoteManager.loadNotes();
 });
+// Expose ImageManager globally for onclick handlers
+window.ImageManager = ImageManager;
 </script>
 {% endblock %}
