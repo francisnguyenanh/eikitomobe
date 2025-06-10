@@ -1,7 +1,14 @@
 {% extends "Diary/layout.html" %}
 {% block content %}
-<h2 class="fs-4 fw-bold text-primary text-uppercase mb-3"><i class="bi bi-pencil-square me-2"></i>New Entry</h2>
-<form method="POST">
+<div class="d-flex align-items-center mb-3">
+    <h2 class="fs-4 fw-bold text-primary text-uppercase mb-0 me-3">
+        <i class="bi bi-pencil-square me-2"></i>New Entry
+    </h2>
+    <span id="save-status" style="color:#43a047; font-size:1.2em; display:none;">
+        <i class="bi bi-cloud-check-fill"></i>
+    </span>
+</div>
+<form method="POST" id="diary-form">
     <div class="mb-3 d-flex align-items-center">
         <div class="me-3">
             <label for="color" class="form-label"> </label>
@@ -24,7 +31,7 @@
     <div class="mb-3">
         <label for="content" class="form-label fw-bold text-primary fs-5">Content</label>
         <textarea class="form-control" id="content" name="content" rows="15" required></textarea>
-    </div >
+    </div>
     <div class="text-end">
         <button type="submit" class="btn btn-primary">Save Diary</button>
     </div>
@@ -48,8 +55,363 @@
     .form-label.fw-bold.text-primary.fs-5:hover {
         color: #005cbf; /* Darker shade of primary */
     }
+    
+    /* Auto-save status styles */
+    #save-status {
+        z-index: 10;
+        pointer-events: none;
+    }
+    
+    /* Button spacing styles similar to ever_note.html */
+    .btn-sm {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        padding: 0.5rem !important;
+        margin: 0.25rem !important;
+        font-size: 1.1rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    /* Mobile responsive adjustments */
+    @media (max-width: 991.98px) {
+        .btn-sm {
+            min-width: 44px !important;
+            min-height: 44px !important;
+        }
+        
+        /* Tăng chiều cao textarea trên mobile */
+        #content {
+            min-height: 60vh !important; /* Sử dụng 60% viewport height */
+            rows: 25; /* Tăng số rows */
+        }
+        
+        /* Đảm bảo form sử dụng toàn bộ chiều cao màn hình */
+        .container {
+            min-height: 100vh;
+            padding-bottom: 2rem;
+        }
+        
+        /* Tối ưu hóa spacing trên mobile */
+        .mb-3 {
+            margin-bottom: 1rem !important;
+        }
+        
+        /* Giảm khoảng cách header để có thêm chỗ cho content */
+        .d-flex.align-items-center.mb-3 {
+            margin-bottom: 1rem !important;
+        }
+    }
+    
+    /* Tablet adjustments */
+    @media (max-width: 991.98px) and (min-width: 768px) {
+        #content {
+            min-height: 55vh !important;
+        }
+    }
+    
+    /* Small mobile adjustments */
+    @media (max-width: 576px) {
+        #content {
+            min-height: 65vh !important; /* Tăng thêm cho màn hình nhỏ */
+        }
+        
+        /* Giảm padding container để có thêm chỗ */
+        .container {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+        
+        /* Giảm khoảng cách giữa các elements */
+        .mb-3 {
+            margin-bottom: 0.75rem !important;
+        }
+        
+        .d-flex.align-items-center.mb-3 {
+            margin-bottom: 0.75rem !important;
+        }
+        
+        /* Tối ưu button area */
+        .text-end {
+            margin-top: 1rem;
+        }
+    }
+    
+    /* Desktop adjustments */
+    @media (min-width: 992px) {
+        .btn-sm {
+            min-width: 32px !important;
+            height: 32px !important;
+            padding: 0.25rem !important;
+            margin: 0 !important;
+            font-size: 0.875rem !important;
+        }
+        
+        /* Giữ nguyên chiều cao mặc định trên desktop */
+        #content {
+            min-height: auto;
+        }
+    }
 </style>
 <script>
+    // ===== AUTO-SAVE FUNCTIONALITY =====
+    const AutoSave = {
+        lastSavedTitle: '',
+        lastSavedContent: '',
+        lastSavedColor: '#ffffff',
+        saveTimeout: null,
+        draftId: null,
+        
+        // Show save status animation
+        showSaveStatus() {
+            const icon = document.getElementById('save-status');
+            icon.style.display = 'inline';
+            icon.style.opacity = '1';
+            icon.animate([{opacity: 0.2}, {opacity: 1}], {duration: 300, iterations: 1});
+            
+            clearTimeout(this.saveTimeout);
+            this.saveTimeout = setTimeout(() => {
+                icon.style.display = 'none';
+            }, 1500);
+        },
+        
+        // Debounce utility function
+        debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        },
+        
+        // Save draft to database
+        async saveDraft() {
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+            const color = document.getElementById('color').value;
+            
+            // Chỉ lưu khi cả title và content đều có dữ liệu
+            if (!title || !content) {
+                console.log('Auto-save skipped: Both title and content are required');
+                return;
+            }
+            
+            // Check if content has changed
+            if (title === this.lastSavedTitle && 
+                content === this.lastSavedContent && 
+                color === this.lastSavedColor) {
+                return; // No changes to save
+            }
+            
+            try {
+                const response = await fetch('/api/diary/auto_save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        content: content,
+                        color: color
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    if (result.status === 'created' || result.status === 'updated') {
+                        // Update saved state
+                        this.lastSavedTitle = title;
+                        this.lastSavedContent = content;
+                        this.lastSavedColor = color;
+                        this.draftId = result.diary_id;
+                        
+                        // Show save status
+                        this.showSaveStatus();
+                        
+                        console.log(`Draft ${result.status}: ${result.message}`);
+                        
+                        // Remove localStorage draft since we saved to DB
+                        localStorage.removeItem('diary_draft');
+                    } else if (result.status === 'skipped') {
+                        console.log(result.message);
+                    }
+                } else {
+                    console.error('Auto-save failed:', result.message);
+                }
+                
+            } catch (error) {
+                console.error('Error during auto-save:', error);
+                // Fallback to localStorage if server fails
+                this.saveDraftToLocalStorage(title, content, color);
+            }
+        },
+        
+        // Fallback: Save to localStorage
+        saveDraftToLocalStorage(title, content, color) {
+            try {
+                const draftData = {
+                    title: title,
+                    content: content,
+                    color: color,
+                    lastModified: new Date().toISOString()
+                };
+                
+                localStorage.setItem('diary_draft', JSON.stringify(draftData));
+                console.log('Fallback: Draft saved to localStorage');
+            } catch (error) {
+                console.error('Error saving to localStorage:', error);
+            }
+        },
+        
+        // Auto-save with debouncing
+        autoSave: null,
+        
+        // Initialize auto-save
+        init() {
+            this.autoSave = this.debounce(() => {
+                this.saveDraft();
+            }, 3000); // Auto-save after 3 seconds of inactivity (tăng lên để tránh quá nhiều request)
+            
+            // Load existing draft
+            this.loadDraft();
+            
+            // Set up event listeners
+            this.setupEventListeners();
+        },
+        
+        // Load draft from localStorage (fallback only)
+        loadDraft() {
+            try {
+                const savedDraft = localStorage.getItem('diary_draft');
+                if (savedDraft) {
+                    const draftData = JSON.parse(savedDraft);
+                    
+                    // Only load if the draft is recent (within 24 hours)
+                    const lastModified = new Date(draftData.lastModified);
+                    const now = new Date();
+                    const hoursDiff = (now - lastModified) / (1000 * 60 * 60);
+                    
+                    if (hoursDiff < 24) {
+                        document.getElementById('title').value = draftData.title || '';
+                        document.getElementById('content').value = draftData.content || '';
+                        document.getElementById('color').value = draftData.color || '#ffffff';
+                        
+                        // Update content style
+                        updateContentStyle();
+                        
+                        // Update saved state
+                        this.lastSavedTitle = draftData.title || '';
+                        this.lastSavedContent = draftData.content || '';
+                        this.lastSavedColor = draftData.color || '#ffffff';
+                        
+                        console.log('Draft loaded from localStorage (fallback)');
+                        
+                        // Show notification that draft was loaded
+                        this.showDraftLoadedNotification();
+                    } else {
+                        // Remove old draft
+                        localStorage.removeItem('diary_draft');
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading draft:', error);
+            }
+        },
+        
+        // Show notification that draft was loaded
+        showDraftLoadedNotification() {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #e3f2fd;
+                color: #1976d2;
+                border: 1px solid #90caf9;
+                padding: 10px 15px;
+                border-radius: 5px;
+                z-index: 9999;
+                font-size: 14px;
+                max-width: 300px;
+            `;
+            notification.innerHTML = '<i class="bi bi-info-circle"></i> Draft loaded from previous session';
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 4000);
+        },
+        
+        // Set up event listeners
+        setupEventListeners() {
+            const titleInput = document.getElementById('title');
+            const contentTextarea = document.getElementById('content');
+            const colorInput = document.getElementById('color');
+            
+            // Auto-save on input (chỉ khi cả title và content đều có dữ liệu)
+            titleInput.addEventListener('input', () => {
+                if (titleInput.value.trim() && contentTextarea.value.trim()) {
+                    this.autoSave();
+                }
+            });
+            
+            contentTextarea.addEventListener('input', () => {
+                if (titleInput.value.trim() && contentTextarea.value.trim()) {
+                    this.autoSave();
+                }
+            });
+            
+            colorInput.addEventListener('change', () => {
+                if (titleInput.value.trim() && contentTextarea.value.trim()) {
+                    this.autoSave();
+                }
+            });
+            
+            // Save on blur (when user clicks away) - chỉ khi cả title và content đều có dữ liệu
+            titleInput.addEventListener('blur', () => {
+                if (titleInput.value.trim() && contentTextarea.value.trim()) {
+                    this.saveDraft();
+                }
+            });
+            
+            contentTextarea.addEventListener('blur', () => {
+                if (titleInput.value.trim() && contentTextarea.value.trim()) {
+                    this.saveDraft();
+                }
+            });
+            
+            // Clear localStorage draft on successful form submission
+            document.getElementById('diary-form').addEventListener('submit', () => {
+                localStorage.removeItem('diary_draft');
+            });
+            
+            // Save draft before page unload (nếu có đủ dữ liệu)
+            window.addEventListener('beforeunload', () => {
+                const title = titleInput.value.trim();
+                const content = contentTextarea.value.trim();
+                if (title && content) {
+                    // Sử dụng navigator.sendBeacon cho beforeunload (không đợi response)
+                    const data = JSON.stringify({
+                        title: title,
+                        content: content,
+                        color: colorInput.value
+                    });
+                    
+                    navigator.sendBeacon('/api/diary/auto_save', data);
+                }
+            });
+        }
+    };
+    
+    // ===== ORIGINAL COLOR FUNCTIONALITY =====
     const colorInput = document.getElementById('color');
     const contentArea = document.getElementById('content');
 
@@ -68,7 +430,16 @@
         contentArea.style.color = calculateContrastColor(bgColor);
     }
 
-    colorInput.addEventListener('input', updateContentStyle);
-    updateContentStyle();
+    // ===== INITIALIZATION =====
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize auto-save functionality
+        AutoSave.init();
+        
+        // Set up color change listener
+        colorInput.addEventListener('input', updateContentStyle);
+        
+        // Initial style update
+        updateContentStyle();
+    });
 </script>
 {% endblock %}

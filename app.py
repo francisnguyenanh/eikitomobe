@@ -1993,5 +1993,106 @@ def generate_repeat_todos(base_todo):
     
     db.session.commit()
 
+# Thêm API endpoint cho auto-save diary
+@app.route('/api/diary/auto_save', methods=['POST'])
+@login_required
+def auto_save_diary():
+    try:
+        data = request.get_json()
+        title = data.get('title', '').strip()
+        content = data.get('content', '').strip()
+        color = data.get('color', '#ffffff')
+        
+        # Chỉ lưu khi cả title và content đều có dữ liệu
+        if not title or not content:
+            return jsonify({
+                'status': 'skipped',
+                'message': 'Both title and content are required for auto-save'
+            })
+        
+        # Kiểm tra xem đã có draft chưa bằng cách tìm diary có title giống nhau và được tạo trong 24h qua
+        recent_time = datetime.now() - timedelta(hours=24)
+        
+        with diary_app.app_context():
+            existing_draft = Diary.query.filter(
+                Diary.title == title,
+                Diary.date >= recent_time
+            ).first()
+            
+            if existing_draft:
+                # Cập nhật draft hiện có
+                existing_draft.content = content
+                existing_draft.color = color
+                existing_draft.date = datetime.now()  # Cập nhật thời gian
+                db_diary.session.commit()
+                
+                return jsonify({
+                    'status': 'updated',
+                    'message': 'Draft updated successfully',
+                    'diary_id': existing_draft.id
+                })
+            else:
+                # Tạo draft mới
+                new_diary = Diary(
+                    title=title,
+                    content=content,
+                    color=color,
+                    date=datetime.now()
+                )
+                db_diary.session.add(new_diary)
+                db_diary.session.commit()
+                
+                return jsonify({
+                    'status': 'created',
+                    'message': 'Draft created successfully',
+                    'diary_id': new_diary.id
+                })
+                
+    except Exception as e:
+        app.logger.error(f"Error in auto_save_diary: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to auto-save: {str(e)}'
+        }), 500
+    
+@app.route('/api/diary/auto_save_edit/<int:diary_id>', methods=['PUT'])
+@login_required
+def auto_save_edit_diary(diary_id):
+    try:
+        data = request.get_json()
+        title = data.get('title', '').strip()
+        content = data.get('content', '').strip()
+        color = data.get('color', '#ffffff')
+        
+        # Chỉ lưu khi cả title và content đều có dữ liệu
+        if not title or not content:
+            return jsonify({
+                'status': 'skipped',
+                'message': 'Both title and content are required for auto-save'
+            })
+        
+        with diary_app.app_context():
+            diary = Diary.query.get_or_404(diary_id)
+            
+            # Cập nhật diary
+            diary.title = title
+            diary.content = content
+            diary.color = color
+            diary.date = datetime.now()  # Cập nhật thời gian chỉnh sửa
+            db_diary.session.commit()
+            
+            return jsonify({
+                'status': 'updated',
+                'message': 'Diary auto-saved successfully',
+                'diary_id': diary.id
+            })
+                
+    except Exception as e:
+        app.logger.error(f"Error in auto_save_edit_diary: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'Failed to auto-save: {str(e)}'
+        }), 500
+        
 if __name__ == '__main__':
     app.run(debug=True)
