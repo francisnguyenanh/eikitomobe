@@ -1,588 +1,928 @@
 {% extends "Memo/base.html" %}
 {% block title %}Task List{% endblock %}
 {% block content %}
-    <style>
-        /* === LAYOUT & POSITIONING === */
-        form#searchForm {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: var(--bg-color);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
+ <style>
+/* === LAYOUT & POSITIONING === */
+form#searchForm {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-color);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 
-        footer {
-            position: fixed;
-            right: 0;
-            bottom: 0;
-            z-index: 999;
-            width: auto;
-            min-width: 180px;
-            background: rgba(255,255,255,0.8);
-            font-size: 0.95em;
-        }
+footer {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+    width: auto;
+    min-width: 180px;
+    background: rgba(255,255,255,0.8);
+    font-size: 0.95em;
+}
 
-        /* === COMPONENTS === */
-        .card, .modal-content, .table {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-        }
+/* === BASIC COMPONENTS === */
+.card, .modal-content, .table {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
 
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
 
-        /* === TASK COMPONENTS === */
-        .task-category {
-            font-weight: bold;
-            font-size: 1.1rem;
-            margin: 0.5rem 0;
-            color: #0d6efd;
-            letter-spacing: 0.5px;
-        }
+/* === TASK TABLE (4 COLUMNS LAYOUT) === */
+.task-table {
+    table-layout: fixed;
+    width: 100%;
+    min-width: 600px;
+    background-color: transparent !important;
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+}
 
-        .task-category .btn-link {
-            color: inherit;
-            text-decoration: none;
-        }
+.task-table thead {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
 
-        .task-table {
-            table-layout: fixed;
-            width: 100%;
-            min-width: 600px;
-            background-color: var(--bg-color) !important;
-        }
+.task-table thead th {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #495057;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 18px 16px;
+    border: none;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    position: relative;
+}
 
-        .task-table th, 
-        .task-table td {
-            vertical-align: middle !important;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            background-color: var(--bg-color) !important;
-        }
+.task-table thead th::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #0d6efd 0%, #20c997 50%, #fd7e14 100%);
+}
 
-        /* Column widths */
-        .task-table th:nth-child(1), .task-table td:nth-child(1) { width: 32px; }
-        .task-table th:nth-child(2), .task-table td:nth-child(2) { width: 20%; min-width: 120px; max-width: 220px; }
-        .task-table th:nth-child(3), .task-table td:nth-child(3) { width: 40%; min-width: 180px; max-width: 400px; }
-        .task-table th:nth-child(4), .task-table td:nth-child(4) { width: 18%; min-width: 110px; max-width: 160px; }
-        .task-table th:nth-child(5), .task-table td:nth-child(5) { width: 12%; min-width: 70px; max-width: 100px; }
+.task-table tbody tr {
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    outline: 4px solid transparent;
+    outline-offset: -4px;
+}
 
-        .task-table .task-title {
-            font-weight: 500;
-        }
+.task-table tbody tr::before {
+    display: none;
+}
 
-        .task-table .task-content {
-            color: #555;
-            font-size: 0.97em;
-        }
+.task-table tbody tr:hover {
+    background: rgba(13, 110, 253, 0.04);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    z-index: 5;
+}
 
-        .task-table .task-due {
-            font-size: 0.97em;
-            color: #b02a37;
-        }
+.task-table tbody tr:hover::before {
+    background: linear-gradient(180deg, #0d6efd 0%, #20c997 100%);
+}
 
-        .task-table .delete-btn {
-            color: #b02a37;
-            cursor: pointer;
-            font-size: 1.2em;
-            transition: color 0.15s;
-        }
+.task-table tbody tr:nth-child(even) {
+    background: rgba(248, 249, 250, 0.5);
+}
 
-        .task-table .delete-btn:hover {
-            color: #dc3545;
-        }
+.task-table tbody tr:nth-child(even):hover {
+    background: rgba(13, 110, 253, 0.04);
+}
 
-        .task-table .btn,
-        .task-table .delete-btn {
-            vertical-align: middle !important;
-            line-height: 1.2;
-            padding: 2px 0;
-        }
+.task-table th, .task-table td {
+    vertical-align: middle !important;
+    padding: 16px;
+    border: none !important;
+    background: transparent !important;
+    position: relative;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-        /* Custom checkbox styling */
-        .task-table input[type="checkbox"] {
-            appearance: none;
-            -webkit-appearance: none;
-            width: 18px;
-            height: 18px;
-            border: 2px solid #0d6efd;
-            border-radius: 50%;
-            background: #fff;
-            outline: none;
-            cursor: pointer;
-            position: relative;
-            transition: all 0.2s;
-            box-shadow: 0 0 0 0 rgba(13,110,253,0.3);
-            vertical-align: middle;
-        }
+/* 4-Column Layout: Title | Content | Due Date | Actions */
+.task-table th:nth-child(1), .task-table td:nth-child(1) { 
+    width: 30%; 
+    min-width: 180px; 
+    max-width: 300px; 
+}
+.task-table th:nth-child(2), .task-table td:nth-child(2) { 
+    width: 40%; 
+    min-width: 200px; 
+    max-width: 400px; 
+}
+.task-table th:nth-child(3), .task-table td:nth-child(3) { 
+    width: 20%; 
+    min-width: 130px; 
+    max-width: 180px; 
+}
+.task-table th:nth-child(4), .task-table td:nth-child(4) { 
+    width: 10%; 
+    min-width: 120px; 
+    max-width: 150px;
+    text-align: center;
+}
 
-        .task-table input[type="checkbox"]:checked {
-            background: #0d6efd;
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 4px rgba(13,110,253,0.15);
-        }
+/* Task content styling */
+.task-table .task-title {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #2c3e50;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
 
-        .task-table input[type="checkbox"]:checked::after {
-            content: '';
-            display: block;
-            width: 8px;
-            height: 8px;
-            background: #fff;
-            border-radius: 50%;
-            position: absolute;
-            top: 3px;
-            left: 3px;
-        }
+.task-table .task-title:hover {
+    color: #0d6efd;
+}
 
-        .task-table input[type="checkbox"]:active {
-            box-shadow: 0 0 0 8px rgba(13,110,253,0.10);
-            border-color: #0a58ca;
-        }
+.task-table .task-content {
+    color: #6c757d;
+    font-size: 0.95em;
+    line-height: 1.5;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
 
-        .task-table .task-complete:checked + span {
-            text-decoration: line-through;
-            color: #888;
-        }
+.task-table .task-content:hover {
+    color: #495057;
+}
 
-        .category-table-wrapper {
-            overflow-x: auto;
-        }
+/* Due Date Cell Styling */
+.due-date-cell {
+    position: relative;
+    transition: all 0.2s ease;
+}
 
-        .category-table-wrapper.collapsed {
-            display: none;
-        }
+.due-date-cell:hover {
+    background-color: rgba(13, 110, 253, 0.1) !important;
+    transform: scale(1.02);
+}
 
-        /* === CATEGORY COMPONENTS === */
-        .category-label {
-            min-width: 120px;
-            max-width: 100%;
-            height: 38px;
-            padding: 0 16px;
-            font-size: 1rem;
-            text-align: center;
-            white-space: nowrap;
-            box-sizing: border-box;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 0.5rem;
-        }
+.due-date-cell:active {
+    transform: scale(0.98);
+}
 
-        .category-card {
-            background-color: var(--card-bg);
-            border: none;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
-            position: relative;
-            padding: 20px;
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: slideIn 0.5s ease forwards;
-        }
+.task-table .task-due {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #fd7e14;
+    background: rgba(253, 126, 20, 0.1);
+    padding: 8px 12px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(253, 126, 20, 0.2);
+    user-select: none;
+}
 
-        /* === MODAL COMPONENTS === */
-        #viewMemoModal .modal-body,
-        #viewMemoModal #viewMemoTitle,
-        #viewMemoModal #viewMemoContent {
-            font-family: 'Noto Sans JP', 'Noto Sans', 'Segoe UI', Arial, 'Hiragino Kaku Gothic Pro', 'Meiryo', 'MS PGothic', 'Tahoma', 'Geneva', sans-serif !important;
-            font-size: 1.1rem;
-            letter-spacing: 0.01em;
-        }
+.task-table .task-due:hover {
+    background: rgba(253, 126, 20, 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(253, 126, 20, 0.3);
+}
 
-        #viewMemoModal #viewMemoTitle {
-            font-family: 'Kosugi Maru', sans-serif;
-            font-size: 1.5rem;
-        }
+/* Completed task styling */
+.task-table .task-due.completed {
+    background: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+    border-color: rgba(40, 167, 69, 0.3);
+    font-weight: 600;
+}
 
-        #viewMemoModal #viewMemoContent {
-            background-color: var(--bg-color);
-            padding: 18px;
-            border-radius: 5px;
-            min-height: 200px;
-            max-height: 400px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            border: 1px solid #ddd;
-            transition: background-color 0.2s ease;
-        }
+.task-table .task-due.completed:hover {
+    background: rgba(40, 167, 69, 0.25);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
 
-        /* Mobile-specific modal improvements */
-        @media (max-width: 768px) {
-        #viewMemoModal #viewMemoContent {
-            cursor: pointer;
-            position: relative;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-touch-callout: none;
-        }
-        
-        #viewMemoModal #viewMemoContent:hover {
-            background-color: #f8f9fa;
-        }
-        
-        #viewMemoModal #viewMemoContent:active {
-            background-color: #e9ecef;
-        }
-        
-        /* Remove the tap indicator since it's obvious now */
-        /* #viewMemoModal #viewMemoContent::after - commented out */
-        
-        /* Improve touch targets */
-        #viewMemoModal .btn {
-            min-height: 44px;
-            padding: 12px 20px;
-            font-size: 1rem;
-        }
-        
-        #viewMemoModal .modal-body {
-            padding: 1.5rem;
-        }
-        
-        #viewMemoModal .nav-tabs .nav-link {
-            min-height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-        }
-        
-        /* Better spacing for mobile */
-        #viewMemoModal .tab-content {
-            margin-top: 1rem;
-        }
-        
-        #viewMemoModal #viewMemoTitle {
-            font-size: 1.3rem;
-            margin-bottom: 1rem;
-        }
-        
-        #viewMemoModal p {
-            font-size: 1rem;
-            line-height: 1.5;
-            margin-bottom: 0.75rem;
-        }
+.task-table .task-due.completed i {
+    color: #28a745;
+    font-size: 1rem;
+}
+
+.task-table tbody tr.completed {
+    opacity: 0.6;
+    background: rgba(108, 117, 125, 0.05);
+}
+
+.task-table tbody tr.completed .task-title,
+.task-table tbody tr.completed .task-content {
+    text-decoration: line-through;
+    color: #6c757d;
+}
+
+/* Function buttons styling */
+.task-table .function-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.task-table .function-buttons .btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    border: none;
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+}
+
+.task-table .function-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.task-table .function-buttons .btn:nth-child(1) {
+    background: rgba(32, 201, 151, 0.1);
+    color: #20c997;
+}
+
+.task-table .function-buttons .btn:nth-child(1):hover {
+    background: #20c997;
+    color: white;
+}
+
+.task-table .function-buttons .btn:nth-child(2) {
+    background: rgba(253, 126, 20, 0.1);
+    color: #fd7e14;
+}
+
+.task-table .function-buttons .btn:nth-child(2):hover {
+    background: #fd7e14;
+    color: white;
+}
+
+.task-table .delete-btn {
+    color: #dc3545;
+    cursor: pointer;
+    font-size: 1.1em;
+    transition: all 0.2s ease;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.task-table .delete-btn:hover {
+    background: #dc3545;
+    color: white;
+    transform: translateY(-2px) scale(1.1);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+}
+
+/* Table wrapper */
+.category-table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    background: white;
+    margin-bottom: 2rem;
+}
+
+.category-table-wrapper.collapsed {
+    display: none;
+}
+
+/* === CATEGORY COMPONENTS === */
+.task-category {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin: 0.5rem 0;
+    color: #0d6efd;
+    letter-spacing: 0.5px;
+}
+
+.toggle-category {
+    background: linear-gradient(135deg, var(--primary-color, #0d6efd) 0%, rgba(13, 110, 253, 0.8) 100%) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 12px 20px !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    color: white !important;
+    text-decoration: none !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    min-height: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    min-width: 140px !important;
+    text-align: left !important;
+}
+
+.toggle-category:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 20px rgba(13, 110, 253, 0.25) !important;
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.9) 0%, var(--primary-color, #0d6efd) 100%) !important;
+    color: white !important;
+}
+
+.toggle-category:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2) !important;
+}
+
+.toggle-category::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.toggle-category:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+.toggle-category i {
+    font-size: 0.9rem !important;
+    transition: transform 0.3s ease !important;
+    width: 16px !important;
+    height: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.toggle-category .category-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 600;
+}
+
+.task-count {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #6c757d;
+    margin-left: 12px;
+    padding: 4px 10px;
+    background: rgba(108, 117, 125, 0.08);
+    border-radius: 16px;
+    border: 1px solid rgba(108, 117, 125, 0.12);
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+
+.task-count.has-completed {
+    background: rgba(40, 167, 69, 0.08);
+    border-color: rgba(40, 167, 69, 0.15);
+    color: #28a745;
+    font-weight: 600;
+}
+
+.category-label {
+    min-width: 120px;
+    max-width: 100%;
+    height: 38px;
+    padding: 0 16px;
+    font-size: 1rem;
+    text-align: center;
+    white-space: nowrap;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+}
+
+.category-card {
+    background-color: var(--card-bg);
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.1);
+    position: relative;
+    padding: 20px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: slideIn 0.5s ease forwards;
+}
+
+/* === MODAL COMPONENTS === */
+#viewMemoModal .modal-body,
+#viewMemoModal #viewMemoTitle,
+#viewMemoModal #viewMemoContent {
+    font-family: 'Noto Sans JP', 'Noto Sans', 'Segoe UI', Arial, 'Hiragino Kaku Gothic Pro', 'Meiryo', 'MS PGothic', 'Tahoma', 'Geneva', sans-serif !important;
+    font-size: 1.1rem;
+    letter-spacing: 0.01em;
+}
+
+#viewMemoModal #viewMemoTitle {
+    font-family: 'Kosugi Maru', sans-serif;
+    font-size: 1.5rem;
+}
+
+#viewMemoModal #viewMemoContent {
+    background-color: var(--bg-color);
+    padding: 18px;
+    border-radius: 5px;
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    border: 1px solid #ddd;
+    transition: background-color 0.2s ease;
+}
+
+/* === CALENDAR MODAL === */
+#calendarModal .modal-dialog {
+    width: 95vw;
+    max-width: 95vw;
+    height: 90vh;
+    max-height: 90vh;
+    margin: 5vh auto;
+}
+
+#calendarModal .modal-content {
+    height: 90vh;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#calendarModal .modal-body {
+    flex: 1 1 auto;
+    overflow: hidden;
+    padding: 0.5rem;
+}
+
+#calendar {
+    height: calc(90vh - 60px);
+    min-height: 400px;
+}
+
+/* === IMAGE COMPONENTS === */
+#imagePreview img, 
+#editImagePreview img, 
+#viewMemoImages img {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 5px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.position-relative {
+    display: inline-block;
+}
+
+.position-relative .btn-danger {
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+/* === INTERACTIVE STATES === */
+.reminder-item.clicked {
+    background-color: var(--primary-color) !important;
+    color: #ffffff;
+}
+
+.reminder-item.clicked:hover {
+    background-color: #28a745 !important;
+    color: #ffffff;
+}
+
+.reminder-item:hover {
+    background-color: #ffca2c;
+}
+
+.link-input[readonly] {
+    background-color: #f3f3f3 !important;
+    color: #555;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.link-input:not([readonly]) {
+    background-color: #fffbe6 !important;
+    color: #212529;
+    transition: background 0.2s;
+}
+
+.link-input:focus {
+    background-color: #fffde7 !important;
+    border-color: #ffe066;
+    outline: none;
+}
+
+/* === MOBILE RESPONSIVE === */
+@media (max-width: 768px) {
+    /* Search form adjustments */
+    form#searchForm {
+        padding: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
 
-        /* === CALENDAR MODAL RESPONSIVE === */
-        #calendarModal .modal-dialog {
-            width: 95vw;
-            max-width: 95vw;
-            height: 90vh;
-            max-height: 90vh;
-            margin: 5vh auto;
-        }
+    form#searchForm .row.g-2 {
+        gap: 0.5rem;
+    }
 
-        #calendarModal .modal-content {
-            height: 90vh;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-        }
+    form#searchForm .col-12.col-md {
+        order: 0;
+        margin-bottom: 0.5rem;
+    }
 
-        #calendarModal .modal-body {
-            flex: 1 1 auto;
-            overflow: hidden;
-            padding: 0.5rem;
-        }
+    form#searchForm .btn {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.875rem;
+    }
 
-        #calendar {
-            height: calc(90vh - 60px);
-            min-height: 400px;
-        }
+    form#searchForm .form-check-label {
+        font-size: 0.875rem;
+    }
 
-        /* Mobile-specific calendar adjustments */
-        @media (max-width: 768px) {
-            #calendarModal .modal-dialog {
-                width: 100vw;
-                max-width: 100vw;
-                height: 100vh;
-                max-height: 100vh;
-                margin: 0;
-                border-radius: 0;
-            }
+    .container {
+        padding-top: 0;
+    }
 
-            #calendarModal .modal-content {
-                height: 100vh;
-                max-height: 100vh;
-                border-radius: 0;
-                border: none;
-                position: relative;
-            }
+    /* Task table mobile adjustments - 4 columns */
+    .task-table {
+        min-width: 480px; /* Reduced from 520px */
+        font-size: 0.9rem;
+    }
 
-            #calendarModal .modal-body {
-                padding: 0.25rem;
-                overflow: hidden;
-                padding-top: 50px; /* Space for close button */
-            }
+    .task-table th, .task-table td {
+        padding: 12px 8px;
+    }
 
-            #calendar {
-                height: calc(100vh - 60px);
-                min-height: calc(100vh - 60px);
-            }
+    /* Mobile column widths for 4-column layout */
+    .task-table th:nth-child(1), .task-table td:nth-child(1) { 
+        width: 25%; 
+        min-width: 120px; 
+        max-width: 150px; 
+    }
+    .task-table th:nth-child(2), .task-table td:nth-child(2) { 
+        width: 35%; 
+        min-width: 140px; 
+        max-width: 180px; 
+    }
+    .task-table th:nth-child(3), .task-table td:nth-child(3) { 
+        width: 25%; 
+        min-width: 110px; 
+        max-width: 140px; 
+    }
+    .task-table th:nth-child(4), .task-table td:nth-child(4) { 
+        width: 15%; 
+        min-width: 100px; 
+        max-width: 120px; 
+    }
 
-            /* Enhanced close button for mobile */
-            #calendarModal .btn-close {
-                position: fixed;
-                top: 15px;
-                right: 15px;
-                z-index: 1070;
-                background: rgba(0,0,0,0.8);
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 2px solid rgba(255,255,255,0.3);
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-            }
+    .task-table .function-buttons {
+        flex-direction: column;
+        gap: 4px;
+    }
 
-            #calendarModal .btn-close:hover,
-            #calendarModal .btn-close:focus {
-                background: rgba(0,0,0,0.9);
-                border-color: rgba(255,255,255,0.5);
-                transform: scale(1.1);
-            }
+    .task-table .function-buttons .btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
 
-            #calendarModal .btn-close::before {
-                content: '×';
-                color: white;
-                font-size: 24px;
-                font-weight: bold;
-                line-height: 1;
-            }
+    .task-table .task-due {
+        font-size: 0.8rem;
+        padding: 6px 8px;
+        min-width: 80px;
+    }
 
-            /* Additional mobile close button */
-            #calendarModal .mobile-close-btn {
-                position: fixed;
-                bottom: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                z-index: 1070;
-                background: #dc3545;
-                color: white;
-                border: none;
-                border-radius: 25px;
-                padding: 12px 24px;
-                font-size: 16px;
-                font-weight: 500;
-                box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
-                transition: all 0.3s ease;
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
+    /* Category toggle mobile adjustments */
+    .toggle-category {
+        padding: 10px 16px !important;
+        font-size: 0.9rem !important;
+        min-width: 120px !important;
+        min-height: 40px !important;
+    }
+    
+    .toggle-category i {
+        font-size: 0.8rem !important;
+    }
 
-            #calendarModal .mobile-close-btn:hover,
-            #calendarModal .mobile-close-btn:active {
-                background: #c82333;
-                transform: translateX(-50%) scale(1.05);
-                box-shadow: 0 6px 20px rgba(220, 53, 69, 0.6);
-            }
+    /* Modal mobile improvements */
+    #viewMemoModal #viewMemoContent {
+        cursor: pointer;
+        position: relative;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+    }
+    
+    #viewMemoModal #viewMemoContent:hover {
+        background-color: #f8f9fa;
+    }
+    
+    #viewMemoModal #viewMemoContent:active {
+        background-color: #e9ecef;
+    }
+    
+    #viewMemoModal .btn {
+        min-height: 44px;
+        padding: 12px 20px;
+        font-size: 1rem;
+    }
+    
+    #viewMemoModal .modal-body {
+        padding: 1.5rem;
+    }
+    
+    #viewMemoModal .nav-tabs .nav-link {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+    
+    #viewMemoModal .tab-content {
+        margin-top: 1rem;
+    }
+    
+    #viewMemoModal #viewMemoTitle {
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+    }
+    
+    #viewMemoModal p {
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-bottom: 0.75rem;
+    }
 
-            /* FullCalendar mobile optimizations */
-            .fc .fc-toolbar {
-                flex-direction: column;
-                gap: 0.5rem;
-            }
+    /* Calendar mobile adjustments */
+    #calendarModal .modal-dialog {
+        width: 100vw;
+        max-width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        margin: 0;
+        border-radius: 0;
+    }
 
-            .fc .fc-toolbar-chunk {
-                display: flex;
-                justify-content: center;
-                flex-wrap: wrap;
-                gap: 0.25rem;
-            }
+    #calendarModal .modal-content {
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+        border: none;
+        position: relative;
+    }
 
-            .fc .fc-button-group {
-                margin: 0 0.25rem;
-            }
+    #calendarModal .modal-body {
+        padding: 0.25rem;
+        overflow: hidden;
+        padding-top: 50px;
+    }
 
-            .fc .fc-button {
-                font-size: 0.8rem;
-                padding: 0.25rem 0.5rem;
-            }
+    #calendar {
+        height: calc(100vh - 60px);
+        min-height: calc(100vh - 60px);
+    }
 
-            .fc .fc-toolbar-title {
-                font-size: 1.1rem;
-                margin: 0.25rem 0;
-            }
+    #calendarModal .btn-close {
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        z-index: 1070;
+        background: rgba(0,0,0,0.8);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid rgba(255,255,255,0.3);
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
 
-            /* Mobile day grid adjustments */
-            .fc .fc-daygrid-day {
-                min-height: 60px;
-            }
+    #calendarModal .btn-close:hover,
+    #calendarModal .btn-close:focus {
+        background: rgba(0,0,0,0.9);
+        border-color: rgba(255,255,255,0.5);
+        transform: scale(1.1);
+    }
 
-            .fc .fc-daygrid-day-number {
-                font-size: 0.9rem;
-                padding: 0.25rem;
-            }
+    #calendarModal .btn-close::before {
+        content: '×';
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+        line-height: 1;
+    }
 
-            .fc .fc-event {
-                font-size: 0.75rem;
-                margin: 1px 0;
-                padding: 1px 3px;
-            }
+    /* FullCalendar mobile optimizations */
+    .fc .fc-toolbar {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
 
-            .fc .fc-event-title {
-                font-weight: normal;
-            }
+    .fc .fc-toolbar-chunk {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
 
-            /* Mobile week/day view adjustments */
-            .fc .fc-timegrid-slot {
-                height: 2em;
-            }
+    .fc .fc-button-group {
+        margin: 0 0.25rem;
+    }
 
-            .fc .fc-timegrid-slot-label {
-                font-size: 0.8rem;
-            }
+    .fc .fc-button {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
 
-            /* Mobile list view adjustments */
-            .fc .fc-list-event {
-                font-size: 0.9rem;
-            }
+    .fc .fc-toolbar-title {
+        font-size: 1.1rem;
+        margin: 0.25rem 0;
+    }
 
-            .fc .fc-list-event-time {
-                font-size: 0.8rem;
-            }
-        }
+    .fc .fc-daygrid-day {
+        min-height: 60px;
+    }
 
-        /* Tablet adjustments */
-        @media (min-width: 769px) and (max-width: 1024px) {
-            #calendarModal .modal-dialog {
-                width: 90vw;
-                max-width: 90vw;
-                height: 85vh;
-                max-height: 85vh;
-            }
+    .fc .fc-daygrid-day-number {
+        font-size: 0.9rem;
+        padding: 0.25rem;
+    }
 
-            #calendarModal .modal-content {
-                height: 85vh;
-                max-height: 85vh;
-            }
+    .fc .fc-event {
+        font-size: 0.75rem;
+        margin: 1px 0;
+        padding: 1px 3px;
+    }
 
-            #calendar {
-                height: calc(85vh - 50px);
-            }
+    .fc .fc-event-title {
+        font-weight: normal;
+    }
 
-            .fc .fc-button {
-                font-size: 0.9rem;
-                padding: 0.375rem 0.75rem;
-            }
+    .fc .fc-timegrid-slot {
+        height: 2em;
+    }
 
-            .fc .fc-toolbar-title {
-                font-size: 1.25rem;
-            }
-        }
+    .fc .fc-timegrid-slot-label {
+        font-size: 0.8rem;
+    }
 
-        /* === IMAGE COMPONENTS === */
-        #imagePreview img, 
-        #editImagePreview img, 
-        #viewMemoImages img {
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 5px;
-            margin-right: 10px;
-            margin-bottom: 10px;
-        }
+    .fc .fc-list-event {
+        font-size: 0.9rem;
+    }
 
-        .position-relative {
-            display: inline-block;
-        }
+    .fc .fc-list-event-time {
+        font-size: 0.8rem;
+    }
+}
 
-        .position-relative .btn-danger {
-            padding: 2px 6px;
-            font-size: 12px;
-        }
+/* === TABLET RESPONSIVE === */
+@media (min-width: 769px) and (max-width: 1024px) {
+    #calendarModal .modal-dialog {
+        width: 90vw;
+        max-width: 90vw;
+        height: 85vh;
+        max-height: 85vh;
+    }
 
-        /* === INTERACTIVE STATES === */
-        .reminder-item.clicked {
-            background-color: var(--primary-color) !important;
-            color: #ffffff;
-        }
+    #calendarModal .modal-content {
+        height: 85vh;
+        max-height: 85vh;
+    }
 
-        .reminder-item.clicked:hover {
-            background-color: #28a745 !important;
-            color: #ffffff;
-        }
+    #calendar {
+        height: calc(85vh - 50px);
+    }
 
-        .reminder-item:hover {
-            background-color: #ffca2c;
-        }
+    .fc .fc-button {
+        font-size: 0.9rem;
+        padding: 0.375rem 0.75rem;
+    }
 
-        .link-input[readonly] {
-            background-color: #f3f3f3 !important;
-            color: #555;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
+    .fc .fc-toolbar-title {
+        font-size: 1.25rem;
+    }
+}
 
-        .link-input:not([readonly]) {
-            background-color: #fffbe6 !important;
-            color: #212529;
-            transition: background 0.2s;
-        }
+/* === DARK MODE SUPPORT === */
+[data-bs-theme="dark"] .task-table thead {
+    background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+}
 
-        .link-input:focus {
-            background-color: #fffde7 !important;
-            border-color: #ffe066;
-            outline: none;
-        }
+[data-bs-theme="dark"] .task-table thead th {
+    color: #f8f9fa;
+    background: linear-gradient(135deg, #343a40 0%, #495057 100%) !important;
+}
 
-        /* === RESPONSIVE DESIGN === */
-        @media (max-width: 768px) {
-            form#searchForm {
-                padding: 0.75rem;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            }
+[data-bs-theme="dark"] .task-table tbody tr {
+    background: rgba(52, 58, 64, 0.8);
+}
 
-            form#searchForm .row.g-2 {
-                gap: 0.5rem;
-            }
+[data-bs-theme="dark"] .task-table tbody tr:hover {
+    background: rgba(13, 110, 253, 0.1);
+}
 
-            form#searchForm .col-12.col-md {
-                order: 0;
-                margin-bottom: 0.5rem;
-            }
+[data-bs-theme="dark"] .task-table .task-title {
+    color: #f8f9fa;
+}
 
-            form#searchForm .btn {
-                padding: 0.375rem 0.5rem;
-                font-size: 0.875rem;
-            }
+[data-bs-theme="dark"] .task-table .task-content {
+    color: #adb5bd;
+}
 
-            form#searchForm .form-check-label {
-                font-size: 0.875rem;
-            }
+[data-bs-theme="dark"] .category-table-wrapper {
+    background: #212529;
+}
 
-            .container {
-                padding-top: 0;
-            }
+[data-bs-theme="dark"] .toggle-category {
+    background: linear-gradient(135deg, #6c757d 0%, rgba(108, 117, 125, 0.8) 100%) !important;
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.15) !important;
+}
 
-            .task-table {
-                min-width: 480px;
-                font-size: 0.93em;
-            }
+[data-bs-theme="dark"] .toggle-category:hover {
+    background: linear-gradient(135deg, rgba(108, 117, 125, 0.9) 0%, #6c757d 100%) !important;
+    box-shadow: 0 8px 20px rgba(108, 117, 125, 0.25) !important;
+}
 
-            .task-table th, .task-table td {
-                padding-left: 0.2rem;
-                padding-right: 0.2rem;
-            }
+/* === CSS GRID ALTERNATIVE (Optional) === */
+.task-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 200px 150px; /* 4 columns: Title | Content | Due Date | Actions */
+    gap: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
 
-            /* Mobile column adjustments */
-            .task-table th:nth-child(1), .task-table td:nth-child(1) { width: 24px; }
-            .task-table th:nth-child(2), .task-table td:nth-child(2) { width: 18%; min-width: 70px; max-width: 90px; }
-            .task-table th:nth-child(3), .task-table td:nth-child(3) { width: 30%; min-width: 90px; max-width: 120px; }
-            .task-table th:nth-child(4), .task-table td:nth-child(4) { width: 26%; min-width: 110px; max-width: 140px; white-space: normal; }
-            .task-table th:nth-child(5), .task-table td:nth-child(5) { width: 26%; min-width: 110px; max-width: 140px; white-space: normal; }
-        }
-    </style>
+.grid-header, .grid-row {
+    display: contents;
+}
+
+.grid-header > div {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 18px 16px;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.grid-row > div {
+    padding: 16px;
+    border-bottom: 1px solid #f0f0f0;
+    background: rgba(255, 255, 255, 0.95);
+}
+
+@media (max-width: 768px) {
+    .task-grid {
+        grid-template-columns: 1fr 1fr 120px 100px;
+        min-width: 480px;
+    }
+}
+</style>
 
     <!-- Search Form -->
     <form class="mb-3" id="searchForm">
@@ -615,46 +955,63 @@
     <!-- Notes Container -->
     <div id="notesContainer">
         {% for category in categories %}
-            {% set has_notes = notes|selectattr('category_id', 'equalto', category.id)|list|length > 0 %}
+            {% set category_notes = notes|selectattr('category_id', 'equalto', category.id)|list %}
+            {% set has_notes = category_notes|length > 0 %}
             {% if has_notes %}
+                {% set completed_count = category_notes|selectattr('is_completed')|list|length %}
+                {% set total_count = category_notes|length %}
                 <div class="task-category d-flex align-items-center">
-                    <button class="btn btn-link btn-sm p-0 me-2 toggle-category" type="button" data-category-id="{{ category.id }}" style="background-color: {{ category.color or '#0d6efd' }}; color: {{ category.color|contrast_text_color }}; font-weight: bold; border: none;">
+                    <button class="toggle-category" type="button" data-category-id="{{ category.id }}" style="background: linear-gradient(135deg, {{ category.color or '#0d6efd' }} 0%, {{ category.color or '#0d6efd' }}CC 100%) !important;">
                         <i class="bi bi-chevron-down" id="toggle-icon-{{ category.id }}"></i>
-                        {{ category.name }}
+                        <span class="category-name">{{ category.name }}</span>
                     </button>
+                    <span class="task-count {% if completed_count > 0 %}has-completed{% endif %}">
+                        {% if completed_count > 0 %}
+                            {{ completed_count }}/{{ total_count }}
+                        {% else %}
+                            {{ total_count }}
+                        {% endif %}
+                    </span>
                 </div>
                 <div class="category-table-wrapper" id="category-table-{{ category.id }}">
-                    <table class="table table-hover task-table mb-4">
+                    <table class="table task-table">
                         <thead>
                             <tr>
-                                <th></th>
-                                <th>Title</th>
-                                <th>Content</th>
-                                <th>Due</th>
-                                <th>Func</th>
+                                <th><i class="bi bi-file-text me-2"></i>Title</th>
+                                <th><i class="bi bi-card-text me-2"></i>Content</th>
+                                <th><i class="bi bi-calendar-event me-2"></i>Due Date</th>
+                                <th><i class="bi bi-gear me-2"></i>Act</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for note in notes_by_category.get(category.id, []) %}
-                                <tr data-task-id="{{ note.id }}">
+                            {% for note in category_notes %}
+                                <tr data-task-id="{{ note.id }}" class="{% if note.is_completed %}completed{% endif %}">
+                                    <td onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">
+                                        <div class="task-title">{{ note.title }}</div>
+                                    </td>
+                                    <td onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">
+                                        <div class="task-content">{{ note.content|truncate(100) }}</div>
+                                    </td>
+                                    <td class="due-date-cell" data-note-id="{{ note.id }}" style="cursor:pointer;" title="Click to toggle completion">
+                                        <div class="task-due due-date {% if note.is_completed %}completed{% endif %}" data-due-date="{{ note.due_date.isoformat() if note.due_date else '' }}">
+                                            {% if note.is_completed %}
+                                                <i class="bi bi-check-circle-fill me-1"></i>
+                                            {% endif %}
+                                            {{ note.due_date.strftime('%Y-%m-%d %H:%M') if note.due_date else 'No due date' }}
+                                        </div>
+                                    </td>
                                     <td>
-                                        <input type="checkbox" class="form-check-input task-complete complete-switch" data-note-id="{{ note.id }}" {% if note.is_completed %}checked{% endif %}>
-                                    </td>
-                                    <td onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">
-                                        <span class="task-title">{{ note.title }}</span>
-                                    </td>
-                                    <td onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">
-                                        <span class="task-content">{{ note.content|truncate(100) }}</span>
-                                    </td>
-                                    <td onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">
-                                        <span class="task-due due-date" data-due-date="{{ note.due_date.isoformat() if note.due_date else '' }}">
-                                            {{ note.due_date.strftime('%Y-%m-%d %H:%M') if note.due_date else '' }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ url_for('export_note', id=note.id) }}" class="btn btn-sm me-1"><i class="bi bi-file-earmark-text"></i></a>
-                                        <a href="{{ url_for('export_pdf', id=note.id) }}" class="btn btn-sm"><i class="bi bi-file-earmark-pdf"></i></a>
-                                        <i class="bi bi-trash delete-btn btn-delete-memo" data-note-id="{{ note.id }}" title="Delete"></i>
+                                        <div class="function-buttons">
+                                            <a href="{{ url_for('export_note', id=note.id) }}" class="btn" title="Export TXT">
+                                                <i class="bi bi-file-earmark-text"></i>
+                                            </a>
+                                            <a href="{{ url_for('export_pdf', id=note.id) }}" class="btn" title="Export PDF">
+                                                <i class="bi bi-file-earmark-pdf"></i>
+                                            </a>
+                                            <div class="delete-btn btn-delete-memo" data-note-id="{{ note.id }}" title="Delete Task">
+                                                <i class="bi bi-trash"></i>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -1212,20 +1569,25 @@ const api = {
 
 // === EVENT HANDLERS ===
 const eventHandlers = {
-    attachToggleSwitchListeners() {
-        document.querySelectorAll('.complete-switch').forEach(switchElement => {
+    attachDueDateClickListeners() {
+        document.querySelectorAll('.due-date-cell').forEach(cell => {
             // Xóa event listener cũ nếu có
-            if (switchElement._toggleListener) {
-                switchElement.removeEventListener('change', switchElement._toggleListener);
+            if (cell._clickListener) {
+                cell.removeEventListener('click', cell._clickListener);
             }
             
-            // Tạo function riêng cho mỗi switch để tránh closure issue
-            switchElement._toggleListener = async function(event) {
-                const currentSwitch = event.target;
-                const noteId = parseInt(currentSwitch.dataset.noteId);
-                const isChecked = currentSwitch.checked;
+            // Tạo function riêng cho mỗi cell
+            cell._clickListener = async function(event) {
+                event.stopPropagation(); // Prevent opening view modal
+                
+                const noteId = parseInt(this.dataset.noteId);
+                const dueDateEl = this.querySelector('.task-due');
+                const isCurrentlyCompleted = dueDateEl.classList.contains('completed');
                 
                 try {
+                    // Visual feedback immediately
+                    this.style.opacity = '0.6';
+                    
                     const data = await api.request(`/toggle_complete/${noteId}`, { 
                         method: 'POST',
                         headers: {
@@ -1237,31 +1599,58 @@ const eventHandlers = {
                         // Update local state
                         const noteIndex = state.notes.findIndex(n => n.id === noteId);
                         if (noteIndex !== -1) {
-                            state.notes[noteIndex].is_completed = isChecked;
+                            state.notes[noteIndex].is_completed = !isCurrentlyCompleted;
                         }
                         
-                        // Refresh the display without showing success message
-                        noteManager.updateSearch();
+                        // Update UI
+                        const row = this.closest('tr');
+                        if (!isCurrentlyCompleted) {
+                            // Mark as completed
+                            dueDateEl.classList.add('completed');
+                            row.classList.add('completed');
+                            
+                            // Add check icon if not exists
+                            if (!dueDateEl.querySelector('i')) {
+                                const icon = document.createElement('i');
+                                icon.className = 'bi bi-check-circle-fill me-1';
+                                dueDateEl.insertBefore(icon, dueDateEl.firstChild);
+                            }
+                        } else {
+                            // Mark as incomplete
+                            dueDateEl.classList.remove('completed');
+                            row.classList.remove('completed');
+                            
+                            // Remove check icon
+                            const icon = dueDateEl.querySelector('i');
+                            if (icon) icon.remove();
+                        }
+                        
+                        // Update task counts
+                        noteManager.updateTaskCounts();
+                        
+                        // Show brief feedback
+                        ui.showFlashMessage('success', 
+                            !isCurrentlyCompleted ? 'Task marked as completed' : 'Task marked as incomplete'
+                        );
+                        
                     } else {
-                        // Revert checkbox state
-                        currentSwitch.checked = !isChecked;
                         ui.showFlashMessage('danger', data?.message || 'Failed to update completion status');
                     }
                 } catch (error) {
                     console.error('Toggle completion error:', error);
-                    // Revert checkbox state
-                    currentSwitch.checked = !isChecked;
                     ui.showFlashMessage('danger', 'Error updating completion status');
+                } finally {
+                    // Reset visual feedback
+                    this.style.opacity = '1';
                 }
             };
             
-            switchElement.addEventListener('change', switchElement._toggleListener);
+            cell.addEventListener('click', cell._clickListener);
         });
     },
 
     attachCategoryToggleListeners() {
         document.querySelectorAll('.toggle-category').forEach(button => {
-            // Clone button để xóa tất cả event listeners cũ
             const newButton = button.cloneNode(true);
             button.parentNode.replaceChild(newButton, button);
             
@@ -1591,7 +1980,10 @@ const noteManager = {
                 }
             }
             
-            // Sửa: Sử dụng noteManager.updateEventListeners thay vì this.updateEventListeners
+            // Update task counts after search - SỬA LỖI TẠI ĐÂY
+            noteManager.updateTaskCounts();
+            
+            // Sử dụng noteManager.updateEventListeners thay vì this.updateEventListeners
             noteManager.updateEventListeners();
         } catch (error) {
             console.error('Search error details:', error);
@@ -1599,12 +1991,36 @@ const noteManager = {
         }
     },
 
+    // Add new method to update task counts dynamically
+    updateTaskCounts() {
+        document.querySelectorAll('.task-category').forEach(categoryEl => {
+            const toggleBtn = categoryEl.querySelector('.toggle-category');
+            const countEl = categoryEl.querySelector('.task-count');
+            
+            if (!toggleBtn || !countEl) return;
+            
+            const categoryId = toggleBtn.dataset.categoryId;
+            const categoryNotes = state.notes.filter(note => note.category_id == categoryId);
+            const completedCount = categoryNotes.filter(note => note.is_completed).length;
+            const totalCount = categoryNotes.length;
+            
+            // Update count display
+            if (completedCount > 0) {
+                countEl.textContent = `${completedCount}/${totalCount}`;
+                countEl.classList.add('has-completed');
+            } else {
+                countEl.textContent = totalCount;
+                countEl.classList.remove('has-completed');
+            }
+        });
+    },
+
     updateEventListeners() {
-        eventHandlers.attachToggleSwitchListeners();
+        eventHandlers.attachDueDateClickListeners(); // Thay thế attachToggleSwitchListeners()
         ui.highlightDueDates();
         ui.updateDueDateDisplays();
         eventHandlers.attachCategoryToggleListeners();
-    }
+    },
 };
 
 const categoryManager = {
@@ -2053,12 +2469,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup search and filter handlers
     const searchInput = document.querySelector(SELECTORS.inputs.search);
     if (searchInput) {
-        searchInput.addEventListener('input', utils.debounce(noteManager.updateSearch, 300));
+        searchInput.addEventListener('input', utils.debounce(() => noteManager.updateSearch(), 300));
     }
     
     const showCompleted = document.getElementById('showCompleted');
     if (showCompleted) {
-        showCompleted.addEventListener('change', noteManager.updateSearch);
+        showCompleted.addEventListener('change', () => noteManager.updateSearch());
     }
     
     // Setup delete confirmation
