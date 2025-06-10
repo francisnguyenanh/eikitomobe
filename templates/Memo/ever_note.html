@@ -121,6 +121,22 @@
     color: var(--text-color, #222);
     display: flex;
     flex-direction: column;
+    line-height: 1.5; /* Thêm dòng này để kiểm soát khoảng cách dòng */
+}
+
+/* Kiểm soát margin của paragraphs */
+.evernote-editor p {
+    margin: 0; /* Khoảng cách trên/dưới paragraph */
+}
+
+/* Kiểm soát margin của line breaks */
+.evernote-editor br {
+    margin: 0; /* Khoảng cách cho line break */
+}
+
+/* Kiểm soát margin của divs */
+.evernote-editor div {
+    margin: 0;
 }
 
 .evernote-editor a {
