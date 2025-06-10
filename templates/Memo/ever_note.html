@@ -525,6 +525,33 @@
 .evernote-sidebar .d-flex {
     display: block !important;
 }
+/* Thêm CSS cho bảng */
+.evernote-editor table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 10px 0;
+}
+
+.evernote-editor table, 
+.evernote-editor th, 
+.evernote-editor td {
+    border: 1px solid #ddd;
+}
+
+.evernote-editor th, 
+.evernote-editor td {
+    padding: 8px;
+    text-align: left;
+}
+
+.evernote-editor th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+.evernote-editor tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
 
 </style>
 
@@ -920,7 +947,7 @@ const ImageManager = {
             console.log('Pasting text content...');
         }
     },
-    
+
     // THÊM HÀM displayImages - HÀM NÀY BỊ THIẾU
     displayImages(images) {
         if (!images || images.length === 0) return '';
@@ -939,7 +966,7 @@ const ImageManager = {
         }).join('');
     },
     
-    // THÊM HÀM MỚI: Hiển thị ảnh trong lightbox
+    // Hiển thị ảnh trong lightbox
     showLightbox(imageSrc, filename) {
         const lightbox = document.getElementById('imageLightbox');
         const lightboxImg = document.getElementById('lightboxImg');
@@ -953,7 +980,7 @@ const ImageManager = {
         document.body.style.overflow = 'hidden';
     },
     
-    // THÊM HÀM MỚI: Đóng lightbox
+    // Đóng lightbox
     closeLightbox() {
         const lightbox = document.getElementById('imageLightbox');
         lightbox.style.display = 'none';
@@ -961,7 +988,8 @@ const ImageManager = {
         // Re-enable body scroll
         document.body.style.overflow = '';
     },
-    // THÊM HÀM MỚI: Đảm bảo chỉ có 1 images-section
+
+    // Đảm bảo chỉ có 1 images-section
     ensureSingleImagesSection() {
         const editor = document.getElementById('evernote-editor');
         const imagesSections = editor.querySelectorAll('.images-section');
@@ -977,41 +1005,40 @@ const ImageManager = {
 
     // Cập nhật ảnh trong editor hiện tại
     updateImagesInEditor(images) {
-    const editor = document.getElementById('evernote-editor');
-    
-    // CHỈ XÓA images-section, KHÔNG XÓA text content
-    const existingSections = editor.querySelectorAll('.images-section');
-    existingSections.forEach(section => section.remove());
-    
-    // Nếu có ảnh, thêm vào cuối editor
-    if (images && images.length > 0) {
-        const imagesHTML = '<div class="images-section">' + this.displayImages(images) + '</div>';
-        editor.insertAdjacentHTML('beforeend', imagesHTML);
+        const editor = document.getElementById('evernote-editor');
         
-        // NẾU EDITOR TRỐNG (chỉ có images-section), đặt cursor ở đầu để user có thể gõ text
-        const textContent = editor.innerText.trim();
-        if (!textContent || textContent === '') {
-            // Tạo một đoạn văn trống ở đầu editor
-            const p = document.createElement('p');
-            p.innerHTML = '<br>'; // Placeholder để cursor có thể focus
-            editor.insertBefore(p, editor.firstChild);
+        // CHỈ XÓA images-section, KHÔNG XÓA text content
+        const existingSections = editor.querySelectorAll('.images-section');
+        existingSections.forEach(section => section.remove());
+        
+        // Nếu có ảnh, thêm vào cuối editor
+        if (images && images.length > 0) {
+            const imagesHTML = '<div class="images-section">' + this.displayImages(images) + '</div>';
+            editor.insertAdjacentHTML('beforeend', imagesHTML);
             
-            // Đặt cursor vào đoạn văn trống
-            const range = document.createRange();
-            const sel = window.getSelection();
-            range.setStart(p, 0);
-            range.collapse(true);
-            sel.removeAllRanges();
-            sel.addRange(range);
-            editor.focus();
+            // NẾU EDITOR TRỐNG (chỉ có images-section), đặt cursor ở đầu để user có thể gõ text
+            const textContent = editor.innerText.trim();
+            if (!textContent || textContent === '') {
+                // Tạo một đoạn văn trống ở đầu editor
+                const p = document.createElement('p');
+                p.innerHTML = '<br>'; // Placeholder để cursor có thể focus
+                editor.insertBefore(p, editor.firstChild);
+                
+                // Đặt cursor vào đoạn văn trống
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.setStart(p, 0);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+                editor.focus();
+            }
         }
-        
-    }
-    // Cập nhật state
-    AppState.currentImages = images || [];
-},
+        // Cập nhật state
+        AppState.currentImages = images || [];
+    },
     
-    // Xóa ảnh - SỬA LẠI HÀM NÀY (BỊ TRÙNG LẶP)
+    // Xóa ảnh
     async deleteImage(imageId, noteId) {
         if (!confirm('Bạn có chắc muốn xóa ảnh này?')) return;
         
@@ -1043,7 +1070,6 @@ const ImageManager = {
         }
     },
     
-    
     // Thêm input file cho upload ảnh
     createImageUpload() {
         const input = document.createElement('input');
@@ -1064,6 +1090,282 @@ const ImageManager = {
         return input;
     }
 };
+
+// ===== PASTE MANAGER (SEPARATE OBJECT) =====
+const PasteManager = {
+    handlePaste(event, noteId) {
+        const clipboardData = event.clipboardData || window.clipboardData;
+        
+        // Kiểm tra xem có ảnh thực sự không (file ảnh binary)
+        const items = Array.from(clipboardData.items);
+        const hasImageFile = items.some(item => 
+            item.type.indexOf('image') === 0 && item.kind === 'file'
+        );
+        
+        if (hasImageFile) {
+            // Có ảnh file thực sự - để ImageManager xử lý
+            console.log('Found actual image file, delegating to ImageManager');
+            return;
+        }
+        
+        // Xử lý text/HTML
+        event.preventDefault();
+        
+        const htmlData = clipboardData.getData('text/html');
+        const plainText = clipboardData.getData('text/plain');
+        
+        console.log('HTML data length:', htmlData?.length || 0);
+        console.log('Plain text length:', plainText?.length || 0);
+        
+        // Kiểm tra xem có phải data từ Excel không (có table structure)
+        if (htmlData && this.isExcelData(htmlData)) {
+            console.log('Detected Excel/table data, pasting as table');
+            this.pasteAsTable(htmlData);
+        } else if (plainText) {
+            console.log('Pasting as plain text');
+            this.pasteAsPlainText(plainText);
+        }
+    },
+    
+    // Cải thiện hàm kiểm tra Excel data
+    isExcelData(htmlData) {
+        // Chuyển về lowercase để kiểm tra dễ hơn
+        const lowerHtml = htmlData.toLowerCase();
+        
+        // Kiểm tra các dấu hiệu của Excel/table data
+        const hasTable = lowerHtml.includes('<table') || 
+                         lowerHtml.includes('<tr') || 
+                         (lowerHtml.includes('<td') && lowerHtml.includes('</td>'));
+        
+        const hasExcelIndicators = lowerHtml.includes('excel') || 
+                                  lowerHtml.includes('xl') ||
+                                  lowerHtml.includes('office') ||
+                                  lowerHtml.includes('mso-') ||
+                                  lowerHtml.includes('microsoft');
+        
+        // Kiểm tra tab-separated data trong plain text
+        const clipboardData = window.clipboardData || (window.event && window.event.clipboardData);
+        const plainText = clipboardData ? clipboardData.getData('text/plain') : '';
+        const hasTabSeparatedData = plainText.includes('\t') && plainText.includes('\n');
+        
+        console.log('Table detection:', {
+            hasTable,
+            hasExcelIndicators, 
+            hasTabSeparatedData,
+            sampleHtml: htmlData.substring(0, 200),
+            samplePlainText: plainText.substring(0, 100)
+        });
+        
+        return hasTable || hasExcelIndicators || hasTabSeparatedData;
+    },
+    
+    // Cải thiện hàm paste table
+    pasteAsTable(htmlData) {
+        console.log('Processing table data...');
+        
+        // Tạo temporary div để parse HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlData;
+        
+        // Tìm table hoặc tạo table từ structure
+        let table = tempDiv.querySelector('table');
+        
+        if (!table) {
+            // Nếu không có table tag, cố gắng tạo từ tr/td
+            const rows = tempDiv.querySelectorAll('tr');
+            if (rows.length > 0) {
+                console.log('Creating table from TR elements, rows found:', rows.length);
+                table = this.createTableFromRows(rows);
+            } else {
+                // Thử tạo table từ tab-separated data
+                console.log('Trying to create table from tab-separated data');
+                table = this.createTableFromTabData(htmlData);
+            }
+        }
+        
+        if (table) {
+            console.log('Table created successfully, inserting into editor');
+            // Clean table - chỉ giữ text content
+            this.cleanTable(table);
+            
+            // Insert table vào editor
+            this.insertTable(table);
+        } else {
+            console.log('Could not create table, falling back to plain text');
+            // Fallback to plain text
+            const plainText = tempDiv.textContent || htmlData.replace(/<[^>]*>/g, '');
+            this.pasteAsPlainText(plainText);
+        }
+    },
+    
+    // Thêm hàm tạo table từ rows
+    createTableFromRows(rows) {
+        const table = document.createElement('table');
+        const tbody = document.createElement('tbody');
+        
+        rows.forEach(row => {
+            const newRow = document.createElement('tr');
+            const cells = row.querySelectorAll('td, th');
+            
+            cells.forEach(cell => {
+                const newCell = document.createElement('td');
+                newCell.textContent = cell.textContent.trim();
+                newRow.appendChild(newCell);
+            });
+            
+            if (newRow.children.length > 0) {
+                tbody.appendChild(newRow);
+            }
+        });
+        
+        if (tbody.children.length > 0) {
+            table.appendChild(tbody);
+            return table;
+        }
+        return null;
+    },
+    
+    // Thêm hàm tạo table từ tab-separated data
+    createTableFromTabData(htmlData) {
+        // Lấy plain text và tách theo tab/newline
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlData;
+        const plainText = tempDiv.textContent || htmlData.replace(/<[^>]*>/g, '');
+        
+        const lines = plainText.split('\n').filter(line => line.trim());
+        
+        if (lines.length < 2) return null; // Cần ít nhất 2 dòng
+        
+        const table = document.createElement('table');
+        const tbody = document.createElement('tbody');
+        
+        lines.forEach(line => {
+            const cells = line.split('\t');
+            if (cells.length > 1) { // Chỉ tạo row nếu có nhiều hơn 1 cell
+                const row = document.createElement('tr');
+                cells.forEach(cellText => {
+                    const cell = document.createElement('td');
+                    cell.textContent = cellText.trim();
+                    row.appendChild(cell);
+                });
+                tbody.appendChild(row);
+            }
+        });
+        
+        if (tbody.children.length > 0) {
+            table.appendChild(tbody);
+            return table;
+        }
+        return null;
+    },
+    
+    // Thêm hàm insert table
+    insertTable(table) {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(table);
+            
+            // Đặt cursor sau table
+            range.setStartAfter(table);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } else {
+            // Nếu không có selection, thêm vào cuối
+            const editor = document.getElementById('evernote-editor');
+            
+            // Thêm vào trước images-section nếu có
+            const imagesSection = editor.querySelector('.images-section');
+            if (imagesSection) {
+                editor.insertBefore(table, imagesSection);
+            } else {
+                editor.appendChild(table);
+            }
+        }
+    },
+    
+    // Clean table - loại bỏ formatting, chỉ giữ text
+    cleanTable(table) {
+        // Loại bỏ tất cả attributes trừ cấu trúc bảng
+        table.removeAttribute('style');
+        table.removeAttribute('class');
+        table.removeAttribute('border');
+        table.removeAttribute('cellpadding');
+        table.removeAttribute('cellspacing');
+        
+        // Clean tất cả cells
+        const cells = table.querySelectorAll('td, th');
+        cells.forEach(cell => {
+            // Loại bỏ tất cả attributes
+            const attributes = Array.from(cell.attributes);
+            attributes.forEach(attr => {
+                if (attr.name !== 'colspan' && attr.name !== 'rowspan') {
+                    cell.removeAttribute(attr.name);
+                }
+            });
+            
+            // Chỉ giữ text content
+            const text = cell.textContent.trim();
+            cell.innerHTML = text;
+        });
+        
+        // Clean rows
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+            const attributes = Array.from(row.attributes);
+            attributes.forEach(attr => {
+                row.removeAttribute(attr.name);
+            });
+        });
+        
+        // Clean thead, tbody, tfoot
+        const sections = table.querySelectorAll('thead, tbody, tfoot');
+        sections.forEach(section => {
+            const attributes = Array.from(section.attributes);
+            attributes.forEach(attr => {
+                section.removeAttribute(attr.name);
+            });
+        });
+    },
+    
+    // Paste plain text
+    pasteAsPlainText(text) {
+        if (!text) return;
+        
+        // Loại bỏ các ký tự đặc biệt, chỉ giữ text thuần
+        const cleanText = text.replace(/[\r\n]+/g, '\n').trim();
+        
+        // Tách thành các dòng
+        const lines = cleanText.split('\n');
+        
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            
+            lines.forEach((line, index) => {
+                if (index > 0) {
+                    // Thêm line break cho các dòng sau
+                    range.insertNode(document.createElement('br'));
+                    range.collapse(false);
+                }
+                
+                // Thêm text
+                const textNode = document.createTextNode(line);
+                range.insertNode(textNode);
+                range.setStartAfter(textNode);
+                range.collapse(true);
+            });
+            
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    }
+};
+
+
 
 // ===== UTILITY FUNCTIONS =====
 const Utils = {
@@ -1129,6 +1431,12 @@ const Utils = {
                     a.target = "_blank";
                     a.rel = "noopener noreferrer";
                     a.textContent = match[1];
+                    // Thêm event handler để click vào link
+                    a.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.open(this.href, '_blank', 'noopener,noreferrer');
+                    });
                     frag.appendChild(a);
                     lastIndex = urlRegex.lastIndex;
                 }
@@ -1702,17 +2010,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const lightbox = document.getElementById('imageLightbox');
     const lightboxClose = document.querySelector('.lightbox-close');
     
-    // Đóng lightbox khi click vào nút close
     lightboxClose.onclick = () => ImageManager.closeLightbox();
     
-    // Đóng lightbox khi click vào background
     lightbox.onclick = (e) => {
         if (e.target === lightbox) {
             ImageManager.closeLightbox();
         }
     };
     
-    // Đóng lightbox khi nhấn ESC
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             ImageManager.closeLightbox();
@@ -1730,7 +2035,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Show modal with loading
         const modal = new bootstrap.Modal(document.getElementById('shareLinkModal'));
         const resultDiv = document.getElementById('share-link-result');
         const contentDiv = document.getElementById('share-link-content');
@@ -1749,19 +2053,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Setup copy button
     document.getElementById('copy-link-btn').onclick = () => {
         ShareLink.copyToClipboard();
     };
+
     // Setup editor events
     const editor = document.getElementById('evernote-editor');
-    // THÊM MUTATION OBSERVER ở đây - ngay sau dòng const editor = document.getElementById('evernote-editor');
+    
+    // Mutation observer
     const observer = new MutationObserver((mutations) => {
         let needsCleanup = false;
         
         mutations.forEach((mutation) => {
             if (mutation.type === 'childList') {
-                // Kiểm tra xem có images-section nào được thêm không
                 mutation.addedNodes.forEach((node) => {
                     if (node.nodeType === 1 && (
                         node.classList?.contains('images-section') || 
@@ -1774,27 +2078,64 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         if (needsCleanup) {
-            // Delay để tránh infinite loop
             setTimeout(() => {
                 ImageManager.ensureSingleImagesSection();
             }, 10);
         }
     });
 
-    // Bắt đầu observe
     observer.observe(editor, {
         childList: true,
         subtree: true
     });
 
-    // Thêm event listener cho paste ảnh
+    // CHỈ 1 EVENT LISTENER CHO PASTE - XỬ LÝ CẢ ẢNH VÀ TABLE
     editor.addEventListener('paste', (e) => {
         console.log('Paste event triggered', e);
-        if (AppState.currentId) {
-            console.log('Current note ID:', AppState.currentId);
-            ImageManager.handlePaste(e, AppState.currentId);
-        } else {
+        
+        if (!AppState.currentId) {
             console.log('No current note selected');
+            return;
+        }
+        
+        const clipboardData = e.clipboardData || window.clipboardData;
+        const items = Array.from(clipboardData.items);
+        
+        // Kiểm tra chi tiết hơn về loại data
+        const htmlData = clipboardData.getData('text/html');
+        const plainText = clipboardData.getData('text/plain');
+        
+        // Kiểm tra xem có phải ảnh thực sự không (binary image file)
+        const hasRealImageFile = items.some(item => {
+            return item.type.indexOf('image') === 0 && 
+                   item.kind === 'file' && 
+                   !htmlData; // Nếu có HTML data thì có thể là Excel/table
+        });
+        
+        console.log('Clipboard analysis:', {
+            hasRealImageFile,
+            htmlDataLength: htmlData?.length || 0,
+            plainTextLength: plainText?.length || 0,
+            items: items.map(item => ({type: item.type, kind: item.kind}))
+        });
+        
+        if (hasRealImageFile) {
+            // Xử lý ảnh thực sự (screenshot, copy file ảnh)
+            console.log('Processing real image file...');
+            ImageManager.handlePaste(e, AppState.currentId);
+        } else if (htmlData || plainText) {
+            // Xử lý text/table/HTML - bao gồm Excel data
+            console.log('Processing text/table data...');
+            PasteManager.handlePaste(e, AppState.currentId);
+        }
+    });
+
+    // Thêm event listener cho click vào links
+    editor.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A' && e.target.href) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.open(e.target.href, '_blank', 'noopener,noreferrer');
         }
     });
 
@@ -1802,21 +2143,12 @@ document.addEventListener('DOMContentLoaded', () => {
     editor.addEventListener('keyup', Editor.updateFormatButtons);
     editor.addEventListener('mouseup', Editor.updateFormatButtons);
     editor.addEventListener('focus', Editor.updateFormatButtons);
+    
     editor.addEventListener('input', (e) => {
-    // Đảm bảo chỉ có 1 images-section sau mỗi thay đổi
-    setTimeout(() => {
-        ImageManager.ensureSingleImagesSection();
-    }, 10);
-    
-    // Gọi autoSave
-    SaveManager.autoSave();
-});
-    
-    // Thêm event listener cho paste ảnh
-    editor.addEventListener('paste', (e) => {
-        if (AppState.currentId) {
-            ImageManager.handlePaste(e, AppState.currentId);
-        }
+        setTimeout(() => {
+            ImageManager.ensureSingleImagesSection();
+        }, 10);
+        SaveManager.autoSave();
     });
 
     editor.addEventListener('keydown', (e) => {
@@ -1856,11 +2188,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchBtn = document.getElementById('search-btn');
     searchBtn.parentNode.insertBefore(uploadBtn, searchBtn.nextSibling);
 
-
     // Load initial data
     NoteManager.loadNotes();
 });
 // Expose ImageManager globally for onclick handlers
 window.ImageManager = ImageManager;
+window.PasteManager = PasteManager;
 </script>
 {% endblock %}
