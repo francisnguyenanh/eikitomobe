@@ -1278,27 +1278,66 @@ const PasteManager = {
     // Thêm hàm insert table
     insertTable(table) {
         const selection = window.getSelection();
+        const editor = document.getElementById('evernote-editor');
+        
         if (selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
             range.deleteContents();
             range.insertNode(table);
             
-            // Đặt cursor sau table
+            // Tạo một paragraph trống sau table để cursor có chỗ đứng
+            const afterParagraph = document.createElement('p');
+            afterParagraph.innerHTML = '<br>';
+            
+            // Đặt paragraph sau table
             range.setStartAfter(table);
+            range.insertNode(afterParagraph);
+            
+            // Đặt cursor vào paragraph mới - QUAN TRỌNG: Đặt cursor vào text node
+            range.setStart(afterParagraph.firstChild, 0);
             range.collapse(true);
             selection.removeAllRanges();
             selection.addRange(range);
+            
+            // Focus editor để đảm bảo cursor hiển thị
+            editor.focus();
         } else {
             // Nếu không có selection, thêm vào cuối
-            const editor = document.getElementById('evernote-editor');
-            
-            // Thêm vào trước images-section nếu có
             const imagesSection = editor.querySelector('.images-section');
             if (imagesSection) {
                 editor.insertBefore(table, imagesSection);
+                
+                // Tạo paragraph sau table
+                const afterParagraph = document.createElement('p');
+                afterParagraph.innerHTML = '<br>';
+                editor.insertBefore(afterParagraph, imagesSection);
+                
+                // Đặt cursor vào paragraph - QUAN TRỌNG: Vào text node
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.setStart(afterParagraph.firstChild, 0);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
             } else {
                 editor.appendChild(table);
+                
+                // Tạo paragraph sau table
+                const afterParagraph = document.createElement('p');
+                afterParagraph.innerHTML = '<br>';
+                editor.appendChild(afterParagraph);
+                
+                // Đặt cursor vào paragraph - QUAN TRỌNG: Vào text node
+                const range = document.createRange();
+                const sel = window.getSelection();
+                range.setStart(afterParagraph.firstChild, 0);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
             }
+            
+            // Focus editor
+            editor.focus();
         }
     },
     
@@ -2175,6 +2214,63 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sel.rangeCount > 0) {
                 const range = sel.getRangeAt(0);
                 range.collapse(false);
+            }
+        } else if (e.key === 'Enter') {
+            // Xử lý Enter một cách đơn giản và hiệu quả hơn
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const container = range.startContainer;
+                
+                // Tìm node cha gần nhất
+                let currentNode = container.nodeType === 3 ? container.parentNode : container;
+                
+                // Kiểm tra xem có đang ở trong table cell không
+                const isInTableCell = currentNode.closest('td, th');
+                if (isInTableCell) {
+                    // Nếu đang trong table cell, để browser xử lý Enter bình thường
+                    return;
+                }
+                
+                // Kiểm tra xem có đang ở trong paragraph không
+                const currentParagraph = currentNode.closest('p');
+                
+                if (currentParagraph) {
+                    // Đang trong paragraph - để browser xử lý Enter bình thường
+                    // Nhưng đảm bảo tạo paragraph mới thay vì div
+                    const editor = document.getElementById('evernote-editor');
+                    
+                    // Sử dụng setTimeout để can thiệp sau khi browser xử lý Enter
+                    setTimeout(() => {
+                        // Kiểm tra xem có div nào vừa được tạo không
+                        const newDivs = editor.querySelectorAll('div:not(.images-section)');
+                        newDivs.forEach(div => {
+                            // Nếu div không có class đặc biệt, chuyển thành paragraph
+                            if (!div.className) {
+                                const p = document.createElement('p');
+                                p.innerHTML = div.innerHTML || '<br>';
+                                div.parentNode.replaceChild(p, div);
+                            }
+                        });
+                    }, 10);
+                    
+                    return; // Để browser xử lý Enter bình thường
+                }
+                
+                // Nếu không trong paragraph nào, tạo paragraph mới
+                e.preventDefault();
+                
+                const newParagraph = document.createElement('p');
+                newParagraph.innerHTML = '<br>';
+                
+                // Chèn paragraph mới
+                range.insertNode(newParagraph);
+                
+                // Đặt cursor vào paragraph mới
+                range.setStart(newParagraph.firstChild, 0);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
             }
         }
     });
