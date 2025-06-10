@@ -1,45 +1,401 @@
 {% extends "Diary/layout.html" %}
 {% block content %}
-<h2 class="fs-4 fw-bold text-primary text-uppercase mb-3"><i class="bi bi-list-ul me-2"></i>List View</h2>
-<div class="row">
-    <div class="col-md-6">
-        <div class="list-group">
-            {% for diary in diaries[: (diaries | length + 1) // 2] %}
-                <a href="{{ url_for('edit_diary', id=diary.id) }}" class="list-group-item list-group-item-action d-flex align-items-center">
-                    <div class="me-3" style="width: 30px; height: 30px; background-color: {{ diary.color }}; border-radius: 5px;"></div>
-                    <div>
-                        <small class="text-muted">{{ diary.date.strftime('%d/%m/%Y') }}</small>
-                        <h5 class="mb-0">{{ diary.title }}</h5>
-                    </div>
-                </a>
-            {% endfor %}
+<div class="modern-list-container">
+    <!-- Header -->
+    <div class="list-header">
+        <h1 class="list-title">
+            <i class="bi bi-list-ul"></i>
+            List View
+        </h1>
+        <div class="list-stats">
+            <span class="entry-count">{{ diaries|length }} entries</span>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="list-group">
-            {% for diary in diaries[(diaries | length + 1) // 2 :] %}
-                <a href="{{ url_for('edit_diary', id=diary.id) }}" class="list-group-item list-group-item-action d-flex align-items-center">
-                    <div class="me-3" style="width: 30px; height: 30px; background-color: {{ diary.color }}; border-radius: 5px;"></div>
-                    <div>
-                        <small class="text-muted">{{ diary.date.strftime('%d/%m/%Y') }}</small>
-                        <h5 class="mb-0">{{ diary.title }}</h5>
-                    </div>
+
+    <!-- List Content -->
+    <div class="diary-list-wrapper">
+        {% if diaries %}
+            <div class="diary-list">
+                {% for diary in diaries %}
+                    <a href="{{ url_for('edit_diary', id=diary.id) }}" class="diary-list-item">
+                        <div class="item-color-indicator" style="background-color: {{ diary.color }}"></div>
+                        <div class="item-content">
+                            <div class="item-header">
+                                <h3 class="item-title">{{ diary.title }}</h3>
+                                <span class="item-date">{{ diary.date.strftime('%b %d, %Y') }}</span>
+                            </div>
+                            <p class="item-preview">{{ diary.content[:100] }}{% if diary.content|length > 100 %}...{% endif %}</p>
+                        </div>
+                        <div class="item-actions">
+                            <i class="bi bi-chevron-right"></i>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-journal-plus"></i>
+                <h3>No diary entries yet</h3>
+                <p>Start writing your first diary entry!</p>
+                <a href="{{ url_for('new_diary') }}" class="new-entry-btn">
+                    <i class="bi bi-plus-circle"></i>
+                    Create First Entry
                 </a>
-            {% endfor %}
-        </div>
+            </div>
+        {% endif %}
     </div>
 </div>
+
 <style>
-    .list-group-item {
-        transition: background-color 0.2s;
+    /* Reset và base styles */
+    .modern-list-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     }
-    .list-group-item:hover {
-        background-color: #f8f9fa; /* Light gray hover effect */
+
+    /* Header styles */
+    .list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid rgba(255,255,255,0.3);
     }
-    @media (max-width: 767px) {
-        .col-md-6 {
-            margin-bottom: 1rem;
+
+    .list-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .list-title i {
+        color: #16a085; /* Teal color for list */
+        font-size: 1.8rem;
+    }
+
+    .list-stats {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .entry-count {
+        background: rgba(22, 160, 133, 0.1);
+        color: #16a085;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        border: 1px solid rgba(22, 160, 133, 0.2);
+    }
+
+    /* List wrapper */
+    .diary-list-wrapper {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 400px;
+    }
+
+    /* List styles */
+    .diary-list {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    /* List item styles */
+    .diary-list-item {
+        display: flex;
+        align-items: center;
+        background: rgba(255,255,255,0.9);
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255,255,255,0.3);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .diary-list-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        background: rgba(255,255,255,1);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .diary-list-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: var(--item-color, #3498db);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .diary-list-item:hover::before {
+        opacity: 1;
+    }
+
+    .item-color-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 1rem;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .item-content {
+        flex: 1;
+        min-width: 0; /* For text truncation */
+    }
+
+    .item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
+        gap: 1rem;
+    }
+
+    .item-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 0;
+        line-height: 1.3;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .item-date {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+
+    .item-preview {
+        font-size: 0.95rem;
+        color: #5a6c7d;
+        line-height: 1.5;
+        margin: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .item-actions {
+        margin-left: 1rem;
+        color: #bdc3c7;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    .diary-list-item:hover .item-actions {
+        color: #16a085;
+        transform: translateX(3px);
+    }
+
+    .item-actions i {
+        font-size: 1.2rem;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        color: #7f8c8d;
+        max-width: 400px;
+        margin: auto;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: #bdc3c7;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+    }
+
+    .empty-state p {
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+    }
+
+    .new-entry-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    }
+
+    .new-entry-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .modern-list-container {
+            margin: 0;
+            padding: 1rem;
+            border-radius: 0;
+            min-height: 100vh;
+        }
+
+        .list-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+            text-align: center;
+        }
+
+        .list-title {
+            font-size: 1.5rem;
+            justify-content: center;
+        }
+
+        .list-stats {
+            justify-content: center;
+        }
+
+        .diary-list-item {
+            padding: 1rem;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .item-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .item-title {
+            white-space: normal;
+            overflow: visible;
+            text-overflow: initial;
+        }
+
+        .item-actions {
+            margin-left: 0;
+            align-self: flex-end;
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+
+        .item-color-indicator {
+            margin-right: 0;
+            margin-bottom: 0.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .modern-list-container {
+            padding: 0.5rem;
+        }
+
+        .diary-list {
+            gap: 0.75rem;
+        }
+
+        .diary-list-item {
+            padding: 0.75rem;
+        }
+
+        .item-title {
+            font-size: 1.1rem;
+        }
+
+        .item-preview {
+            font-size: 0.9rem;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.2rem;
+        }
+
+        .new-entry-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Entrance animation */
+    .diary-list-item {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: slideInUp 0.5s ease forwards;
+    }
+
+    @keyframes slideInUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
     }
 </style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Add staggered entrance animation
+        const items = document.querySelectorAll('.diary-list-item');
+        items.forEach((item, index) => {
+            item.style.animationDelay = `${index * 0.1}s`;
+        });
+
+        // Set CSS custom property for hover effect
+        items.forEach(item => {
+            const colorIndicator = item.querySelector('.item-color-indicator');
+            const bgColor = colorIndicator.style.backgroundColor;
+            item.style.setProperty('--item-color', bgColor);
+        });
+    });
+</script>
 {% endblock %}

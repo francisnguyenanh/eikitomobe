@@ -1,66 +1,374 @@
 {% extends "Diary/layout.html" %}
 {% block content %}
-<h2 class="fs-4 fw-bold text-primary text-uppercase mb-3"><i class="bi bi-grid me-2"></i>Grid View</h2>
-<div class="diary-grid">
-    {% for diary in diaries %}
-        <a href="{{ url_for('edit_diary', id=diary.id) }}" class="diary-tile" style="background-color: {{ diary.color }}"></a>
-    {% endfor %}
+<div class="modern-grid-container">
+    <!-- Header -->
+    <div class="grid-header">
+        <h1 class="grid-title">
+            <i class="bi bi-grid"></i>
+            Grid View
+        </h1>
+        <div class="grid-stats">
+            <span class="entry-count">{{ diaries|length }} entries</span>
+        </div>
+    </div>
+
+    <!-- Grid Content -->
+    <div class="diary-grid-wrapper">
+        {% if diaries %}
+            <div class="diary-grid" id="diary-grid">
+                {% for diary in diaries %}
+                    <a href="{{ url_for('edit_diary', id=diary.id) }}" 
+                       class="diary-tile" 
+                       style="background-color: {{ diary.color }}"
+                       data-title="{{ diary.title }}"
+                       data-date="{{ diary.date.strftime('%Y-%m-%d') }}">
+                        <div class="tile-overlay">
+                            <div class="tile-info">
+                                <h3 class="tile-title">{{ diary.title[:20] }}{% if diary.title|length > 20 %}...{% endif %}</h3>
+                                <p class="tile-date">{{ diary.date.strftime('%b %d, %Y') }}</p>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="bi bi-journal-plus"></i>
+                <h3>No diary entries yet</h3>
+                <p>Start writing your first diary entry!</p>
+                <a href="{{ url_for('new_diary') }}" class="new-entry-btn">
+                    <i class="bi bi-plus-circle"></i>
+                    Create First Entry
+                </a>
+            </div>
+        {% endif %}
+    </div>
 </div>
+
 <style>
+    /* Reset và base styles */
+    .modern-grid-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+
+    /* Header styles */
+    .grid-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .grid-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .grid-title i {
+        color: #9b59b6; /* Purple color for grid */
+        font-size: 1.8rem;
+    }
+
+    .grid-stats {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .entry-count {
+        background: rgba(155, 89, 182, 0.1);
+        color: #9b59b6;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 500;
+        font-size: 0.9rem;
+        border: 1px solid rgba(155, 89, 182, 0.2);
+    }
+
+    /* Grid wrapper */
+    .diary-grid-wrapper {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+    }
+
+    /* Grid styles */
     .diary-grid {
         display: grid;
-        gap: 5px;
-        padding: 10px;
-        height: calc(100vh - 150px);
-        box-sizing: border-box;
+        gap: 15px;
+        width: 100%;
+        max-width: 100%;
+        justify-content: center;
+        align-content: center;
     }
+
+    /* Tile styles */
     .diary-tile {
-        border-radius: 5px;
+        position: relative;
+        border-radius: 15px;
         cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+        border: 2px solid rgba(255,255,255,0.3);
     }
-    @media (max-width: 576px) {
+
+    .diary-tile:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        text-decoration: none;
+    }
+
+    .tile-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(
+            to bottom, 
+            rgba(0,0,0,0) 0%, 
+            rgba(0,0,0,0.3) 60%, 
+            rgba(0,0,0,0.7) 100%
+        );
+        display: flex;
+        align-items: flex-end;
+        padding: 1rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .diary-tile:hover .tile-overlay {
+        opacity: 1;
+    }
+
+    .tile-info {
+        color: white;
+        width: 100%;
+    }
+
+    .tile-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0 0 0.25rem 0;
+        line-height: 1.2;
+    }
+
+    .tile-date {
+        font-size: 0.8rem;
+        margin: 0;
+        opacity: 0.9;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        color: #7f8c8d;
+        max-width: 400px;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: #bdc3c7;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+    }
+
+    .empty-state p {
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+    }
+
+    .new-entry-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    }
+
+    .new-entry-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .modern-grid-container {
+            margin: 0;
+            padding: 1rem;
+            border-radius: 0;
+            min-height: 100vh;
+        }
+
+        .grid-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+            text-align: center;
+        }
+
+        .grid-title {
+            font-size: 1.5rem;
+            justify-content: center;
+        }
+
+        .grid-stats {
+            justify-content: center;
+        }
+
         .diary-grid {
-            gap: 3px;
-            padding: 5px;
-            height: calc(100vh - 120px);
+            gap: 10px;
+        }
+
+        .tile-overlay {
+            opacity: 1; /* Always show on mobile */
+            background: linear-gradient(
+                to bottom, 
+                rgba(0,0,0,0) 0%, 
+                rgba(0,0,0,0.4) 60%, 
+                rgba(0,0,0,0.8) 100%
+            );
+        }
+
+        .tile-title {
+            font-size: 0.9rem;
+        }
+
+        .tile-date {
+            font-size: 0.75rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .modern-grid-container {
+            padding: 0.5rem;
+        }
+
+        .diary-grid {
+            gap: 8px;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.2rem;
+        }
+
+        .new-entry-btn {
+            width: 100%;
+            justify-content: center;
         }
     }
 </style>
+
 <script>
     function adjustGrid() {
-        const grid = document.querySelector('.diary-grid');
+        const grid = document.getElementById('diary-grid');
+        if (!grid) return;
+        
         const tiles = document.querySelectorAll('.diary-tile');
         const count = tiles.length;
         if (count === 0) return;
 
-        const vw = window.innerWidth;
-        const vh = grid.clientHeight;
-        const sqrt = Math.ceil(Math.sqrt(count));
-        const cols = sqrt;
-        let rows = Math.ceil(count / cols);
-
-        const tileWidth = (vw - (cols - 1) * 5 - 20) / cols;
-        const tileHeight = (vh - (rows - 1) * 5 - 20) / rows;
-        const tileSize = Math.min(tileWidth, tileHeight);
-
-        if (tileSize * rows < vh && count > cols) {
-            rows = Math.floor(vh / tileSize);
-            if (rows * cols < count) rows++;
+        const container = document.querySelector('.diary-grid-wrapper');
+        const containerWidth = container.clientWidth - 30; // Account for padding
+        const containerHeight = container.clientHeight - 30;
+        
+        // Calculate optimal grid dimensions
+        let cols, rows;
+        const aspectRatio = containerWidth / containerHeight;
+        
+        if (aspectRatio > 1) {
+            // Landscape - prefer more columns
+            cols = Math.ceil(Math.sqrt(count * aspectRatio));
+            rows = Math.ceil(count / cols);
+        } else {
+            // Portrait - prefer more rows
+            rows = Math.ceil(Math.sqrt(count / aspectRatio));
+            cols = Math.ceil(count / rows);
         }
-
-        grid.style.gridTemplateColumns = `repeat(${cols}, ${tileSize}px)`;
-        grid.style.gridTemplateRows = `repeat(${rows}, ${tileSize}px)`;
+        
+        // Calculate tile size
+        const gapSize = 15;
+        const availableWidth = containerWidth - (cols - 1) * gapSize;
+        const availableHeight = containerHeight - (rows - 1) * gapSize;
+        
+        const tileWidth = availableWidth / cols;
+        const tileHeight = availableHeight / rows;
+        
+        // Use square tiles (minimum dimension)
+        const tileSize = Math.min(tileWidth, tileHeight);
+        
+        // Ensure minimum tile size
+        const minTileSize = window.innerWidth <= 768 ? 120 : 150;
+        const finalTileSize = Math.max(tileSize, minTileSize);
+        
+        // Apply styles
+        grid.style.gridTemplateColumns = `repeat(${cols}, ${finalTileSize}px)`;
+        grid.style.gridTemplateRows = `repeat(${rows}, ${finalTileSize}px)`;
+        
         tiles.forEach(tile => {
-            tile.style.width = `${tileSize}px`;
-            tile.style.height = `${tileSize}px`;
+            tile.style.width = `${finalTileSize}px`;
+            tile.style.height = `${finalTileSize}px`;
         });
-
-        grid.style.display = 'grid';
-        grid.style.justifyContent = 'center';
-        grid.style.alignContent = 'center';
     }
 
-    window.addEventListener('load', adjustGrid);
-    window.addEventListener('resize', adjustGrid);
+    // Initialize grid on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(adjustGrid, 100); // Small delay to ensure proper layout calculation
+    });
+
+    // Adjust grid on window resize
+    window.addEventListener('resize', () => {
+        setTimeout(adjustGrid, 100);
+    });
+
+    // Add smooth entrance animation
+    document.addEventListener('DOMContentLoaded', () => {
+        const tiles = document.querySelectorAll('.diary-tile');
+        tiles.forEach((tile, index) => {
+            tile.style.opacity = '0';
+            tile.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                tile.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                tile.style.opacity = '1';
+                tile.style.transform = 'translateY(0)';
+            }, index * 50); // Stagger animation
+        });
+    });
 </script>
 {% endblock %}

@@ -1,159 +1,352 @@
 {% extends "Diary/layout.html" %}
 {% block content %}
-<div class="d-flex align-items-center mb-3">
-    <h2 class="fs-4 fw-bold text-primary text-uppercase mb-0 me-3">
-        <i class="bi bi-pencil-square me-2"></i>New Entry
-    </h2>
-    <span id="save-status" style="color:#43a047; font-size:1.2em; display:none;">
-        <i class="bi bi-cloud-check-fill"></i>
-    </span>
-</div>
-<form method="POST" id="diary-form">
-    <div class="mb-3 d-flex align-items-center">
-        <div class="me-3">
-            <label for="color" class="form-label"> </label>
-            <input type="color" class="form-control form-control-color" id="color" name="color" value="#ffffff" list="colorList" required>
+<div class="modern-diary-container">
+    <!-- Header với save status -->
+    <div class="diary-header">
+        <div class="header-left">
+            <h1 class="diary-title">
+                <i class="bi bi-pencil-square"></i>
+                New Entry
+            </h1>
+            <span id="save-status" class="save-indicator">
+                <i class="bi bi-cloud-check-fill"></i>
+                <span class="save-text">Saved</span>
+            </span>
+        </div>
+        <div class="header-right">
+            <input type="color" id="color" name="color" value="#ffffff" class="color-picker" list="colorList">
             <datalist id="colorList">
-                <option value="#f8d7da"> <!-- Light Red -->
-                <option value="#d4edda"> <!-- Light Green -->
-                <option value="#cce5ff"> <!-- Light Blue -->
-                <option value="#fff3cd"> <!-- Light Yellow -->
-                <option value="#e2e3e5"> <!-- Light Gray -->
-                <option value="#d1ecf1"> <!-- Light Cyan -->
-                <option value="#fef9e7"> <!-- Light Cream -->
+                <option value="#f8d7da">
+                <option value="#d4edda">
+                <option value="#cce5ff">
+                <option value="#fff3cd">
+                <option value="#e2e3e5">
+                <option value="#d1ecf1">
+                <option value="#fef9e7">
             </datalist>
         </div>
-        <div class="flex-grow-1">
-            <label for="title" class="form-label fw-bold text-primary fs-5">Title</label>
-            <input type="text" class="form-control" id="title" name="title" required>
+    </div>
+
+    <!-- Main form -->
+    <form method="POST" id="diary-form" class="diary-form">
+        <div class="form-group">
+            <input type="text" 
+                   id="title" 
+                   name="title" 
+                   placeholder="What's on your mind today?" 
+                   class="title-input"
+                   required>
         </div>
-    </div>
-    <div class="mb-3">
-        <label for="content" class="form-label fw-bold text-primary fs-5">Content</label>
-        <textarea class="form-control" id="content" name="content" rows="15" required></textarea>
-    </div>
-    <div class="text-end">
-        <button type="submit" class="btn btn-primary">Save Diary</button>
-    </div>
-</form>
+        
+        <div class="form-group flex-grow">
+            <textarea id="content" 
+                      name="content" 
+                      placeholder="Start writing your thoughts..."
+                      class="content-textarea"
+                      required></textarea>
+        </div>
+        
+    </form>
+</div>
+
 <style>
-    #color {
+    /* Reset và base styles */
+    .modern-diary-container {
+        max-width: 950px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+
+    /* Header styles */
+    .diary-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .diary-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .diary-title i {
+        color: #3498db;
+        font-size: 1.8rem;
+    }
+
+    .save-indicator {
+        display: none;
+        align-items: center;
+        gap: 0.5rem;
+        color: #27ae60;
+        font-size: 0.9rem;
+        font-weight: 500;
+        background: rgba(39, 174, 96, 0.1);
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        border: 1px solid rgba(39, 174, 96, 0.2);
+    }
+
+    .color-picker {
         width: 50px;
         height: 50px;
-        padding: 5px;
+        border: 3px solid white;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
     }
+
+    .color-picker:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    }
+
+    /* Form styles */
+    .diary-form {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        position: relative;
+    }
+
+    .form-group.flex-grow {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .title-input {
+        width: 100%;
+        font-size: 1.5rem;
+        font-weight: 600;
+        padding: 1rem 1.5rem;
+        border: none;
+        border-radius: 15px;
+        background: rgba(255,255,255,0.9);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        color: #2c3e50;
+    }
+
+    .title-input:focus {
+        outline: none;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        background: rgba(255,255,255,1);
+    }
+
+    .title-input::placeholder {
+        color: #7f8c8d;
+        font-weight: 400;
+    }
+
+    .content-textarea {
+        width: 100%;
+        flex: 1;
+        min-height: 300px;
+        font-size: 1.1rem;
+        line-height: 1.8;
+        padding: 1.5rem;
+        border: none;
+        border-radius: 15px;
+        background: rgba(255,255,255,0.9);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        resize: none;
+        transition: all 0.3s ease;
+        color: #2c3e50;
+        font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', sans-serif;
+        font-feature-settings: "kern" 1, "liga" 1;
+    }
+
+    .content-textarea:focus {
+        outline: none;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        background: rgba(255,255,255,1);
+    }
+
+    .content-textarea::placeholder {
+        color: #7f8c8d;
+        font-style: italic;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: center;
+        padding-top: 1rem;
+    }
+
+    .save-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        padding: 1rem 2rem;
+        background: linear-gradient(135deg, #3498db, #2980b9);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+    }
+
+    .save-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4);
+        background: linear-gradient(135deg, #2980b9, #3498db);
+    }
+
+    .save-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .modern-diary-container {
+            margin: 0;
+            padding: 1rem;
+            border-radius: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .diary-header {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: stretch;
+            text-align: center;
+        }
+
+        .header-left {
+            justify-content: center;
+        }
+
+        .diary-title {
+            font-size: 1.5rem;
+        }
+
+        .title-input {
+            font-size: 1.2rem;
+            padding: 0.8rem 1rem;
+        }
+
+        .content-textarea {
+            min-height: 60vh;
+            font-size: 1rem;
+            padding: 1rem;
+        }
+
+        .save-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .modern-diary-container {
+            padding: 0.5rem;
+        }
+
+        .diary-header {
+            margin-bottom: 1rem;
+        }
+
+        .content-textarea {
+            min-height: 65vh;
+        }
+    }
+
+    /* Auto-save status animation */
+    .save-indicator.show {
+        display: flex;
+        animation: fadeInScale 0.3s ease;
+    }
+
+    .save-indicator.hide {
+        animation: fadeOutScale 0.3s ease forwards;
+    }
+
+    @keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes fadeOutScale {
+        from {
+            opacity: 1;
+            transform: scale(1);
+        }
+        to {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+    }
+
+    /* Color picker styles */
     input[type="color"]::-webkit-color-swatch-wrapper {
         padding: 0;
+        border: none;
+        border-radius: 50%;
     }
+
     input[type="color"]::-webkit-color-swatch {
         border: none;
-        border-radius: 5px;
+        border-radius: 50%;
     }
-    .form-label.fw-bold.text-primary.fs-5 {
-        transition: color 0.3s;
+
+    /* Custom scrollbar for content */
+    .content-textarea::-webkit-scrollbar {
+        width: 8px;
     }
-    .form-label.fw-bold.text-primary.fs-5:hover {
-        color: #005cbf; /* Darker shade of primary */
+
+    .content-textarea::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
     }
-    
-    /* Auto-save status styles */
-    #save-status {
-        z-index: 10;
-        pointer-events: none;
+
+    .content-textarea::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
     }
-    
-    /* Button spacing styles similar to ever_note.html */
-    .btn-sm {
-        min-width: 44px !important;
-        min-height: 44px !important;
-        padding: 0.5rem !important;
-        margin: 0.25rem !important;
-        font-size: 1.1rem !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    
-    /* Mobile responsive adjustments */
-    @media (max-width: 991.98px) {
-        .btn-sm {
-            min-width: 44px !important;
-            min-height: 44px !important;
-        }
-        
-        /* Tăng chiều cao textarea trên mobile */
-        #content {
-            min-height: 60vh !important; /* Sử dụng 60% viewport height */
-            rows: 25; /* Tăng số rows */
-        }
-        
-        /* Đảm bảo form sử dụng toàn bộ chiều cao màn hình */
-        .container {
-            min-height: 100vh;
-            padding-bottom: 2rem;
-        }
-        
-        /* Tối ưu hóa spacing trên mobile */
-        .mb-3 {
-            margin-bottom: 1rem !important;
-        }
-        
-        /* Giảm khoảng cách header để có thêm chỗ cho content */
-        .d-flex.align-items-center.mb-3 {
-            margin-bottom: 1rem !important;
-        }
-    }
-    
-    /* Tablet adjustments */
-    @media (max-width: 991.98px) and (min-width: 768px) {
-        #content {
-            min-height: 55vh !important;
-        }
-    }
-    
-    /* Small mobile adjustments */
-    @media (max-width: 576px) {
-        #content {
-            min-height: 65vh !important; /* Tăng thêm cho màn hình nhỏ */
-        }
-        
-        /* Giảm padding container để có thêm chỗ */
-        .container {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-        }
-        
-        /* Giảm khoảng cách giữa các elements */
-        .mb-3 {
-            margin-bottom: 0.75rem !important;
-        }
-        
-        .d-flex.align-items-center.mb-3 {
-            margin-bottom: 0.75rem !important;
-        }
-        
-        /* Tối ưu button area */
-        .text-end {
-            margin-top: 1rem;
-        }
-    }
-    
-    /* Desktop adjustments */
-    @media (min-width: 992px) {
-        .btn-sm {
-            min-width: 32px !important;
-            height: 32px !important;
-            padding: 0.25rem !important;
-            margin: 0 !important;
-            font-size: 0.875rem !important;
-        }
-        
-        /* Giữ nguyên chiều cao mặc định trên desktop */
-        #content {
-            min-height: auto;
-        }
+
+    .content-textarea::-webkit-scrollbar-thumb:hover {
+        background: #a1a1a1;
     }
 </style>
+
 <script>
     // ===== AUTO-SAVE FUNCTIONALITY =====
     const AutoSave = {
@@ -165,15 +358,19 @@
         
         // Show save status animation
         showSaveStatus() {
-            const icon = document.getElementById('save-status');
-            icon.style.display = 'inline';
-            icon.style.opacity = '1';
-            icon.animate([{opacity: 0.2}, {opacity: 1}], {duration: 300, iterations: 1});
+            const indicator = document.getElementById('save-status');
+            indicator.classList.remove('hide');
+            indicator.classList.add('show');
             
             clearTimeout(this.saveTimeout);
             this.saveTimeout = setTimeout(() => {
-                icon.style.display = 'none';
-            }, 1500);
+                indicator.classList.remove('show');
+                indicator.classList.add('hide');
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                    indicator.classList.remove('hide');
+                }, 300);
+            }, 2000);
         },
         
         // Debounce utility function
@@ -276,7 +473,7 @@
         init() {
             this.autoSave = this.debounce(() => {
                 this.saveDraft();
-            }, 3000); // Auto-save after 3 seconds of inactivity (tăng lên để tránh quá nhiều request)
+            }, 3000);
             
             // Load existing draft
             this.loadDraft();
@@ -331,16 +528,18 @@
                 position: fixed;
                 top: 20px;
                 right: 20px;
-                background: #e3f2fd;
-                color: #1976d2;
-                border: 1px solid #90caf9;
-                padding: 10px 15px;
-                border-radius: 5px;
+                background: rgba(255,255,255,0.95);
+                color: #2c3e50;
+                border: 1px solid #3498db;
+                padding: 15px 20px;
+                border-radius: 10px;
                 z-index: 9999;
                 font-size: 14px;
                 max-width: 300px;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+                backdrop-filter: blur(10px);
             `;
-            notification.innerHTML = '<i class="bi bi-info-circle"></i> Draft loaded from previous session';
+            notification.innerHTML = '<i class="bi bi-info-circle-fill" style="color: #3498db;"></i> Draft loaded from previous session';
             document.body.appendChild(notification);
             
             setTimeout(() => {
@@ -356,7 +555,7 @@
             const contentTextarea = document.getElementById('content');
             const colorInput = document.getElementById('color');
             
-            // Auto-save on input (chỉ khi cả title và content đều có dữ liệu)
+            // Auto-save on input
             titleInput.addEventListener('input', () => {
                 if (titleInput.value.trim() && contentTextarea.value.trim()) {
                     this.autoSave();
@@ -370,12 +569,13 @@
             });
             
             colorInput.addEventListener('change', () => {
+                updateContentStyle();
                 if (titleInput.value.trim() && contentTextarea.value.trim()) {
                     this.autoSave();
                 }
             });
             
-            // Save on blur (when user clicks away) - chỉ khi cả title và content đều có dữ liệu
+            // Save on blur
             titleInput.addEventListener('blur', () => {
                 if (titleInput.value.trim() && contentTextarea.value.trim()) {
                     this.saveDraft();
@@ -393,12 +593,11 @@
                 localStorage.removeItem('diary_draft');
             });
             
-            // Save draft before page unload (nếu có đủ dữ liệu)
+            // Save draft before page unload
             window.addEventListener('beforeunload', () => {
                 const title = titleInput.value.trim();
                 const content = contentTextarea.value.trim();
                 if (title && content) {
-                    // Sử dụng navigator.sendBeacon cho beforeunload (không đợi response)
                     const data = JSON.stringify({
                         title: title,
                         content: content,
@@ -411,7 +610,7 @@
         }
     };
     
-    // ===== ORIGINAL COLOR FUNCTIONALITY =====
+    // ===== COLOR FUNCTIONALITY =====
     const colorInput = document.getElementById('color');
     const contentArea = document.getElementById('content');
 
@@ -421,7 +620,7 @@
         const g = parseInt(hexColor.substr(2, 2), 16);
         const b = parseInt(hexColor.substr(4, 2), 16);
         const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-        return luminance > 0.5 ? '#000000' : '#FFFFFF';
+        return luminance > 0.5 ? '#2c3e50' : '#ffffff';
     }
 
     function updateContentStyle() {
