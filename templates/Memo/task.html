@@ -2523,7 +2523,6 @@ if (calendarModal) {
             try {
                 await noteManager.refreshData();
                 noteManager.updateSearch(); // Refresh the main view
-                ui.showFlashMessage('info', 'Data refreshed');
             } catch (error) {
                 console.error('Error refreshing main screen:', error);
             }
