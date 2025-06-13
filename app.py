@@ -2217,7 +2217,7 @@ def generate_knowledge_links(keyword):
     fixed_sources = [
         {
             'title': f'Google Search',
-            'url': f'https://www.google.com/search?q={encoded_keyword_plus}',
+            'url': f'https://www.google.com/search?q=what is {encoded_keyword_plus}',
             'language': 'Multi',
             'icon': 'bi-google',
             'description': 'Tìm kiếm toàn diện trên Google',
@@ -2225,7 +2225,7 @@ def generate_knowledge_links(keyword):
         },
         {
             'title': f'ChatGPT AI',
-            'url': f'https://chat.openai.com/?q={encoded_keyword_plus}',
+            'url': f'https://chat.openai.com/?q=what is {encoded_keyword_plus} in English, vietnamese and japanese', 
             'language': 'Multi',
             'icon': 'bi-robot',
             'description': 'Hỏi AI về từ khóa này',
