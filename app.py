@@ -2225,7 +2225,7 @@ def generate_knowledge_links(keyword):
         },
         {
             'title': f'ChatGPT AI',
-            'url': f'https://chat.openai.com/?q=what is {encoded_keyword_plus} in English, vietnamese and japanese', 
+            'url': f'https://chat.openai.com/?q=hãy nêu tổng quan và các khía cạnh chi tiết về {encoded_keyword_plus} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật', 
             'language': 'Multi',
             'icon': 'bi-robot',
             'description': 'Hỏi AI về từ khóa này',
