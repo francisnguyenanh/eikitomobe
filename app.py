@@ -2191,30 +2191,14 @@ def knowledge():
     return render_template('knowledge.html')
 
 
-
-
 def generate_knowledge_links(keyword):
-    """Tự động gợi ý 5 nguồn tri thức bình dân cho từ khóa dựa trên category từ kw.txt + Google + AI"""
     import urllib.parse
     encoded_keyword = urllib.parse.quote(keyword)
     encoded_keyword_plus = keyword.replace(' ', '+')
     
-    # Load categories từ kw.txt
-    knowledge_categories = load_knowledge_categories()
-    
-    # Tìm category của keyword từ kw.txt
-    keyword_category = None
-    for category, keywords in knowledge_categories.items():
-        if keyword in keywords:
-            keyword_category = category
-            break
-    
-    # Nếu không tìm thấy trong kw.txt, fallback về phán đoán theo tên keyword
-    if not keyword_category:
-        keyword_category = categorize_keyword_by_name(keyword.lower())
-    
-    # 2 nguồn cố định cho mọi từ khóa
-    fixed_sources = [
+    question = f"1. hãy nêu tổng quan và các khía cạnh chi tiết về {keyword} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật (những từ vựng jlpt N1 thì thêm furigana). 2. nêu rõ mặt ứng dụng trong thực tế. 3. cung cấp bảng từ vựng (có âm hán việt) liên quan đến chủ đề này. 4. cung cấp một vài link để tìm hiểu sâu hơn về chủ đề)"
+    # 5 nguồn cố định cho mọi từ khóa
+    sources = [
         {
             'title': f'Google Search',
             'url': f'https://www.google.com/search?q=what is {encoded_keyword_plus}',
@@ -2225,403 +2209,23 @@ def generate_knowledge_links(keyword):
         },
         {
             'title': f'ChatGPT AI',
-            'url': f'https://chat.openai.com/?q=hãy nêu tổng quan và các khía cạnh chi tiết về {encoded_keyword_plus} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật (sao cho sau khi đọc xong thì có đủ kiến thức để trình bày 1 bài thuyết trình dài 120 phút về vấn đề này)', 
+            'url': f'https://chat.openai.com/?q={question}', 
             'language': 'Multi',
             'icon': 'bi-robot',
             'description': 'Hỏi AI về từ khóa này',
             'color': 'success'
+        },
+        {
+            'title': f'Grok AI',
+            'url': f'https://grok.com/?q={question}',
+            'language': 'Multi',
+            'icon': 'bi-lightning',
+            'description': 'Hỏi Grok AI của X (Twitter)',
+            'color': 'dark'
         }
     ]
     
-    # Định nghĩa các nguồn tri thức bình dân theo từng category (3 nguồn mỗi category)
-    sources_by_category = {
-        'science': [
-            {
-                'title': f'Wikipedia (Tiếng Việt)',
-                'url': f'https://vi.wikipedia.org/wiki/{encoded_keyword}',
-                'language': 'VI',
-                'icon': 'bi-wikipedia',
-                'description': 'Kiến thức khoa học dễ hiểu',
-                'color': 'info'
-            },
-            {
-                'title': f'HowStuffWorks',
-                'url': f'https://www.howstuffworks.com/search?terms={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-gear',
-                'description': 'Giải thích cách hoạt động',
-                'color': 'warning'
-            },
-            {
-                'title': f'SciShow Videos',
-                'url': f'https://www.youtube.com/results?search_query=scishow+{encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-youtube',
-                'description': 'Video khoa học thú vị',
-                'color': 'danger'
-            }
-        ],
-        
-        'history': [
-            {
-                'title': f'Wikipedia Lịch sử',
-                'url': f'https://vi.wikipedia.org/wiki/{encoded_keyword}',
-                'language': 'VI',
-                'icon': 'bi-wikipedia',
-                'description': 'Lịch sử dễ hiểu',
-                'color': 'info'
-            },
-            {
-                'title': f'History.com',
-                'url': f'https://www.history.com/search?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-clock-history',
-                'description': 'Câu chuyện lịch sử hấp dẫn',
-                'color': 'warning'
-            },
-            {
-                'title': f'Crash Course History',
-                'url': f'https://www.youtube.com/results?search_query=crash+course+history+{encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-youtube',
-                'description': 'Lịch sử học nhanh',
-                'color': 'danger'
-            }
-        ],
-        
-        'business': [
-            {
-                'title': f'Investopedia',
-                'url': f'https://www.investopedia.com/search?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-graph-up',
-                'description': 'Thuật ngữ kinh doanh đơn giản',
-                'color': 'info'
-            },
-            {
-                'title': f'Business Insider',
-                'url': f'https://www.businessinsider.com/s?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-newspaper',
-                'description': 'Tin tức kinh doanh dễ hiểu',
-                'color': 'warning'
-            },
-            {
-                'title': f'TED Business',
-                'url': f'https://www.ted.com/search?q={encoded_keyword_plus}+business',
-                'language': 'Multi',
-                'icon': 'bi-chat-quote',
-                'description': 'Bài thuyết trình kinh doanh',
-                'color': 'danger'
-            }
-        ],
-        
-        'health': [
-            {
-                'title': f'WebMD',
-                'url': f'https://www.webmd.com/search/search_results/default.aspx?query={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-shield-check',
-                'description': 'Thông tin sức khỏe đáng tin',
-                'color': 'info'
-            },
-            {
-                'title': f'Healthline',
-                'url': f'https://www.healthline.com/search?q1={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-heart-pulse',
-                'description': 'Lời khuyên sức khỏe dễ hiểu',
-                'color': 'warning'
-            },
-            {
-                'title': f'Mayo Clinic',
-                'url': f'https://www.mayoclinic.org/search/search-results?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-hospital',
-                'description': 'Y khoa uy tín',
-                'color': 'danger'
-            }
-        ],
-        
-        'language': [
-            {
-                'title': f'Cambridge Dictionary',
-                'url': f'https://dictionary.cambridge.org/search/english/?q={encoded_keyword_plus}',
-                'language': 'Multi',
-                'icon': 'bi-book-half',
-                'description': 'Từ điển uy tín',
-                'color': 'info'
-            },
-            {
-                'title': f'Grammarly Blog',
-                'url': f'https://www.grammarly.com/blog/search/?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-spell-check',
-                'description': 'Mẹo ngữ pháp hay',
-                'color': 'warning'
-            },
-            {
-                'title': f'FluentU',
-                'url': f'https://www.fluentu.com/blog/search/?q={encoded_keyword_plus}',
-                'language': 'Multi',
-                'icon': 'bi-chat-text',
-                'description': 'Học ngôn ngữ thực tế',
-                'color': 'danger'
-            }
-        ],
-        
-        'culture': [
-            {
-                'title': f'Culture Trip',
-                'url': f'https://theculturetrip.com/search?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-map',
-                'description': 'Khám phá văn hóa thế giới',
-                'color': 'info'
-            },
-            {
-                'title': f'National Geographic',
-                'url': f'https://www.nationalgeographic.com/search?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-globe2',
-                'description': 'Câu chuyện văn hóa hấp dẫn',
-                'color': 'warning'
-            },
-            {
-                'title': f'Atlas Obscura',
-                'url': f'https://www.atlasobscura.com/search?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-compass',
-                'description': 'Điều thú vị về văn hóa',
-                'color': 'danger'
-            }
-        ],
-        
-        'technology': [
-            {
-                'title': f'How-To Geek',
-                'url': f'https://www.howtogeek.com/search/?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-laptop',
-                'description': 'Công nghệ dễ hiểu',
-                'color': 'info'
-            },
-            {
-                'title': f'TechTerms',
-                'url': f'https://techterms.com/search?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-cpu',
-                'description': 'Thuật ngữ công nghệ đơn giản',
-                'color': 'warning'
-            },
-            {
-                'title': f'Explain That Stuff',
-                'url': f'https://www.explainthatstuff.com/search-results.html?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-gear',
-                'description': 'Công nghệ được giải thích',
-                'color': 'danger'
-            }
-        ],
-        
-        'philosophy': [
-            {
-                'title': f'Philosophy Basics',
-                'url': f'https://www.philosophybasics.com/search.html?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-book',
-                'description': 'Triết học cơ bản',
-                'color': 'info'
-            },
-            {
-                'title': f'Philosophy Now',
-                'url': f'https://philosophynow.org/search?search={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-lightbulb',
-                'description': 'Triết học đương đại',
-                'color': 'warning'
-            },
-            {
-                'title': f'Crash Course Philosophy',
-                'url': f'https://www.youtube.com/results?search_query=crash+course+philosophy+{encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-youtube',
-                'description': 'Triết học dễ hiểu',
-                'color': 'danger'
-            }
-        ],
-        
-        'arts': [
-            {
-                'title': f'Tate Art Terms',
-                'url': f'https://www.tate.org.uk/search?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-palette',
-                'description': 'Nghệ thuật giải thích đơn giản',
-                'color': 'info'
-            },
-            {
-                'title': f'ArtNet',
-                'url': f'https://www.artnet.com/search/?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-images',
-                'description': 'Thế giới nghệ thuật',
-                'color': 'warning'
-            },
-            {
-                'title': f'Google Arts & Culture',
-                'url': f'https://artsandculture.google.com/search?q={encoded_keyword_plus}',
-                'language': 'Multi',
-                'icon': 'bi-building',
-                'description': 'Bộ sưu tập nghệ thuật',
-                'color': 'danger'
-            }
-        ],
-        
-        'sports': [
-            {
-                'title': f'ESPN',
-                'url': f'https://www.espn.com/search/_/q/{encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-trophy',
-                'description': 'Tin tức thể thao',
-                'color': 'info'
-            },
-            {
-                'title': f'Olympic.org',
-                'url': f'https://olympics.com/en/olympic-games/search?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-award',
-                'description': 'Thông tin Olympic',
-                'color': 'warning'
-            },
-            {
-                'title': f'Sports Illustrated',
-                'url': f'https://www.si.com/search?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-newspaper',
-                'description': 'Nội dung thể thao phổ biến',
-                'color': 'danger'
-            }
-        ],
-        
-        'environment': [
-            {
-                'title': f'National Geographic',
-                'url': f'https://www.nationalgeographic.com/search?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-globe2',
-                'description': 'Câu chuyện môi trường',
-                'color': 'info'
-            },
-            {
-                'title': f'EPA',
-                'url': f'https://search.epa.gov/epasearch/?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-shield-check',
-                'description': 'Thông tin môi trường',
-                'color': 'warning'
-            },
-            {
-                'title': f'Climate.gov',
-                'url': f'https://www.climate.gov/search/site/{encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-thermometer',
-                'description': 'Thông tin khí hậu',
-                'color': 'danger'
-            }
-        ],
-        
-        'psychology': [
-            {
-                'title': f'Psychology Today',
-                'url': f'https://www.psychologytoday.com/us/search?query={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-person-check',
-                'description': 'Tâm lý học thực tế',
-                'color': 'info'
-            },
-            {
-                'title': f'Simply Psychology',
-                'url': f'https://www.simplypsychology.org/search-results.html?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-brain',
-                'description': 'Tâm lý học đơn giản',
-                'color': 'warning'
-            },
-            {
-                'title': f'Verywell Mind',
-                'url': f'https://www.verywellmind.com/search?q={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-heart',
-                'description': 'Sức khỏe tinh thần',
-                'color': 'danger'
-            }
-        ],
-        
-        # Mặc định cho categories không có trong danh sách
-        'general': [
-            {
-                'title': f'Wikipedia (Tiếng Việt)',
-                'url': f'https://vi.wikipedia.org/wiki/{encoded_keyword}',
-                'language': 'VI',
-                'icon': 'bi-wikipedia',
-                'description': 'Kiến thức tổng hợp',
-                'color': 'info'
-            },
-            {
-                'title': f'Simple Wikipedia',
-                'url': f'https://simple.wikipedia.org/wiki/{encoded_keyword}',
-                'language': 'EN',
-                'icon': 'bi-book',
-                'description': 'Giải thích đơn giản',
-                'color': 'warning'
-            },
-            {
-                'title': f'HowStuffWorks',
-                'url': f'https://www.howstuffworks.com/search?terms={encoded_keyword_plus}',
-                'language': 'EN',
-                'icon': 'bi-gear',
-                'description': 'Cách thức hoạt động',
-                'color': 'danger'
-            }
-        ]
-    }
-    
-    # Lấy 3 nguồn theo category + 2 nguồn cố định = 5 nguồn total
-    category_sources = sources_by_category.get(keyword_category, sources_by_category['general'])
-    
-    # Kết hợp: 2 nguồn cố định + 3 nguồn theo category
-    all_sources = fixed_sources + category_sources
-    
-    return all_sources
-
-def categorize_keyword_by_name(keyword_lower):
-    """Fallback function để phán đoán category dựa trên tên keyword"""
-    # Logic phân loại cơ bản
-    science_keywords = ['machine learning', 'ai', 'quantum', 'technology', 'programming', 'algorithm', 'data', 'computer']
-    history_keywords = ['war', 'empire', 'civilization', 'revolution', 'ancient', 'medieval', 'dynasty', 'battle']
-    business_keywords = ['business', 'marketing', 'finance', 'investment', 'economy', 'startup', 'management']
-    health_keywords = ['health', 'medical', 'nutrition', 'fitness', 'therapy', 'medicine', 'disease']
-    culture_keywords = ['culture', 'tradition', 'festival', 'art', 'music', 'religion', 'ceremony']
-    
-    for keyword in science_keywords:
-        if keyword in keyword_lower:
-            return 'science'
-    for keyword in history_keywords:
-        if keyword in keyword_lower:
-            return 'history'
-    for keyword in business_keywords:
-        if keyword in keyword_lower:
-            return 'business'
-    for keyword in health_keywords:
-        if keyword in keyword_lower:
-            return 'health'
-    for keyword in culture_keywords:
-        if keyword in keyword_lower:
-            return 'culture'
-    
-    return 'general'
+    return sources
 
 
 
@@ -2981,7 +2585,11 @@ def get_random_keyword_api():
                 'all_completed': True
             })
         
+        # Use current timestamp + random seed for better randomness
         import random
+        import time
+        random.seed(int(time.time() * 1000000) % 1000000)  # Use microseconds for better randomness
+        
         keyword, category = random.choice(all_available)
         links = generate_knowledge_links(keyword)
         progress = load_keywords_progress()
@@ -2997,6 +2605,8 @@ def get_random_keyword_api():
         if len(criteria_progress) != len(criteria):
             criteria_progress = [False] * len(criteria)
         
+        app.logger.info(f"Random keyword selected: {keyword} from category: {category}")
+        
         return jsonify({
             'status': 'success',
             'keyword': keyword,
@@ -3006,7 +2616,8 @@ def get_random_keyword_api():
             'criteria': criteria,
             'criteria_progress': criteria_progress,
             'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'stats': progress.get('stats', {})
+            'stats': progress.get('stats', {}),
+            'is_random': True  # Flag to indicate this is random
         })
     except Exception as e:
         app.logger.error(f"Error getting random keyword: {str(e)}")

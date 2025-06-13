@@ -12,7 +12,7 @@
     "Green Building",
     "Cognitive Psychology"
   ],
-  "last_updated": "2025-06-13T17:31:18.394604",
+  "last_updated": "2025-06-13T21:18:31.410338",
   "stats": {
     "total_completed": 10,
     "categories_progress": {
@@ -45,6 +45,14 @@
   },
   "criteria_progress": {
     "mathematics:Calculus Concepts": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "science:Data Science": [
       false,
       false,
       false,

@@ -538,176 +538,51 @@
     }
 
     /* Criteria Section */
-    .criteria-section {
-        background: var(--card-bg);
-        border-radius: 15px;
-        padding: 2rem;
-        margin-bottom: 1.5rem;
-        border: 1px solid var(--navbar-border);
-    }
-
-    .criteria-section h6 {
-        text-align: left; /* Căn trái tiêu đề */
-        margin-bottom: 1rem;
-    }
-
-    .criteria-container {
-        margin-top: 1rem;
-        text-align: left; /* Căn trái container */
-    }
-
-    .criteria-item {
-        display: flex;
-        align-items: flex-start;
-        padding: 0.75rem 0;
-        border-bottom: 1px solid rgba(var(--primary-color-rgb), 0.1);
-        transition: all 0.3s ease;
-        text-align: left; /* Căn trái từng item */
-    }
-
-    .criteria-item:last-child {
-        border-bottom: none;
-    }
-
-    .criteria-item:hover {
-        padding-left: 0.5rem;
-        background: rgba(var(--primary-color-rgb), 0.03);
-        border-radius: 8px;
-    }
-
-    .criteria-checkbox {
-        margin-right: 1rem;
-        margin-top: 0.2rem;
-        transform: scale(1.1);
-        flex-shrink: 0;
-    }
-
-    .criteria-checkbox:checked {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-    }
-
-    .form-check-label {
-        font-weight: 500;
-        cursor: pointer;
-        margin-bottom: 0;
-        line-height: 1.5;
-        color: var(--text-color);
-        flex: 1;
-        text-align: left; /* Căn trái nội dung label */
-    }
-
-    .criteria-item:hover .form-check-label {
-        color: var(--primary-color);
-    }
-
-    .criteria-checkbox:checked + .form-check-label {
-        color: var(--primary-color);
-        text-decoration: line-through;
-        opacity: 0.8;
-    }
-
-    .progress-info {
-        text-align: center;
-        padding: 0.75rem;
-        background: rgba(var(--accent-color-rgb), 0.1);
-        border-radius: 8px;
-        margin-top: 1rem;
-        border: 1px solid rgba(var(--accent-color-rgb), 0.2);
-    }
-
-    /* Complete Button Update */
-    .button-section .btn {
-        padding: 0.75rem 1.5rem;
-        border-radius: 25px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        border: 2px solid transparent;
-    }
-
-    .button-section .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-
-    .button-section .btn-success {
-        background: linear-gradient(135deg, #27ae60, #2ecc71);
-        border-color: #27ae60;
-        color: white;
-    }
-
-    .button-section .btn-success:hover:not(:disabled) {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(39, 174, 96, 0.4);
-    }
-
-    .button-section .btn-outline-secondary {
-        background: transparent;
-        border-color: #6c757d;
-        color: #6c757d;
-    }
-
-    /* Responsive for criteria */
-    @media (max-width: 768px) {
-        .criteria-item {
-            padding: 0.6rem 0;
-        }
-        
-        .criteria-checkbox {
-            margin-right: 0.8rem;
-            transform: scale(1.0);
-        }
-        
-        .criteria-section {
-            padding: 2rem;
-        }
-
-        .form-check-label {
-            font-size: 0.9rem;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .criteria-item {
-            padding: 0.5rem 0;
-        }
-        
-        .criteria-checkbox {
-            margin-right: 0.6rem;
-        }
-
-        .form-check-label {
-            font-size: 0.85rem;
-        }
-
-        .progress-info {
-            padding: 0.5rem;
-        }
-    }
-    // ...existing code...
-/* Criteria Section */
 .criteria-section {
     background: var(--card-bg);
     border-radius: 15px;
     padding: 2rem;
     margin-bottom: 1.5rem;
     border: 1px solid var(--navbar-border);
+    margin-top: 1rem;
 }
 
 .criteria-section h6 {
-    text-align: left; /* Căn trái tiêu đề */
+    text-align: left;
     margin-bottom: 1rem;
 }
 
-/* Criteria Header with Toggle */
+.criteria-container {
+    margin-top: 1rem;
+    text-align: left;
+}
+
+/* Individual Criteria Item Styling */
+.criteria-item {
+    background: rgba(var(--primary-color-rgb), 0.02);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.1);
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.criteria-item:hover {
+    border-color: rgba(var(--primary-color-rgb), 0.2);
+    box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.1);
+}
+
+.criteria-item.completed {
+    background: rgba(var(--success-color-rgb, 40, 167, 69), 0.05);
+    border-color: rgba(var(--success-color-rgb, 40, 167, 69), 0.2);
+}
+
+/* Criteria Header (checkbox + title + toggle button) */
 .criteria-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
     cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 8px;
     transition: all 0.3s ease;
 }
 
@@ -715,19 +590,38 @@
     background: rgba(var(--primary-color-rgb), 0.05);
 }
 
+.criteria-checkbox {
+    margin-right: 1rem;
+    transform: scale(1.1);
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.criteria-checkbox:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
 .criteria-title {
-    display: flex;
-    align-items: center;
+    flex: 1;
+    font-weight: 500;
     margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
+    line-height: 1.4;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.criteria-item.completed .criteria-title {
+    color: var(--primary-color);
+    text-decoration: line-through;
+    opacity: 0.8;
 }
 
 .criteria-toggle-btn {
     background: none;
     border: none;
     color: var(--primary-color);
-    font-size: 1.2rem;
+    font-size: 1rem;
     padding: 0.25rem;
     border-radius: 50%;
     transition: all 0.3s ease;
@@ -735,8 +629,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
 }
 
 .criteria-toggle-btn:hover {
@@ -752,77 +647,97 @@
     transform: rotate(180deg) scale(1.1);
 }
 
-.criteria-container {
-    margin-top: 1rem;
-    text-align: left; /* Căn trái container */
+/* Criteria Content (ChatGPT link) */
+.criteria-content {
+    padding: 0 1rem 0.75rem 1rem;
     transition: all 0.3s ease;
     overflow: hidden;
+    border-top: 1px solid rgba(var(--primary-color-rgb), 0.1);
+    background: rgba(var(--primary-color-rgb), 0.02);
 }
 
-.criteria-container.collapsed {
+.criteria-content.collapsed {
     max-height: 0;
-    margin-top: 0;
-    opacity: 0;
     padding-top: 0;
     padding-bottom: 0;
+    opacity: 0;
+    border-top: none;
 }
 
-.criteria-container.expanded {
-    max-height: 1000px;
+.criteria-content.expanded {
+    max-height: 200px;
     opacity: 1;
 }
 
-.criteria-item {
+/* Container for AI links */
+.criteria-links-container {
     display: flex;
-    align-items: flex-start;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid rgba(var(--primary-color-rgb), 0.1);
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+/* ChatGPT Link */
+.criteria-chatgpt-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #10a37f, #0ea5e9);
+    color: white;
+    text-decoration: none;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
     transition: all 0.3s ease;
-    text-align: left; /* Căn trái từng item */
+    box-shadow: 0 2px 8px rgba(16, 163, 127, 0.3);
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
 }
 
-.criteria-item:last-child {
-    border-bottom: none;
+.criteria-chatgpt-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(16, 163, 127, 0.4);
+    color: white;
+    text-decoration: none;
 }
 
-.criteria-item:hover {
-    padding-left: 0.5rem;
-    background: rgba(var(--primary-color-rgb), 0.03);
-    border-radius: 8px;
+/* Grok Link */
+.criteria-grok-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #1DA1F2, #14171A);
+    color: white;
+    text-decoration: none;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(29, 161, 242, 0.3);
+    flex: 1;
+    min-width: 120px;
+    justify-content: center;
 }
 
-.criteria-checkbox {
-    margin-right: 1rem;
-    margin-top: 0.2rem;
-    transform: scale(1.1);
+.criteria-grok-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(29, 161, 242, 0.4);
+    color: white;
+    text-decoration: none;
+    background: linear-gradient(135deg, #0d8bd9, #000000);
+}
+
+.criteria-chatgpt-link i,
+.criteria-grok-link i {
+    font-size: 1rem;
     flex-shrink: 0;
 }
 
-.criteria-checkbox:checked {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
-}
 
-.form-check-label {
-    font-weight: 500;
-    cursor: pointer;
-    margin-bottom: 0;
-    line-height: 1.5;
-    color: var(--text-color);
-    flex: 1;
-    text-align: left; /* Căn trái nội dung label */
-}
-
-.criteria-item:hover .form-check-label {
-    color: var(--primary-color);
-}
-
-.criteria-checkbox:checked + .form-check-label {
-    color: var(--primary-color);
-    text-decoration: line-through;
-    opacity: 0.8;
-}
-
+/* Progress Info */
 .progress-info {
     text-align: center;
     padding: 0.75rem;
@@ -830,109 +745,59 @@
     border-radius: 8px;
     margin-top: 1rem;
     border: 1px solid rgba(var(--accent-color-rgb), 0.2);
-    transition: all 0.3s ease;
 }
 
-.progress-info.collapsed {
-    max-height: 0;
-    margin-top: 0;
-    opacity: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    overflow: hidden;
-}
-
-/* Badge for collapsed state */
-.criteria-summary {
-    display: none;
-    margin-left: 1rem;
-    padding: 0.25rem 0.75rem;
-    background: rgba(var(--primary-color-rgb), 0.1);
-    border-radius: 15px;
-    font-size: 0.85rem;
-    color: var(--primary-color);
-    font-weight: 500;
-}
-
-.criteria-summary.show {
-    display: inline-block;
-}
-// ...existing code...
-
-/* Responsive for criteria */
+/* Responsive adjustments for links */
 @media (max-width: 768px) {
-    .criteria-item {
-        padding: 0.6rem 0;
+    .criteria-links-container {
+        gap: 0.5rem;
     }
     
-    .criteria-checkbox {
-        margin-right: 0.8rem;
-        transform: scale(1.0);
-    }
-    
-    .criteria-section {
-        padding: 1.5rem;
-    }
-
-    .form-check-label {
-        font-size: 0.9rem;
-    }
-
-    .criteria-header {
-        padding: 0.3rem;
-    }
-
-    .criteria-title {
-        font-size: 1rem;
-    }
-
-    .criteria-toggle-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 1rem;
-    }
-
-    .criteria-summary {
+    .criteria-chatgpt-link,
+    .criteria-grok-link {
         font-size: 0.8rem;
-        padding: 0.2rem 0.6rem;
+        padding: 0.4rem 0.8rem;
+        min-width: 100px;
+    }
+    
+    .criteria-content {
+        padding: 0 0.8rem 0.6rem 0.8rem;
     }
 }
 
 @media (max-width: 480px) {
-    .criteria-item {
-        padding: 0.5rem 0;
+    .criteria-links-container {
+        flex-direction: column;
+        gap: 0.4rem;
     }
     
-    .criteria-checkbox {
-        margin-right: 0.6rem;
+    .criteria-chatgpt-link,
+    .criteria-grok-link {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.7rem;
+        width: 100%;
+        min-width: auto;
     }
-
-    .form-check-label {
-        font-size: 0.85rem;
+    
+    .criteria-content.expanded {
+        max-height: 150px;
     }
+}
 
-    .progress-info {
-        padding: 0.5rem;
+/* Small screen optimization */
+@media (max-width: 360px) {
+    .criteria-chatgpt-link,
+    .criteria-grok-link {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.6rem;
     }
-
-    .criteria-section {
-        padding: 1rem;
-    }
-
-    .criteria-title {
-        font-size: 0.95rem;
-    }
-
-    .criteria-toggle-btn {
-        width: 26px;
-        height: 26px;
+    
+    .criteria-chatgpt-link i,
+    .criteria-grok-link i {
         font-size: 0.9rem;
     }
 }
-.form-check .form-check-input {
-margin-left: 0.5rem;
-}
-// ...existing code...
+
 </style>
 {% endblock %}
 
@@ -1081,15 +946,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function loadDailyKeyword(force = false) {
         const container = document.getElementById('dailyKeywordContainer');
-        container.innerHTML = '<div class="text-center"><div class="loading-spinner"></div><p class="mt-2">Loading daily keyword...</p></div>';
+        container.innerHTML = '<div class="text-center"><div class="loading-spinner"></div><p class="mt-2">Loading keyword...</p></div>';
         
         const endpoint = force ? '/api/random_keyword' : '/api/daily_keyword';
         
-        fetch(endpoint)
+        // Add cache buster for random keyword requests
+        const url = force ? `${endpoint}?t=${Date.now()}` : endpoint;
+        
+        fetch(url, {
+            // Disable cache for random requests
+            cache: force ? 'no-cache' : 'default',
+            headers: force ? {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            } : {}
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
                     displayDailyKeyword(data);
+                    
+                    // Log for debugging
+                    if (data.is_random) {
+                        console.log('Random keyword loaded:', data.keyword, 'from category:', data.category);
+                    }
+                    
+                    // REMOVED: showMessage for random keyword
+                    // No message shown when random keyword is loaded
                 } else if (data.all_completed) {
                     container.innerHTML = `
                         <div class="text-center">
@@ -1103,12 +986,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
-                console.error('Error loading daily keyword:', error);
+                console.error('Error loading keyword:', error);
                 container.innerHTML = `
                     <div class="text-center text-muted">
                         <i class="bi bi-exclamation-triangle"></i>
-                        <p>Unable to load daily keyword</p>
-                        <button class="btn btn-sm btn-outline-primary" onclick="loadDailyKeyword()">
+                        <p>Unable to load keyword</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="loadDailyKeyword(${force})">
                             <i class="bi bi-arrow-clockwise"></i> Try Again
                         </button>
                     </div>
@@ -1130,18 +1013,49 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const keywordClass = data.is_completed ? 'completed' : '';
         
-        // Generate criteria checkboxes
-        const criteriaHtml = data.criteria.map((criterion, index) => `
-            <div class="form-check criteria-item">
-                <input class="form-check-input criteria-checkbox" type="checkbox" 
-                       id="criteria_${index}" 
-                       ${data.criteria_progress[index] ? 'checked' : ''}
-                       data-index="${index}">
-                <label class="form-check-label" for="criteria_${index}">
-                    ${criterion}
-                </label>
-            </div>
-        `).join('');
+        // Generate individual criteria items with ChatGPT and Grok links
+        const criteriaHtml = data.criteria.map((criterion, index) => {
+            const isCompleted = data.criteria_progress[index];
+            const completedClass = isCompleted ? 'completed' : '';
+            
+            // Create ChatGPT query URL for this specific criterion
+            const chatgptQuery = encodeURIComponent(`Về chủ đề "${data.keyword}", ${criterion}. Vui lòng giải thích chi tiết và cung cấp ví dụ cụ thể, bằng tiếng Anh, tiếng Việt và tiếng Nhật. Cung cấp thêm bảng từ vựng liên quan`);
+            const chatgptUrl = `https://chat.openai.com/?q=${chatgptQuery}`;
+            
+            // Create Grok query URL for this specific criterion
+            const grokQuery = encodeURIComponent(`About "${data.keyword}", please help me: ${criterion}. Explain in detail with specific examples in English, Vietnamese, and Japanese. Include relevant vocabulary table.`);
+            const grokUrl = `https://grok.com/?q=${grokQuery}`;
+            
+            return `
+                <div class="criteria-item ${completedClass}" data-index="${index}">
+                    <div class="criteria-header" onclick="toggleCriteriaItem(${index})">
+                        <input class="form-check-input criteria-checkbox" type="checkbox" 
+                            id="criteria_${index}" 
+                            ${isCompleted ? 'checked' : ''}
+                            data-index="${index}"
+                            onclick="event.stopPropagation();">
+                        <label class="criteria-title" for="criteria_${index}">
+                            ${criterion}
+                        </label>
+                        <button class="criteria-toggle-btn collapsed" id="criteriaToggleBtn_${index}">
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                    </div>
+                    <div class="criteria-content collapsed" id="criteriaContent_${index}">
+                        <div class="criteria-links-container">
+                            <a href="${chatgptUrl}" target="_blank" class="criteria-chatgpt-link">
+                                <i class="bi bi-robot"></i>
+                                Ask ChatGPT
+                            </a>
+                            <a href="${grokUrl}" target="_blank" class="criteria-grok-link">
+                                <i class="bi bi-lightning"></i>
+                                Ask Grok
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
 
         // Check if all criteria are completed
         const allCompleted = data.criteria_progress.every(completed => completed);
@@ -1161,29 +1075,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button class="btn ${completeButtonClass}" id="completeButton" ${completeButtonDisabled}>
                     <i class="bi bi-check-circle me-2"></i>${completeButtonText}
                 </button>
-                <button class="random-keyword-btn" onclick="loadDailyKeyword(true)" title="Get another random keyword">
-                    <i class="bi bi-arrow-clockwise"></i>
+                <button class="random-keyword-btn" onclick="loadDailyKeyword(true)" title="Get random keyword">
+                    <i class="bi bi-shuffle"></i>
                 </button>
-            </div>
-            
-            <div class="criteria-section">
-                <div class="criteria-header" id="criteriaHeader" onclick="toggleCriteriaSection()">
-                    <h6 class="criteria-title">
-                        <i class="bi bi-list-check me-2"></i>Assessment Criteria
-                        <span class="criteria-summary show" id="criteriaSummary">${data.criteria_progress.filter(c => c).length}/${data.criteria.length} completed</span>
-                    </h6>
-                    <button class="criteria-toggle-btn collapsed" id="criteriaToggleBtn">
-                        <i class="bi bi-chevron-down"></i>
-                    </button>
-                </div>
-                <div class="criteria-container collapsed" id="criteriaContainer">
-                    ${criteriaHtml}
-                </div>
-                <div class="progress-info collapsed" id="progressInfo">
-                    <small class="text-muted">
-                        Completed: ${data.criteria_progress.filter(c => c).length}/${data.criteria.length} criteria
-                    </small>
-                </div>
             </div>
             
             <div class="date-section">
@@ -1200,6 +1094,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             <div class="daily-links-container">
                 ${linksHtml}
+            </div>
+            
+            <div class="criteria-section">
+                <h6><i class="bi bi-list-check me-2"></i>Assessment Criteria</h6>
+                <div class="criteria-container">
+                    ${criteriaHtml}
+                </div>
+                <div class="progress-info">
+                    <small class="text-muted">
+                        Completed: ${data.criteria_progress.filter(c => c).length}/${data.criteria.length} criteria
+                    </small>
+                </div>
             </div>
         `;
 
@@ -1218,6 +1124,30 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
+    // Function to toggle individual criteria item
+    function toggleCriteriaItem(index) {
+        const content = document.getElementById(`criteriaContent_${index}`);
+        const toggleBtn = document.getElementById(`criteriaToggleBtn_${index}`);
+        
+        if (!content || !toggleBtn) return;
+        
+        const isCollapsed = content.classList.contains('collapsed');
+        
+        if (isCollapsed) {
+            // Expand
+            content.classList.remove('collapsed');
+            content.classList.add('expanded');
+            toggleBtn.classList.remove('collapsed');
+            toggleBtn.innerHTML = '<i class="bi bi-chevron-up"></i>';
+        } else {
+            // Collapse
+            content.classList.remove('expanded');
+            content.classList.add('collapsed');
+            toggleBtn.classList.add('collapsed');
+            toggleBtn.innerHTML = '<i class="bi bi-chevron-down"></i>';
+        }
+    }
+
     function updateCriteria() {
         if (!window.currentKeywordData) return;
         
@@ -1231,7 +1161,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const allCompleted = criteriaProgress.every(completed => completed);
         const completeButton = document.getElementById('completeButton');
         const progressInfo = document.querySelector('.progress-info small');
-        const summary = document.getElementById('criteriaSummary');
         
         if (completeButton) {
             if (allCompleted) {
@@ -1252,10 +1181,17 @@ document.addEventListener('DOMContentLoaded', function() {
             progressInfo.textContent = `Completed: ${completedCount}/${totalCount} criteria`;
         }
         
-        // Update summary badge
-        if (summary) {
-            summary.textContent = `${completedCount}/${totalCount} completed`;
-        }
+        // Update individual criteria item styling
+        document.querySelectorAll('.criteria-checkbox').forEach((checkbox, index) => {
+            const criteriaItem = checkbox.closest('.criteria-item');
+            if (criteriaItem) {
+                if (checkbox.checked) {
+                    criteriaItem.classList.add('completed');
+                } else {
+                    criteriaItem.classList.remove('completed');
+                }
+            }
+        });
         
         // Update keyword title style
         const keywordTitle = document.getElementById('keywordTitle');
@@ -1267,7 +1203,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Send update to server
+        // Send update to server (NO MESSAGE DISPLAY)
         fetch('/api/update_criteria', {
             method: 'POST',
             headers: {
@@ -1282,12 +1218,11 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                // Update stats
+                // Update stats silently
                 loadStats();
-                if (data.is_completed !== undefined) {
-                    showMessage(data.message, 'success');
-                }
+                // REMOVED: showMessage for criteria updates
             } else {
+                // Only show error messages
                 showMessage(data.message || 'An error occurred', 'error');
             }
         })
@@ -1297,6 +1232,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Make toggleCriteriaItem globally available
+    window.toggleCriteriaItem = toggleCriteriaItem;
     function updateUIAfterToggle(newCompletedState) {
         // Update keyword title style
         const keywordTitle = document.getElementById('keywordTitle');
