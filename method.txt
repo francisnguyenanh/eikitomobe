@@ -1,0 +1,202 @@
+{
+  "science": [
+    "What is the core concept or definition of the scientific topic you are studying, such as CRISPR or quantum computing?",
+    "Who are the key scientists or researchers associated with the development or discovery of this scientific concept?",
+    "When was this scientific concept first discovered or significantly advanced, and what major milestones followed?",
+    "Where are the primary real-world applications of this scientific concept implemented, such as specific industries or regions?",
+    "Why is this scientific concept important to advancing knowledge or solving global challenges?",
+    "How does the scientific concept work, and what are the fundamental principles or mechanisms behind it?"
+  ],
+  "history": [
+    "What were the key events or characteristics that defined the historical period or event, such as the French Revolution or the Viking Age?",
+    "Who were the major figures involved in this historical event or period, and what were their roles?",
+    "When did this historical event or period occur, and how does it fit into the broader historical timeline?",
+    "Where did this historical event or period primarily take place, and how did geography influence it?",
+    "Why was this historical event or period significant in shaping social, political, or cultural outcomes?",
+    "How did this historical event or period impact subsequent developments or modern society?"
+  ],
+  "business": [
+    "What is the definition of the business concept, such as digital marketing or risk management, in a professional context?",
+    "Who are the key stakeholders or professionals typically involved in implementing this business concept?",
+    "When is this business concept most effectively applied, such as during specific stages of a company’s growth or market conditions?",
+    "Where is this business concept commonly used, such as in specific industries or global markets?",
+    "Why is this business concept critical for improving efficiency, profitability, or competitiveness in organizations?",
+    "How can a business implement this concept, including specific tools, strategies, or techniques?"
+  ],
+  "health": [
+    "What is the role of this health-related concept, such as nutrition science or meditation, in promoting well-being?",
+    "Who benefits most from applying this health concept, such as specific populations or medical professionals?",
+    "When should this health concept be integrated into daily life or medical practice for optimal results?",
+    "Where is this health concept most commonly practiced or studied, such as in hospitals, communities, or research labs?",
+    "Why does this health concept contribute to improved physical or mental health outcomes?",
+    "How can individuals or professionals incorporate this health concept into their routines or treatments?"
+  ],
+  "language": [
+    "What is the linguistic concept, such as Japanese Kanji or Spanish conjugation, and how is it defined in its language context?",
+    "Who typically uses or studies this linguistic concept, such as native speakers, learners, or linguists?",
+    "When is this linguistic concept most commonly applied, such as in specific contexts like writing, speaking, or formal settings?",
+    "Where did this linguistic concept originate, and in which languages or regions is it prevalent?",
+    "Why is mastering this linguistic concept important for effective communication or cultural understanding?",
+    "How can someone practice or apply this linguistic concept, such as through specific exercises or real-world usage?"
+  ],
+  "culture": [
+    "What is the cultural practice or concept, such as the Japanese tea ceremony or Greek mythology, and its significance?",
+    "Who are the key figures or communities associated with this cultural practice or tradition?",
+    "When did this cultural practice or concept originate, and how has it evolved over time?",
+    "Where is this cultural practice or concept primarily observed, such as in specific regions or cultural contexts?",
+    "Why does this cultural practice or concept play a vital role in shaping or reflecting cultural identity?",
+    "How is this cultural practice performed or expressed, such as through rituals, art, or storytelling?"
+  ],
+  "technology": [
+    "What is the technology, such as 5G networks or augmented reality, and how is it defined?",
+    "Who are the primary users or developers of this technology, such as industries, companies, or consumers?",
+    "When was this technology developed, and what are its key milestones or future advancements?",
+    "Where is this technology most commonly applied, such as in specific sectors or geographic areas?",
+    "Why is this technology significant for improving efficiency, connectivity, or innovation?",
+    "How does this technology function, and what are the basic principles behind its operation?"
+  ],
+  "philosophy": [
+    "What is the core idea or belief system behind the philosophical concept, such as Stoicism or utilitarianism?",
+    "Who are the key philosophers or thinkers associated with developing or advocating this concept?",
+    "When did this philosophical concept emerge, and how has it influenced thought over time?",
+    "Where has this philosophical concept been most influential, such as in specific cultures or academic fields?",
+    "Why is this philosophical concept relevant to addressing modern ethical or existential questions?",
+    "How can this philosophical concept be applied to analyze a contemporary issue or personal dilemma?"
+  ],
+  "arts": [
+    "What defines the artistic style or genre, such as Impressionism or jazz history, and its key characteristics?",
+    "Who are the prominent artists or creators associated with this artistic style or genre?",
+    "When did this artistic style or genre originate, and how has it evolved over time?",
+    "Where is this artistic style or genre most prominently practiced or displayed, such as in specific regions or institutions?",
+    "Why does this artistic style or genre hold cultural or aesthetic significance?",
+    "How are the techniques or methods of this artistic style or genre applied in creating works?"
+  ],
+  "sports": [
+    "What is the sports-related concept, such as sports psychology or tennis techniques, and its role in athletics?",
+    "Who benefits from or applies this sports concept, such as athletes, coaches, or teams?",
+    "When is this sports concept most effectively used, such as during training, competition, or recovery?",
+    "Where is this sports concept commonly practiced, such as in specific sports or regions?",
+    "Why is this sports concept important for enhancing performance or athlete well-being?",
+    "How can this sports concept be implemented through specific strategies, drills, or techniques?"
+  ],
+  "environment": [
+    "What is the environmental issue or concept, such as climate change or biodiversity, and its significance?",
+    "Who are the key stakeholders involved in addressing or studying this environmental issue, such as scientists or policymakers?",
+    "When did this environmental issue become widely recognized, and what are its historical or future implications?",
+    "Where is this environmental issue most prevalent or impactful, such as in specific ecosystems or regions?",
+    "Why is addressing this environmental issue critical for global sustainability or human survival?",
+    "How can individuals, communities, or governments take action to mitigate or support this environmental issue?"
+  ],
+  "psychology": [
+    "What is the psychological concept, such as cognitive psychology or positive psychology, and its focus?",
+    "Who studies or benefits from this psychological concept, such as researchers, therapists, or individuals?",
+    "When is this psychological concept most relevant, such as in specific life stages or situations?",
+    "Where is this psychological concept applied, such as in clinical settings, workplaces, or daily life?",
+    "Why does this psychological concept matter for understanding human behavior or mental health?",
+    "How can this psychological concept be explored or applied through experiments, therapies, or practices?"
+  ],
+  "politics": [
+    "What is the political concept, such as elections or public policy, and its role in governance?",
+    "Who are the key actors or groups involved in this political concept, such as politicians or citizens?",
+    "When does this political concept typically occur or become relevant, such as during elections or crises?",
+    "Where is this political concept most prominently practiced, such as in specific countries or systems?",
+    "Why is this political concept important for shaping societal structures or policies?",
+    "How does this political concept function, and what mechanisms or processes support it?"
+  ],
+  "society": [
+    "What is the social issue or concept, such as social media impact or urbanization, and its definition?",
+    "Who is most affected by or involved in this social issue, such as specific demographics or communities?",
+    "When did this social issue emerge or become significant, and how has it evolved?",
+    "Where is this social issue most visible or impactful, such as in urban areas or online platforms?",
+    "Why does this social issue influence cultural, economic, or behavioral trends?",
+    "How can society address or leverage this social issue to improve outcomes or mitigate challenges?"
+  ],
+  "education": [
+    "What is the educational concept, such as learning theories or curriculum design, and its role in teaching?",
+    "Who benefits from or implements this educational concept, such as students, teachers, or administrators?",
+    "When is this educational concept most effectively applied, such as in specific grades or learning stages?",
+    "Where is this educational concept commonly used, such as in schools, universities, or online platforms?",
+    "Why is this educational concept important for improving learning outcomes or teaching methods?",
+    "How can this educational concept be incorporated into a classroom or personal learning plan?"
+  ],
+  "law": [
+    "What is the legal concept, such as contract law or criminal justice, and its purpose in the legal system?",
+    "Who are the key individuals or entities involved in this legal concept, such as lawyers, judges, or citizens?",
+    "When does this legal concept typically apply, such as during disputes, trials, or legislation?",
+    "Where is this legal concept enforced, such as in specific jurisdictions or legal systems?",
+    "Why is this legal concept essential for maintaining justice or societal order?",
+    "How does this legal concept function, including its principles, processes, or applications?"
+  ],
+  "economics": [
+    "What is the economic concept, such as supply and demand or fiscal policy, and its role in markets?",
+    "Who are the primary actors influenced by or managing this economic concept, such as consumers or governments?",
+    "When does this economic concept become particularly relevant, such as during recessions or booms?",
+    "Where is this economic concept most impactful, such as in specific industries or countries?",
+    "Why is this economic concept critical for understanding financial systems or decision-making?",
+    "How does this economic concept operate, and what mechanisms or factors drive it?"
+  ],
+  "mathematics": [
+    "What is the mathematical concept, such as algebra basics or probability, and its definition?",
+    "Who uses or studies this mathematical concept, such as students, mathematicians, or professionals?",
+    "When is this mathematical concept typically applied, such as in specific calculations or scenarios?",
+    "Where is this mathematical concept used, such as in engineering, finance, or daily life?",
+    "Why is this mathematical concept important for solving problems or advancing knowledge?",
+    "How can this mathematical concept be applied to solve a practical or theoretical problem?"
+  ],
+  "literature": [
+    "What is the literary concept, such as narrative structure or classic novels, and its role in literature?",
+    "Who are the key authors or works associated with this literary concept?",
+    "When did this literary concept emerge or gain prominence, and how has it evolved?",
+    "Where is this literary concept most commonly found, such as in specific genres or cultures?",
+    "Why is this literary concept significant for understanding themes or storytelling?",
+    "How can this literary concept be analyzed or applied in reading or writing?"
+  ],
+  "music": [
+    "What is the musical concept, such as music theory or chord progressions, and its definition?",
+    "Who are the key musicians or composers associated with this musical concept?",
+    "When did this musical concept develop, and how has it influenced music history?",
+    "Where is this musical concept most commonly practiced, such as in specific genres or regions?",
+    "Why is this musical concept important for creating or appreciating music?",
+    "How can this musical concept be applied in composing, performing, or analyzing music?"
+  ],
+  "engineering": [
+    "What is the engineering concept, such as civil engineering or robotics, and its role in design?",
+    "Who are the primary professionals or industries involved in this engineering concept?",
+    "When is this engineering concept typically applied, such as during specific projects or innovations?",
+    "Where is this engineering concept used, such as in infrastructure, technology, or manufacturing?",
+    "Why is this engineering concept critical for solving technical or societal challenges?",
+    "How does this engineering concept work, including its principles or applications?"
+  ],
+  "astronomy": [
+    "What is the astronomical concept, such as black holes or exoplanets, and its definition?",
+    "Who studies or observes this astronomical concept, such as astronomers or space agencies?",
+    "When was this astronomical concept first identified or studied, and what are its key developments?",
+    "Where in the universe is this astronomical concept observed, such as specific regions or objects?",
+    "Why is this astronomical concept significant for understanding the cosmos?",
+    "How is this astronomical concept studied or detected, such as through telescopes or data analysis?"
+  ],
+  "geography": [
+    "What is the geographical concept, such as physical geography or climate zones, and its role?",
+    "Who studies or is affected by this geographical concept, such as geographers or communities?",
+    "When did this geographical concept become significant, and how has it changed over time?",
+    "Where is this geographical concept most prominent, such as in specific landscapes or regions?",
+    "Why is this geographical concept important for understanding the Earth or human activity?",
+    "How does this geographical concept influence or interact with natural or human systems?"
+  ],
+  "anthropology": [
+    "What is the anthropological concept, such as cultural evolution or archaeology, and its focus?",
+    "Who studies or is involved in this anthropological concept, such as anthropologists or communities?",
+    "When did this anthropological concept emerge as a field of study, and what are its historical roots?",
+    "Where is this anthropological concept most relevant, such as in specific cultures or sites?",
+    "Why is this anthropological concept important for understanding human societies or history?",
+    "How is this anthropological concept studied, such as through specific methods or fieldwork?"
+  ],
+  "architecture": [
+    "What is the architectural concept, such as sustainable design or modern architecture, and its definition?",
+    "Who are the key architects or firms associated with this architectural concept?",
+    "When did this architectural concept emerge, and how has it evolved over time?",
+    "Where is this architectural concept most commonly applied, such as in specific buildings or regions?",
+    "Why is this architectural concept significant for design, functionality, or sustainability?",
+    "How is this architectural concept implemented in the design or construction process?"
+  ]
+}

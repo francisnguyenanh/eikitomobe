@@ -34,6 +34,7 @@ import shutil
 import hashlib
 import json
 
+
 try:
     from PIL import Image as PILImage
 except ImportError:
@@ -184,8 +185,98 @@ with quote_app.app_context():
         db_quote.session.add(QuoteCategory(name="General"))
         db_quote.session.commit()
 
+def get_keywords_file_path():
+    """Get path to keywords progress file"""
+    return os.path.join(app.root_path, 'keywords.txt')
+
+def get_kw_file_path():
+    """Get path to kw.txt file"""
+    return os.path.join(app.root_path, 'kw.txt')
+
+def get_method_file_path():
+    """Get path to method.txt file"""
+    return os.path.join(app.root_path, 'method.txt')
+
+def load_knowledge_categories():
+    """Load knowledge categories from kw.txt"""
+    file_path = get_kw_file_path()
+    default_categories = {
+        "science": ["Machine Learning", "Quantum Physics", "Biotechnology"],
+        "history": ["World War II", "Ancient Civilizations", "Industrial Revolution"],
+        "business": ["Digital Marketing", "Entrepreneurship", "Financial Analysis"]
+    }
+    
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data if isinstance(data, dict) else default_categories
+        else:
+            # Create default kw.txt file
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(default_categories, f, ensure_ascii=False, indent=2)
+            return default_categories
+    except Exception as e:
+        app.logger.error(f"Error loading kw.txt: {str(e)}")
+        return default_categories
+    
+def load_criteria_methods():
+    """Load criteria methods from method.txt"""
+    file_path = get_method_file_path()
+    default_methods = {
+        "science": ["Hiểu được khái niệm cơ bản", "Biết ứng dụng thực tế", "Có thể giải thích cho người khác"],
+        "history": ["Nhớ được thời gian sự kiện", "Hiểu nguyên nhân kết quả", "Liên kết với hiện tại"],
+        "business": ["Nắm được lý thuyết", "Biết cách áp dụng", "Có thể phân tích case study"]
+    }
+    
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data if isinstance(data, dict) else default_methods
+        else:
+            # Create default method.txt file
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(default_methods, f, ensure_ascii=False, indent=2)
+            return default_methods
+    except Exception as e:
+        app.logger.error(f"Error loading method.txt: {str(e)}")
+        return default_methods
+    
+def initialize_keywords_file():
+    """Initialize keywords.txt file if it doesn't exist"""
+    file_path = get_keywords_file_path()
+    
+    if not os.path.exists(file_path):
+        # Load categories dynamically from kw.txt
+        knowledge_categories = load_knowledge_categories()
+        
+        default_data = {
+            "user_id": "default",
+            "completed_keywords": [],
+            "criteria_progress": {},  # New: track criteria completion
+            "last_updated": datetime.now().isoformat(),
+            "stats": {
+                "total_completed": 0,
+                "categories_progress": {category: 0 for category in knowledge_categories.keys()}
+            }
+        }
+        
+        try:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(default_data, f, ensure_ascii=False, indent=2)
+            app.logger.info(f"Created keywords.txt file at {file_path}")
+        except Exception as e:
+            app.logger.error(f"Error creating keywords.txt: {str(e)}")
+            
 # Initialize database and user.txt
 with app.app_context():
+    initialize_keywords_file()
+    load_knowledge_categories()
+    load_criteria_methods()
     db.create_all()
     # Add default categories if not exist
     for name, color in [('Work', '#FF9999'), ('Personal', '#99FF99'), ('Ideas', '#9999FF')]:
@@ -2092,6 +2183,906 @@ def auto_save_edit_diary(diary_id):
         return jsonify({
             'status': 'error',
             'message': f'Failed to auto-save: {str(e)}'
+        }), 500
+        
+
+@app.route('/knowledge')
+def knowledge():
+    return render_template('knowledge.html')
+
+
+
+
+def generate_knowledge_links(keyword):
+    """Tự động gợi ý 5 nguồn tri thức bình dân cho từ khóa dựa trên category từ kw.txt + Google + AI"""
+    import urllib.parse
+    encoded_keyword = urllib.parse.quote(keyword)
+    encoded_keyword_plus = keyword.replace(' ', '+')
+    
+    # Load categories từ kw.txt
+    knowledge_categories = load_knowledge_categories()
+    
+    # Tìm category của keyword từ kw.txt
+    keyword_category = None
+    for category, keywords in knowledge_categories.items():
+        if keyword in keywords:
+            keyword_category = category
+            break
+    
+    # Nếu không tìm thấy trong kw.txt, fallback về phán đoán theo tên keyword
+    if not keyword_category:
+        keyword_category = categorize_keyword_by_name(keyword.lower())
+    
+    # 2 nguồn cố định cho mọi từ khóa
+    fixed_sources = [
+        {
+            'title': f'Google Search',
+            'url': f'https://www.google.com/search?q={encoded_keyword_plus}',
+            'language': 'Multi',
+            'icon': 'bi-google',
+            'description': 'Tìm kiếm toàn diện trên Google',
+            'color': 'primary'
+        },
+        {
+            'title': f'ChatGPT AI',
+            'url': f'https://chat.openai.com/?q={encoded_keyword_plus}',
+            'language': 'Multi',
+            'icon': 'bi-robot',
+            'description': 'Hỏi AI về từ khóa này',
+            'color': 'success'
+        }
+    ]
+    
+    # Định nghĩa các nguồn tri thức bình dân theo từng category (3 nguồn mỗi category)
+    sources_by_category = {
+        'science': [
+            {
+                'title': f'Wikipedia (Tiếng Việt)',
+                'url': f'https://vi.wikipedia.org/wiki/{encoded_keyword}',
+                'language': 'VI',
+                'icon': 'bi-wikipedia',
+                'description': 'Kiến thức khoa học dễ hiểu',
+                'color': 'info'
+            },
+            {
+                'title': f'HowStuffWorks',
+                'url': f'https://www.howstuffworks.com/search?terms={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-gear',
+                'description': 'Giải thích cách hoạt động',
+                'color': 'warning'
+            },
+            {
+                'title': f'SciShow Videos',
+                'url': f'https://www.youtube.com/results?search_query=scishow+{encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-youtube',
+                'description': 'Video khoa học thú vị',
+                'color': 'danger'
+            }
+        ],
+        
+        'history': [
+            {
+                'title': f'Wikipedia Lịch sử',
+                'url': f'https://vi.wikipedia.org/wiki/{encoded_keyword}',
+                'language': 'VI',
+                'icon': 'bi-wikipedia',
+                'description': 'Lịch sử dễ hiểu',
+                'color': 'info'
+            },
+            {
+                'title': f'History.com',
+                'url': f'https://www.history.com/search?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-clock-history',
+                'description': 'Câu chuyện lịch sử hấp dẫn',
+                'color': 'warning'
+            },
+            {
+                'title': f'Crash Course History',
+                'url': f'https://www.youtube.com/results?search_query=crash+course+history+{encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-youtube',
+                'description': 'Lịch sử học nhanh',
+                'color': 'danger'
+            }
+        ],
+        
+        'business': [
+            {
+                'title': f'Investopedia',
+                'url': f'https://www.investopedia.com/search?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-graph-up',
+                'description': 'Thuật ngữ kinh doanh đơn giản',
+                'color': 'info'
+            },
+            {
+                'title': f'Business Insider',
+                'url': f'https://www.businessinsider.com/s?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-newspaper',
+                'description': 'Tin tức kinh doanh dễ hiểu',
+                'color': 'warning'
+            },
+            {
+                'title': f'TED Business',
+                'url': f'https://www.ted.com/search?q={encoded_keyword_plus}+business',
+                'language': 'Multi',
+                'icon': 'bi-chat-quote',
+                'description': 'Bài thuyết trình kinh doanh',
+                'color': 'danger'
+            }
+        ],
+        
+        'health': [
+            {
+                'title': f'WebMD',
+                'url': f'https://www.webmd.com/search/search_results/default.aspx?query={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-shield-check',
+                'description': 'Thông tin sức khỏe đáng tin',
+                'color': 'info'
+            },
+            {
+                'title': f'Healthline',
+                'url': f'https://www.healthline.com/search?q1={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-heart-pulse',
+                'description': 'Lời khuyên sức khỏe dễ hiểu',
+                'color': 'warning'
+            },
+            {
+                'title': f'Mayo Clinic',
+                'url': f'https://www.mayoclinic.org/search/search-results?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-hospital',
+                'description': 'Y khoa uy tín',
+                'color': 'danger'
+            }
+        ],
+        
+        'language': [
+            {
+                'title': f'Cambridge Dictionary',
+                'url': f'https://dictionary.cambridge.org/search/english/?q={encoded_keyword_plus}',
+                'language': 'Multi',
+                'icon': 'bi-book-half',
+                'description': 'Từ điển uy tín',
+                'color': 'info'
+            },
+            {
+                'title': f'Grammarly Blog',
+                'url': f'https://www.grammarly.com/blog/search/?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-spell-check',
+                'description': 'Mẹo ngữ pháp hay',
+                'color': 'warning'
+            },
+            {
+                'title': f'FluentU',
+                'url': f'https://www.fluentu.com/blog/search/?q={encoded_keyword_plus}',
+                'language': 'Multi',
+                'icon': 'bi-chat-text',
+                'description': 'Học ngôn ngữ thực tế',
+                'color': 'danger'
+            }
+        ],
+        
+        'culture': [
+            {
+                'title': f'Culture Trip',
+                'url': f'https://theculturetrip.com/search?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-map',
+                'description': 'Khám phá văn hóa thế giới',
+                'color': 'info'
+            },
+            {
+                'title': f'National Geographic',
+                'url': f'https://www.nationalgeographic.com/search?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-globe2',
+                'description': 'Câu chuyện văn hóa hấp dẫn',
+                'color': 'warning'
+            },
+            {
+                'title': f'Atlas Obscura',
+                'url': f'https://www.atlasobscura.com/search?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-compass',
+                'description': 'Điều thú vị về văn hóa',
+                'color': 'danger'
+            }
+        ],
+        
+        'technology': [
+            {
+                'title': f'How-To Geek',
+                'url': f'https://www.howtogeek.com/search/?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-laptop',
+                'description': 'Công nghệ dễ hiểu',
+                'color': 'info'
+            },
+            {
+                'title': f'TechTerms',
+                'url': f'https://techterms.com/search?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-cpu',
+                'description': 'Thuật ngữ công nghệ đơn giản',
+                'color': 'warning'
+            },
+            {
+                'title': f'Explain That Stuff',
+                'url': f'https://www.explainthatstuff.com/search-results.html?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-gear',
+                'description': 'Công nghệ được giải thích',
+                'color': 'danger'
+            }
+        ],
+        
+        'philosophy': [
+            {
+                'title': f'Philosophy Basics',
+                'url': f'https://www.philosophybasics.com/search.html?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-book',
+                'description': 'Triết học cơ bản',
+                'color': 'info'
+            },
+            {
+                'title': f'Philosophy Now',
+                'url': f'https://philosophynow.org/search?search={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-lightbulb',
+                'description': 'Triết học đương đại',
+                'color': 'warning'
+            },
+            {
+                'title': f'Crash Course Philosophy',
+                'url': f'https://www.youtube.com/results?search_query=crash+course+philosophy+{encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-youtube',
+                'description': 'Triết học dễ hiểu',
+                'color': 'danger'
+            }
+        ],
+        
+        'arts': [
+            {
+                'title': f'Tate Art Terms',
+                'url': f'https://www.tate.org.uk/search?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-palette',
+                'description': 'Nghệ thuật giải thích đơn giản',
+                'color': 'info'
+            },
+            {
+                'title': f'ArtNet',
+                'url': f'https://www.artnet.com/search/?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-images',
+                'description': 'Thế giới nghệ thuật',
+                'color': 'warning'
+            },
+            {
+                'title': f'Google Arts & Culture',
+                'url': f'https://artsandculture.google.com/search?q={encoded_keyword_plus}',
+                'language': 'Multi',
+                'icon': 'bi-building',
+                'description': 'Bộ sưu tập nghệ thuật',
+                'color': 'danger'
+            }
+        ],
+        
+        'sports': [
+            {
+                'title': f'ESPN',
+                'url': f'https://www.espn.com/search/_/q/{encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-trophy',
+                'description': 'Tin tức thể thao',
+                'color': 'info'
+            },
+            {
+                'title': f'Olympic.org',
+                'url': f'https://olympics.com/en/olympic-games/search?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-award',
+                'description': 'Thông tin Olympic',
+                'color': 'warning'
+            },
+            {
+                'title': f'Sports Illustrated',
+                'url': f'https://www.si.com/search?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-newspaper',
+                'description': 'Nội dung thể thao phổ biến',
+                'color': 'danger'
+            }
+        ],
+        
+        'environment': [
+            {
+                'title': f'National Geographic',
+                'url': f'https://www.nationalgeographic.com/search?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-globe2',
+                'description': 'Câu chuyện môi trường',
+                'color': 'info'
+            },
+            {
+                'title': f'EPA',
+                'url': f'https://search.epa.gov/epasearch/?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-shield-check',
+                'description': 'Thông tin môi trường',
+                'color': 'warning'
+            },
+            {
+                'title': f'Climate.gov',
+                'url': f'https://www.climate.gov/search/site/{encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-thermometer',
+                'description': 'Thông tin khí hậu',
+                'color': 'danger'
+            }
+        ],
+        
+        'psychology': [
+            {
+                'title': f'Psychology Today',
+                'url': f'https://www.psychologytoday.com/us/search?query={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-person-check',
+                'description': 'Tâm lý học thực tế',
+                'color': 'info'
+            },
+            {
+                'title': f'Simply Psychology',
+                'url': f'https://www.simplypsychology.org/search-results.html?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-brain',
+                'description': 'Tâm lý học đơn giản',
+                'color': 'warning'
+            },
+            {
+                'title': f'Verywell Mind',
+                'url': f'https://www.verywellmind.com/search?q={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-heart',
+                'description': 'Sức khỏe tinh thần',
+                'color': 'danger'
+            }
+        ],
+        
+        # Mặc định cho categories không có trong danh sách
+        'general': [
+            {
+                'title': f'Wikipedia (Tiếng Việt)',
+                'url': f'https://vi.wikipedia.org/wiki/{encoded_keyword}',
+                'language': 'VI',
+                'icon': 'bi-wikipedia',
+                'description': 'Kiến thức tổng hợp',
+                'color': 'info'
+            },
+            {
+                'title': f'Simple Wikipedia',
+                'url': f'https://simple.wikipedia.org/wiki/{encoded_keyword}',
+                'language': 'EN',
+                'icon': 'bi-book',
+                'description': 'Giải thích đơn giản',
+                'color': 'warning'
+            },
+            {
+                'title': f'HowStuffWorks',
+                'url': f'https://www.howstuffworks.com/search?terms={encoded_keyword_plus}',
+                'language': 'EN',
+                'icon': 'bi-gear',
+                'description': 'Cách thức hoạt động',
+                'color': 'danger'
+            }
+        ]
+    }
+    
+    # Lấy 3 nguồn theo category + 2 nguồn cố định = 5 nguồn total
+    category_sources = sources_by_category.get(keyword_category, sources_by_category['general'])
+    
+    # Kết hợp: 2 nguồn cố định + 3 nguồn theo category
+    all_sources = fixed_sources + category_sources
+    
+    return all_sources
+
+def categorize_keyword_by_name(keyword_lower):
+    """Fallback function để phán đoán category dựa trên tên keyword"""
+    # Logic phân loại cơ bản
+    science_keywords = ['machine learning', 'ai', 'quantum', 'technology', 'programming', 'algorithm', 'data', 'computer']
+    history_keywords = ['war', 'empire', 'civilization', 'revolution', 'ancient', 'medieval', 'dynasty', 'battle']
+    business_keywords = ['business', 'marketing', 'finance', 'investment', 'economy', 'startup', 'management']
+    health_keywords = ['health', 'medical', 'nutrition', 'fitness', 'therapy', 'medicine', 'disease']
+    culture_keywords = ['culture', 'tradition', 'festival', 'art', 'music', 'religion', 'ceremony']
+    
+    for keyword in science_keywords:
+        if keyword in keyword_lower:
+            return 'science'
+    for keyword in history_keywords:
+        if keyword in keyword_lower:
+            return 'history'
+    for keyword in business_keywords:
+        if keyword in keyword_lower:
+            return 'business'
+    for keyword in health_keywords:
+        if keyword in keyword_lower:
+            return 'health'
+    for keyword in culture_keywords:
+        if keyword in keyword_lower:
+            return 'culture'
+    
+    return 'general'
+
+
+
+def load_keywords_progress():
+    """Load keywords progress from file"""
+    file_path = get_keywords_file_path()
+    knowledge_categories = load_knowledge_categories()
+    
+    default_progress = {
+        'user_id': 'default',
+        'completed_keywords': [],
+        'criteria_progress': {},  # Format: {"category:keyword": [true, false, true]}
+        'last_updated': datetime.now().isoformat(),
+        'stats': {
+            'total_completed': 0,
+            'categories_progress': {category: 0 for category in knowledge_categories.keys()}
+        }
+    }
+    
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+                # Validate and merge with default structure
+                if not isinstance(data, dict):
+                    raise ValueError("Invalid file format")
+                
+                # Ensure all required keys exist
+                for key in default_progress:
+                    if key not in data:
+                        data[key] = default_progress[key]
+                
+                # Ensure criteria_progress exists
+                if 'criteria_progress' not in data:
+                    data['criteria_progress'] = {}
+                
+                # Ensure all categories exist in stats
+                if 'categories_progress' not in data['stats']:
+                    data['stats']['categories_progress'] = default_progress['stats']['categories_progress']
+                else:
+                    for category in knowledge_categories.keys():
+                        if category not in data['stats']['categories_progress']:
+                            data['stats']['categories_progress'][category] = 0
+                
+                return data
+        else:
+            # File doesn't exist, create it
+            initialize_keywords_file()
+            return default_progress
+            
+    except Exception as e:
+        app.logger.error(f"Error loading keywords progress: {str(e)}")
+        
+        # Try to backup corrupted file
+        try:
+            backup_path = file_path + '.backup'
+            if os.path.exists(file_path):
+                os.rename(file_path, backup_path)
+                app.logger.info(f"Corrupted file backed up to {backup_path}")
+        except:
+            pass
+        
+        # Create new default file
+        initialize_keywords_file()
+        return default_progress
+
+def save_keywords_progress(progress_data):
+    """Save keywords progress to file"""
+    file_path = get_keywords_file_path()
+    try:
+        progress_data['last_updated'] = datetime.now().isoformat()
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(progress_data, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        app.logger.error(f"Error saving keywords progress: {str(e)}")
+        return False
+
+
+def get_daily_keyword():
+    """Get daily keyword from available (non-completed) keywords"""
+    available_keywords = get_available_keywords()
+    knowledge_categories = load_knowledge_categories()
+    
+    # Flatten all available keywords
+    all_available = []
+    for category, keywords in available_keywords.items():
+        for keyword in keywords:
+            all_available.append((keyword, category))
+    
+    if not all_available:
+        # If all keywords are completed, reset or return random from all
+        all_available = []
+        for category, keywords in knowledge_categories.items():
+            for keyword in keywords:
+                all_available.append((keyword, category))
+    
+    # Use today's date as seed for consistent daily keyword
+    today = date.today()
+    import random
+    random.seed(today.toordinal())
+    
+    keyword, category = random.choice(all_available)
+    return keyword, category
+
+@app.route('/api/daily_keyword')
+def get_daily_keyword_api():
+    """API endpoint to get daily keyword"""
+    try:
+        keyword, category = get_daily_keyword()
+        links = generate_knowledge_links(keyword)
+        progress = load_keywords_progress()
+        criteria_methods = load_criteria_methods()
+        
+        # Check if current keyword is completed
+        is_completed = keyword in progress.get('completed_keywords', [])
+        
+        # Get criteria for this category
+        criteria = criteria_methods.get(category, [])
+        
+        # Get criteria progress for this keyword
+        criteria_key = f"{category}:{keyword}"
+        criteria_progress = progress.get('criteria_progress', {}).get(criteria_key, [False] * len(criteria))
+        
+        # Ensure criteria_progress has correct length
+        if len(criteria_progress) != len(criteria):
+            criteria_progress = [False] * len(criteria)
+        
+        return jsonify({
+            'status': 'success',
+            'keyword': keyword,
+            'category': category,
+            'links': links,
+            'is_completed': is_completed,
+            'criteria': criteria,
+            'criteria_progress': criteria_progress,
+            'date': datetime.now().strftime('%Y-%m-%d'),
+            'stats': progress.get('stats', {})
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting daily keyword: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+
+@app.route('/api/complete_keyword', methods=['POST'])
+@login_required
+def complete_keyword():
+    """Mark a keyword as completed"""
+    try:
+        data = request.get_json()
+        keyword = data.get('keyword')
+        category = data.get('category')
+        
+        if not keyword:
+            return jsonify({
+                'status': 'error',
+                'message': 'Keyword is required'
+            }), 400
+        
+        progress = load_keywords_progress()
+        
+        # Add keyword to completed list if not already there
+        if keyword not in progress['completed_keywords']:
+            progress['completed_keywords'].append(keyword)
+            progress['stats']['total_completed'] = len(progress['completed_keywords'])
+            
+            # Update category progress
+            if 'categories_progress' not in progress['stats']:
+                progress['stats']['categories_progress'] = {}
+            
+            if category:
+                if category not in progress['stats']['categories_progress']:
+                    progress['stats']['categories_progress'][category] = 0
+                progress['stats']['categories_progress'][category] += 1
+        
+        # Save progress
+        if save_keywords_progress(progress):
+            return jsonify({
+                'status': 'success',
+                'message': f'Đã đánh dấu hoàn thành: {keyword}',
+                'stats': progress['stats']
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Không thể lưu tiến độ'
+            }), 500
+            
+    except Exception as e:
+        app.logger.error(f"Error completing keyword: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/uncomplete_keyword', methods=['POST'])
+@login_required
+def uncomplete_keyword():
+    """Remove a keyword from completed list"""
+    try:
+        data = request.get_json()
+        keyword = data.get('keyword')
+        category = data.get('category')
+        
+        if not keyword:
+            return jsonify({
+                'status': 'error',
+                'message': 'Keyword is required'
+            }), 400
+        
+        progress = load_keywords_progress()
+        
+        # Remove keyword from completed list
+        if keyword in progress['completed_keywords']:
+            progress['completed_keywords'].remove(keyword)
+            progress['stats']['total_completed'] = len(progress['completed_keywords'])
+            
+            # Update category progress
+            if category and 'categories_progress' in progress['stats']:
+                if category in progress['stats']['categories_progress']:
+                    progress['stats']['categories_progress'][category] = max(0, 
+                        progress['stats']['categories_progress'][category] - 1)
+        
+        # Save progress
+        if save_keywords_progress(progress):
+            return jsonify({
+                'status': 'success',
+                'message': f'Đã bỏ đánh dấu: {keyword}',
+                'stats': progress['stats']
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Không thể lưu tiến độ'
+            }), 500
+            
+    except Exception as e:
+        app.logger.error(f"Error uncompleting keyword: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/keywords_stats')
+def get_keywords_stats():
+    """Get keywords completion statistics"""
+    try:
+        progress = load_keywords_progress()
+        knowledge_categories = load_knowledge_categories()
+        
+        total_keywords = sum(len(keywords) for keywords in knowledge_categories.values())
+        completed_count = len(progress.get('completed_keywords', []))
+        
+        # Calculate category stats
+        category_stats = {}
+        for category, keywords in knowledge_categories.items():
+            total_in_category = len(keywords)
+            completed_in_category = progress.get('stats', {}).get('categories_progress', {}).get(category, 0)
+            category_stats[category] = {
+                'total': total_in_category,
+                'completed': completed_in_category,
+                'percentage': round((completed_in_category / total_in_category) * 100, 1) if total_in_category > 0 else 0
+            }
+        
+        return jsonify({
+            'status': 'success',
+            'stats': {
+                'total_keywords': total_keywords,
+                'completed_keywords': completed_count,
+                'remaining_keywords': total_keywords - completed_count,
+                'completion_percentage': round((completed_count / total_keywords) * 100, 1) if total_keywords > 0 else 0,
+                'category_stats': category_stats,
+                'last_updated': progress.get('last_updated')
+            }
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting keywords stats: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/keywords/<category>')
+def get_keywords(category):
+    """Get keywords for a specific category (excluding completed ones)"""
+    try:
+        available_keywords = get_available_keywords()
+        knowledge_categories = load_knowledge_categories()
+        
+        keywords = available_keywords.get(category, [])
+        
+        progress = load_keywords_progress()
+        completed_keywords = set(progress.get('completed_keywords', []))
+        
+        # Add completion status to each keyword
+        keywords_with_status = []
+        for keyword in knowledge_categories.get(category, []):
+            keywords_with_status.append({
+                'keyword': keyword,
+                'completed': keyword in completed_keywords
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'keywords': keywords,
+            'keywords_with_status': keywords_with_status,
+            'category': category
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting keywords for category {category}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+# Thêm function get_available_keywords() vào phần knowledge system (sau function load_keywords_progress):
+
+def get_available_keywords():
+    """Get keywords that haven't been completed yet"""
+    progress = load_keywords_progress()
+    completed_keywords = set(progress.get('completed_keywords', []))
+    knowledge_categories = load_knowledge_categories()
+    
+    available_keywords = {}
+    for category, keywords in knowledge_categories.items():
+        # Lọc ra những keywords chưa hoàn thành
+        available_in_category = [kw for kw in keywords if kw not in completed_keywords]
+        if available_in_category:  # Chỉ thêm category nếu còn keywords available
+            available_keywords[category] = available_in_category
+    
+    return available_keywords
+
+# Cũng thêm route /api/random_keyword nếu chưa có:
+@app.route('/api/random_keyword')
+def get_random_keyword_api():
+    """API endpoint to get random keyword (not daily)"""
+    try:
+        available_keywords = get_available_keywords()
+        knowledge_categories = load_knowledge_categories()
+        criteria_methods = load_criteria_methods()
+        
+        # Flatten all available keywords
+        all_available = []
+        for category, keywords in available_keywords.items():
+            for keyword in keywords:
+                all_available.append((keyword, category))
+        
+        if not all_available:
+            return jsonify({
+                'status': 'info',
+                'message': 'Bạn đã hoàn thành tất cả keywords! Chúc mừng!',
+                'all_completed': True
+            })
+        
+        import random
+        keyword, category = random.choice(all_available)
+        links = generate_knowledge_links(keyword)
+        progress = load_keywords_progress()
+        
+        # Get criteria for this category
+        criteria = criteria_methods.get(category, [])
+        
+        # Get criteria progress for this keyword
+        criteria_key = f"{category}:{keyword}"
+        criteria_progress = progress.get('criteria_progress', {}).get(criteria_key, [False] * len(criteria))
+        
+        # Ensure criteria_progress has correct length
+        if len(criteria_progress) != len(criteria):
+            criteria_progress = [False] * len(criteria)
+        
+        return jsonify({
+            'status': 'success',
+            'keyword': keyword,
+            'category': category,
+            'links': links,
+            'is_completed': False,
+            'criteria': criteria,
+            'criteria_progress': criteria_progress,
+            'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'stats': progress.get('stats', {})
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting random keyword: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+        
+@app.route('/api/update_criteria', methods=['POST'])
+@login_required
+def update_criteria():
+    """Update criteria completion for a keyword"""
+    try:
+        data = request.get_json()
+        keyword = data.get('keyword')
+        category = data.get('category')
+        criteria_progress = data.get('criteria_progress', [])
+        
+        if not keyword or not category:
+            return jsonify({
+                'status': 'error',
+                'message': 'Keyword and category are required'
+            }), 400
+        
+        progress = load_keywords_progress()
+        criteria_key = f"{category}:{keyword}"
+        
+        # Update criteria progress
+        if 'criteria_progress' not in progress:
+            progress['criteria_progress'] = {}
+        
+        progress['criteria_progress'][criteria_key] = criteria_progress
+        
+        # Check if all criteria are completed
+        all_completed = all(criteria_progress) if criteria_progress else False
+        
+        # Update keyword completion status based on criteria
+        if all_completed and keyword not in progress['completed_keywords']:
+            progress['completed_keywords'].append(keyword)
+            progress['stats']['total_completed'] = len(progress['completed_keywords'])
+            
+            # Update category progress
+            if 'categories_progress' not in progress['stats']:
+                progress['stats']['categories_progress'] = {}
+            if category not in progress['stats']['categories_progress']:
+                progress['stats']['categories_progress'][category] = 0
+            progress['stats']['categories_progress'][category] += 1
+            
+        elif not all_completed and keyword in progress['completed_keywords']:
+            progress['completed_keywords'].remove(keyword)
+            progress['stats']['total_completed'] = len(progress['completed_keywords'])
+            
+            # Update category progress
+            if category in progress['stats'].get('categories_progress', {}):
+                progress['stats']['categories_progress'][category] = max(0,
+                    progress['stats']['categories_progress'][category] - 1)
+        
+        # Save progress
+        if save_keywords_progress(progress):
+            return jsonify({
+                'status': 'success',
+                'message': 'Tiến độ đã được cập nhật',
+                'is_completed': all_completed,
+                'stats': progress['stats']
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Không thể lưu tiến độ'
+            }), 500
+            
+    except Exception as e:
+        app.logger.error(f"Error updating criteria: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
         }), 500
         
 if __name__ == '__main__':
