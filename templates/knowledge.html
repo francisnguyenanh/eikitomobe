@@ -1018,13 +1018,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const isCompleted = data.criteria_progress[index];
             const completedClass = isCompleted ? 'completed' : '';
             
-            // Create ChatGPT query URL for this specific criterion
-            const chatgptQuery = encodeURIComponent(`Về chủ đề "${data.keyword}", ${criterion}. Vui lòng giải thích chi tiết và cung cấp ví dụ cụ thể, bằng tiếng Anh, tiếng Việt và tiếng Nhật. Cung cấp thêm bảng từ vựng liên quan`);
-            const chatgptUrl = `https://chat.openai.com/?q=${chatgptQuery}`;
+            // Get AI settings for criteria links
+            const aiSettings = data.ai_settings || {};
             
-            // Create Grok query URL for this specific criterion
-            const grokQuery = encodeURIComponent(`About "${data.keyword}", please help me: ${criterion}. Explain in detail with specific examples in English, Vietnamese, and Japanese. Include relevant vocabulary table.`);
-            const grokUrl = `https://grok.com/?q=${grokQuery}`;
+            const criterionQuery = `About "${data.keyword}", ${criterion}. Explain in detail with specific examples in English, Vietnamese, and Japanese. Include relevant vocabulary table.`;
+            
+            let aiLinksHtml = '';
+        
             
             return `
                 <div class="criteria-item ${completedClass}" data-index="${index}">
@@ -1037,20 +1037,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         <label class="criteria-title" for="criteria_${index}">
                             ${criterion}
                         </label>
-                        <button class="criteria-toggle-btn collapsed" id="criteriaToggleBtn_${index}">
-                            <i class="bi bi-chevron-down"></i>
-                        </button>
                     </div>
                     <div class="criteria-content collapsed" id="criteriaContent_${index}">
                         <div class="criteria-links-container">
-                            <a href="${chatgptUrl}" target="_blank" class="criteria-chatgpt-link">
-                                <i class="bi bi-robot"></i>
-                                Ask ChatGPT
-                            </a>
-                            <a href="${grokUrl}" target="_blank" class="criteria-grok-link">
-                                <i class="bi bi-lightning"></i>
-                                Ask Grok
-                            </a>
+                            ${aiLinksHtml}
                         </div>
                     </div>
                 </div>

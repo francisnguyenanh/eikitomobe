@@ -191,11 +191,14 @@ def get_keywords_file_path():
 
 def get_kw_file_path():
     """Get path to kw.txt file"""
-    return os.path.join(app.root_path, 'kw.txt')
+    file_path = os.path.join(app.root_path, 'kw.txt')
+    app.logger.info(f"kw.txt path: {file_path}")
+    return file_path
 
 def get_method_file_path():
     """Get path to method.txt file"""
     return os.path.join(app.root_path, 'method.txt')
+
 
 def load_knowledge_categories():
     """Load knowledge categories from kw.txt"""
@@ -207,19 +210,126 @@ def load_knowledge_categories():
     }
     
     try:
+        app.logger.info(f"Loading knowledge categories from: {file_path}")
+        
         if os.path.exists(file_path):
+            app.logger.info(f"File exists, reading content...")
             with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                return data if isinstance(data, dict) else default_categories
+                content = f.read().strip()
+                app.logger.info(f"File content length: {len(content)}")
+                app.logger.info(f"File content preview: {content[:200]}...")
+                
+                if not content:
+                    app.logger.warning("File is empty, using default categories")
+                    return default_categories
+                
+                data = json.loads(content)
+                app.logger.info(f"Successfully parsed JSON with {len(data)} categories")
+                
+                if isinstance(data, dict) and data:
+                    return data
+                else:
+                    app.logger.warning("Invalid data format, using default categories")
+                    return default_categories
         else:
+            app.logger.info("File doesn't exist, creating with default categories")
             # Create default kw.txt file
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'w', encoding='utf-8') as f:
                 json.dump(default_categories, f, ensure_ascii=False, indent=2)
+            app.logger.info(f"Created default kw.txt at: {file_path}")
             return default_categories
+    except json.JSONDecodeError as e:
+        app.logger.error(f"JSON decode error in kw.txt: {str(e)}")
+        return default_categories
     except Exception as e:
         app.logger.error(f"Error loading kw.txt: {str(e)}")
         return default_categories
+    
+def get_ai_file_path():
+    """Get path to AI.txt file"""
+    return os.path.join(app.root_path, 'AI.txt')
+
+def load_ai_settings():
+    """Load AI settings from AI.txt"""
+    file_path = get_ai_file_path()
+    default_settings = {
+        "chatgpt_url": "https://chat.openai.com/?q={query}",
+        "grok_url": "https://x.com/i/grok?q={query}",
+        "perplexity_url": "https://www.perplexity.ai/?q={query}",
+        "you_url": "https://you.com/search?q={query}",
+        "copilot_url": "https://copilot.microsoft.com/?q={query}",
+        "chatgpt_enabled": True,
+        "grok_enabled": True,
+        "perplexity_enabled": False,
+        "you_enabled": False,
+        "copilot_enabled": False
+    }
+    
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # Merge with defaults, but keep custom URLs if they exist
+                settings = default_settings.copy()
+                settings.update(data)  # This will override defaults with saved data
+                return settings
+        else:
+            # Create default AI.txt file
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(default_settings, f, ensure_ascii=False, indent=2)
+            return default_settings
+    except Exception as e:
+        app.logger.error(f"Error loading AI.txt: {str(e)}")
+        return default_settings
+    
+def save_ai_settings(settings):
+    """Save AI settings to AI.txt"""
+    file_path = get_ai_file_path()
+    try:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(settings, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        app.logger.error(f"Error saving AI.txt: {str(e)}")
+        return False
+
+@app.route('/ai_settings', methods=['GET', 'POST'])
+@login_required
+def ai_settings():
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            app.logger.info(f"Received AI settings data: {data}")
+            
+            # Validate only URL fields that contain {query}
+            url_fields = ['chatgpt_url', 'grok_url', 'perplexity_url', 'you_url', 'copilot_url']
+            
+            for key, value in data.items():
+                # Only validate URL fields, skip enabled fields
+                if key in url_fields and value and value.strip():
+                    if '{query}' not in value:
+                        app.logger.warning(f"Invalid URL for {key}: {value}")
+                        return jsonify({
+                            'status': 'error', 
+                            'message': f'{key.replace("_url", "").title()} URL must contain {{query}} placeholder'
+                        }), 400
+            
+            app.logger.info("Validation passed, saving settings...")
+            if save_ai_settings(data):
+                app.logger.info("AI settings saved successfully")
+                return jsonify({'status': 'success'})
+            else:
+                app.logger.error("Failed to save AI settings")
+                return jsonify({'status': 'error', 'message': 'Failed to save AI settings'}), 500
+                
+        except Exception as e:
+            app.logger.error(f"Error in ai_settings route: {str(e)}")
+            return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'}), 500
+    else:
+        return jsonify(load_ai_settings())
     
 def load_criteria_methods():
     """Load criteria methods from method.txt"""
@@ -2194,36 +2304,64 @@ def knowledge():
 def generate_knowledge_links(keyword):
     import urllib.parse
     encoded_keyword = urllib.parse.quote(keyword)
-    encoded_keyword_plus = keyword.replace(' ', '+')
     
-    question = f"1. hãy nêu tổng quan và các khía cạnh chi tiết về {keyword} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật (những từ vựng jlpt N1 thì thêm furigana). 2. nêu rõ mặt ứng dụng trong thực tế. 3. cung cấp bảng từ vựng (có âm hán việt) liên quan đến chủ đề này. 4. cung cấp một vài link để tìm hiểu sâu hơn về chủ đề)"
-    # 5 nguồn cố định cho mọi từ khóa
-    sources = [
-        {
-            'title': f'Google Search',
-            'url': f'https://www.google.com/search?q=what is {encoded_keyword_plus}',
-            'language': 'Multi',
-            'icon': 'bi-google',
-            'description': 'Tìm kiếm toàn diện trên Google',
-            'color': 'primary'
-        },
-        {
-            'title': f'ChatGPT AI',
-            'url': f'https://chat.openai.com/?q={question}', 
-            'language': 'Multi',
+    # Load AI settings
+    ai_settings = load_ai_settings()
+    
+    question = f"1.hãy nêu tổng quan và các khía cạnh chi tiết về {keyword} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật (những từ vựng jlpt N1 thì thêm furigana). 2.sao cho sau khi đọc xong thì có đủ kiến thức để trình bày lại cho người khác. 3.hãy cho bảng từ vựn (đầy đủ phiên âm, âm hán việt) liên quan đến chủ đề này. 4.nêu 1 số link nguồn để tìm hiểu sâu hơn về chủ đề này."
+    sources = []
+    
+    # Use URLs from settings - these can now be customized
+    ai_services = {
+        'chatgpt': {
+            'url': ai_settings.get('chatgpt_url', "https://chat.openai.com/?q={query}"),
+            'title': 'ChatGPT AI',
             'icon': 'bi-robot',
-            'description': 'Hỏi AI về từ khóa này',
+            'description': 'Hỏi ChatGPT về từ khóa này',
             'color': 'success'
         },
-        {
-            'title': f'Grok AI',
-            'url': f'https://grok.com/?q={question}',
-            'language': 'Multi',
+        'grok': {
+            'url': ai_settings.get('grok_url', "https://x.com/i/grok?q={query}"),
+            'title': 'Grok AI',
             'icon': 'bi-lightning',
             'description': 'Hỏi Grok AI của X (Twitter)',
             'color': 'dark'
+        },
+        'perplexity': {
+            'url': ai_settings.get('perplexity_url', "https://www.perplexity.ai/?q={query}"),
+            'title': 'Perplexity AI',
+            'icon': 'bi-search',
+            'description': 'Tìm kiếm Perplexity AI về từ khóa này',
+            'color': 'info'
+        },
+        'you': {
+            'url': ai_settings.get('you_url', "https://you.com/search?q={query}"),
+            'title': 'You.com Search',
+            'icon': 'bi-globe',
+            'description': 'Tìm kiếm You.com về từ khóa này',
+            'color': 'warning'
+        },
+        'copilot': {
+            'url': ai_settings.get('copilot_url', "https://copilot.microsoft.com/?q={query}"),
+            'title': 'Copilot AI',
+            'icon': 'bi-microsoft',
+            'description': 'Hỏi Microsoft Copilot về từ khóa này',
+            'color': 'secondary'
         }
-    ]
+    }
+    
+    # Add enabled AI services
+    for service_name, service_info in ai_services.items():
+        if ai_settings.get(f'{service_name}_enabled'):
+            service_url = service_info['url'].replace('{query}', urllib.parse.quote(question))
+            sources.append({
+                'title': service_info['title'],
+                'url': service_url,
+                'language': 'Multi',
+                'icon': service_info['icon'],
+                'description': service_info['description'],
+                'color': service_info['color']
+            })
     
     return sources
 
@@ -2341,6 +2479,7 @@ def get_daily_keyword_api():
         links = generate_knowledge_links(keyword)
         progress = load_keywords_progress()
         criteria_methods = load_criteria_methods()
+        ai_settings = load_ai_settings()  # Add this line
         
         # Check if current keyword is completed
         is_completed = keyword in progress.get('completed_keywords', [])
@@ -2364,6 +2503,7 @@ def get_daily_keyword_api():
             'is_completed': is_completed,
             'criteria': criteria,
             'criteria_progress': criteria_progress,
+            'ai_settings': ai_settings,  # Add this line
             'date': datetime.now().strftime('%Y-%m-%d'),
             'stats': progress.get('stats', {})
         })

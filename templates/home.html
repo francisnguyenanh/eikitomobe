@@ -258,7 +258,6 @@
             background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
             border: none;
             border-radius: 10px;
-            padding: 0.75rem 1.5rem;
             font-weight: 600;
             transition: all 0.3s ease;
             box-shadow: 0 4px 15px rgba(var(--primary-color-rgb, 52, 152, 219), 0.3);
@@ -771,6 +770,9 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profileTab" type="button">Card</button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="ai-search-tab" data-bs-toggle="tab" data-bs-target="#aiSearchTab" type="button">AI Search</button>
+                        </li>
                     </ul>
                     <div class="tab-content mt-3">
                         <div class="tab-pane fade show active" id="generalTab">
@@ -879,6 +881,105 @@
                             </form>
                             <div id="profileMsg" class="text-success text-center"></div>
                         </div>
+                        <div class="tab-pane fade" id="aiSearchTab">
+                            <form id="aiSearchForm">
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label">
+                                            <i class="bi bi-robot me-1"></i>
+                                            ChatGPT
+                                        </label>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="chatgptEnabled" name="chatgpt_enabled" checked>
+                                            <label class="form-check-label" for="chatgptEnabled">Enabled</label>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control" id="chatgptUrl" name="chatgpt_url" value="https://chat.openai.com/?q={query}" placeholder="URL must contain {query}">
+                                    <div class="form-text">AI assistant for comprehensive answers</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label">
+                                            <i class="bi bi-lightning me-1"></i>
+                                            Grok AI
+                                        </label>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="grokEnabled" name="grok_enabled" checked>
+                                            <label class="form-check-label" for="grokEnabled">Enabled</label>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control" id="grokUrl" name="grok_url" value="https://x.com/i/grok?q={query}" placeholder="URL must contain {query}">
+                                    <div class="form-text">X (Twitter)'s AI with real-time data</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label">
+                                            <i class="bi bi-search me-1"></i>
+                                            Perplexity AI
+                                        </label>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="perplexityEnabled" name="perplexity_enabled">
+                                            <label class="form-check-label" for="perplexityEnabled">Enabled</label>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control" id="perplexityUrl" name="perplexity_url" value="https://www.perplexity.ai/?q={query}" placeholder="URL must contain {query}">
+                                    <div class="form-text">AI-powered search with sources</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label">
+                                            <i class="bi bi-globe me-1"></i>
+                                            You.com Search
+                                        </label>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="youEnabled" name="you_enabled">
+                                            <label class="form-check-label" for="youEnabled">Enabled</label>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control" id="youUrl" name="you_url" value="https://you.com/search?q={query}" placeholder="URL must contain {query}">
+                                    <div class="form-text">AI-powered search engine</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label">
+                                            <i class="bi bi-microsoft me-1"></i>
+                                            Copilot AI
+                                        </label>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="copilotEnabled" name="copilot_enabled">
+                                            <label class="form-check-label" for="copilotEnabled">Enabled</label>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control" id="copilotUrl" name="copilot_url" value="https://copilot.microsoft.com/?q={query}" placeholder="URL must contain {query}">
+                                    <div class="form-text">Microsoft's AI assistant</div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-6">
+                                        <button type="submit" class="btn btn-primary w-100">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            Save Settings
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button type="button" class="btn btn-secondary w-100" id="resetAiSettings">
+                                            <i class="bi bi-arrow-clockwise me-1"></i>
+                                            Reset to Default
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <div id="aiSettingsMsg" class="text-center"></div>
+                                </div>
+                            </form>
+                        </div>
+                        </form>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -1053,8 +1154,7 @@
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     return await response.json();
                 } catch (error) {
-                    console.error('API Error:', error);
-                    Utils.showFlashMessage('Network error occurred', 'danger');
+                    console.error(`API Error (${url}):`, error);
                     throw error;
                 }
             },
@@ -1100,6 +1200,18 @@
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify(data)
+                });
+            },
+
+            async getAISettings() {
+                return this.fetchWithErrorHandling('/ai_settings');
+            },
+
+            async updateAISettings(settings) {
+                return this.fetchWithErrorHandling('/ai_settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
                 });
             }
         };
@@ -1333,6 +1445,162 @@
                     console.error('Failed to save theme:', error);
                     Utils.showFlashMessage('Failed to save theme', 'danger');
                 }
+            }
+        };
+
+        // ===== AI SETTINGS MANAGER =====
+        const AISettingsManager = {
+            // Default URLs - có thể thay đổi
+            defaultUrls: {
+                chatgpt: "https://chat.openai.com/?q={query}",
+                grok: "https://x.com/i/grok?q={query}",
+                perplexity: "https://www.perplexity.ai/?q={query}",
+                you: "https://you.com/search?q={query}",
+                copilot: "https://copilot.microsoft.com/?q={query}"
+            },
+
+            init() {
+                document.getElementById('ai-search-tab').addEventListener('shown.bs.tab', () => this.loadAISettings());
+                document.getElementById('aiSearchForm').addEventListener('submit', (e) => this.saveAISettings(e));
+                document.getElementById('resetAiSettings').addEventListener('click', () => this.resetAISettings());
+                
+                // Add visual feedback for disabled checkboxes
+                ['chatgpt', 'grok', 'perplexity', 'you', 'copilot'].forEach(service => {
+                    const checkbox = document.getElementById(`${service}Enabled`);
+                    const container = checkbox.closest('.mb-3');
+                    
+                    checkbox.addEventListener('change', () => {
+                        if (!checkbox.checked) {
+                            container.style.opacity = '0.6';
+                            container.classList.add('text-muted');
+                        } else {
+                            container.style.opacity = '1';
+                            container.classList.remove('text-muted');
+                        }
+                    });
+                });
+            },
+
+            async loadAISettings() {
+                try {
+                    const response = await API.getAISettings();
+                    
+                    // Load URLs
+                    document.getElementById('chatgptUrl').value = response.chatgpt_url || this.defaultUrls.chatgpt;
+                    document.getElementById('grokUrl').value = response.grok_url || this.defaultUrls.grok;
+                    document.getElementById('perplexityUrl').value = response.perplexity_url || this.defaultUrls.perplexity;
+                    document.getElementById('youUrl').value = response.you_url || this.defaultUrls.you;
+                    document.getElementById('copilotUrl').value = response.copilot_url || this.defaultUrls.copilot;
+                    
+                    // Load enabled states
+                    document.getElementById('chatgptEnabled').checked = response.chatgpt_enabled !== false;
+                    document.getElementById('grokEnabled').checked = response.grok_enabled !== false;
+                    document.getElementById('perplexityEnabled').checked = response.perplexity_enabled === true;
+                    document.getElementById('youEnabled').checked = response.you_enabled === true;
+                    document.getElementById('copilotEnabled').checked = response.copilot_enabled === true;
+                    
+                    // Update visual feedback
+                    ['chatgpt', 'grok', 'perplexity', 'you', 'copilot'].forEach(service => {
+                        const checkbox = document.getElementById(`${service}Enabled`);
+                        const container = checkbox.closest('.mb-3');
+                        
+                        if (!checkbox.checked) {
+                            container.style.opacity = '0.6';
+                            container.classList.add('text-muted');
+                        } else {
+                            container.style.opacity = '1';
+                            container.classList.remove('text-muted');
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('Failed to load AI settings:', error);
+                    this.showMessage('Failed to load AI settings', 'danger');
+                }
+            },
+
+            async saveAISettings(e) {
+                e.preventDefault();
+                
+                // Validate URLs contain {query}
+                const urls = {
+                    chatgpt_url: document.getElementById('chatgptUrl').value.trim(),
+                    grok_url: document.getElementById('grokUrl').value.trim(),
+                    perplexity_url: document.getElementById('perplexityUrl').value.trim(),
+                    you_url: document.getElementById('youUrl').value.trim(),
+                    copilot_url: document.getElementById('copilotUrl').value.trim()
+                };
+                
+                // Validate that all URLs contain {query}
+                for (const [key, url] of Object.entries(urls)) {
+                    if (url && !url.includes('{query}')) {
+                        this.showMessage(`${key.replace('_url', '')} URL must contain {query} placeholder`, 'danger');
+                        return;
+                    }
+                }
+                
+                const settings = {
+                    // Save custom URLs
+                    ...urls,
+                    
+                    // Get enabled states from checkboxes
+                    chatgpt_enabled: document.getElementById('chatgptEnabled').checked,
+                    grok_enabled: document.getElementById('grokEnabled').checked,
+                    perplexity_enabled: document.getElementById('perplexityEnabled').checked,
+                    you_enabled: document.getElementById('youEnabled').checked,
+                    copilot_enabled: document.getElementById('copilotEnabled').checked
+                };
+                
+                try {
+                    const response = await API.updateAISettings(settings);
+                    if (response.status === 'success') {
+                        this.showMessage('AI settings saved successfully!', 'success');
+                    }
+                } catch (error) {
+                    console.error('Failed to save AI settings:', error);
+                    this.showMessage('Failed to save AI settings', 'danger');
+                }
+            },
+
+            resetAISettings() {
+                if (confirm('Are you sure you want to reset AI settings to default?')) {
+                    // Reset URLs to default
+                    document.getElementById('chatgptUrl').value = this.defaultUrls.chatgpt;
+                    document.getElementById('grokUrl').value = this.defaultUrls.grok;
+                    document.getElementById('perplexityUrl').value = this.defaultUrls.perplexity;
+                    document.getElementById('youUrl').value = this.defaultUrls.you;
+                    document.getElementById('copilotUrl').value = this.defaultUrls.copilot;
+                    
+                    // Reset enabled states to default
+                    document.getElementById('chatgptEnabled').checked = true;
+                    document.getElementById('grokEnabled').checked = true;
+                    document.getElementById('perplexityEnabled').checked = false;
+                    document.getElementById('youEnabled').checked = false;
+                    document.getElementById('copilotEnabled').checked = false;
+                    
+                    // Update visual feedback
+                    ['chatgpt', 'grok', 'perplexity', 'you', 'copilot'].forEach(service => {
+                        const checkbox = document.getElementById(`${service}Enabled`);
+                        const container = checkbox.closest('.mb-3');
+                        
+                        if (!checkbox.checked) {
+                            container.style.opacity = '0.6';
+                            container.classList.add('text-muted');
+                        } else {
+                            container.style.opacity = '1';
+                            container.classList.remove('text-muted');
+                        }
+                    });
+                    
+                    this.showMessage('AI settings reset to default', 'info');
+                }
+            },
+
+            showMessage(message, type) {
+                const msgElement = document.getElementById('aiSettingsMsg');
+                msgElement.className = `text-${type === 'success' ? 'success' : type === 'danger' ? 'danger' : 'info'}`;
+                msgElement.textContent = message;
+                setTimeout(() => { msgElement.textContent = ''; }, 3000);
             }
         };
 
@@ -1714,6 +1982,7 @@
             CardListManager.init();
             ProfileManager.init();
             AuthManager.init();
+            AISettingsManager.init(); // Add this line
 
             // Quote click to open mindfulness modal
             document.querySelectorAll('.quote-content').forEach(el => {

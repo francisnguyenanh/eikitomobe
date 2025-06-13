@@ -1,64 +1,14 @@
 {
   "user_id": "default",
-  "completed_keywords": [
-    "Carbon Footprint",
-    "Deforestation",
-    "Ocean Conservation",
-    "Wildlife Protection",
-    "Sustainable Agriculture",
-    "Clean Energy",
-    "Environmental Science",
-    "Ecology",
-    "Green Building",
-    "Cognitive Psychology"
-  ],
-  "last_updated": "2025-06-13T21:18:31.410338",
+  "completed_keywords": [],
+  "criteria_progress": {},
+  "last_updated": "2025-06-13T23:03:37.910885",
   "stats": {
-    "total_completed": 10,
+    "total_completed": 0,
     "categories_progress": {
       "science": 0,
       "history": 0,
-      "business": 0,
-      "health": 0,
-      "language": 0,
-      "culture": 0,
-      "technology": 0,
-      "philosophy": 0,
-      "arts": 0,
-      "sports": 0,
-      "environment": 9,
-      "psychology": 1,
-      "politics": 0,
-      "society": 0,
-      "education": 0,
-      "law": 0,
-      "economics": 0,
-      "mathematics": 0,
-      "literature": 0,
-      "music": 0,
-      "engineering": 0,
-      "astronomy": 0,
-      "geography": 0,
-      "anthropology": 0,
-      "architecture": 0
+      "business": 0
     }
-  },
-  "criteria_progress": {
-    "mathematics:Calculus Concepts": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    ],
-    "science:Data Science": [
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    ]
   }
 }
