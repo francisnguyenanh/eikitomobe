@@ -532,12 +532,6 @@
             // Focus password input
             document.getElementById('password').focus();
             
-            // Service Worker registration
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/static/sw.js')
-                    .then(reg => console.log('Service Worker registered'))
-                    .catch(err => console.error('Service Worker registration failed:', err));
-            }
         });
 
         // ===== ANIMATIONS =====

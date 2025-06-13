@@ -1,228 +1,839 @@
 {% extends "Quote/base.html" %}
 {% block content %}
 
-    <form method="POST" class="mb-4">
-        <div class="mb-3">
-            <textarea name="content" class="form-control" placeholder="Nhập trích dẫn" rows="5" required></textarea>
+<div class="modern-quotes-container">
+
+    <!-- Add Quote Section -->
+    <div class="add-quote-section">
+        <form method="POST" class="quote-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="content" class="form-label">
+                        <i class="bi bi-chat-quote me-2"></i>Quote Content b
+                    </label>
+                    <textarea name="content" id="content" class="form-control modern-textarea" 
+                              placeholder="Enter your inspiring quote here..." rows="4" required></textarea>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="category" class="form-label">
+                        <i class="bi bi-tag me-2"></i>Source/Category
+                    </label>
+                    <input type="text" name="category" id="category" class="form-control" 
+                           placeholder="e.g., Shakespeare, Einstein, Anonymous..." list="categoryList">
+                </div>
+                {% if require_password %}
+                <div class="form-group">
+                    <label for="password" class="form-label">
+                        <i class="bi bi-shield-lock me-2"></i>Password
+                    </label>
+                    <input type="password" name="password" id="password" class="form-control" 
+                           placeholder="Enter password" required>
+                </div>
+                {% endif %}
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-add">
+                    <i class="bi bi-plus-lg me-2"></i>Add Quote
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Quotes Management Section -->
+    <div class="quotes-management-section">
+        <div class="section-header">
+            <div class="section-stats">
+                <span class="stat-badge">{{ quotes|length }} quotes</span>
+            </div>
         </div>
-        <div class="mb-3">
-            <input type="text" name="category" class="form-control" placeholder="Nhập nguồn"
-                   list="categoryList">
+        
+        <div class="quotes-grid">
+            {% for quote in quotes %}
+            <div class="quote-card" data-id="{{ quote.id }}">
+                <div class="quote-content-wrapper">
+                    <div class="quote-text">{{ quote.content | nl2br | safe }}</div>
+                    <div class="quote-meta">
+                        <span class="quote-source">
+                            <i class="bi bi-tag-fill me-1"></i>{{ quote.category.name }}
+                        </span>
+                    </div>
+                </div>
+                <div class="quote-actions">
+                    <button type="button" class="action-btn edit-btn"
+                            data-id="{{ quote.id }}"
+                            data-content="{{ quote.content | e }}"
+                            data-category="{{ quote.category.name | e }}"
+                            title="Edit Quote">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="action-btn delete-btn"
+                            onclick="promptDelete({{ quote.id }})"
+                            title="Delete Quote">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
         </div>
-        {% if require_password %}
-        <div class="mb-3">
-            <input type="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required>
+
+        {% if not quotes %}
+        <div class="empty-state">
+            <div class="empty-icon">
+                <i class="bi bi-chat-quote"></i>
+            </div>
+            <h3>No quotes yet</h3>
+            <p>Start building your collection by adding your first quote above.</p>
         </div>
         {% endif %}
-        <button type="submit" class="btn btn-primary w-100 w-md-auto">Thêm Trích Dẫn</button>
-    </form>
-
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Trích Dẫn</th>
-                    <th>Nguồn</th>
-                    <th>Hành Động</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for quote in quotes %}
-                <tr>
-                    <td>{{ quote.content | nl2br | safe }}</td>
-                    <td>{{ quote.category.name }}</td>
-                    <td>
-                        <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-primary btn-sm w-100 w-md-auto edit-btn"
-                                    data-id="{{ quote.id }}"
-                                    data-content="{{ quote.content | e }}"
-                                    data-category="{{ quote.category.name | e }}"
-                                    style="max-width: 80px;">
-                                Sửa
-                            </button>
-                            <button type="button" class="btn btn-danger btn-sm w-100 w-md-auto"
-                                    onclick="promptDelete({{ quote.id }})"
-                                    style="max-width: 80px;">
-                                Xóa
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
 
-    <!-- Modal chỉnh sửa chung -->
-    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editModalLabel">Sửa Trích Dẫn</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- Categories Management Section -->
+    <div class="categories-section">
+        <div class="section-header">
+            <h2><i class="bi bi-tags me-2"></i>Categories</h2>
+            <div class="section-stats">
+                <span class="stat-badge">{{ category_counts|length }} categories</span>
+            </div>
+        </div>
+        
+        <div class="categories-grid">
+            {% for category_obj, count in category_counts %}
+            <div class="category-card">
+                <div class="category-info">
+                    <div class="category-name">{{ category_obj.name }}</div>
+                    <div class="category-count">{{ count }} quote{{ 's' if count != 1 else '' }}</div>
                 </div>
-                <form method="POST" id="editForm">
-                    <div class="modal-body">
-                        <input type="hidden" name="id" id="editId">
-                        <div class="mb-3">
-                            <textarea name="content" id="editContent" class="form-control" rows="5" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <input type="text" name="category" id="editCategory" class="form-control"
-                                   list="categoryList" required>
-                        </div>
-                        {% if require_password %}
-                        <div class="mb-3">
-                            <input type="password" name="password" id="editPassword" class="form-control"
-                                   placeholder="Nhập mật khẩu" required>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                        <button type="submit" class="btn btn-primary">Lưu Thay Đổi</button>
-                    </div>
-                </form>
+                <div class="category-actions">
+                    <button type="button" class="action-btn delete-btn"
+                            onclick="promptDeleteCategory({{ category_obj.id }})"
+                            title="Delete Category">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
             </div>
+            {% endfor %}
         </div>
     </div>
+</div>
 
-    <!-- Phần quản lý nguồn -->
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Nguồn</th>
-                    <th>Số Trích Dẫn</th>
-                    <th>Hành Động</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for category_obj, count in category_counts %}
-                <tr>
-                    <td>{{ category_obj.name }}</td>
-                    <td>{{ count }}</td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-sm w-100 w-md-auto"
-                                onclick="promptDeleteCategory({{ category_obj.id }})"
-                                style="max-width: 80px;">
-                            Xóa
-                        </button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Modal xác nhận xóa quote -->
-    <div class="modal fade" id="deleteQuoteModal" tabindex="-1" aria-labelledby="deleteQuoteModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteQuoteModalLabel">Xác nhận xóa</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                <h5 class="modal-title" id="editModalLabel">
+                    <i class="bi bi-pencil-square me-2"></i>Edit Quote
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                Bạn có chắc chắn muốn xóa trích dẫn này?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Xóa</button>
-            </div>
-            </div>
+            <form method="POST" id="editForm">
+                <div class="modal-body">
+                    <input type="hidden" name="id" id="editId">
+                    <div class="form-group mb-3">
+                        <label for="editContent" class="form-label">
+                            <i class="bi bi-chat-quote me-2"></i>Quote Content
+                        </label>
+                        <textarea name="content" id="editContent" class="form-control modern-textarea" 
+                                  rows="4" required></textarea>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label for="editCategory" class="form-label">
+                            <i class="bi bi-tag me-2"></i>Source/Category
+                        </label>
+                        <input type="text" name="category" id="editCategory" class="form-control"
+                               list="categoryList" required>
+                    </div>
+                    {% if require_password %}
+                    <div class="form-group mb-3">
+                        <label for="editPassword" class="form-label">
+                            <i class="bi bi-shield-lock me-2"></i>Password
+                        </label>
+                        <input type="password" name="password" id="editPassword" class="form-control"
+                               placeholder="Enter password" required>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>Save Changes
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
-    <!-- Modal xác nhận xóa category -->
-    <div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCategoryModalLabel" aria-hidden="true">
+<!-- Delete Quote Modal -->
+<div class="modal fade" id="deleteQuoteModal" tabindex="-1" aria-labelledby="deleteQuoteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-        <div class="modal-header">
-            <h5 class="modal-title" id="deleteCategoryModalLabel">Xác nhận xóa nguồn</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-        </div>
-        <div class="modal-body">
-            Bạn có chắc chắn muốn xóa nguồn này?
-        </div>
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-            <button type="button" class="btn btn-danger" id="confirmDeleteCategoryBtn">Xóa</button>
-        </div>
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteQuoteModalLabel">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-message">
+                    <i class="bi bi-question-circle-fill confirm-icon"></i>
+                    <p>Are you sure you want to delete this quote? This action cannot be undone.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="bi bi-trash me-2"></i>Delete Quote
+                </button>
+            </div>
         </div>
     </div>
+</div>
+
+<!-- Delete Category Modal -->
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1" aria-labelledby="deleteCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteCategoryModalLabel">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Confirm Delete Category
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="confirm-message">
+                    <i class="bi bi-question-circle-fill confirm-icon"></i>
+                    <p>Are you sure you want to delete this category? This will also remove all quotes in this category.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteCategoryBtn">
+                    <i class="bi bi-trash me-2"></i>Delete Category
+                </button>
+            </div>
+        </div>
     </div>
-    <!-- Datalist chung cho cả trang -->
-    <datalist id="categoryList">
-        <option value="St">
-        {% for category in categories %}
-        <option value="{{ category }}">
-        {% endfor %}
-    </datalist>
+</div>
 
-    <!-- Script để xử lý prompt và modal -->
-    <script>
-        let quoteIdToDelete = null;
+<!-- Datalist for categories -->
+<datalist id="categoryList">
+    <option value="St">
+    {% for category in categories %}
+    <option value="{{ category }}">
+    {% endfor %}
+</datalist>
 
-        function promptDelete(quoteId) {
-            quoteIdToDelete = quoteId;
-            const deleteModal = new bootstrap.Modal(document.getElementById('deleteQuoteModal'));
-            deleteModal.show();
-        }
+<style>
+/* Modern Quotes Management Styles */
+.modern-quotes-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
 
-        let categoryIdToDelete = null;
+/* Page Header */
+.page-header {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+}
 
-        function promptDeleteCategory(categoryId) {
-            categoryIdToDelete = categoryId;
-            const deleteCategoryModal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
-            deleteCategoryModal.show();
-        }
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
 
-        document.addEventListener('DOMContentLoaded', function() {
-            // Xử lý nút Sửa
-            const editButtons = document.querySelectorAll('.edit-btn');
-            const editModal = new bootstrap.Modal(document.getElementById('editModal'));
-            const editForm = document.getElementById('editForm');
+.header-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: 0 8px 25px rgba(var(--primary-color-rgb, 52, 152, 219), 0.3);
+}
 
-            editButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const content = this.getAttribute('data-content');
-                    const category = this.getAttribute('data-category');
+.header-text h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
 
-                    // Điền dữ liệu vào form
-                    document.getElementById('editId').value = id;
-                    document.getElementById('editContent').value = content;
-                    document.getElementById('editCategory').value = category;
-                    {% if require_password %}
-                    document.getElementById('editPassword').value = '';
-                    {% endif %}
+.header-text p {
+    margin: 0;
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+}
 
-                    // Cập nhật action của form
-                    editForm.action = `/quotes/edit/${id}`;
+/* Section Styling */
+.add-quote-section,
+.quotes-management-section,
+.categories-section {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+}
 
-                    // Mở modal
-                    editModal.show();
-                });
-            });
-            
-            const confirmDeleteCategoryBtn = document.getElementById('confirmDeleteCategoryBtn');
-            if (confirmDeleteCategoryBtn) {
-                confirmDeleteCategoryBtn.addEventListener('click', function() {
-                    if (categoryIdToDelete) {
-                        window.location.href = "/quotes/delete_category/" + categoryIdToDelete;
-                    }
-                });
-            }
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--navbar-border);
+}
 
-            document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-                if (quoteIdToDelete) {
-                    window.location.href = "/quotes/delete/" + quoteIdToDelete;
-                }
-            });
+.section-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+}
 
-            window.promptDelete = promptDelete;
-            window.promptDeleteCategory = promptDeleteCategory;
+.section-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.stat-badge {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
+    color: var(--primary-color);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* Form Styling */
+.quote-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.modern-textarea {
+    min-height: 120px;
+    resize: vertical;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+}
+
+.form-control {
+    border: 2px solid var(--navbar-border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    background: var(--card-bg);
+    color: var(--text-color);
+    font-family: 'Inter', sans-serif;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
+    transform: translateY(-1px);
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.btn-add {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 12px;
+}
+
+/* Quotes Grid */
+.quotes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.quote-card {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.02);
+    border: 1px solid var(--navbar-border);
+    border-radius: 15px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.quote-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+    border-color: var(--primary-color);
+}
+
+.quote-content-wrapper {
+    margin-bottom: 1rem;
+}
+
+.quote-text {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-color);
+    margin-bottom: 1rem;
+    font-style: italic;
+}
+
+.quote-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.quote-source {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.quote-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.action-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+.edit-btn {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
+    color: var(--primary-color);
+}
+
+.edit-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+.delete-btn {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.delete-btn:hover {
+    background: #dc3545;
+    color: white;
+    transform: scale(1.1);
+}
+
+/* Categories Grid */
+.categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.category-card {
+    background: rgba(var(--accent-color-rgb, 23, 162, 184), 0.05);
+    border: 1px solid var(--navbar-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.category-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.category-info {
+    flex: 1;
+}
+
+.category-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.25rem;
+}
+
+.category-count {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+.category-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--secondary-color);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+/* Modal Enhancements */
+.modal-content {
+    border-radius: 20px;
+    border: none;
+    overflow: hidden;
+}
+
+.modal-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+    border-bottom: none;
+    padding: 1.5rem 2rem;
+}
+
+.modal-title {
+    font-weight: 600;
+    margin: 0;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+    opacity: 0.8;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--navbar-border);
+    padding: 1.5rem 2rem;
+    background: var(--card-bg);
+}
+
+.confirm-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+}
+
+.confirm-icon {
+    font-size: 3rem;
+    color: var(--alert-warning-color);
+}
+
+.confirm-message p {
+    font-size: 1.1rem;
+    color: var(--text-color);
+    margin: 0;
+}
+
+/* Button Enhancements */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: none;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+}
+
+.btn-danger:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.3);
+    color: white;
+}
+
+.btn-secondary {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modern-quotes-container {
+        padding: 0 1rem;
+    }
+    
+    .page-header,
+    .add-quote-section,
+    .quotes-management-section,
+    .categories-section {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .header-text h1 {
+        font-size: 2rem;
+    }
+    
+    .quotes-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .categories-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .modal-dialog {
+        margin: 1rem;
+    }
+    
+    .modal-body,
+    .modal-footer {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .quote-card {
+        padding: 1rem;
+    }
+    
+    .action-btn {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .header-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    
+    .form-actions {
+        justify-content: stretch;
+    }
+    
+    .btn-add {
+        width: 100%;
+    }
+}
+
+/* Animation */
+.quote-card,
+.category-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Loading states */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Focus states for accessibility */
+.action-btn:focus,
+.form-control:focus,
+.btn:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+</style>
+
+<script>
+let quoteIdToDelete = null;
+let categoryIdToDelete = null;
+
+function promptDelete(quoteId) {
+    quoteIdToDelete = quoteId;
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteQuoteModal'));
+    deleteModal.show();
+}
+
+function promptDeleteCategory(categoryId) {
+    categoryIdToDelete = categoryId;
+    const deleteCategoryModal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
+    deleteCategoryModal.show();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Edit functionality
+    const editButtons = document.querySelectorAll('.edit-btn');
+    const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    const editForm = document.getElementById('editForm');
+
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            const content = this.getAttribute('data-content');
+            const category = this.getAttribute('data-category');
+
+            document.getElementById('editId').value = id;
+            document.getElementById('editContent').value = content;
+            document.getElementById('editCategory').value = category;
+            {% if require_password %}
+            document.getElementById('editPassword').value = '';
+            {% endif %}
+
+            editForm.action = `/quotes/edit/${id}`;
+            editModal.show();
         });
-    </script>
+    });
+    
+    // Delete confirmations
+    const confirmDeleteCategoryBtn = document.getElementById('confirmDeleteCategoryBtn');
+    if (confirmDeleteCategoryBtn) {
+        confirmDeleteCategoryBtn.addEventListener('click', function() {
+            if (categoryIdToDelete) {
+                // Add loading state
+                this.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Deleting...';
+                this.disabled = true;
+                window.location.href = "/quotes/delete_category/" + categoryIdToDelete;
+            }
+        });
+    }
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (quoteIdToDelete) {
+            // Add loading state
+            this.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Deleting...';
+            this.disabled = true;
+            window.location.href = "/quotes/delete/" + quoteIdToDelete;
+        }
+    });
+
+    // Form submission loading state
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+                submitBtn.disabled = true;
+            }
+        });
+    });
+
+    // Animate cards on load
+    const cards = document.querySelectorAll('.quote-card, .category-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Make functions globally available
+    window.promptDelete = promptDelete;
+    window.promptDeleteCategory = promptDeleteCategory;
+});
+</script>
+
 {% endblock %}

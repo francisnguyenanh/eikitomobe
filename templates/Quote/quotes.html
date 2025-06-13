@@ -1,69 +1,887 @@
 {% extends "Quote/base.html" %}
 {% block content %}
-    <h2 class="mb-3"></h2>
 
-   {% if quote %}
-    <div class="card mb-4">
-        <div class="card-body">
-            <blockquote class="blockquote mb-0">
-                <p>{{ quote.content | nl2br | safe }}</p>
-                <footer class="blockquote-footer">{{ quote.category.name }}</footer>
-            </blockquote>
-        </div>
-    </div>
-    {% else %}
-    <div class="alert alert-info mb-4" role="alert">
-        Chưa có trích dẫn nào. Vui lòng thêm trích dẫn trước!
-    </div>
-    {% endif %}
-
-    <div class="mb-4">
-        <button id="bellButton" class="btn btn-secondary w-100 w-md-auto">Chuông Chánh Niệm</button>
-    </div>
-
-    <form method="POST" class="mb-4">
-        <div class="row g-2 align-items-center">
-            <div class="col-12 col-md-5">
-                <select name="category" class="form-select">
-                    <option value="">Chọn Nguồn</option>
-                    {% for category in categories %}
-                    <option value="{{ category.name }}" {% if category.name == selected_category %}selected{% endif %}>
-                        {{ category.name }}
-                    </option>
-                    {% endfor %}
-                </select>
+<div class="modern-quotes-container">
+    <!-- Quote Display Section -->
+    <div class="quote-display-section">
+        {% if quote %}
+        <div class="quote-showcase">
+            <div class="quote-decoration">
+                <i class="bi bi-quote quote-icon-left"></i>
             </div>
-            <div class="col-6 col-md-3">
-                <button type="submit" class="btn btn-primary w-100">Hiển Thị Theo Nguồn</button>
+            <div class="quote-content">
+                <div class="quote-text">{{ quote.content | nl2br | safe }}</div>
+                <div class="quote-author">
+                    <i class="bi bi-dash-lg me-2"></i>{{ quote.category.name }}
+                </div>
             </div>
-            <div class="col-6 col-md-3">
-                <button type="submit" class="btn btn-success w-100" formnovalidate>Trích Dẫn Ngẫu Nhiên</button>
+            <div class="quote-decoration">
+                <i class="bi bi-quote quote-icon-right"></i>
+            </div>
+            <div class="quote-actions-overlay">
+                <button class="action-btn share-btn" title="Share Quote" onclick="shareQuote()">
+                    <i class="bi bi-share"></i>
+                </button>
+                <button class="action-btn favorite-btn" title="Add to Favorites" onclick="toggleFavorite()">
+                    <i class="bi bi-heart"></i>
+                </button>
             </div>
         </div>
-    </form>
+        {% else %}
+        <div class="empty-quote-state">
+            <div class="empty-icon">
+                <i class="bi bi-chat-quote"></i>
+            </div>
+            <h3>No Quotes Available</h3>
+            <p>Start building your collection by adding quotes in the management section.</p>
+            <a href="{{ url_for('manage_quotes') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-2"></i>Add First Quote
+            </a>
+        </div>
+        {% endif %}
+    </div>
 
-    <script>
-        document.getElementById('bellButton').addEventListener('click', function(e) {
-            e.preventDefault();
-            let audio = new Audio('/static/bell.mp3');
-            let count = 0;
-            const maxCount = 3;
-            const pauseBetween = 2000;
+    <!-- Control Panel -->
+    <div class="control-panel">
+        <div class="panel-section mindfulness-section">
+            <div class="section-header">
+                <h3><i class="bi bi-bell me-2"></i>Mindfulness Bell</h3>
+                <p>Ring the bell for moments of mindfulness</p>
+            </div>
+            <button id="bellButton" class="bell-button">
+                <div class="bell-icon">
+                    <i class="bi bi-bell-fill"></i>
+                </div>
+                <div class="bell-text">
+                    <span class="bell-title">Ring Bell</span>
+                    <span class="bell-subtitle">3 gentle chimes</span>
+                </div>
+                <div class="bell-ripple"></div>
+            </button>
+        </div>
 
-            function playBell() {
+        <div class="panel-section filter-section">
+            <div class="section-header">
+                <h3><i class="bi bi-funnel me-2"></i>Quote Selection</h3>
+                <p>Choose how you want to explore quotes</p>
+            </div>
+            <form method="POST" class="quote-controls">
+                <div class="control-group">
+                    <label for="category" class="control-label">
+                        <i class="bi bi-tag me-2"></i>Filter by Source
+                    </label>
+                    <select name="category" id="category" class="form-control modern-select">
+                        <option value="">All Sources</option>
+                        {% for category in categories %}
+                        <option value="{{ category.name }}" {% if category.name == selected_category %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="control-actions">
+                    <button type="submit" class="btn btn-primary control-btn">
+                        <i class="bi bi-filter me-2"></i>Filter Quotes
+                    </button>
+                    <button type="submit" class="btn btn-success control-btn" formnovalidate>
+                        <i class="bi bi-shuffle me-2"></i>Random Quote
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quote Stats Section -->
+
+</div>
+
+<!-- Share Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shareModalLabel">
+                    <i class="bi bi-share me-2"></i>Share Quote
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="share-preview">
+                    <div class="share-quote-text" id="shareQuoteText"></div>
+                    <div class="share-quote-author" id="shareQuoteAuthor"></div>
+                </div>
+                <div class="share-options">
+                    <button class="share-option" onclick="copyToClipboard()">
+                        <i class="bi bi-clipboard"></i>
+                        <span>Copy to Clipboard</span>
+                    </button>
+                    <button class="share-option" onclick="shareOnTwitter()">
+                        <i class="bi bi-twitter"></i>
+                        <span>Share on Twitter</span>
+                    </button>
+                    <button class="share-option" onclick="shareOnFacebook()">
+                        <i class="bi bi-facebook"></i>
+                        <span>Share on Facebook</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Modern Quotes Display Styles */
+.modern-quotes-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+/* Page Header - Same as manage_quotes */
+.page-header {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.header-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    box-shadow: 0 8px 25px rgba(var(--primary-color-rgb, 52, 152, 219), 0.3);
+}
+
+.header-text h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.header-text p {
+    margin: 0;
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+}
+
+/* Quote Display Section */
+.quote-display-section {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 0;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quote-showcase {
+    position: relative;
+    padding: 3rem;
+    text-align: center;
+    background: linear-gradient(135deg, 
+        rgba(var(--primary-color-rgb, 52, 152, 219), 0.05),
+        rgba(var(--accent-color-rgb, 23, 162, 184), 0.05));
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+}
+
+.quote-decoration {
+    position: absolute;
+    font-size: 4rem;
+    color: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
+    pointer-events: none;
+}
+
+.quote-icon-left {
+    top: 1rem;
+    left: 1rem;
+    transform: rotate(180deg);
+}
+
+.quote-icon-right {
+    bottom: 1rem;
+    right: 1rem;
+}
+
+.quote-content {
+    max-width: 800px;
+    z-index: 2;
+    position: relative;
+}
+
+.quote-text {
+    font-size: 1.5rem;
+    line-height: 1.8;
+    color: var(--text-color);
+    font-style: italic;
+    font-weight: 400;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.quote-author {
+    font-size: 1.1rem;
+    color: var(--secondary-color);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quote-actions-overlay {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.quote-showcase:hover .quote-actions-overlay {
+    opacity: 1;
+}
+
+.action-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.share-btn {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.2);
+    color: var(--primary-color);
+}
+
+.share-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+.favorite-btn {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+}
+
+.favorite-btn:hover {
+    background: #dc3545;
+    color: white;
+    transform: scale(1.1);
+}
+
+.favorite-btn.active {
+    background: #dc3545;
+    color: white;
+}
+
+/* Empty State */
+.empty-quote-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--secondary-color);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-quote-state h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.empty-quote-state p {
+    margin-bottom: 2rem;
+}
+
+/* Control Panel */
+.control-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.panel-section {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+}
+
+.section-header {
+    margin-bottom: 1.5rem;
+}
+
+.section-header h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+}
+
+.section-header p {
+    margin: 0;
+    color: var(--secondary-color);
+    font-size: 0.95rem;
+}
+
+/* Bell Button */
+.bell-button {
+    width: 100%;
+    padding: 1.5rem;
+    border: 2px solid rgba(var(--accent-color-rgb, 23, 162, 184), 0.2);
+    border-radius: 15px;
+    background: linear-gradient(135deg, 
+        rgba(var(--accent-color-rgb, 23, 162, 184), 0.05),
+        rgba(var(--primary-color-rgb, 52, 152, 219), 0.05));
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.bell-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(var(--accent-color-rgb, 23, 162, 184), 0.2);
+    border-color: var(--accent-color);
+}
+
+.bell-button:active {
+    transform: scale(0.98);
+}
+
+.bell-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.bell-text {
+    flex: 1;
+    text-align: left;
+}
+
+.bell-title {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 0.25rem;
+}
+
+.bell-subtitle {
+    display: block;
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+}
+
+.bell-ripple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(var(--accent-color-rgb, 23, 162, 184), 0.3);
+    transform: translate(-50%, -50%);
+    transition: all 0.6s ease;
+}
+
+.bell-button.ringing .bell-ripple {
+    width: 200px;
+    height: 200px;
+    opacity: 0;
+}
+
+/* Quote Controls */
+.quote-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-label {
+    font-weight: 600;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.modern-select {
+    border: 2px solid var(--navbar-border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    background: var(--card-bg);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.modern-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
+    transform: translateY(-1px);
+}
+
+.control-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.control-btn {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+/* Stats Section */
+.stats-section {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.05);
+    border: 1px solid var(--navbar-border);
+    border-radius: 15px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.stat-info {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--secondary-color);
+    font-weight: 500;
+}
+
+/* Share Modal */
+.share-preview {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.05);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.share-quote-text {
+    font-size: 1.1rem;
+    font-style: italic;
+    color: var(--text-color);
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.share-quote-author {
+    color: var(--secondary-color);
+    font-weight: 600;
+}
+
+.share-options {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.share-option {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border: 2px solid var(--navbar-border);
+    border-radius: 12px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.share-option:hover {
+    border-color: var(--primary-color);
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.05);
+    transform: translateY(-1px);
+    color: var(--text-color);
+}
+
+.share-option i {
+    font-size: 1.25rem;
+    width: 24px;
+    text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modern-quotes-container {
+        padding: 0 1rem;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .header-text h1 {
+        font-size: 2rem;
+    }
+    
+    .control-panel {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .quote-text {
+        font-size: 1.25rem;
+    }
+    
+    .quote-showcase {
+        padding: 2rem 1.5rem;
+    }
+    
+    .quote-decoration {
+        font-size: 3rem;
+    }
+    
+    .control-actions {
+        flex-direction: column;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+    }
+    
+    .bell-button {
+        padding: 1rem;
+    }
+    
+    .bell-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .page-header,
+    .quote-display-section,
+    .panel-section,
+    .stats-section {
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .quote-actions-overlay {
+        position: relative;
+        top: auto;
+        right: auto;
+        opacity: 1;
+        justify-content: center;
+        margin-top: 1rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .header-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+}
+
+/* Animations */
+.quote-showcase {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.stat-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Bell animation */
+@keyframes bellRing {
+    0%, 100% { transform: rotate(0deg); }
+    10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+    20%, 40%, 60%, 80% { transform: rotate(10deg); }
+}
+
+.bell-button.ringing .bell-icon {
+    animation: bellRing 1s ease-in-out;
+}
+
+/* Loading states */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Focus states for accessibility */
+.bell-button:focus,
+.control-btn:focus,
+.action-btn:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+</style>
+
+<script>
+// Bell functionality
+document.getElementById('bellButton').addEventListener('click', function(e) {
+    e.preventDefault();
+    
+    // Add visual feedback
+    this.classList.add('ringing');
+    
+    let audio = new Audio('/static/bell.mp3');
+    let count = 0;
+    const maxCount = 3;
+    const pauseBetween = 2000;
+
+    function playBell() {
+        if (count < maxCount) {
+            audio.play().catch(e => console.log('Audio play failed:', e));
+            count++;
+            audio.onended = function() {
                 if (count < maxCount) {
-                    audio.play();
-                    count++;
-                    audio.onended = function() {
-                        if (count < maxCount) {
-                            setTimeout(playBell, pauseBetween);
-                        }
-                    };
+                    setTimeout(playBell, pauseBetween);
+                } else {
+                    // Remove visual feedback when done
+                    document.getElementById('bellButton').classList.remove('ringing');
                 }
-            }
+            };
+        }
+    }
 
-            playBell();
-            audio = new Audio('/static/bell.mp3');
+    playBell();
+    
+    // Reset audio object for next use
+    setTimeout(() => {
+        audio = new Audio('/static/bell.mp3');
+    }, maxCount * (pauseBetween + 1000));
+});
+
+// Share functionality
+function shareQuote() {
+    {% if quote %}
+    const quoteText = `{{ quote.content | safe | e }}`;
+    const quoteAuthor = `{{ quote.category.name | e }}`;
+    
+    document.getElementById('shareQuoteText').innerText = quoteText;
+    document.getElementById('shareQuoteAuthor').innerText = `— ${quoteAuthor}`;
+    
+    const shareModal = new bootstrap.Modal(document.getElementById('shareModal'));
+    shareModal.show();
+    {% endif %}
+}
+
+function copyToClipboard() {
+    {% if quote %}
+    const text = `"{{ quote.content | safe | e }}" — {{ quote.category.name | e }}`;
+    navigator.clipboard.writeText(text).then(() => {
+        // Show success feedback
+        const btn = event.target.closest('.share-option');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i><span>Copied!</span>';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+    });
+    {% endif %}
+}
+
+function shareOnTwitter() {
+    {% if quote %}
+    const text = `"{{ quote.content | safe | e }}" — {{ quote.category.name | e }}`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+    {% endif %}
+}
+
+function shareOnFacebook() {
+    {% if quote %}
+    const text = `"{{ quote.content | safe | e }}" — {{ quote.category.name | e }}`;
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+    {% endif %}
+}
+
+// Favorite functionality
+let isFavorite = false;
+function toggleFavorite() {
+    const btn = document.querySelector('.favorite-btn');
+    const icon = btn.querySelector('i');
+    
+    isFavorite = !isFavorite;
+    
+    if (isFavorite) {
+        btn.classList.add('active');
+        icon.className = 'bi bi-heart-fill';
+        btn.title = 'Remove from Favorites';
+    } else {
+        btn.classList.remove('active');
+        icon.className = 'bi bi-heart';
+        btn.title = 'Add to Favorites';
+    }
+    
+    // Add animation
+    btn.style.transform = 'scale(1.2)';
+    setTimeout(() => {
+        btn.style.transform = 'scale(1)';
+    }, 200);
+    
+    // Here you would typically make an AJAX call to save the favorite status
+    console.log('Favorite status:', isFavorite);
+}
+
+// Form submission loading state
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() {
+            const submitBtns = form.querySelectorAll('button[type="submit"]');
+            submitBtns.forEach(btn => {
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Loading...';
+                btn.disabled = true;
+                
+                // Reset after 5 seconds as fallback
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 5000);
+            });
         });
-    </script>
+    });
+
+    // Animate stats cards on load
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+
 {% endblock %}
