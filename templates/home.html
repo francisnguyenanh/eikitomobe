@@ -613,31 +613,36 @@
                             </a></li>
                         </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('manage_quotes') }}">
-                            <i class="bi bi-chat-quote"></i> Quote
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-book"></i> Learning
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="learningDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('knowledge') }}">
+                                <i class="bi bi-lightbulb"></i> Knowledge
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('manage_quotes') }}">
+                                <i class="bi bi-chat-quote"></i> Quote
+                            </a></li>
+                        </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('knowledge') }}">
-                            <i class="bi bi-lightbulb"></i>
-                            <span>Knowledge</span>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="wellnessDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-heart-pulse"></i> Wellness
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('breath') }}">
-                            <i class="bi bi-wind"></i> Breath
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('eye_exercise') }}">
-                            <i class="bi bi-eye"></i> Eyes 
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('game_flip') }}">
-                            <i class="bi bi-controller"></i> Game
-                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="wellnessDropdown">
+                            <li class="nav-item">
+                                <a class="dropdown-item" href="{{ url_for('breath') }}">
+                                    <i class="bi bi-wind"></i> Breath
+                                </a>
+                            </li>
+                            <li><a class="dropdown-item" href="{{ url_for('eye_exercise') }}">
+                                <i class="bi bi-eye"></i> Eye Exercise
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('game_flip') }}">
+                                <i class="bi bi-controller"></i> Memory Game
+                            </a></li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#settingsModal">
