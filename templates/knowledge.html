@@ -798,21 +798,696 @@
     }
 }
 
+
+/*Trending and News Items */
+.category-section {
+    border-left: 3px solid var(--bs-primary);
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.category-section h6 {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.trending-item {
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+}
+
+.trending-item:hover {
+    background: rgba(var(--bs-primary-rgb), 0.1);
+    border-color: var(--bs-primary) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.news-item {
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+}
+
+.news-item:hover {
+    background: rgba(var(--bs-info-rgb), 0.1);
+    border-color: var(--bs-info) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.news-item h6 {
+    font-size: 0.9rem;
+    line-height: 1.3;
+    color: var(--bs-dark);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.news-item h6 a {
+    color: var(--bs-dark);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.news-item h6 a:hover {
+    color: var(--bs-primary);
+    text-decoration: underline;
+}
+
+.badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .trending-item,
+    .news-item {
+        font-size: 0.8rem;
+    }
+    
+    .category-section h6 {
+        font-size: 0.85rem;
+    }
+    
+    .news-item h6 {
+        font-size: 0.85rem;
+    }
+}
+
+/* Loading spinner */
+.loading-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid var(--bs-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Skeleton loading animation */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+.skeleton-text {
+    height: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-text.short {
+    width: 60%;
+}
+
+.skeleton-text.medium {
+    width: 80%;
+}
+
+.skeleton-text.long {
+    width: 100%;
+}
+
+.skeleton-card {
+    padding: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+}
+
+/* Fast loading indicator */
+.fast-loader {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 0.8s linear infinite;
+}
+
+.news-item .badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.news-item p {
+    color: var(--secondary-color);
+    line-height: 1.4;
+}
+
+/* News item content layout */
+.news-item .d-flex {
+    margin-top: 0.75rem;
+}
+
+/* Button styling for news items */
+.news-item .btn {
+    font-size: 0.8rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.news-item .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+/* Responsive adjustments for news items */
+@media (max-width: 768px) {
+    .news-item {
+        font-size: 0.8rem;
+        padding: 1rem !important;
+    }
+    
+    .news-item h6 {
+        font-size: 0.85rem;
+    }
+    
+    .news-item .btn {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.6rem;
+    }
+    
+    .news-item .d-flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .news-item .badge {
+        align-self: flex-start;
+    }
+    
+    .news-item .btn {
+        align-self: flex-end;
+        width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .news-item {
+        padding: 0.75rem !important;
+    }
+    
+    .news-item h6 {
+        font-size: 0.8rem;
+        line-height: 1.2;
+    }
+    
+    .news-item p {
+        font-size: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .news-item .btn {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .news-item .d-flex {
+        margin-top: 0.5rem;
+    }
+}
+.news-title-link {
+    color: var(--bs-dark);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: block;
+}
+
+.news-title-link:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+    text-decoration-color: var(--primary-color);
+    text-underline-offset: 2px;
+}
+
+.news-title-link:focus {
+    color: var(--primary-color);
+    outline: 2px solid rgba(var(--primary-color-rgb), 0.3);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Dark mode support for news links */
+[data-theme="dark"] .news-title-link {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .news-title-link:hover {
+    color: var(--primary-color);
+}
+
+/* Responsive adjustments for news title links */
+@media (max-width: 768px) {
+    .news-title-link {
+        font-size: 0.85rem;
+        line-height: 1.3;
+    }
+}
+
+@media (max-width: 480px) {
+    .news-title-link {
+        font-size: 0.8rem;
+        line-height: 1.2;
+    }
+}
+
+/* Hover effect for entire news item when hovering title */
+.news-item:has(.news-title-link:hover) {
+    border-color: var(--primary-color) !important;
+    background: rgba(var(--primary-color-rgb), 0.05);
+}
+
+/* Visual indicator that title is clickable */
+.news-title-link::after {
+    content: ' ↗';
+    font-size: 0.8em;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    color: var(--primary-color);
+}
+
+.news-title-link:hover::after {
+    opacity: 1;
+}
+
+/* Ensure proper spacing with summary */
+.news-item h6 {
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+}
+/* Language sections */
+.language-section {
+    border-left: 3px solid var(--bs-secondary);
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.language-section h6 {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.language-section .news-item {
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Language-specific styling */
+.language-section:has(h6.text-warning) {
+    border-left-color: var(--bs-warning);
+}
+
+.language-section:has(h6.text-primary) {
+    border-left-color: var(--bs-primary);
+}
+
+.language-section:has(h6.text-danger) {
+    border-left-color: var(--bs-danger);
+}
+
+/* Badge group styling */
+.news-item .d-flex .badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+/* Summary box styling */
+.bg-light {
+    background-color: rgba(var(--bs-light-rgb), 0.5) !important;
+    border: 1px solid rgba(var(--bs-border-color), 0.2);
+}
+
+[data-theme="dark"] .bg-light {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--text-color);
+}
+
+/* Responsive adjustments for language sections */
+@media (max-width: 768px) {
+    .language-section {
+        padding-left: 0.75rem;
+        margin-left: 0.25rem;
+    }
+    
+    .language-section h6 {
+        font-size: 0.85rem;
+    }
+    
+    .news-item .d-flex {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .news-item .btn {
+        align-self: flex-end;
+        width: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .language-section {
+        padding-left: 0.5rem;
+        margin-left: 0;
+    }
+    
+    .news-item {
+        padding: 0.75rem !important;
+    }
+    
+    .news-item h6 {
+        font-size: 0.8rem;
+        line-height: 1.2;
+    }
+}
+.news-item {
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem !important;
+}
+
+.news-item h6 {
+    font-size: 0.85rem;
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+}
+
+.news-item .badge-sm {
+    font-size: 0.65rem;
+    font-weight: 500;
+    padding: 0.2rem 0.4rem;
+}
+
+.language-section h6 {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.language-section {
+    border-left: 3px solid var(--bs-secondary);
+    padding-left: 0.75rem;
+    margin-left: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+/* Summary box compact */
+.bg-light {
+    background-color: rgba(var(--bs-light-rgb), 0.5) !important;
+    border: 1px solid rgba(var(--bs-border-color), 0.2);
+    font-size: 0.75rem;
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+    .news-item {
+        padding: 0.4rem !important;
+        font-size: 0.75rem;
+    }
+    
+    .news-item h6 {
+        font-size: 0.8rem;
+    }
+    
+    .language-section {
+        padding-left: 0.5rem;
+        margin-left: 0;
+    }
+    
+    .language-section h6 {
+        font-size: 0.85rem;
+    }
+}
+.trending-item {
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+}
+
+.trending-item:hover {
+    background: rgba(var(--bs-primary-rgb), 0.1);
+    border-color: var(--bs-primary) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.trending-item .d-flex {
+    gap: 0.5rem;
+    min-height: 2rem;
+}
+
+.trending-item .badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.35rem 0.6rem;
+    border-radius: 12px;
+    white-space: nowrap;
+    min-width: fit-content;
+}
+
+.trending-item strong {
+    font-weight: 600;
+    color: var(--bs-dark);
+    line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.trending-item .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 15px;
+    white-space: nowrap;
+    min-width: fit-content;
+}
+
+.trending-item small {
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+    padding-left: 0.5rem;
+}
+
+.trending-item small a {
+    color: var(--bs-info);
+    text-decoration: none;
+}
+
+.trending-item small a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive adjustments for trending items */
+@media (max-width: 768px) {
+    .trending-item {
+        font-size: 0.8rem;
+        padding: 0.75rem !important;
+    }
+    
+    .trending-item .d-flex {
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        align-items: stretch;
+    }
+    
+    .trending-item .badge {
+        font-size: 0.65rem;
+        padding: 0.3rem 0.5rem;
+        order: 1;
+        align-self: flex-start;
+    }
+    
+    .trending-item strong {
+        order: 2;
+        flex: 1 1 100%;
+        text-align: left;
+        margin: 0.25rem 0;
+        font-size: 0.85rem;
+    }
+    
+    .trending-item .btn {
+        order: 3;
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+        align-self: flex-end;
+        margin-left: auto;
+    }
+}
+
+@media (max-width: 480px) {
+    .trending-item {
+        padding: 0.6rem !important;
+        font-size: 0.75rem;
+    }
+    
+    .trending-item .d-flex {
+        gap: 0.3rem;
+    }
+    
+    .trending-item .badge {
+        font-size: 0.6rem;
+        padding: 0.25rem 0.4rem;
+    }
+    
+    .trending-item strong {
+        font-size: 0.8rem;
+        line-height: 1.3;
+    }
+    
+    .trending-item .btn {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.35rem;
+    }
+    
+    .trending-item small {
+        font-size: 0.7rem;
+        padding-left: 0.25rem;
+    }
+}
+
+/* Dark mode support */
+[data-theme="dark"] .trending-item strong {
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .trending-item:hover strong {
+    color: var(--primary-color);
+}
+
+/* Category section adjustments */
+.category-section {
+    border-left: 3px solid var(--bs-primary);
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.category-section h6 {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Responsive category sections */
+@media (max-width: 768px) {
+    .category-section {
+        padding-left: 0.75rem;
+        margin-left: 0.25rem;
+    }
+    
+    .category-section h6 {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .category-section {
+        padding-left: 0.5rem;
+        margin-left: 0;
+    }
+    
+    .category-section h6 {
+        font-size: 0.8rem;
+    }
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Daily Keyword Section -->
 <div class="daily-keyword-section">
-    <div class="daily-keyword-content">
-        <div id="dailyKeywordContainer">
-            <div class="text-center">
-                <div class="loading-spinner"></div>
-                <p class="mt-2">Loading daily keyword...</p>
+        <div class="daily-keyword-content">
+            <div id="dailyKeywordContainer">
+                <div class="text-center">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-2">Loading daily keyword...</p>
+                </div>
+            </div>
+            
+            <!-- Trending Section -->
+            <div class="mt-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6><i class="bi bi-trending-up me-2"></i>Trending Keywords</h6>
+                                <div class="fast-loader d-none" id="trendingLoader"></div>
+                            </div>
+                            <div class="card-body" id="trendingKeywords">
+                                <!-- Skeleton loading -->
+                                <div class="skeleton-content">
+                                    <div class="skeleton-card">
+                                        <div class="skeleton skeleton-text medium"></div>
+                                        <div class="skeleton skeleton-text short"></div>
+                                    </div>
+                                    <div class="skeleton-card">
+                                        <div class="skeleton skeleton-text long"></div>
+                                        <div class="skeleton skeleton-text medium"></div>
+                                    </div>
+                                    <div class="skeleton-card">
+                                        <div class="skeleton skeleton-text short"></div>
+                                        <div class="skeleton skeleton-text long"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6><i class="bi bi-newspaper me-2"></i>Latest Articles</h6>
+                                <div class="fast-loader d-none" id="newsLoader"></div>
+                            </div>
+                            <div class="card-body" id="newsArticles">
+                                <!-- Skeleton loading -->
+                                <div class="skeleton-content">
+                                    <div class="skeleton-card">
+                                        <div class="skeleton skeleton-text long"></div>
+                                        <div class="skeleton skeleton-text medium"></div>
+                                        <div class="skeleton skeleton-text short"></div>
+                                    </div>
+                                    <div class="skeleton-card">
+                                        <div class="skeleton skeleton-text medium"></div>
+                                        <div class="skeleton skeleton-text long"></div>
+                                        <div class="skeleton skeleton-text short"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
 <!-- Stats Footer Section -->
 <div class="stats-footer">
@@ -860,6 +1535,73 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load data on page load
     loadStats();
     loadDailyKeyword();
+
+    // Lazy load trending and news after main content
+    setTimeout(() => {
+        preloadTrendingAndNews();
+    }, 1000);
+
+    function preloadTrendingAndNews() {
+        // Show loading state immediately
+        document.getElementById('trendingKeywords').innerHTML = `
+            <div class="text-center">
+                <div class="loading-spinner"></div>
+                <p class="mt-2">Loading trends...</p>
+            </div>
+        `;
+        
+        document.getElementById('newsArticles').innerHTML = `
+            <div class="text-center">
+                <div class="loading-spinner"></div>
+                <p class="mt-2">Loading news...</p>
+            </div>
+        `;
+        
+        // Load both in parallel
+        Promise.allSettled([
+            fetch('/api/trending_keywords').then(r => r.json()),
+            fetch('/api/news_articles').then(r => r.json())
+        ]).then(results => {
+            // Handle trending keywords
+            const [trendingResult, newsResult] = results;
+            
+            if (trendingResult.status === 'fulfilled' && trendingResult.value.status === 'success') {
+                displayTrendingKeywords(trendingResult.value.keywords);
+            } else {
+                displayTrendingError();
+            }
+            
+            if (newsResult.status === 'fulfilled' && newsResult.value.status === 'success') {
+                displayNewsArticles(newsResult.value.articles);
+            } else {
+                displayNewsError();
+            }
+        });
+    }
+
+    function displayTrendingError() {
+        document.getElementById('trendingKeywords').innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-wifi-off"></i>
+                <p>Unable to load trends</p>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadTrendingKeywords()">
+                    <i class="bi bi-arrow-clockwise"></i> Retry
+                </button>
+            </div>
+        `;
+    }
+
+    function displayNewsError() {
+        document.getElementById('newsArticles').innerHTML = `
+            <div class="text-center text-muted">
+                <i class="bi bi-wifi-off"></i>
+                <p>Unable to load news</p>
+                <button class="btn btn-sm btn-outline-info" onclick="loadNewsArticles()">
+                    <i class="bi bi-arrow-clockwise"></i> Retry
+                </button>
+            </div>
+        `;
+    }
 
     function loadStats() {
         fetch('/api/keywords_stats')
@@ -1358,6 +2100,475 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     };
+    function loadTrendingKeywords() {
+        const container = document.getElementById('trendingKeywords');
+        const loader = document.getElementById('trendingLoader');
+        
+        // Show skeleton and loader
+        container.innerHTML = `
+            <div class="skeleton-content">
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-text medium"></div>
+                    <div class="skeleton skeleton-text short"></div>
+                </div>
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-text long"></div>
+                    <div class="skeleton skeleton-text medium"></div>
+                </div>
+            </div>
+        `;
+        loader.classList.remove('d-none');
+        
+        fetch('/api/trending_keywords')
+            .then(response => response.json())
+            .then(data => {
+                loader.classList.add('d-none');
+                if (data.status === 'success') {
+                    displayTrendingKeywords(data.keywords);
+                } else {
+                    throw new Error(data.message);
+                }
+            })
+            .catch(error => {
+                loader.classList.add('d-none');
+                displayTrendingError();
+            });
+    }
+
+    function displayTrendingKeywords(keywords) {
+        const container = document.getElementById('trendingKeywords');
+        
+        if (keywords.length === 0) {
+            container.innerHTML = '<p class="text-muted">No trending keywords found</p>';
+            return;
+        }
+        
+        // Group by category for better display
+        const grouped = keywords.reduce((acc, item) => {
+            if (!acc[item.category]) acc[item.category] = [];
+            acc[item.category].push(item);
+            return acc;
+        }, {});
+        
+        const categoryColors = {
+            'culture': 'primary',
+            'politics': 'danger', 
+            'society': 'success',
+            'religion': 'info',
+            'science': 'warning',
+            'history': 'secondary',
+            'health': 'success',
+            'sports': 'primary',
+            'law': 'dark',
+            'education': 'info',
+            'vietnam': 'warning'
+        };
+        
+        const categoryIcons = {
+            'culture': 'bi-palette',
+            'politics': 'bi-bank',
+            'society': 'bi-people',
+            'religion': 'bi-peace',
+            'science': 'bi-flask',
+            'history': 'bi-clock-history',
+            'health': 'bi-heart-pulse',
+            'sports': 'bi-trophy',
+            'law': 'bi-scales',
+            'education': 'bi-book',
+            'vietnam': 'bi-flag'
+        };
+        
+        const categoryLabels = {
+            'culture': 'Văn hóa',
+            'politics': 'Chính trị',
+            'society': 'Xã hội',
+            'religion': 'Tôn giáo',
+            'science': 'Khoa học',
+            'history': 'Lịch sử',
+            'health': 'Sức khỏe',
+            'sports': 'Thể thao',
+            'law': 'Pháp luật',
+            'education': 'Giáo dục',
+            'vietnam': 'Việt Nam'
+        };
+        
+        let keywordsHtml = '';
+        
+        // Sort categories for better display
+        const sortedCategories = Object.keys(grouped).sort();
+        
+        for (const category of sortedCategories) {
+            const items = grouped[category];
+            const color = categoryColors[category] || 'secondary';
+            const icon = categoryIcons[category] || 'bi-tag';
+            const label = categoryLabels[category] || category;
+            
+            keywordsHtml += `
+                <div class="category-section mb-3" style="border-left-color: var(--bs-${color});">
+                    <h6 class="text-${color}">
+                    </h6>
+                    ${items.slice(0, 3).map(item => `
+                        <div class="trending-item mb-2 p-2 border rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-${color} flex-shrink-0">${label}</span>
+                                <strong class="flex-grow-1 text-center mx-2">${item.keyword}</strong>
+                                <button class="btn btn-sm btn-outline-${color} flex-shrink-0" onclick="exploreKeyword('${item.keyword}', '${item.category}')">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-1">
+                                From: <a href="${item.url}" target="_blank" title="${item.feed_source}">${item.source}</a>
+                            </small>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        container.innerHTML = keywordsHtml;
+    }
+
+    // Load news articles
+    function loadNewsArticles() {
+        const container = document.getElementById('newsArticles');
+        container.innerHTML = '<div class="text-center"><div class="loading-spinner"></div><p class="mt-2">Loading news...</p></div>';
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        
+        fetch('/api/news_articles', { 
+            signal: controller.signal,
+            cache: 'default'
+        })
+            .then(response => {
+                clearTimeout(timeoutId);
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    displayNewsArticles(data.articles);
+                } else {
+                    throw new Error(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading news articles:', error);
+                if (error.name === 'AbortError') {
+                    container.innerHTML = `
+                        <div class="text-center text-warning">
+                            <i class="bi bi-clock"></i>
+                            <p>Loading took too long</p>
+                            <button class="btn btn-sm btn-outline-info" onclick="loadNewsArticles()">
+                                <i class="bi bi-arrow-clockwise"></i> Try Again
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    displayNewsError();
+                }
+            });
+    }
+
+    function displayNewsArticles(articles) {
+        const container = document.getElementById('newsArticles');
+        
+        if (articles.length === 0) {
+            container.innerHTML = '<p class="text-muted">No articles found</p>';
+            return;
+        }
+        
+        const categoryColors = {
+            'culture': 'primary',
+            'politics': 'danger', 
+            'society': 'success',
+            'religion': 'info',
+            'science': 'warning',
+            'history': 'secondary',
+            'health': 'success',
+            'sports': 'primary',
+            'law': 'dark',
+            'education': 'info',
+            'vietnam': 'warning'
+        };
+        
+        const categoryLabels = {
+            'culture': 'Văn hóa',
+            'politics': 'Chính trị',
+            'society': 'Xã hội',
+            'religion': 'Tôn giáo',
+            'science': 'Khoa học',
+            'history': 'Lịch sử',
+            'health': 'Sức khỏe',
+            'sports': 'Thể thao',
+            'law': 'Pháp luật',
+            'education': 'Giáo dục',
+            'vietnam': 'Việt Nam'
+        };
+        
+        const languageColors = {
+            'vietnamese': 'warning',
+            'english': 'primary',
+            'japanese': 'danger'
+        };
+        
+        const languageIcons = {
+            'vietnamese': 'bi-flag',
+            'english': 'bi-globe',
+            'japanese': 'bi-translate'
+        };
+        
+        // Group articles by language for better display
+        const groupedByLanguage = articles.reduce((acc, article) => {
+            const lang = article.language || 'unknown';
+            if (!acc[lang]) acc[lang] = [];
+            acc[lang].push(article);
+            return acc;
+        }, {});
+        
+        let articlesHtml = '';
+        
+        // Sort languages: Vietnamese, English, Japanese
+        const languageOrder = ['vietnamese', 'english', 'japanese'];
+        
+        for (const language of languageOrder) {
+            const langArticles = groupedByLanguage[language] || [];
+            if (langArticles.length === 0) continue;
+            
+            const langColor = languageColors[language] || 'secondary';
+            const langIcon = languageIcons[language] || 'bi-globe';
+            const langDisplay = langArticles[0]?.language_display || language;
+            
+            articlesHtml += `
+                <div class="language-section mb-3">
+                    ${langArticles.map(article => {
+                        const categoryColor = categoryColors[article.display_category || article.category] || 'info';
+                        const categoryLabel = categoryLabels[article.display_category || article.category] || 
+                                            (article.display_category || article.category);
+                        
+                        return `
+                            <div class="news-item mb-2 p-2 border rounded" style="border-left: 3px solid var(--bs-${langColor});">
+                                <h6 class="mb-1">
+                                    <a href="${article.url}" target="_blank" class="news-title-link">${article.title}</a>
+                                </h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex gap-1 flex-wrap">
+                                        <span class="badge bg-${categoryColor} badge-sm">${categoryLabel}</span>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-${categoryColor}" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;" onclick="analyzeArticle('${article.url}', '${article.title.replace(/'/g, "\\'")}')">
+                                        <i class="bi bi-search"></i> Analyze
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+        
+        // Show language breakdown summary
+        const breakdown = Object.entries(groupedByLanguage)
+            .map(([lang, arts]) => `${arts[0]?.language_display || lang}: ${arts.length}`)
+            .join(' • ');
+        
+        container.innerHTML = `
+            <div class="mb-2 p-2 bg-light rounded">
+            </div>
+            ${articlesHtml}
+        `;
+    }
+
+
+    // Explore keyword with AI
+    // Enhanced explore function for social topics
+    function exploreKeyword(keyword, category) {
+        // Load AI settings
+        fetch('/api/config')
+            .then(response => response.json())
+            .then(config => {
+                let template = config.ai_question_template || 
+                    "1.hãy nêu tổng quan về {keyword}. 2.giải thích chi tiết bằng tiếng anh, tiếng việt và tiếng nhật. 3.cho bảng từ vựng liên quan.";
+                
+                // Add category-specific context
+                const categoryContext = {
+                    'culture': 'về mặt văn hóa, nghệ thuật, truyền thống',
+                    'politics': 'về mặt chính trị, chính sách, quản trị',
+                    'society': 'về mặt xã hội, cộng đồng, đời sống',
+                    'religion': 'về mặt tôn giáo, tín ngưỡng, tâm linh',
+                    'science': 'về mặt khoa học, nghiên cứu, công nghệ',
+                    'history': 'về mặt lịch sử, quá khứ, di sản',
+                    'health': 'về mặt sức khỏe, y tế, chăm sóc',
+                    'sports': 'về mặt thể thao, vận động, thi đấu',
+                    'law': 'về mặt pháp luật, luật pháp, quy định',
+                    'education': 'về mặt giáo dục, học tập, đào tạo',
+                    'vietnam': 'trong bối cảnh Việt Nam'
+                };
+                
+                if (categoryContext[category]) {
+                    template = template.replace('{keyword}', `{keyword} ${categoryContext[category]}`);
+                }
+                
+                const question = template.replace('{keyword}', keyword);
+                
+                // Load AI settings to get enabled services in order
+                fetch('/ai_settings')
+                    .then(response => response.json())
+                    .then(aiSettings => {
+                        // Define priority order of AI services
+                        const aiServices = [
+                            {
+                                name: 'chatgpt',
+                                enabled: aiSettings.chatgpt_enabled,
+                                url: aiSettings.chatgpt_url,
+                                fallback: 'https://chat.openai.com/?q={query}'
+                            },
+                            {
+                                name: 'grok',
+                                enabled: aiSettings.grok_enabled,
+                                url: aiSettings.grok_url,
+                                fallback: 'https://grok.com/?q={query}'
+                            },
+                            {
+                                name: 'perplexity',
+                                enabled: aiSettings.perplexity_enabled,
+                                url: aiSettings.perplexity_url,
+                                fallback: 'https://www.perplexity.ai/?q={query}'
+                            },
+                            {
+                                name: 'you',
+                                enabled: aiSettings.you_enabled,
+                                url: aiSettings.you_url,
+                                fallback: 'https://you.com/search?q={query}'
+                            },
+                            {
+                                name: 'copilot',
+                                enabled: aiSettings.copilot_enabled,
+                                url: aiSettings.copilot_url,
+                                fallback: 'https://copilot.microsoft.com/?q={query}'
+                            }
+                        ];
+                        
+                        // Find the first enabled service
+                        let selectedService = null;
+                        for (const service of aiServices) {
+                            if (service.enabled) {
+                                selectedService = service;
+                                break;
+                            }
+                        }
+                        
+                        let url = null;
+                        if (selectedService) {
+                            // Use custom URL if available, otherwise use fallback
+                            const serviceUrl = selectedService.url || selectedService.fallback;
+                            url = serviceUrl.replace('{query}', encodeURIComponent(question));
+                            console.log(`Using ${selectedService.name.toUpperCase()}: ${url}`);
+                        } else {
+                            // Ultimate fallback to ChatGPT
+                            url = `https://chat.openai.com/?q=${encodeURIComponent(question)}`;
+                            console.log('No AI service enabled, using fallback ChatGPT');
+                        }
+                        
+                        window.open(url, '_blank');
+                        showMessage(`Exploring "${keyword}" in ${category} context`, 'success');
+                    })
+                    .catch(error => {
+                        console.error('Error loading AI settings:', error);
+                        // Fallback to default ChatGPT
+                        const chatgptUrl = `https://chat.openai.com/?q=${encodeURIComponent(question)}`;
+                        window.open(chatgptUrl, '_blank');
+                        showMessage('Using fallback AI service', 'info');
+                    });
+            })
+            .catch(error => {
+                console.error('Error loading config:', error);
+                const fallbackQuestion = `Tell me about ${keyword} in ${category} context with detailed analysis`;
+                const chatgptUrl = `https://chat.openai.com/?q=${encodeURIComponent(fallbackQuestion)}`;
+                window.open(chatgptUrl, '_blank');
+                showMessage('Using fallback AI service', 'info');
+            });
+    }
+
+    // Analyze article with AI
+    function analyzeArticle(url, title) {
+        const question = `Analyze this article: "${title}". URL: ${url}. 
+        1. Summarize key points in Vietnamese, English, and Japanese
+        2. Extract main concepts and vocabulary
+        3. Explain implications and related topics`;
+        
+        // Load AI settings for article analysis too
+        fetch('/ai_settings')
+            .then(response => response.json())
+            .then(aiSettings => {
+                // Same priority order for consistency
+                const aiServices = [
+                    {
+                        name: 'chatgpt',
+                        enabled: aiSettings.chatgpt_enabled,
+                        url: aiSettings.chatgpt_url,
+                        fallback: 'https://chat.openai.com/?q={query}'
+                    },
+                    {
+                        name: 'grok',
+                        enabled: aiSettings.grok_enabled,
+                        url: aiSettings.grok_url,
+                        fallback: 'https://grok.com/?q={query}'
+                    },
+                    {
+                        name: 'perplexity',
+                        enabled: aiSettings.perplexity_enabled,
+                        url: aiSettings.perplexity_url,
+                        fallback: 'https://www.perplexity.ai/?q={query}'
+                    },
+                    {
+                        name: 'you',
+                        enabled: aiSettings.you_enabled,
+                        url: aiSettings.you_url,
+                        fallback: 'https://you.com/search?q={query}'
+                    },
+                    {
+                        name: 'copilot',
+                        enabled: aiSettings.copilot_enabled,
+                        url: aiSettings.copilot_url,
+                        fallback: 'https://copilot.microsoft.com/?q={query}'
+                    }
+                ];
+                
+                // Find the first enabled service
+                let selectedService = null;
+                for (const service of aiServices) {
+                    if (service.enabled) {
+                        selectedService = service;
+                        break;
+                    }
+                }
+                
+                let analyzeUrl = null;
+                if (selectedService) {
+                    const serviceUrl = selectedService.url || selectedService.fallback;
+                    analyzeUrl = serviceUrl.replace('{query}', encodeURIComponent(question));
+                } else {
+                    // Ultimate fallback
+                    analyzeUrl = `https://chat.openai.com/?q=${encodeURIComponent(question)}`;
+                }
+                
+                window.open(analyzeUrl, '_blank');
+                showMessage(`Analyzing article: "${title}"`, 'success');
+            })
+            .catch(error => {
+                console.error('Error loading AI settings for analysis:', error);
+                // Fallback to ChatGPT
+                const chatgptUrl = `https://chat.openai.com/?q=${encodeURIComponent(question)}`;
+                window.open(chatgptUrl, '_blank');
+                showMessage(`Analyzing article: "${title}"`, 'success');
+            });
+    }
+
+    // Make functions globally available
+    window.loadTrendingKeywords = loadTrendingKeywords;
+    window.loadNewsArticles = loadNewsArticles;
+    window.exploreKeyword = exploreKeyword;
+    window.analyzeArticle = analyzeArticle;
+
 });
 </script>
 {% endblock %}

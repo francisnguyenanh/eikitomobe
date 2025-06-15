@@ -33,6 +33,11 @@ from werkzeug.utils import secure_filename
 import shutil
 import hashlib
 import json
+import feedparser
+import requests
+from datetime import datetime
+import re
+import time
 
 
 try:
@@ -70,6 +75,8 @@ login_manager.login_view = 'login'
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('requests').setLevel(logging.WARNING)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 def load_config():
     import os
@@ -192,13 +199,115 @@ def get_keywords_file_path():
 def get_kw_file_path():
     """Get path to kw.txt file"""
     file_path = os.path.join(app.root_path, 'kw.txt')
-    app.logger.info(f"kw.txt path: {file_path}")
+    # app.logger.info(f"kw.txt path: {file_path}")
     return file_path
 
 def get_method_file_path():
     """Get path to method.txt file"""
     return os.path.join(app.root_path, 'method.txt')
 
+# Global cache for RSS data
+RSS_CACHE = {}
+CACHE_DURATION = 300  # 5 minutes
+
+def get_cache_key(sources):
+    """Generate cache key from sources list"""
+    return hashlib.md5('|'.join(sorted(sources)).encode()).hexdigest()
+
+def is_cache_valid(cache_entry):
+    """Check if cache entry is still valid"""
+    if not cache_entry:
+        return False
+    return time.time() - cache_entry['timestamp'] < CACHE_DURATION
+
+def fetch_rss_with_cache(sources, category):
+    """Fetch RSS with caching - Enhanced for multi-language support"""
+    try:
+        cache_key = f"{category}_{get_cache_key(sources)}"
+        
+        # Check cache first
+        if cache_key in RSS_CACHE and is_cache_valid(RSS_CACHE[cache_key]):
+            # app.logger.info(f"Using cached data for {category}")
+            return RSS_CACHE[cache_key]['data']
+        
+        # Fetch fresh data
+        # app.logger.info(f"Fetching fresh data for {category}")
+        articles = []
+        
+        for source_url in sources[:1]:  # Chỉ lấy 1 source để giảm thời gian loading
+            try:
+                # app.logger.debug(f"Fetching from: {source_url}")
+                
+                # Enhanced headers for better international support
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (compatible; NewsBot/1.0)',
+                    'Accept': 'application/rss+xml, application/xml, text/xml',
+                    'Accept-Charset': 'utf-8'
+                }
+                
+                response = requests.get(source_url, timeout=8, headers=headers)  # Giảm timeout xuống 8s
+                
+                if response.status_code == 200:
+                    # Handle encoding properly
+                    response.encoding = response.apparent_encoding or 'utf-8'
+                    
+                    feed = feedparser.parse(response.content)
+                    
+                    # Limit entries per source - lấy nhiều hơn để có lựa chọn
+                    for entry in feed.entries[:5]:  # Lấy 5 bài để có lựa chọn
+                        try:
+                            # Parse date
+                            published = entry.get('published_parsed') or entry.get('updated_parsed')
+                            if published:
+                                pub_date = datetime(*published[:6])
+                            else:
+                                pub_date = datetime.now()
+                            
+                            # Only recent articles (last 2 days for fresher content)
+                            if (datetime.now() - pub_date).days > 2:
+                                continue
+                            
+                            # Clean and truncate content
+                            title = entry.get('title', 'No title')
+                            if len(title) > 80:
+                                title = title[:80] + '...'
+                                
+                            summary = entry.get('summary', '')
+                            summary = re.sub(r'<[^>]+>', '', summary)  # Remove HTML
+                            if len(summary) > 120:
+                                summary = summary[:120] + '...'
+                            
+                            articles.append({
+                                'title': title,
+                                'url': entry.get('link', ''),
+                                'summary': summary,
+                                'published': pub_date.isoformat(),
+                                'source': feed.feed.get('title', 'Unknown')[:40],  # Limit source name
+                                'category': category
+                            })
+                        except Exception as e:
+                            # app.logger.warning(f"Error parsing entry: {str(e)}")
+                            continue
+                            
+            except Exception as e:
+                # app.logger.warning(f"Failed to fetch {source_url}: {str(e)}")
+                continue
+        
+        # Sort by published date, most recent first
+        articles.sort(key=lambda x: x.get('published', ''), reverse=True)
+        
+        # Cache the result
+        RSS_CACHE[cache_key] = {
+            'data': articles,
+            'timestamp': time.time()
+        }
+        
+        # # app.logger.info(f"Fetched {len(articles)} articles for {category}")
+        return articles
+        
+    except Exception as e:
+        # # app.logger.error(f"Error in fetch_rss_with_cache for {category}: {str(e)}")
+        return []
 
 def load_knowledge_categories():
     """Load knowledge categories from kw.txt"""
@@ -210,10 +319,10 @@ def load_knowledge_categories():
     }
     
     try:
-        app.logger.info(f"Loading knowledge categories from: {file_path}")
+        # # app.logger.info(f"Loading knowledge categories from: {file_path}")
         
         if os.path.exists(file_path):
-            app.logger.info(f"File exists, reading content...")
+            # # app.logger.info(f"File exists, reading content...")
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
                 
@@ -226,18 +335,18 @@ def load_knowledge_categories():
                 else:
                     return default_categories
         else:
-            app.logger.info("File doesn't exist, creating with default categories")
+            # # app.logger.info("File doesn't exist, creating with default categories")
             # Create default kw.txt file
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'w', encoding='utf-8') as f:
                 json.dump(default_categories, f, ensure_ascii=False, indent=2)
-            app.logger.info(f"Created default kw.txt at: {file_path}")
+            # # app.logger.info(f"Created default kw.txt at: {file_path}")
             return default_categories
     except json.JSONDecodeError as e:
-        app.logger.error(f"JSON decode error in kw.txt: {str(e)}")
+        # # app.logger.error(f"JSON decode error in kw.txt: {str(e)}")
         return default_categories
     except Exception as e:
-        app.logger.error(f"Error loading kw.txt: {str(e)}")
+        # # app.logger.error(f"Error loading kw.txt: {str(e)}")
         return default_categories
     
 def get_ai_file_path():
@@ -275,7 +384,7 @@ def load_ai_settings():
                 json.dump(default_settings, f, ensure_ascii=False, indent=2)
             return default_settings
     except Exception as e:
-        app.logger.error(f"Error loading AI.txt: {str(e)}")
+        # # app.logger.error(f"Error loading AI.txt: {str(e)}")
         return default_settings
     
 def save_ai_settings(settings):
@@ -287,7 +396,7 @@ def save_ai_settings(settings):
             json.dump(settings, f, ensure_ascii=False, indent=2)
         return True
     except Exception as e:
-        app.logger.error(f"Error saving AI.txt: {str(e)}")
+        # # app.logger.error(f"Error saving AI.txt: {str(e)}")
         return False
 
 @app.route('/ai_settings', methods=['GET', 'POST'])
@@ -296,7 +405,7 @@ def ai_settings():
     if request.method == 'POST':
         try:
             data = request.get_json()
-            app.logger.info(f"Received AI settings data: {data}")
+            # # app.logger.info(f"Received AI settings data: {data}")
             
             # Validate only URL fields that contain {query}
             url_fields = ['chatgpt_url', 'grok_url', 'perplexity_url', 'you_url', 'copilot_url']
@@ -305,22 +414,22 @@ def ai_settings():
                 # Only validate URL fields, skip enabled fields
                 if key in url_fields and value and value.strip():
                     if '{query}' not in value:
-                        app.logger.warning(f"Invalid URL for {key}: {value}")
+                        # # app.logger.warning(f"Invalid URL for {key}: {value}")
                         return jsonify({
                             'status': 'error', 
                             'message': f'{key.replace("_url", "").title()} URL must contain {{query}} placeholder'
                         }), 400
             
-            app.logger.info("Validation passed, saving settings...")
+            # # app.logger.info("Validation passed, saving settings...")
             if save_ai_settings(data):
-                app.logger.info("AI settings saved successfully")
+                # # app.logger.info("AI settings saved successfully")
                 return jsonify({'status': 'success'})
             else:
-                app.logger.error("Failed to save AI settings")
+                # # app.logger.error("Failed to save AI settings")
                 return jsonify({'status': 'error', 'message': 'Failed to save AI settings'}), 500
                 
         except Exception as e:
-            app.logger.error(f"Error in ai_settings route: {str(e)}")
+            # # app.logger.error(f"Error in ai_settings route: {str(e)}")
             return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'}), 500
     else:
         return jsonify(load_ai_settings())
@@ -346,7 +455,7 @@ def load_criteria_methods():
                 json.dump(default_methods, f, ensure_ascii=False, indent=2)
             return default_methods
     except Exception as e:
-        app.logger.error(f"Error loading method.txt: {str(e)}")
+        # # app.logger.error(f"Error loading method.txt: {str(e)}")
         return default_methods
     
 def initialize_keywords_file():
@@ -372,7 +481,7 @@ def initialize_keywords_file():
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'w', encoding='utf-8') as f:
                 json.dump(default_data, f, ensure_ascii=False, indent=2)
-            app.logger.info(f"Created keywords.txt file at {file_path}")
+            # # app.logger.info(f"Created keywords.txt file at {file_path}")
         except Exception as e:
             app.logger.error(f"Error creating keywords.txt: {str(e)}")
             
@@ -431,7 +540,7 @@ def verify_password(password):
 try:
     pdfmetrics.registerFont(TTFont('DejaVuSans', 'DejaVuSans.ttf'))
 except Exception as e:
-    app.logger.error(f"Failed to register font: {str(e)}")
+    # # app.logger.error(f"Failed to register font: {str(e)}")
     pdfmetrics.registerFont(TTFont('DejaVuSans', 'Helvetica'))  # Fallback to Helvetica
 
 
@@ -601,7 +710,7 @@ def add_note():
             # Hàm xử lý ảnh bất đồng bộ
             def process_images(note_id, files):
                 with app.app_context():
-                    #app.logger.debug(f"Processing images for note_id {note_id}, files: {[f.filename for f in files]}")
+                    ## # app.logger.debug(f"Processing images for note_id {note_id}, files: {[f.filename for f in files]}")
                     images = []
                     for file in files:
                         if file and file.filename:
@@ -628,24 +737,20 @@ def add_note():
                                     })
                                 except Exception as e:
                                     app.logger.error(f"Error processing image {normalized_filename}: {str(e)}")
-                            else:
-                                app.logger.warning(f"Invalid file type: {normalized_filename}")
                     if images:
                         try:
                             note = Note.query.get(note_id)
                             note.images = json.dumps(images)
                             db.session.commit()
-                            #app.logger.debug(f"Images saved for note_id {note_id}: {len(images)} images")
+                            ## app.logger.debug(f"Images saved for note_id {note_id}: {len(images)} images")
                         except Exception as e:
                             app.logger.error(f"Error saving images to DB for note_id {note_id}: {str(e)}")
 
             # Lấy danh sách file và xử lý bất đồng bộ
             files = request.files.getlist('images')
-            #app.logger.debug(f"Received files: {[f.filename for f in files if f.filename]}")
+            ## app.logger.debug(f"Received files: {[f.filename for f in files if f.filename]}")
             if files and any(file.filename for file in files):
                 threading.Thread(target=process_images, args=(note.id, files)).start()
-            else:
-                app.logger.debug("No valid image files received")
 
             flash('Note added successfully!', 'success')
 
@@ -668,7 +773,7 @@ def add_note():
             return redirect(url_for('task'))
 
         except Exception as e:
-            app.logger.error(f"Error in add_note: {str(e)}")
+            # # app.logger.error(f"Error in add_note: {str(e)}")
             flash('An error occurred while adding the note.', 'danger')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'}), 500
@@ -682,7 +787,7 @@ def add_note():
 def edit_note(id):
     note = Note.query.get_or_404(id)
     if note.user_id != current_user.id:
-        app.logger.warning(f"Unauthorized access to note {id} by user {current_user.id}")
+        # # app.logger.warning(f"Unauthorized access to note {id} by user {current_user.id}")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'status': 'error', 'message': 'Unauthorized access.'}), 403
         flash('Unauthorized access.', 'danger')
@@ -699,14 +804,14 @@ def edit_note(id):
 
             # Validate required fields
             if not title:
-                app.logger.warning("Title is required.")
+                # # app.logger.warning("Title is required.")
                 flash('Title is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Title is required.'}), 400
                 return redirect(url_for('task'))
 
             if not content:
-                app.logger.warning("Content is required.")
+                # # app.logger.warning("Content is required.")
                 flash('Content is required.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Content is required.'}), 400
@@ -715,13 +820,13 @@ def edit_note(id):
             # Validate category
             categories = Category.query.filter_by(user_id=current_user.id).all()
             if not categories:
-                app.logger.warning("No categories available.")
+                # app.logger.warning("No categories available.")
                 flash('No categories available. Please create a category first.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'No categories available.'}), 400
                 return redirect(url_for('task'))
             if not category_id or not Category.query.filter_by(id=category_id, user_id=current_user.id).first():
-                app.logger.warning("Invalid category selected.")
+                # app.logger.warning("Invalid category selected.")
                 flash('Please select a valid category.', 'danger')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'status': 'error', 'message': 'Invalid category.'}), 400
@@ -733,7 +838,7 @@ def edit_note(id):
                 try:
                     due_date_utc = datetime.strptime(due_date, '%Y-%m-%dT%H:%M')
                 except ValueError as e:
-                    app.logger.error(f"Invalid due date format: {due_date}")
+                    # app.logger.error(f"Invalid due date format: {due_date}")
                     flash('Invalid due date format.', 'danger')
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return jsonify({'status': 'error', 'message': 'Invalid due date format.'}), 400
@@ -750,7 +855,7 @@ def edit_note(id):
             # Xử lý ảnh hiện có
             images = json.loads(note.images) if note.images else []
             keep_images = request.form.getlist('keep_images')
-            #app.logger.debug(f"keep_images received: {keep_images}")
+            ## app.logger.debug(f"keep_images received: {keep_images}")
             if keep_images is not None:
                 # Nếu mảng rỗng, nghĩa là không giữ lại ảnh nào
                 if len(keep_images) == 0:
@@ -762,15 +867,15 @@ def edit_note(id):
                 images = images if images else []
             note.images = json.dumps(images) if images else None
             
-            #app.logger.debug(f"Images after filtering: {images}")
-            #app.logger.debug(f"note.images after update: {note.images}")
+            ## app.logger.debug(f"Images after filtering: {images}")
+            ## app.logger.debug(f"note.images after update: {note.images}")
 
             db.session.commit()
 
             # Hàm xử lý ảnh mới bất đồng bộ
             def process_new_images(note_id, files, existing_images):
                 with app.app_context():
-                    #app.logger.debug(f"Processing new images for note_id {note_id}, files: {[f.filename for f in files]}")
+                    ## app.logger.debug(f"Processing new images for note_id {note_id}, files: {[f.filename for f in files]}")
                     new_images = existing_images[:] if existing_images else []
                     for file in files:
                         if file and file.filename:
@@ -797,23 +902,19 @@ def edit_note(id):
                                     })
                                 except Exception as e:
                                     app.logger.error(f"Error processing image {normalized_filename}: {str(e)}")
-                            else:
-                                app.logger.warning(f"Invalid file type: {normalized_filename}")
                     try:
                         note = Note.query.get(note_id)
                         note.images = json.dumps(new_images) if new_images else None
                         db.session.commit()
-                        #app.logger.debug(f"Images saved for note_id {note_id}: {len(new_images)} images")
+                        ## app.logger.debug(f"Images saved for note_id {note_id}: {len(new_images)} images")
                     except Exception as e:
                         app.logger.error(f"Error saving images to DB for note_id {note_id}: {str(e)}")
 
             # Lấy danh sách file mới và xử lý bất đồng bộ
             files = request.files.getlist('images')
-            #app.logger.debug(f"Received files for edit: {[f.filename for f in files if f.filename]}")
+            ## app.logger.debug(f"Received files for edit: {[f.filename for f in files if f.filename]}")
             if files and any(file.filename for file in files):
                 threading.Thread(target=process_new_images, args=(note.id, files, images)).start()
-            else:
-                app.logger.debug("No valid new image files received")
 
             flash('Note updated successfully!', 'success')
 
@@ -836,7 +937,7 @@ def edit_note(id):
             return redirect(url_for('task'))
 
         except Exception as e:
-            app.logger.error(f"Error in edit_note: {str(e)}")
+            # app.logger.error(f"Error in edit_note: {str(e)}")
             flash('An error occurred while updating the note.', 'danger')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'}), 500
@@ -886,7 +987,7 @@ def create_evernote_share_link(note_id):
         })
         
     except Exception as e:
-        app.logger.error(f"Error creating share link: {str(e)}")
+        # app.logger.error(f"Error creating share link: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # Route hiển thị note được chia sẻ (không cần login)
@@ -903,7 +1004,7 @@ def view_shared_evernote(share_id):
                              images=images)
         
     except Exception as e:
-        app.logger.error(f"Error viewing shared note: {str(e)}")
+        # app.logger.error(f"Error viewing shared note: {str(e)}")
         return render_template('error.html', 
                              error_message="Ghi chú không tồn tại hoặc đã bị xóa"), 404
 
@@ -1231,7 +1332,7 @@ def logout():
 def sync_notes():
     try:
         data = request.get_json()
-        #app.logger.debug(f"Received sync data: {data}")
+        ## app.logger.debug(f"Received sync data: {data}")
         for note in data.get('notes', []):
             existing_note = Note.query.get(note.get('id'))
             if existing_note and existing_note.user_id == current_user.id:
@@ -1266,10 +1367,10 @@ def sync_notes():
                 } for note in notes
             ]
         }
-        #app.logger.debug(f"Sync response: {response}")
+        ## app.logger.debug(f"Sync response: {response}")
         return response
     except Exception as e:
-        app.logger.error(f"Sync error: {str(e)}")
+        # app.logger.error(f"Sync error: {str(e)}")
         return {'error': str(e)}, 500
 
 import os
@@ -1841,8 +1942,6 @@ def upload_evernote_images(note_id):
                         
                     except Exception as e:
                         app.logger.error(f"Error processing image {normalized_filename}: {str(e)}")
-                else:
-                    app.logger.warning(f"Invalid file type: {normalized_filename}")
         
         # Cập nhật DB ngay lập tức
         note.images = json.dumps(new_images) if new_images else None
@@ -1856,7 +1955,7 @@ def upload_evernote_images(note_id):
         })
         
     except Exception as e:
-        app.logger.error(f"Error in upload_evernote_images: {str(e)}")
+        # app.logger.error(f"Error in upload_evernote_images: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 # API để lấy ảnh từ Evernote note
@@ -2000,7 +2099,7 @@ def add_todo():
         
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Error adding todo: {str(e)}")
+        # app.logger.error(f"Error adding todo: {str(e)}")
         return jsonify({'error': 'Failed to add todo'}), 500
 
 @app.route('/api/todos/<int:todo_id>', methods=['PUT'])
@@ -2066,7 +2165,7 @@ def update_todo(todo_id):
         
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Error updating todo: {str(e)}")
+        # app.logger.error(f"Error updating todo: {str(e)}")
         return jsonify({'error': 'Failed to update todo'}), 500
 
 @app.route('/api/todos/<int:todo_id>', methods=['DELETE'])
@@ -2080,7 +2179,7 @@ def delete_todo(todo_id):
             return jsonify({'error': 'Unauthorized'}), 403
         
         delete_all = request.args.get('delete_all') == 'true'
-        app.logger.info(f"Deleting todo {todo_id}, delete_all={delete_all}, parent_id={todo.parent_id}")
+        # app.logger.info(f"Deleting todo {todo_id}, delete_all={delete_all}, parent_id={todo.parent_id}")
         
         deleted_count = 1
         
@@ -2092,38 +2191,38 @@ def delete_todo(todo_id):
                 if parent:
                     # Count siblings before deleting
                     sibling_count = Todo.query.filter_by(parent_id=todo.parent_id).count()
-                    app.logger.info(f"Found {sibling_count} siblings to delete")
+                    # app.logger.info(f"Found {sibling_count} siblings to delete")
                     deleted_count = sibling_count + 1  # siblings + parent
                     
                     # Delete all siblings
                     Todo.query.filter_by(parent_id=todo.parent_id).delete()
                     # Delete parent
                     db.session.delete(parent)
-                    app.logger.info(f"Deleted parent and {sibling_count} siblings")
+                    # app.logger.info(f"Deleted parent and {sibling_count} siblings")
                 else:
                     # If no parent found, just delete this todo
                     db.session.delete(todo)
                     deleted_count = 1
-                    app.logger.info("No parent found, deleted only current todo")
+                    # app.logger.info("No parent found, deleted only current todo")
             else:
                 # This is a parent todo, delete all children
                 children_count = Todo.query.filter_by(parent_id=todo.id).count()
-                app.logger.info(f"Found {children_count} children to delete")
+                # app.logger.info(f"Found {children_count} children to delete")
                 deleted_count = children_count + 1  # children + parent
                 
                 # Delete all children
                 Todo.query.filter_by(parent_id=todo.id).delete()
                 # Delete parent (this todo)
                 db.session.delete(todo)
-                app.logger.info(f"Deleted parent and {children_count} children")
+                # app.logger.info(f"Deleted parent and {children_count} children")
         else:
             # Delete only this todo
             db.session.delete(todo)
             deleted_count = 1
-            app.logger.info("Deleted single todo")
+            # app.logger.info("Deleted single todo")
         
         db.session.commit()
-        app.logger.info(f"Successfully deleted {deleted_count} todos")
+        # app.logger.info(f"Successfully deleted {deleted_count} todos")
         
         return jsonify({
             'message': f'Deleted {deleted_count} todo(s) successfully'
@@ -2131,7 +2230,7 @@ def delete_todo(todo_id):
         
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Error deleting todo: {str(e)}")
+        # app.logger.error(f"Error deleting todo: {str(e)}")
         return jsonify({'error': 'Failed to delete todo'}), 500
 
 def generate_repeat_todos(base_todo):
@@ -2244,7 +2343,7 @@ def auto_save_diary():
                 })
                 
     except Exception as e:
-        app.logger.error(f"Error in auto_save_diary: {str(e)}")
+        # app.logger.error(f"Error in auto_save_diary: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': f'Failed to auto-save: {str(e)}'
@@ -2283,7 +2382,7 @@ def auto_save_edit_diary(diary_id):
             })
                 
     except Exception as e:
-        app.logger.error(f"Error in auto_save_edit_diary: {str(e)}")
+        # app.logger.error(f"Error in auto_save_edit_diary: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': f'Failed to auto-save: {str(e)}'
@@ -2311,14 +2410,14 @@ def api_config():
             save_config(config)
             return jsonify({'status': 'success'})
         except Exception as e:
-            app.logger.error(f"Error updating config: {str(e)}")
+            # app.logger.error(f"Error updating config: {str(e)}")
             return jsonify({'status': 'error', 'message': str(e)}), 500
     else:
         try:
             config = load_config()
             return jsonify(config)
         except Exception as e:
-            app.logger.error(f"Error loading config: {str(e)}")
+            # app.logger.error(f"Error loading config: {str(e)}")
             return jsonify({'status': 'error', 'message': str(e)}), 500
         
 def generate_knowledge_links(keyword):
@@ -2443,14 +2542,14 @@ def load_keywords_progress():
             return default_progress
             
     except Exception as e:
-        app.logger.error(f"Error loading keywords progress: {str(e)}")
+        # app.logger.error(f"Error loading keywords progress: {str(e)}")
         
         # Try to backup corrupted file
         try:
             backup_path = file_path + '.backup'
             if os.path.exists(file_path):
                 os.rename(file_path, backup_path)
-                app.logger.info(f"Corrupted file backed up to {backup_path}")
+                # app.logger.info(f"Corrupted file backed up to {backup_path}")
         except:
             pass
         
@@ -2468,7 +2567,7 @@ def save_keywords_progress(progress_data):
             json.dump(progress_data, f, ensure_ascii=False, indent=2)
         return True
     except Exception as e:
-        app.logger.error(f"Error saving keywords progress: {str(e)}")
+        # app.logger.error(f"Error saving keywords progress: {str(e)}")
         return False
 
 
@@ -2535,7 +2634,7 @@ def get_daily_keyword_api():
             'stats': progress.get('stats', {})
         })
     except Exception as e:
-        app.logger.error(f"Error getting daily keyword: {str(e)}")
+        # app.logger.error(f"Error getting daily keyword: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
@@ -2587,7 +2686,7 @@ def complete_keyword():
             }), 500
             
     except Exception as e:
-        app.logger.error(f"Error completing keyword: {str(e)}")
+        # app.logger.error(f"Error completing keyword: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
@@ -2635,7 +2734,7 @@ def uncomplete_keyword():
             }), 500
             
     except Exception as e:
-        app.logger.error(f"Error uncompleting keyword: {str(e)}")
+        # app.logger.error(f"Error uncompleting keyword: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
@@ -2674,7 +2773,7 @@ def get_keywords_stats():
             }
         })
     except Exception as e:
-        app.logger.error(f"Error getting keywords stats: {str(e)}")
+        # app.logger.error(f"Error getting keywords stats: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
@@ -2707,7 +2806,7 @@ def get_keywords(category):
             'category': category
         })
     except Exception as e:
-        app.logger.error(f"Error getting keywords for category {category}: {str(e)}")
+        # app.logger.error(f"Error getting keywords for category {category}: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
@@ -2772,7 +2871,7 @@ def get_random_keyword_api():
         if len(criteria_progress) != len(criteria):
             criteria_progress = [False] * len(criteria)
         
-        app.logger.info(f"Random keyword selected: {keyword} from category: {category}")
+        # app.logger.info(f"Random keyword selected: {keyword} from category: {category}")
         
         return jsonify({
             'status': 'success',
@@ -2787,7 +2886,7 @@ def get_random_keyword_api():
             'is_random': True  # Flag to indicate this is random
         })
     except Exception as e:
-        app.logger.error(f"Error getting random keyword: {str(e)}")
+        # app.logger.error(f"Error getting random keyword: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
@@ -2857,12 +2956,297 @@ def update_criteria():
             }), 500
             
     except Exception as e:
-        app.logger.error(f"Error updating criteria: {str(e)}")
+        # app.logger.error(f"Error updating criteria: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 500
 
+# RSS Sources - Expanded categories
+RSS_SOURCES = {
+    'vietnamese': {
+        'vietnam': [
+            'https://vnexpress.net/rss/thoi-su.rss',
+            'https://vnexpress.net/rss/the-gioi.rss',
+            'https://vnexpress.net/rss/giao-duc.rss',
+            'https://vnexpress.net/rss/suc-khoe.rss',
+            'https://tuoitre.vn/rss/chinh-tri-xa-hoi.rss',
+            'https://tuoitre.vn/rss/giao-duc.rss',
+            'https://dantri.com.vn/rss/xa-hoi.rss',
+        ],
+        'science': [
+            'https://vnexpress.net/rss/khoa-hoc.rss',
+            'https://dantri.com.vn/rss/suc-khoe.rss',
+        ],
+        'society': [
+            'https://vnexpress.net/rss/doi-song.rss',
+            'https://tuoitre.vn/rss/ban-doc.rss',
+        ]
+    },
+    'english': {
+        'culture': [
+            'https://www.bbc.com/news/entertainment_and_arts/rss.xml',
+            'https://rss.cnn.com/rss/edition_entertainment.xml',
+            'https://feeds.npr.org/1008/rss.xml',
+        ],
+        'politics': [
+            'https://www.bbc.com/news/politics/rss.xml',
+            'https://rss.cnn.com/rss/edition_politics.xml',
+            'https://feeds.npr.org/1014/rss.xml',
+        ],
+        'society': [
+            'https://www.bbc.com/news/world/rss.xml',
+            'https://rss.cnn.com/rss/edition_world.xml',
+            'https://feeds.npr.org/1001/rss.xml',
+        ],
+        'science': [
+            'https://www.sciencedaily.com/rss/all.xml',
+            'https://feeds.nature.com/nature/rss/current',
+            'https://www.newscientist.com/feed/home/',
+        ],
+        'health': [
+            'https://rss.cnn.com/rss/edition_health.xml',
+            'https://www.medicalnewstoday.com/rss',
+        ],
+        'education': [
+            'https://www.edweek.org/api/rss.xml',
+            'https://www.insidehighered.com/rss.xml',
+        ]
+    },
+    'japanese': {
+        'politics': [
+            'https://www3.nhk.or.jp/rss/news/cat0.xml',  # NHK Politics
+            'https://feeds.tokyo-np.co.jp/rss/index.rdf',  # Tokyo Shimbun
+        ],
+        'society': [
+            'https://www3.nhk.or.jp/rss/news/cat1.xml',  # NHK Society
+            'https://www.asahi.com/rss/asahi/newsheadlines.rdf',  # Asahi Shimbun
+        ],
+        'science': [
+            'https://www3.nhk.or.jp/rss/news/cat5.xml',  # NHK Science
+            'https://feeds.mainichi.jp/mainichi/rss/today.rss',  # Mainichi Science
+        ],
+        'culture': [
+            'https://www3.nhk.or.jp/rss/news/cat6.xml',  # NHK Culture
+        ],
+        'health': [
+            'https://www3.nhk.or.jp/rss/news/cat7.xml',  # NHK Health
+        ]
+    }
+}
 
+@app.route('/api/trending_keywords')
+@login_required
+def get_trending_keywords():
+    """Get trending keywords from RSS feeds - Fixed version"""
+    try:
+        all_keywords = []
+        
+        # Process each language group correctly
+        for language, categories in RSS_SOURCES.items():
+            # app.loggeinfo(f"Processing language: {language}")
+            
+            for category, feeds in categories.items():
+                try:
+                    # app.loggeinfo(f"Processing category: {category} with {len(feeds)} feeds")
+                    category_key = f"{language}_{category}"
+                    articles = fetch_rss_with_cache(feeds, category_key)
+                    
+                    # app.loggeinfo(f"Got {len(articles)} articles for {category_key}")
+                    
+                    for article in articles[:2]:  # Limit processing to 2 articles
+                        try:
+                            text = f"{article.get('title', '')} {article.get('summary', '')}"
+                            keywords = extract_domain_keywords_from_text(text, category)
+                            
+                            for keyword in keywords[:1]:  # Top 1 keyword per article
+                                all_keywords.append({
+                                    'keyword': keyword,
+                                    'category': category,
+                                    'language': language,
+                                    'source': article.get('source', 'Unknown')[:30],
+                                    'url': article.get('url', ''),
+                                    'feed_source': article.get('source', 'Unknown')
+                                })
+                        except Exception as e:
+                            # app.loggewarning(f"Error processing article: {str(e)}")
+                            continue
+                            
+                except Exception as e:
+                    # app.loggewarning(f"Error processing category {category}: {str(e)}")
+                    continue
+        
+        # app.loggeinfo(f"Total keywords found: {len(all_keywords)}")
+        
+        # Remove duplicates and limit
+        unique_keywords = []
+        seen = set()
+        for kw in all_keywords:
+            key = f"{kw['keyword']}_{kw['category']}_{kw['language']}"
+            if key not in seen and len(kw['keyword']) > 2:  # Filter out very short keywords
+                seen.add(key)
+                unique_keywords.append(kw)
+                if len(unique_keywords) >= 15:  # Limit results
+                    break
+        
+        # app.loggeinfo(f"Returning {len(unique_keywords)} unique keywords")
+        
+        return jsonify({
+            'status': 'success',
+            'keywords': unique_keywords,
+            'total_found': len(all_keywords),
+            'returned': len(unique_keywords)
+        })
+        
+    except Exception as e:
+        # app.loggeerror(f"Error in trending keywords: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Unable to load trending keywords'
+        }), 500
+
+def extract_domain_keywords_from_text(text, category):
+    """Extract meaningful keywords based on domain/category - Improved version"""
+    try:
+        if not text or not isinstance(text, str):
+            return []
+            
+        # Remove HTML tags and clean text
+        text = re.sub(r'<[^>]+>', '', text)
+        text = re.sub(r'[^\w\s]', ' ', text)
+        
+        # Common stop words (Vietnamese, English, Japanese)
+        stop_words = {
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+            'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+            'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+            'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 
+            'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him',
+            'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their',
+            'said', 'says', 'news', 'report', 'reports', 'article', 'story',
+            'according', 'source', 'sources', 'official', 'officials', 'new', 'first',
+            'một', 'các', 'này', 'đó', 'cho', 'từ', 'với', 'trong', 'trên', 'về',
+            'theo', 'của', 'và', 'là', 'có', 'được', 'sẽ', 'đã', 'người', 'tại'
+        }
+        
+        # Extract words and filter
+        words = text.split()
+        keywords = []
+        
+        for word in words:
+            # Clean word but preserve non-ASCII characters for Vietnamese/Japanese
+            clean_word = re.sub(r'[^\w]', '', word)
+            
+            if (len(clean_word) > 2 and 
+                clean_word.lower() not in stop_words and 
+                len(clean_word) < 20):
+                keywords.append(clean_word.title())
+        
+        # Return unique keywords, prioritize longer/more specific terms
+        unique_keywords = list(dict.fromkeys(keywords))
+        unique_keywords.sort(key=len, reverse=True)  # Longer words first
+        
+        return unique_keywords[:5]  # Top 5 keywords
+        
+    except Exception as e:
+        # app.loggeerror(f"Error in extract_domain_keywords_from_text: {str(e)}")
+        return []
+
+@app.route('/api/news_articles')
+@login_required 
+def get_news_articles():
+    """Get balanced news articles from Vietnamese, English, and Japanese sources"""
+    try:
+        all_articles = []
+        min_per_language = 1  # Tối thiểu 1 bài mỗi ngôn ngữ
+        max_per_language = 3  # Tối đa 3 bài mỗi ngôn ngữ
+        
+        # Process each language group
+        for language, categories in RSS_SOURCES.items():
+            language_articles = []
+            
+            # Process categories within each language
+            for category, feeds in categories.items():
+                try:
+                    category_articles = fetch_rss_with_cache(feeds, f"{language}_{category}")
+                    
+                    # Add language and category info to articles
+                    for article in category_articles[:1]:  # Max 1 per category to reduce total
+                        article['language'] = language
+                        article['display_category'] = category
+                        language_articles.append(article)
+                        
+                except Exception as e:
+                    # app.logger.warning(f"Error processing {language}_{category}: {str(e)}")
+                    continue
+            
+            # Sort by date and ensure we get at least min_per_language articles
+            language_articles.sort(key=lambda x: x.get('published', ''), reverse=True)
+            
+            # Take between min and max articles for this language
+            selected_count = min(max(len(language_articles), min_per_language), max_per_language)
+            
+            # If we don't have enough articles, try to get more from different categories
+            if len(language_articles) < min_per_language:
+                # app.logger.warning(f"Only found {len(language_articles)} articles for {language}, need at least {min_per_language}")
+                # Try to get more articles from each category
+                for category, feeds in categories.items():
+                    if len(language_articles) >= min_per_language:
+                        break
+                    try:
+                        category_articles = fetch_rss_with_cache(feeds, f"{language}_{category}")
+                        for article in category_articles[:2]:  # Try 2 more per category
+                            if len(language_articles) >= min_per_language:
+                                break
+                            # Check if article already exists
+                            if not any(existing['url'] == article.get('url', '') for existing in language_articles):
+                                article['language'] = language
+                                article['display_category'] = category
+                                language_articles.append(article)
+                    except Exception as e:
+                        continue
+            
+            # Final selection
+            selected_articles = language_articles[:max_per_language]
+            
+            # app.logger.info(f"Selected {len(selected_articles)} articles for {language} (target: {min_per_language}-{max_per_language})")
+            all_articles.extend(selected_articles)
+        
+        # Shuffle to mix languages but maintain language balance
+        import random
+        random.shuffle(all_articles)
+        
+        # Add display language labels
+        language_labels = {
+            'vietnamese': 'Tiếng Việt',
+            'english': 'English', 
+            'japanese': '日本語'
+        }
+        
+        for article in all_articles:
+            article['language_display'] = language_labels.get(article['language'], article['language'])
+        
+        # Calculate final breakdown
+        language_breakdown = {
+            lang: len([a for a in all_articles if a['language'] == lang]) 
+            for lang in language_labels.keys()
+        }
+        
+        # app.logger.info(f"Final articles distribution: {language_breakdown}")
+        
+        return jsonify({
+            'status': 'success',
+            'articles': all_articles,
+            'language_breakdown': language_breakdown,
+            'target_range': f"{min_per_language}-{max_per_language} per language"
+        })
+        
+    except Exception as e:
+        # app.logger.error(f"Error in balanced news articles: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Unable to load news articles'
+        }), 500
+        
 if __name__ == '__main__':
     app.run(debug=True)
