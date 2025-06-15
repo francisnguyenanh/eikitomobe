@@ -2966,71 +2966,87 @@ def update_criteria():
 RSS_SOURCES = {
     'vietnamese': {
         'vietnam': [
-            'https://vnexpress.net/rss/thoi-su.rss',
-            'https://vnexpress.net/rss/the-gioi.rss',
-            'https://vnexpress.net/rss/giao-duc.rss',
-            'https://vnexpress.net/rss/suc-khoe.rss',
-            'https://tuoitre.vn/rss/chinh-tri-xa-hoi.rss',
-            'https://tuoitre.vn/rss/giao-duc.rss',
-            'https://dantri.com.vn/rss/xa-hoi.rss',
+            'https://dantri.com.vn/rss/trang-chu.rss',  # Thay vnexpress
+            'https://thanhnien.vn/rss/home.rss',        # Thay vnexpress
+            'https://laodong.vn/rss/home.rss',          # Thay vnexpress
         ],
         'science': [
-            'https://vnexpress.net/rss/khoa-hoc.rss',
-            'https://dantri.com.vn/rss/suc-khoe.rss',
+            'https://dantri.com.vn/rss/suc-khoe.rss',   # Thay vnexpress science
+            'https://thanhnien.vn/rss/cong-nghe.rss',   # Thay vnexpress science
+            'https://laodong.vn/rss/cong-nghe.rss',     # Thay vnexpress science
         ],
         'society': [
-            'https://vnexpress.net/rss/doi-song.rss',
-            'https://tuoitre.vn/rss/ban-doc.rss',
+            'https://dantri.com.vn/rss/xa-hoi.rss',     # Thay vnexpress society
+            'https://thanhnien.vn/rss/thoi-su.rss',     # Thay vnexpress society
+            'https://laodong.vn/rss/xa-hoi.rss',        # Thay vnexpress society
+        ],
+        'politics': [
+            'https://dantri.com.vn/rss/chinh-tri.rss',  # Thay vnexpress politics
+            'https://thanhnien.vn/rss/chinh-tri.rss',   # Thay vnexpress politics
+        ],
+        'health': [
+            'https://dantri.com.vn/rss/suc-khoe.rss',   # Thay vnexpress health
+            'https://thanhnien.vn/rss/suc-khoe.rss',    # Thay vnexpress health
+        ],
+        'education': [
+            'https://dantri.com.vn/rss/giao-duc.rss',   # Thay vnexpress education
+            'https://thanhnien.vn/rss/giao-duc.rss',    # Thay vnexpress education
         ]
     },
     'english': {
         'culture': [
-            'https://www.bbc.com/news/entertainment_and_arts/rss.xml',
-            'https://rss.cnn.com/rss/edition_entertainment.xml',
-            'https://feeds.npr.org/1008/rss.xml',
+            'https://rss.reuters.com/news/artsculture',     # Thay bbc
+            'https://feeds.washingtonpost.com/rss/lifestyle', # Thay bbc
+            'https://www.theguardian.com/culture/rss',      # Thay bbc
         ],
         'politics': [
-            'https://www.bbc.com/news/politics/rss.xml',
-            'https://rss.cnn.com/rss/edition_politics.xml',
-            'https://feeds.npr.org/1014/rss.xml',
-        ],
-        'society': [
-            'https://www.bbc.com/news/world/rss.xml',
-            'https://rss.cnn.com/rss/edition_world.xml',
-            'https://feeds.npr.org/1001/rss.xml',
+            'https://rss.reuters.com/news/politics',        # Thay bbc/cnn
+            'https://feeds.washingtonpost.com/rss/politics', # Thay bbc/cnn
+            'https://www.theguardian.com/politics/rss',     # Thay bbc/cnn
         ],
         'science': [
-            'https://www.sciencedaily.com/rss/all.xml',
-            'https://feeds.nature.com/nature/rss/current',
-            'https://www.newscientist.com/feed/home/',
+            'https://rss.reuters.com/news/technology',      # Thay bbc/cnn/sciencedaily
+            'https://feeds.washingtonpost.com/rss/business/technology', # Thay sciencedaily
+            'https://www.theguardian.com/science/rss',      # Thay sciencedaily
+            'https://phys.org/rss-feed/',                   # Thay sciencedaily
         ],
         'health': [
-            'https://rss.cnn.com/rss/edition_health.xml',
-            'https://www.medicalnewstoday.com/rss',
+            'https://rss.reuters.com/news/health',          # Thay bbc/cnn health
+            'https://feeds.washingtonpost.com/rss/national/health-science', # Thay bbc health
+            'https://www.theguardian.com/society/health/rss', # Thay bbc health
         ],
         'education': [
-            'https://www.edweek.org/api/rss.xml',
-            'https://www.insidehighered.com/rss.xml',
+            'https://feeds.washingtonpost.com/rss/local/education', # Thay edweek
+            'https://www.theguardian.com/education/rss',    # Thay edweek
+            'https://rss.reuters.com/news/lifestyle',       # Thay edweek
+        ],
+        'society': [
+            'https://rss.reuters.com/news/lifestyle',       # Thay bbc society
+            'https://feeds.washingtonpost.com/rss/lifestyle', # Thay bbc society
+            'https://www.theguardian.com/society/rss',      # Thay bbc society
         ]
     },
     'japanese': {
         'politics': [
-            'https://www3.nhk.or.jp/rss/news/cat0.xml',  # NHK Politics
-            'https://feeds.tokyo-np.co.jp/rss/index.rdf',  # Tokyo Shimbun
+            'https://feeds.mainichi.jp/mainichi/rss/etc/rss.xml',  # Thay nhk
+            'https://www.asahi.com/rss/national.xml',              # Thay nhk
+            'https://feeds.tokyo-np.co.jp/tokyo-np_rss.xml',       # Thay nhk
         ],
         'society': [
-            'https://www3.nhk.or.jp/rss/news/cat1.xml',  # NHK Society
-            'https://www.asahi.com/rss/asahi/newsheadlines.rdf',  # Asahi Shimbun
+            'https://feeds.mainichi.jp/mainichi/rss/etc/kurashi.xml', # Thay nhk society
+            'https://www.asahi.com/rss/lifestyle.xml',              # Thay nhk society
         ],
         'science': [
-            'https://www3.nhk.or.jp/rss/news/cat5.xml',  # NHK Science
-            'https://feeds.mainichi.jp/mainichi/rss/today.rss',  # Mainichi Science
-        ],
-        'culture': [
-            'https://www3.nhk.or.jp/rss/news/cat6.xml',  # NHK Culture
+            'https://feeds.mainichi.jp/mainichi/rss/etc/kagaku.xml', # Thay nhk science
+            'https://www.asahi.com/rss/digital.xml',                # Thay nhk science
         ],
         'health': [
-            'https://www3.nhk.or.jp/rss/news/cat7.xml',  # NHK Health
+            'https://feeds.mainichi.jp/mainichi/rss/etc/medical.xml', # Thay nhk health
+            'https://www.asahi.com/rss/medical.xml',                 # Thay nhk health
+        ],
+        'education': [
+            'https://feeds.mainichi.jp/mainichi/rss/etc/edu.xml',    # Thay nhk education
+            'https://www.asahi.com/rss/edu.xml',                    # Thay nhk education
         ]
     }
 }
