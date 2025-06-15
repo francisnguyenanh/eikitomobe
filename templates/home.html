@@ -881,103 +881,117 @@
                             </form>
                             <div id="profileMsg" class="text-success text-center"></div>
                         </div>
-                        <div class="tab-pane fade" id="aiSearchTab">
-                            <form id="aiSearchForm">
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="tab-pane fade" id="aiSearchTab">
+                                <form id="aiSearchForm">
+                                    <div class="mb-3">
                                         <label class="form-label">
-                                            <i class="bi bi-robot me-1"></i>
-                                            ChatGPT
+                                            <i class="bi bi-chat-text me-1"></i>
+                                            AI Question Template
                                         </label>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="chatgptEnabled" name="chatgpt_enabled" checked>
-                                            <label class="form-check-label" for="chatgptEnabled">Enabled</label>
+                                        <textarea class="form-control" id="aiQuestionTemplate" name="ai_question_template" rows="4" placeholder="Enter your question template. Use {keyword} as placeholder for the keyword."></textarea>
+                                        <div class="form-text">
+                                            <strong>Example:</strong> "abc {keyword} xyz."
+                                            <br><strong>Note:</strong> Must contain {keyword} placeholder
                                         </div>
                                     </div>
-                                    <input type="text" class="form-control" id="chatgptUrl" name="chatgpt_url" value="https://chat.openai.com/?q={query}" placeholder="URL must contain {query}">
-                                    <div class="form-text">AI assistant for comprehensive answers</div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <label class="form-label">
-                                            <i class="bi bi-lightning me-1"></i>
-                                            Grok AI
-                                        </label>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="grokEnabled" name="grok_enabled" checked>
-                                            <label class="form-check-label" for="grokEnabled">Enabled</label>
+                                    
+                                    <hr class="my-4">
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label">
+                                                <i class="bi bi-robot me-1"></i>
+                                                ChatGPT
+                                            </label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="chatgptEnabled" name="chatgpt_enabled" checked>
+                                                <label class="form-check-label" for="chatgptEnabled">Enabled</label>
+                                            </div>
+                                        </div>
+                                        <input type="text" class="form-control" id="chatgptUrl" name="chatgpt_url" value="https://chat.openai.com/?q={query}" placeholder="URL must contain {query}">
+                                        <div class="form-text">AI assistant for comprehensive answers</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label">
+                                                <i class="bi bi-lightning me-1"></i>
+                                                Grok AI
+                                            </label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="grokEnabled" name="grok_enabled" checked>
+                                                <label class="form-check-label" for="grokEnabled">Enabled</label>
+                                            </div>
+                                        </div>
+                                        <input type="text" class="form-control" id="grokUrl" name="grok_url" value="https://x.com/i/grok?q={query}" placeholder="URL must contain {query}">
+                                        <div class="form-text">X (Twitter)'s AI with real-time data</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label">
+                                                <i class="bi bi-search me-1"></i>
+                                                Perplexity AI
+                                            </label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="perplexityEnabled" name="perplexity_enabled">
+                                                <label class="form-check-label" for="perplexityEnabled">Enabled</label>
+                                            </div>
+                                        </div>
+                                        <input type="text" class="form-control" id="perplexityUrl" name="perplexity_url" value="https://www.perplexity.ai/?q={query}" placeholder="URL must contain {query}">
+                                        <div class="form-text">AI-powered search with sources</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label">
+                                                <i class="bi bi-globe me-1"></i>
+                                                You.com Search
+                                            </label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="youEnabled" name="you_enabled">
+                                                <label class="form-check-label" for="youEnabled">Enabled</label>
+                                            </div>
+                                        </div>
+                                        <input type="text" class="form-control" id="youUrl" name="you_url" value="https://you.com/search?q={query}" placeholder="URL must contain {query}">
+                                        <div class="form-text">AI-powered search engine</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label">
+                                                <i class="bi bi-microsoft me-1"></i>
+                                                Copilot AI
+                                            </label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="copilotEnabled" name="copilot_enabled">
+                                                <label class="form-check-label" for="copilotEnabled">Enabled</label>
+                                            </div>
+                                        </div>
+                                        <input type="text" class="form-control" id="copilotUrl" name="copilot_url" value="https://copilot.microsoft.com/?q={query}" placeholder="URL must contain {query}">
+                                        <div class="form-text">Microsoft's AI assistant</div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <button type="submit" class="btn btn-primary w-100">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                Save Settings
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button type="button" class="btn btn-secondary w-100" id="resetAiSettings">
+                                                <i class="bi bi-arrow-clockwise me-1"></i>
+                                                Reset to Default
+                                            </button>
                                         </div>
                                     </div>
-                                    <input type="text" class="form-control" id="grokUrl" name="grok_url" value="https://x.com/i/grok?q={query}" placeholder="URL must contain {query}">
-                                    <div class="form-text">X (Twitter)'s AI with real-time data</div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <label class="form-label">
-                                            <i class="bi bi-search me-1"></i>
-                                            Perplexity AI
-                                        </label>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="perplexityEnabled" name="perplexity_enabled">
-                                            <label class="form-check-label" for="perplexityEnabled">Enabled</label>
-                                        </div>
+                                    
+                                    <div class="mt-3">
+                                        <div id="aiSettingsMsg" class="text-center"></div>
                                     </div>
-                                    <input type="text" class="form-control" id="perplexityUrl" name="perplexity_url" value="https://www.perplexity.ai/?q={query}" placeholder="URL must contain {query}">
-                                    <div class="form-text">AI-powered search with sources</div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <label class="form-label">
-                                            <i class="bi bi-globe me-1"></i>
-                                            You.com Search
-                                        </label>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="youEnabled" name="you_enabled">
-                                            <label class="form-check-label" for="youEnabled">Enabled</label>
-                                        </div>
-                                    </div>
-                                    <input type="text" class="form-control" id="youUrl" name="you_url" value="https://you.com/search?q={query}" placeholder="URL must contain {query}">
-                                    <div class="form-text">AI-powered search engine</div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <label class="form-label">
-                                            <i class="bi bi-microsoft me-1"></i>
-                                            Copilot AI
-                                        </label>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="copilotEnabled" name="copilot_enabled">
-                                            <label class="form-check-label" for="copilotEnabled">Enabled</label>
-                                        </div>
-                                    </div>
-                                    <input type="text" class="form-control" id="copilotUrl" name="copilot_url" value="https://copilot.microsoft.com/?q={query}" placeholder="URL must contain {query}">
-                                    <div class="form-text">Microsoft's AI assistant</div>
-                                </div>
-                                
-                                <div class="row">
-                                    <div class="col-6">
-                                        <button type="submit" class="btn btn-primary w-100">
-                                            <i class="bi bi-check-circle me-1"></i>
-                                            Save Settings
-                                        </button>
-                                    </div>
-                                    <div class="col-6">
-                                        <button type="button" class="btn btn-secondary w-100" id="resetAiSettings">
-                                            <i class="bi bi-arrow-clockwise me-1"></i>
-                                            Reset to Default
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <div class="mt-3">
-                                    <div id="aiSettingsMsg" class="text-center"></div>
-                                </div>
-                            </form>
-                        </div>
+                                </form>
+                            </div>
                         </form>
                     </div>
                     </div>
@@ -1159,47 +1173,17 @@
                 }
             },
 
-            async getUISettings() {
-                return this.fetchWithErrorHandling('/ui_settings');
+            // ... existing API methods ...
+
+            async getConfig() {
+                return this.fetchWithErrorHandling('/api/config');
             },
 
-            async updateUISettings(settings) {
-                return this.fetchWithErrorHandling('/ui_settings', {
+            async updateConfig(settings) {
+                return this.fetchWithErrorHandling('/api/config', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(settings)
-                });
-            },
-
-            async getCardList() {
-                return this.fetchWithErrorHandling('/card_list');
-            },
-
-            async getCardHash(filename) {
-                return this.fetchWithErrorHandling(`/get_card_hash/${filename}`);
-            },
-
-            async getLinksTree() {
-                return this.fetchWithErrorHandling('/links');
-            },
-
-            async updateLinksTree(tree) {
-                return this.fetchWithErrorHandling('/links', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({links_tree: tree})
-                });
-            },
-
-            async getCardInfo() {
-                return this.fetchWithErrorHandling('/get_card_info');
-            },
-
-            async updateCardInfo(data) {
-                return this.fetchWithErrorHandling('/update_card_info', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(data)
                 });
             },
 
@@ -1450,7 +1434,7 @@
 
         // ===== AI SETTINGS MANAGER =====
         const AISettingsManager = {
-            // Default URLs - có thể thay đổi
+            // Default URLs và question template
             defaultUrls: {
                 chatgpt: "https://chat.openai.com/?q={query}",
                 grok: "https://x.com/i/grok?q={query}",
@@ -1458,6 +1442,8 @@
                 you: "https://you.com/search?q={query}",
                 copilot: "https://copilot.microsoft.com/?q={query}"
             },
+
+            defaultQuestionTemplate: "1.hãy nêu tổng quan và các khía cạnh chi tiết về {keyword} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật (những từ vựng jlpt N1 thì thêm furigana). 2.sao cho sau khi đọc xong thì có đủ kiến thức để trình bày lại cho người khác. 3.hãy cho bảng từ vựn (đầy đủ phiên âm, âm hán việt) liên quan đến chủ đề này. 4.nêu 1 số link nguồn để tìm hiểu sâu hơn về chủ đề này.",
 
             init() {
                 document.getElementById('ai-search-tab').addEventListener('shown.bs.tab', () => this.loadAISettings());
@@ -1483,21 +1469,29 @@
 
             async loadAISettings() {
                 try {
-                    const response = await API.getAISettings();
+                    // Load AI settings
+                    const aiResponse = await API.getAISettings();
+                    
+                    // Load question template from config
+                    const configResponse = await API.getConfig();
+                    
+                    // Load question template
+                    const questionTemplate = configResponse.ai_question_template || this.defaultQuestionTemplate;
+                    document.getElementById('aiQuestionTemplate').value = questionTemplate;
                     
                     // Load URLs
-                    document.getElementById('chatgptUrl').value = response.chatgpt_url || this.defaultUrls.chatgpt;
-                    document.getElementById('grokUrl').value = response.grok_url || this.defaultUrls.grok;
-                    document.getElementById('perplexityUrl').value = response.perplexity_url || this.defaultUrls.perplexity;
-                    document.getElementById('youUrl').value = response.you_url || this.defaultUrls.you;
-                    document.getElementById('copilotUrl').value = response.copilot_url || this.defaultUrls.copilot;
+                    document.getElementById('chatgptUrl').value = aiResponse.chatgpt_url || this.defaultUrls.chatgpt;
+                    document.getElementById('grokUrl').value = aiResponse.grok_url || this.defaultUrls.grok;
+                    document.getElementById('perplexityUrl').value = aiResponse.perplexity_url || this.defaultUrls.perplexity;
+                    document.getElementById('youUrl').value = aiResponse.you_url || this.defaultUrls.you;
+                    document.getElementById('copilotUrl').value = aiResponse.copilot_url || this.defaultUrls.copilot;
                     
                     // Load enabled states
-                    document.getElementById('chatgptEnabled').checked = response.chatgpt_enabled !== false;
-                    document.getElementById('grokEnabled').checked = response.grok_enabled !== false;
-                    document.getElementById('perplexityEnabled').checked = response.perplexity_enabled === true;
-                    document.getElementById('youEnabled').checked = response.you_enabled === true;
-                    document.getElementById('copilotEnabled').checked = response.copilot_enabled === true;
+                    document.getElementById('chatgptEnabled').checked = aiResponse.chatgpt_enabled !== false;
+                    document.getElementById('grokEnabled').checked = aiResponse.grok_enabled !== false;
+                    document.getElementById('perplexityEnabled').checked = aiResponse.perplexity_enabled === true;
+                    document.getElementById('youEnabled').checked = aiResponse.you_enabled === true;
+                    document.getElementById('copilotEnabled').checked = aiResponse.copilot_enabled === true;
                     
                     // Update visual feedback
                     ['chatgpt', 'grok', 'perplexity', 'you', 'copilot'].forEach(service => {
@@ -1522,6 +1516,18 @@
             async saveAISettings(e) {
                 e.preventDefault();
                 
+                // Validate question template
+                const questionTemplate = document.getElementById('aiQuestionTemplate').value.trim();
+                if (!questionTemplate) {
+                    this.showMessage('Question template is required', 'danger');
+                    return;
+                }
+                
+                if (!questionTemplate.includes('{keyword}')) {
+                    this.showMessage('Question template must contain {keyword} placeholder', 'danger');
+                    return;
+                }
+                
                 // Validate URLs contain {query}
                 const urls = {
                     chatgpt_url: document.getElementById('chatgptUrl').value.trim(),
@@ -1539,7 +1545,8 @@
                     }
                 }
                 
-                const settings = {
+                // Prepare AI settings
+                const aiSettings = {
                     // Save custom URLs
                     ...urls,
                     
@@ -1552,8 +1559,15 @@
                 };
                 
                 try {
-                    const response = await API.updateAISettings(settings);
-                    if (response.status === 'success') {
+                    // Save AI settings
+                    const aiResponse = await API.updateAISettings(aiSettings);
+                    
+                    // Save question template to config
+                    const configResponse = await API.updateConfig({
+                        ai_question_template: questionTemplate
+                    });
+                    
+                    if (aiResponse.status === 'success' && configResponse.status === 'success') {
                         this.showMessage('AI settings saved successfully!', 'success');
                     }
                 } catch (error) {
@@ -1564,6 +1578,9 @@
 
             resetAISettings() {
                 if (confirm('Are you sure you want to reset AI settings to default?')) {
+                    // Reset question template
+                    document.getElementById('aiQuestionTemplate').value = this.defaultQuestionTemplate;
+                    
                     // Reset URLs to default
                     document.getElementById('chatgptUrl').value = this.defaultUrls.chatgpt;
                     document.getElementById('grokUrl').value = this.defaultUrls.grok;

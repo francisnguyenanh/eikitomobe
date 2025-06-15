@@ -216,20 +216,14 @@ def load_knowledge_categories():
             app.logger.info(f"File exists, reading content...")
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
-                app.logger.info(f"File content length: {len(content)}")
-                app.logger.info(f"File content preview: {content[:200]}...")
                 
                 if not content:
-                    app.logger.warning("File is empty, using default categories")
-                    return default_categories
-                
+                    return default_categories                
                 data = json.loads(content)
-                app.logger.info(f"Successfully parsed JSON with {len(data)} categories")
                 
                 if isinstance(data, dict) and data:
                     return data
                 else:
-                    app.logger.warning("Invalid data format, using default categories")
                     return default_categories
         else:
             app.logger.info("File doesn't exist, creating with default categories")
@@ -2301,6 +2295,32 @@ def knowledge():
     return render_template('knowledge.html')
 
 
+@app.route('/api/config', methods=['GET', 'POST'])
+@login_required
+def api_config():
+    """API endpoint for config management"""
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            config = load_config()
+            
+            # Update specific fields from request
+            if 'ai_question_template' in data:
+                config['ai_question_template'] = data['ai_question_template']
+            
+            save_config(config)
+            return jsonify({'status': 'success'})
+        except Exception as e:
+            app.logger.error(f"Error updating config: {str(e)}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+    else:
+        try:
+            config = load_config()
+            return jsonify(config)
+        except Exception as e:
+            app.logger.error(f"Error loading config: {str(e)}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+        
 def generate_knowledge_links(keyword):
     import urllib.parse
     encoded_keyword = urllib.parse.quote(keyword)
@@ -2308,7 +2328,13 @@ def generate_knowledge_links(keyword):
     # Load AI settings
     ai_settings = load_ai_settings()
     
-    question = f"1.hãy nêu tổng quan và các khía cạnh chi tiết về {keyword} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật (những từ vựng jlpt N1 thì thêm furigana). 2.sao cho sau khi đọc xong thì có đủ kiến thức để trình bày lại cho người khác. 3.hãy cho bảng từ vựn (đầy đủ phiên âm, âm hán việt) liên quan đến chủ đề này. 4.nêu 1 số link nguồn để tìm hiểu sâu hơn về chủ đề này."
+    # Load question template from config
+    config = load_config()
+    question_template = config.get('ai_question_template', 
+        "1.hãy nêu tổng quan và các khía cạnh chi tiết về {keyword} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật (những từ vựng jlpt N1 thì thêm furigana). 2.sao cho sau khi đọc xong thì có đủ kiến thức để trình bày lại cho người khác. 3.hãy cho bảng từ vựn (đầy đủ phiên âm, âm hán việt) liên quan đến chủ đề này. 4.nêu 1 số link nguồn để tìm hiểu sâu hơn về chủ đề này.")
+    
+    # Replace {keyword} with actual keyword
+    question = question_template.replace('{keyword}', keyword)
     sources = []
     
     # Use URLs from settings - these can now be customized
@@ -2362,6 +2388,7 @@ def generate_knowledge_links(keyword):
                 'description': service_info['description'],
                 'color': service_info['color']
             })
+    
     
     return sources
 
@@ -2835,6 +2862,7 @@ def update_criteria():
             'status': 'error',
             'message': str(e)
         }), 500
-        
+
+
 if __name__ == '__main__':
     app.run(debug=True)

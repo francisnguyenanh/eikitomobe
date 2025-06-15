@@ -1,6 +1,6 @@
 {
   "chatgpt_url": "https://chat.openai.com/?q={query}",
-  "grok_url": "https://x.com/i/grok?q={query}",
+  "grok_url": "https://grok.com/?q={query}",
   "perplexity_url": "https://www.perplexity.ai/?q={query}",
   "you_url": "https://you.com/search?q={query}",
   "copilot_url": "https://copilot.microsoft.com/?q={query}",
