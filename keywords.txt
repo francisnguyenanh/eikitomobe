@@ -1,14 +1,45 @@
 {
   "user_id": "default",
   "completed_keywords": [],
-  "criteria_progress": {},
-  "last_updated": "2025-06-13T23:03:37.910885",
+  "criteria_progress": {
+    "sports:Thể thao trẻ em": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "last_updated": "2025-06-15T17:37:53.194391",
   "stats": {
     "total_completed": 0,
     "categories_progress": {
       "science": 0,
       "history": 0,
-      "business": 0
+      "business": 0,
+      "health": 0,
+      "language": 0,
+      "culture": 0,
+      "technology": 0,
+      "philosophy": 0,
+      "arts": 0,
+      "sports": 0,
+      "environment": 0,
+      "psychology": 0,
+      "politics": 0,
+      "society": 0,
+      "education": 0,
+      "law": 0,
+      "economics": 0,
+      "mathematics": 0,
+      "literature": 0,
+      "music": 0,
+      "engineering": 0,
+      "astronomy": 0,
+      "geography": 0,
+      "anthropology": 0,
+      "architecture": 0
     }
   }
 }
