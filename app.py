@@ -33,7 +33,7 @@ from werkzeug.utils import secure_filename
 import shutil
 import hashlib
 import json
-
+import time
 
 try:
     from PIL import Image as PILImage
@@ -2863,6 +2863,386 @@ def update_criteria():
             'message': str(e)
         }), 500
 
+def get_vocabulary_file_path():
+    """Get path to vocabulary progress file"""
+    return os.path.join(app.root_path, 'vocabulary_progress.txt')
 
+def load_vocabulary_data():
+    """Load vocabulary from Word.txt"""
+    file_path = os.path.join(app.root_path, 'Word.txt')
+    
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data if isinstance(data, dict) else {}
+        else:
+            app.logger.error(f"Word.txt file not found at {file_path}")
+            return {}
+    except Exception as e:
+        app.logger.error(f"Error loading Word.txt: {str(e)}")
+        return {}
+
+def initialize_vocabulary_progress():
+    """Initialize vocabulary progress file if it doesn't exist"""
+    file_path = get_vocabulary_file_path()
+    
+    if not os.path.exists(file_path):
+        vocabulary_data = load_vocabulary_data()
+        
+        default_data = {
+            "user_id": "default",
+            "completed_words": [],
+            "last_updated": datetime.now().isoformat(),
+            "stats": {
+                "total_completed": 0,
+                "level_progress": {level: 0 for level in vocabulary_data.keys()}
+            }
+        }
+        
+        try:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(default_data, f, ensure_ascii=False, indent=2)
+            app.logger.info(f"Created vocabulary_progress.txt file at {file_path}")
+        except Exception as e:
+            app.logger.error(f"Error creating vocabulary_progress.txt: {str(e)}")
+
+def load_vocabulary_progress():
+    """Load vocabulary progress from file"""
+    file_path = get_vocabulary_file_path()
+    vocabulary_data = load_vocabulary_data()
+    
+    default_progress = {
+        'user_id': 'default',
+        'completed_words': [],
+        'last_updated': datetime.now().isoformat(),
+        'stats': {
+            'total_completed': 0,
+            'level_progress': {level: 0 for level in vocabulary_data.keys()}
+        }
+    }
+    
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                
+                if not isinstance(data, dict):
+                    raise ValueError("Invalid file format")
+                
+                # Ensure all required keys exist
+                for key in default_progress:
+                    if key not in data:
+                        data[key] = default_progress[key]
+                
+                # Ensure all levels exist in stats
+                if 'level_progress' not in data['stats']:
+                    data['stats']['level_progress'] = default_progress['stats']['level_progress']
+                else:
+                    for level in vocabulary_data.keys():
+                        if level not in data['stats']['level_progress']:
+                            data['stats']['level_progress'][level] = 0
+                
+                return data
+        else:
+            initialize_vocabulary_progress()
+            return default_progress
+            
+    except Exception as e:
+        app.logger.error(f"Error loading vocabulary progress: {str(e)}")
+        
+        try:
+            backup_path = file_path + '.backup'
+            if os.path.exists(file_path):
+                os.rename(file_path, backup_path)
+                app.logger.info(f"Corrupted file backed up to {backup_path}")
+        except:
+            pass
+        
+        initialize_vocabulary_progress()
+        return default_progress
+
+def save_vocabulary_progress(progress_data):
+    """Save vocabulary progress to file"""
+    file_path = get_vocabulary_file_path()
+    try:
+        progress_data['last_updated'] = datetime.now().isoformat()
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(progress_data, f, ensure_ascii=False, indent=2)
+        return True
+    except Exception as e:
+        app.logger.error(f"Error saving vocabulary progress: {str(e)}")
+        return False
+
+def get_daily_vocabulary():
+    """Get daily vocabulary word from available (non-completed) words"""
+    available_words = get_available_vocabulary()
+    vocabulary_data = load_vocabulary_data()
+    
+    # Flatten all available words
+    all_available = []
+    for level, words in available_words.items():
+        for word in words.keys():
+            japanese_meaning = words[word].get('Japanese', '')
+            vietnamese_meaning = words[word].get('Vietnamese', '')
+            all_available.append((word, level, japanese_meaning, vietnamese_meaning))
+    
+    if not all_available:
+        # If all words are completed, reset or return random from all
+        all_available = []
+        for level, words in vocabulary_data.items():
+            for word, details in words.items():
+                japanese_meaning = details.get('Japanese', '')
+                vietnamese_meaning = details.get('Vietnamese', '')
+                all_available.append((word, level, japanese_meaning, vietnamese_meaning))
+    
+    # Use today's date as seed for consistent daily word
+    today = date.today()
+    random.seed(today.toordinal())
+    
+    word, level, japanese_meaning, vietnamese_meaning = random.choice(all_available)
+    return word, level, japanese_meaning, vietnamese_meaning
+
+def get_available_vocabulary():
+    """Get vocabulary words that haven't been completed yet"""
+    progress = load_vocabulary_progress()
+    completed_words = set(progress.get('completed_words', []))
+    vocabulary_data = load_vocabulary_data()
+    
+    available_words = {}
+    for level, words in vocabulary_data.items():
+        available_in_level = {word: details for word, details in words.items() 
+                            if word not in completed_words}
+        if available_in_level:
+            available_words[level] = available_in_level
+    
+    return available_words
+
+# Add vocabulary routes
+@app.route('/vocabulary')
+@login_required
+def vocabulary():
+    return render_template('vocabulary.html')
+
+@app.route('/api/daily_vocabulary')
+def get_daily_vocabulary_api():
+    """API endpoint to get daily vocabulary"""
+    try:
+        word, level, japanese_meaning, vietnamese_meaning = get_daily_vocabulary()
+        progress = load_vocabulary_progress()
+        
+        # Check if current word is completed
+        is_completed = word in progress.get('completed_words', [])
+        
+        return jsonify({
+            'status': 'success',
+            'word': word,
+            'level': level,
+            'japanese_meaning': japanese_meaning,
+            'vietnamese_meaning': vietnamese_meaning,
+            'is_completed': is_completed,
+            'date': datetime.now().strftime('%Y-%m-%d'),
+            'stats': progress.get('stats', {})
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting daily vocabulary: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/random_vocabulary')
+def get_random_vocabulary_api():
+    """API endpoint to get random vocabulary (not daily)"""
+    try:
+        available_words = get_available_vocabulary()
+        vocabulary_data = load_vocabulary_data()
+        
+        # Flatten all available words
+        all_available = []
+        for level, words in available_words.items():
+            for word, details in words.items():
+                japanese_meaning = details.get('Japanese', '')
+                vietnamese_meaning = details.get('Vietnamese', '')
+                all_available.append((word, level, japanese_meaning, vietnamese_meaning))
+        
+        if not all_available:
+            return jsonify({
+                'status': 'info',
+                'message': 'You have learned all vocabulary words! Congratulations!',
+                'all_completed': True
+            })
+        
+        # Use current timestamp for better randomness
+        random.seed(int(time.time() * 1000000) % 1000000)
+        
+        word, level, japanese_meaning, vietnamese_meaning = random.choice(all_available)
+        progress = load_vocabulary_progress()
+        
+        app.logger.info(f"Random vocabulary selected: {word} from level: {level}")
+        
+        return jsonify({
+            'status': 'success',
+            'word': word,
+            'level': level,
+            'japanese_meaning': japanese_meaning,
+            'vietnamese_meaning': vietnamese_meaning,
+            'is_completed': False,
+            'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'stats': progress.get('stats', {}),
+            'is_random': True
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting random vocabulary: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+        
+
+@app.route('/api/complete_vocabulary', methods=['POST'])
+@login_required
+def complete_vocabulary():
+    """Mark a vocabulary word as completed"""
+    try:
+        data = request.get_json()
+        word = data.get('word')
+        level = data.get('level')
+        
+        if not word:
+            return jsonify({
+                'status': 'error',
+                'message': 'Word is required'
+            }), 400
+        
+        progress = load_vocabulary_progress()
+        
+        # Add word to completed list if not already there
+        if word not in progress['completed_words']:
+            progress['completed_words'].append(word)
+            progress['stats']['total_completed'] = len(progress['completed_words'])
+            
+            # Update level progress
+            if 'level_progress' not in progress['stats']:
+                progress['stats']['level_progress'] = {}
+            
+            if level:
+                if level not in progress['stats']['level_progress']:
+                    progress['stats']['level_progress'][level] = 0
+                progress['stats']['level_progress'][level] += 1
+        
+        # Save progress
+        if save_vocabulary_progress(progress):
+            return jsonify({
+                'status': 'success',
+                'message': f'Learned: {word}',
+                'stats': progress['stats']
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Unable to save progress'
+            }), 500
+            
+    except Exception as e:
+        app.logger.error(f"Error completing vocabulary: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/uncomplete_vocabulary', methods=['POST'])
+@login_required
+def uncomplete_vocabulary():
+    """Remove a vocabulary word from completed list"""
+    try:
+        data = request.get_json()
+        word = data.get('word')
+        level = data.get('level')
+        
+        if not word:
+            return jsonify({
+                'status': 'error',
+                'message': 'Word is required'
+            }), 400
+        
+        progress = load_vocabulary_progress()
+        
+        # Remove word from completed list
+        if word in progress['completed_words']:
+            progress['completed_words'].remove(word)
+            progress['stats']['total_completed'] = len(progress['completed_words'])
+            
+            # Update level progress
+            if level and 'level_progress' in progress['stats']:
+                if level in progress['stats']['level_progress']:
+                    progress['stats']['level_progress'][level] = max(0, 
+                        progress['stats']['level_progress'][level] - 1)
+        
+        # Save progress
+        if save_vocabulary_progress(progress):
+            return jsonify({
+                'status': 'success',
+                'message': f'Removed: {word}',
+                'stats': progress['stats']
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Unable to save progress'
+            }), 500
+            
+    except Exception as e:
+        app.logger.error(f"Error uncompleting vocabulary: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/api/vocabulary_stats')
+def get_vocabulary_stats():
+    """Get vocabulary completion statistics"""
+    try:
+        progress = load_vocabulary_progress()
+        vocabulary_data = load_vocabulary_data()
+        
+        total_words = sum(len(words) for words in vocabulary_data.values())
+        completed_count = len(progress.get('completed_words', []))
+        
+        # Calculate level stats
+        level_stats = {}
+        for level, words in vocabulary_data.items():
+            total_in_level = len(words)
+            completed_in_level = progress.get('stats', {}).get('level_progress', {}).get(level, 0)
+            level_stats[level] = {
+                'total': total_in_level,
+                'completed': completed_in_level,
+                'percentage': round((completed_in_level / total_in_level) * 100, 1) if total_in_level > 0 else 0
+            }
+        
+        return jsonify({
+            'status': 'success',
+            'stats': {
+                'total_words': total_words,
+                'completed_words': completed_count,
+                'remaining_words': total_words - completed_count,
+                'completion_percentage': round((completed_count / total_words) * 100, 1) if total_words > 0 else 0,
+                'level_stats': level_stats,
+                'last_updated': progress.get('last_updated')
+            }
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting vocabulary stats: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+# Initialize vocabulary progress on app start
+with app.app_context():
+    initialize_vocabulary_progress()
+    
 if __name__ == '__main__':
     app.run(debug=True)
