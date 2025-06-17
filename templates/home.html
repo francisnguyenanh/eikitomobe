@@ -648,7 +648,11 @@
                             <i class="bi bi-gear"></i> Settings
                         </a>
                     </li>
-                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="linksBtn">
+                            <i class="bi bi-link-45deg"></i> Links
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" id="logoutBtn">
                             <i class="bi bi-box-arrow-right"></i> Logout
@@ -1719,7 +1723,7 @@
         // ===== LINKS MANAGER =====
         const LinksManager = {
             init() {
-                document.getElementById('showLinksBtn').addEventListener('click', (e) => {
+                document.getElementById('linksBtn').addEventListener('click', (e) => {
                     e.preventDefault();
                     this.showLinksModal();
                 });
@@ -1752,18 +1756,18 @@
                 const folderDiv = document.createElement('div');
                 folderDiv.className = 'mb-2 border rounded p-2 bg-light';
 
-                // Folder header
-                const header = this.createFolderHeader(folder, folderIdx, treeData);
-                folderDiv.appendChild(header);
-
                 // Links list
                 const linksUl = this.createLinksList(folder, folderIdx, treeData);
+                
+                // Folder header - truyền tham chiếu linksUl
+                const header = this.createFolderHeader(folder, folderIdx, treeData, linksUl);
+                folderDiv.appendChild(header);
                 folderDiv.appendChild(linksUl);
 
                 container.appendChild(folderDiv);
             },
 
-            createFolderHeader(folder, folderIdx, treeData) {
+            createFolderHeader(folder, folderIdx, treeData, linksUl) {
                 const header = document.createElement('div');
                 header.className = 'd-flex align-items-center mb-1 folder-header';
 
@@ -1771,6 +1775,7 @@
                 const toggleBtn = document.createElement('button');
                 toggleBtn.className = 'btn btn-sm btn-link px-1 py-0';
                 toggleBtn.innerHTML = '<i class="bi bi-caret-down-fill"></i>';
+                toggleBtn.type = 'button'; // Thêm type để đảm bảo không submit form
                 header.appendChild(toggleBtn);
 
                 // Folder name input
@@ -1782,13 +1787,19 @@
                 folderName.placeholder = 'Tên thư mục...';
                 header.appendChild(folderName);
 
-                // Setup toggle functionality
+                // Setup toggle functionality với tham chiếu linksUl
                 let collapsed = false;
-                const linksUl = header.nextElementSibling;
-                toggleBtn.onclick = () => {
+                toggleBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
                     collapsed = !collapsed;
-                    if (linksUl) linksUl.style.display = collapsed ? 'none' : '';
-                    toggleBtn.innerHTML = collapsed ? '<i class="bi bi-caret-right-fill"></i>' : '<i class="bi bi-caret-down-fill"></i>';
+                    if (linksUl) {
+                        linksUl.style.display = collapsed ? 'none' : '';
+                        toggleBtn.innerHTML = collapsed ? 
+                            '<i class="bi bi-caret-right-fill"></i>' : 
+                            '<i class="bi bi-caret-down-fill"></i>';
+                    }
                 };
 
                 folderName.onblur = () => {
