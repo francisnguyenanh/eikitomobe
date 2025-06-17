@@ -194,7 +194,7 @@
     </div>
 </div>
 
-<div class="modal fade" id="deleteFolderModal" tabindex="-1">
+<div class="modal fade" id="deleteFolderModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -202,26 +202,30 @@
                     <i class="bi bi-exclamation-triangle me-2"></i>
                     Delete Folder
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>What would you like to do with the contents of this folder?</p>
-                <div class="form-check">
+                <p class="mb-3">What would you like to do with the contents of this folder?</p>
+                <div class="form-check mb-2">
                     <input class="form-check-input" type="radio" name="deleteAction" id="moveToParent" value="move_to_parent" checked>
                     <label class="form-check-label" for="moveToParent">
-                        Move notes and subfolders to parent folder
+                        <strong>Move to parent folder</strong><br>
+                        <small class="text-muted">Notes and subfolders will be moved to the parent folder</small>
                     </label>
                 </div>
                 <div class="form-check">
                     <input class="form-check-input" type="radio" name="deleteAction" id="deleteAll" value="delete_all">
                     <label class="form-check-label" for="deleteAll">
-                        Delete everything (notes and subfolders)
+                        <strong>Delete everything</strong><br>
+                        <small class="text-muted text-danger">Permanently delete all notes and subfolders</small>
                     </label>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirm-delete-folder-btn">Delete</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-folder-btn">
+                    Delete
+                </button>
             </div>
         </div>
     </div>
@@ -791,7 +795,6 @@
         order: 1;
         min-height: calc(100vh - 300px);
         /* Extra padding for keyboard space */
-        padding-bottom: 60vh;
     }
 
     .editor-toolbar {
@@ -1389,6 +1392,36 @@
         font-size: 0.85rem;
     }
 }
+.form-control{
+    border: 1px solid #212529;
+}
+.form-select {
+    border: 1px solid #212529;
+}
+/* Prevent modal backdrop stacking */
+.modal-backdrop {
+    z-index: 1040;
+}
+
+.modal {
+    z-index: 1050;
+}
+
+/* Disable button state */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Loading state for delete button */
+.btn:disabled .bi-hourglass-split {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
 </style>
 
 <script>
@@ -1467,6 +1500,9 @@ const SaveManager = {
                     
                     // Cập nhật AppState.currentId để lần save tiếp theo sẽ update thay vì tạo mới
                     AppState.currentId = data.id;
+                    
+                    // QUAN TRỌNG: Update folder tree để refresh notes_count
+                    await FolderManager.loadFolders();
                     
                     // Reload notes để cập nhật UI
                     await NoteManager.loadNotes(currentFolderId);
@@ -1640,8 +1676,37 @@ const FolderManager = {
         html += this.buildFolderTreeHTML(this.folders, 0);
         treeContainer.innerHTML = html;
         
+        // Attach event listeners after rendering
+        this.attachFolderActionListeners();
+
         // Update all notes count
         this.updateAllNotesCount();
+    },
+
+    attachFolderActionListeners() {
+        // Remove existing listeners first
+        document.querySelectorAll('.folder-action-btn').forEach(btn => {
+            btn.removeEventListener('click', this.handleFolderAction);
+        });
+
+        // Add new listeners
+        document.querySelectorAll('.folder-action-btn').forEach(btn => {
+            btn.addEventListener('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                
+                const action = btn.dataset.action;
+                const folderId = parseInt(btn.dataset.folderId);
+                
+                console.log('Folder action clicked:', { action, folderId, btn });
+                
+                if (action === 'edit') {
+                    this.editFolder(folderId);
+                } else if (action === 'delete') {
+                    this.showDeleteFolderModal(folderId);
+                }
+            });
+        });
     },
 
     buildFolderTreeHTML(folders, level = 0) {
@@ -1655,7 +1720,7 @@ const FolderManager = {
             html += `
                 <div class="folder-tree-item ${level === 0 ? 'root-level' : ''}">
                     <div class="folder-item-content ${isSelected ? 'selected' : ''}" 
-                         data-folder-id="${folder.id}">
+                        data-folder-id="${folder.id}">
                         
                         <!-- Expand/Collapse Toggle -->
                         <button class="folder-toggle ${hasChildren ? (isExpanded ? 'expanded' : '') : 'no-children'}" 
@@ -1665,7 +1730,7 @@ const FolderManager = {
                         
                         <!-- Folder Content -->
                         <div style="display: flex; align-items: center; flex: 1; min-width: 0;" 
-                             onclick="FolderManager.selectFolder(${folder.id})">
+                            onclick="FolderManager.selectFolder(${folder.id})">
                             <i class="bi bi-folder${hasChildren ? '' : '2'} folder-icon"></i>
                             <span class="folder-name" title="${folder.name}">${folder.name}</span>
                             <span class="folder-notes-count">${folder.notes_count || 0}</span>
@@ -1674,13 +1739,17 @@ const FolderManager = {
                         <!-- Folder Actions -->
                         <div class="folder-actions">
                             <button class="folder-action-btn" 
-                                    onclick="FolderManager.editFolder(event, ${folder.id})" 
-                                    title="Edit folder">
+                                    data-action="edit" 
+                                    data-folder-id="${folder.id}"
+                                    title="Edit folder"
+                                    type="button">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <button class="folder-action-btn" 
-                                    onclick="FolderManager.deleteFolder(event, ${folder.id})" 
-                                    title="Delete folder">
+                                    data-action="delete" 
+                                    data-folder-id="${folder.id}"
+                                    title="Delete folder"
+                                    type="button">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -1771,6 +1840,27 @@ const FolderManager = {
         NoteManager.clearEditor();
     },
 
+    async updateFolderNotesCount(folderId) {
+        // Function để update count của một folder cụ thể mà không cần reload toàn bộ tree
+        try {
+            const response = await fetch(`/api/evernote_notes?folder_id=${folderId}`);
+            const notes = await response.json();
+            const notesCount = Array.isArray(notes) ? notes.length : 0;
+            
+            // Update UI count
+            const countElement = document.querySelector(`[data-folder-id="${folderId}"] .folder-notes-count`);
+            if (countElement) {
+                countElement.textContent = notesCount;
+            }
+            
+            // Also update all notes count
+            this.updateAllNotesCount();
+            
+        } catch (error) {
+            console.error('Error updating folder notes count:', error);
+        }
+    },
+
     async updateAllNotesCount() {
         try {
             const response = await fetch('/api/evernote_notes');
@@ -1795,26 +1885,138 @@ const FolderManager = {
         return null;
     },
 
-    editFolder(event, id) {
-        event.stopPropagation();
-        const folder = this.findFolder(id);
+    editFolder(folderId) {
+        console.log('editFolder called with folderId:', folderId);
+        const folder = this.findFolder(folderId);
         if (!folder) return;
         
         document.getElementById('folderModalTitle').innerHTML = '<i class="bi bi-folder me-2"></i>Edit Folder';
         document.getElementById('folder-name').value = folder.name;
         document.getElementById('parent-folder').value = folder.parent_id || '';
-        document.getElementById('folder-id').value = id;
+        document.getElementById('folder-id').value = folderId;
         
-        new bootstrap.Modal(document.getElementById('folderModal')).show();
+        const modal = new bootstrap.Modal(document.getElementById('folderModal'));
+        modal.show();
     },
 
-    deleteFolder(event, id) {
-        event.stopPropagation();
-        document.getElementById('confirm-delete-folder-btn').dataset.folderId = id;
-        new bootstrap.Modal(document.getElementById('deleteFolderModal')).show();
+    showDeleteFolderModal(folderId) {
+        console.log('showDeleteFolderModal called with folderId:', folderId);
+        
+        if (!folderId || isNaN(folderId)) {
+            console.error('Invalid folder ID:', folderId);
+            return;
+        }
+        
+        // Reset form state
+        document.getElementById('moveToParent').checked = true;
+        document.getElementById('deleteAll').checked = false;
+        
+        // Set folder ID on the confirm button
+        const confirmBtn = document.getElementById('confirm-delete-folder-btn');
+        confirmBtn.dataset.folderId = folderId.toString();
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = 'Delete';
+        
+        console.log('Set confirm button data-folder-id to:', confirmBtn.dataset.folderId);
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('deleteFolderModal'), {
+            backdrop: 'static',
+            keyboard: true
+        });
+        modal.show();
+        
+        console.log('Delete folder modal should be visible now');
     },
 
-    // ... các methods khác giữ nguyên ...
+    async handleDeleteFolder() {
+        const deleteBtn = document.getElementById('confirm-delete-folder-btn');
+        const folderId = deleteBtn.dataset.folderId;
+        const actionElement = document.querySelector('input[name="deleteAction"]:checked');
+        
+        console.log('handleDeleteFolder - folderId from dataset:', folderId);
+        
+        // Validate folderId
+        if (!folderId || isNaN(folderId)) {
+            console.error('Invalid folder ID in dataset:', folderId);
+            alert('Error: Invalid folder ID');
+            return false;
+        }
+        
+        if (!actionElement) {
+            console.error('No action selected');
+            alert('Please select an action');
+            return false;
+        }
+        
+        const action = actionElement.value;
+        
+        try {
+            // Disable button and show loading
+            deleteBtn.disabled = true;
+            deleteBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Deleting...';
+            
+            const deleteUrl = `/api/evernote_folders/${folderId}`;
+            console.log('DELETE URL:', deleteUrl);
+            
+            const response = await fetch(deleteUrl, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({action})
+            });
+            
+            console.log('DELETE response status:', response.status);
+            
+            const responseText = await response.text();
+            console.log('DELETE response text:', responseText);
+            
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                console.error('JSON parse error:', e);
+                throw new Error('Server returned invalid response');
+            }
+            
+            if (response.ok && data.status === 'success') {
+                // Hide modal properly
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteFolderModal'));
+                if (modal) {
+                    modal.hide();
+                    
+                    // Wait for modal to close completely before proceeding
+                    setTimeout(async () => {
+                        await this.loadFolders();
+                        if (this.currentFolderId == folderId) {
+                            this.selectAllNotes();
+                        }
+                    }, 300);
+                } else {
+                    // Fallback: reload immediately if modal not found
+                    await this.loadFolders();
+                    if (this.currentFolderId == folderId) {
+                        this.selectAllNotes();
+                    }
+                }
+                
+                return true;
+            } else {
+                throw new Error(data.message || 'Delete failed');
+            }
+            
+        } catch (error) {
+            console.error('Delete folder error:', error);
+            alert('Delete failed: ' + error.message);
+            return false;
+        } finally {
+            // Re-enable button
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = 'Delete';
+        }
+    },
     populateParentSelect() {
         const select = document.getElementById('parent-folder');
         select.innerHTML = '<option value="">Root Level</option>';
@@ -2041,11 +2243,11 @@ const NoteManager = {
             console.log('Note creation response:', data);
             
             if (data && data.id) {
-                // Reload notes cho folder hiện tại
-                await this.loadNotes(currentFolderId);
-                
-                // Update folder tree để cập nhật notes count
+                // QUAN TRỌNG: Reload folder tree trước để cập nhật notes_count
                 await FolderManager.loadFolders();
+                
+                // Sau đó reload notes cho folder hiện tại
+                await this.loadNotes(currentFolderId);
                 
                 // Chọn note vừa tạo
                 this.selectNote(data.id);
@@ -2074,16 +2276,16 @@ const NoteManager = {
         try {
             await API.deleteNote(AppState.currentId);
             
-            // Reload notes cho folder hiện tại
-            await this.loadNotes(FolderManager.currentFolderId);
-            
-            // Update folder tree để cập nhật notes count
+            // QUAN TRỌNG: Reload folder tree trước để cập nhật notes_count
             await FolderManager.loadFolders();
+            
+            // Sau đó reload notes cho folder hiện tại
+            await this.loadNotes(FolderManager.currentFolderId);
         } catch (error) {
             console.error('Error deleting note:', error);
             alert('Error deleting note');
         }
-    }
+    },
 };
 
 // ===== IMAGE MANAGER =====
@@ -2349,7 +2551,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('parent-folder').value = FolderManager.currentFolderId || '';
         document.getElementById('folder-id').value = '';
         
-        new bootstrap.Modal(document.getElementById('folderModal')).show();
+        const modal = new bootstrap.Modal(document.getElementById('folderModal'));
+        modal.show();
     };
     
     // Save folder button
@@ -2371,19 +2574,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         if (success) {
-            bootstrap.Modal.getInstance(document.getElementById('folderModal')).hide();
+            const modal = bootstrap.Modal.getInstance(document.getElementById('folderModal'));
+            modal.hide();
         }
     };
     
-    // Delete folder confirmation
-    document.getElementById('confirm-delete-folder-btn').onclick = async () => {
-        const action = document.querySelector('input[name="deleteAction"]:checked').value;
-        const folderId = document.getElementById('confirm-delete-folder-btn').dataset.folderId;
+    // Confirm delete folder button
+    document.getElementById('confirm-delete-folder-btn').addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
         
-        if (await FolderManager.deleteFolder(folderId, action)) {
-            bootstrap.Modal.getInstance(document.getElementById('deleteFolderModal')).hide();
+        // Prevent multiple clicks
+        if (event.target.disabled) {
+            return;
         }
-    };
+        
+        await FolderManager.handleDeleteFolder();
+    });
 
     // Setup editor events
     const editor = document.getElementById('evernote-editor');
@@ -2400,12 +2607,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load initial data
     NoteManager.loadNotes();
 });
-
-// Global function for deleting folder (called from folder tree)
-FolderManager.deleteFolder = function(id) {
-    document.getElementById('confirm-delete-folder-btn').dataset.folderId = id;
-    new bootstrap.Modal(document.getElementById('deleteFolderModal')).show();
-};
 
 // ===== MOBILE CURSOR MANAGER =====
 const MobileCursorManager = {
@@ -2455,7 +2656,6 @@ const MobileCursorManager = {
                 /* Ensure enough space for keyboard */
                 .note-editor-wrapper {
                     min-height: 100vh;
-                    padding-bottom: 60vh;
                 }
                 
                 .note-editor {
@@ -2848,6 +3048,31 @@ const EditorFocusManager = {
     }
 };
 
+document.getElementById('deleteFolderModal').addEventListener('hidden.bs.modal', function (event) {
+    // Reset form when modal is closed
+    const form = this.querySelector('form');
+    if (form) {
+        form.reset();
+    }
+    
+    // Reset default selection
+    document.getElementById('moveToParent').checked = true;
+    
+    // Reset button state
+    const deleteBtn = document.getElementById('confirm-delete-folder-btn');
+    deleteBtn.disabled = false;
+    deleteBtn.innerHTML = 'Delete';
+    
+    // Clear folder ID
+    delete deleteBtn.dataset.folderId;
+    
+    console.log('Delete folder modal cleaned up');
+});
+
+// Also prevent backdrop clicking when processing
+document.getElementById('deleteFolderModal').addEventListener('show.bs.modal', function (event) {
+    console.log('Delete folder modal shown');
+});
 
 // Expose managers globally
 window.ImageManager = ImageManager;

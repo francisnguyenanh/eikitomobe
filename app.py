@@ -1944,46 +1944,74 @@ def update_evernote_folder(folder_id):
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/evernote_folders/<int:folder_id>', methods=['DELETE'])
-@login_required
+@login_required  
 def delete_evernote_folder(folder_id):
-    """Delete folder and optionally move notes/subfolders"""
     try:
         folder = EvernoteFolder.query.get_or_404(folder_id)
-        data = request.json or {}
-        action = data.get('action', 'move_to_parent')  # 'move_to_parent' or 'delete_all'
+        data = request.json or {}  # Add fallback for empty request body
+        action = data.get('action', 'move_to_parent')
+        
+        app.logger.info(f"Deleting folder {folder_id} with action: {action}")
         
         if action == 'delete_all':
             # Delete all notes and subfolders recursively
-            def delete_recursive(folder_to_delete):
+            def delete_folder_recursive(f):
+                app.logger.info(f"Recursively deleting folder: {f.id}")
+                
                 # Delete all notes in this folder
-                EvernoteNote.query.filter_by(folder_id=folder_to_delete.id).delete()
+                notes_deleted = EvernoteNote.query.filter_by(folder_id=f.id).delete()
+                app.logger.info(f"Deleted {notes_deleted} notes from folder {f.id}")
                 
-                # Recursively delete subfolders
-                for child in folder_to_delete.children:
-                    delete_recursive(child)
+                # Delete all subfolders recursively
+                children = EvernoteFolder.query.filter_by(parent_id=f.id).all()
+                for child in children:
+                    delete_folder_recursive(child)
                 
-                db.session.delete(folder_to_delete)
+                # Delete the folder itself
+                db.session.delete(f)
             
-            delete_recursive(folder)
-        else:
-            # Move notes and subfolders to parent
-            parent_id = folder.parent_id
+            delete_folder_recursive(folder)
+            
+        else:  # move_to_parent (default)
+            app.logger.info(f"Moving contents of folder {folder_id} to parent")
             
             # Move all notes to parent folder
-            EvernoteNote.query.filter_by(folder_id=folder_id).update({'folder_id': parent_id})
+            notes = EvernoteNote.query.filter_by(folder_id=folder.id).all()
+            for note in notes:
+                note.folder_id = folder.parent_id
+                app.logger.info(f"Moved note {note.id} to parent folder {folder.parent_id}")
             
-            # Move all subfolders to parent
-            EvernoteFolder.query.filter_by(parent_id=folder_id).update({'parent_id': parent_id})
+            # Move all subfolders to parent folder  
+            subfolders = EvernoteFolder.query.filter_by(parent_id=folder.id).all()
+            for subfolder in subfolders:
+                subfolder.parent_id = folder.parent_id
+                app.logger.info(f"Moved subfolder {subfolder.id} to parent folder {folder.parent_id}")
             
             # Delete the folder
             db.session.delete(folder)
         
         db.session.commit()
+        app.logger.info(f"Successfully deleted folder {folder_id}")
+        result = jsonify({
+            'status': 'success', 
+            'message': 'Folder deleted successfully',
+            'action': action
+        })
         
-        return jsonify({'status': 'success'})
+        app.logger.info(f"Folder {folder_id} deletion result: {result}")
+        return jsonify({
+            'status': 'success', 
+            'message': 'Folder deleted successfully',
+            'action': action
+        })
+        
     except Exception as e:
-        app.logger.error(f"Error deleting folder: {str(e)}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        app.logger.error(f"Error deleting folder {folder_id}: {str(e)}")
+        db.session.rollback()
+        return jsonify({
+            'status': 'error', 
+            'message': f'Failed to delete folder: {str(e)}'
+        }), 500
 
 @app.route('/api/evernote_folders/<int:folder_id>/notes', methods=['GET'])
 @login_required
