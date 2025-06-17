@@ -1579,7 +1579,7 @@ const MobileCursorManager = {
             // hoặc 1/5 để an toàn hơn
             const targetY = Math.min(
                 viewportHeight * 0.20,  // 20% từ trên
-                200  // Hoặc tối đa 200px từ trên
+                Math.max(200, Math.min(300, viewportHeight * 0.4))  // Adaptive max
             );
             
             const currentCursorY = cursorRect.top;
