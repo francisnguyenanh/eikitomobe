@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "learning/base.html" %}
 
 {% block head %}
 <style>
@@ -762,28 +762,26 @@ document.addEventListener('DOMContentLoaded', function() {
     function displayDailyVocabulary(data) {
         const container = document.getElementById('dailyVocabularyContainer');
         
-        const quickLinksHtml = `
-            <a href="https://dictionary.cambridge.org/dictionary/english/${data.word}" target="_blank" class="quick-link-card">
-                <i class="bi bi-book link-icon text-primary"></i>
-                <div class="link-title">Cambridge Dictionary</div>
-                <div class="link-description">Look up pronunciation and detailed meaning</div>
-            </a>
+        // Dictionary links
+        const dictionaryLinksHtml = `
             <a href="https://www.merriam-webster.com/dictionary/${data.word}" target="_blank" class="quick-link-card">
                 <i class="bi bi-journal-text link-icon text-success"></i>
                 <div class="link-title">Merriam-Webster</div>
                 <div class="link-description">American English dictionary</div>
             </a>
-            <a href="https://eow.alc.co.jp/search?q=${data.japanese_meaning}" target="_blank" class="quick-link-card">
-                <i class="bi bi-translate link-icon text-info"></i>
-                <div class="link-title">ALC Dictionary</div>
-                <div class="link-description">English-Japanese examples and meanings</div>
-            </a>
-            <a href="https://www.google.com/search?q=${data.word}+example+sentences" target="_blank" class="quick-link-card">
-                <i class="bi bi-search link-icon text-muted"></i>
-                <div class="link-title">Google Examples</div>
-                <div class="link-description">Find example sentences and usage</div>
-            </a>
         `;
+
+        // AI links
+        let aiLinksHtml = '';
+        if (data.ai_links && data.ai_links.length > 0) {
+            aiLinksHtml = data.ai_links.map(link => `
+                <a href="${link.url}" target="_blank" class="quick-link-card">
+                    <i class="${link.icon} link-icon text-${link.color}"></i>
+                    <div class="link-title">${link.title}</div>
+                    <div class="link-description">${link.description}</div>
+                </a>
+            `).join('');
+        }
 
         const wordClass = data.is_completed ? 'completed' : '';
         const toggleChecked = data.is_completed ? 'checked' : '';
@@ -904,7 +902,8 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             
             <div class="quick-links-container">
-                ${quickLinksHtml}
+                ${dictionaryLinksHtml}
+                ${aiLinksHtml}
             </div>
         `;
     }

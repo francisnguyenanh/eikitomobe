@@ -6,7 +6,7 @@
   "copilot_url": "https://copilot.microsoft.com/?q={query}",
   "chatgpt_enabled": true,
   "grok_enabled": true,
-  "perplexity_enabled": true,
-  "you_enabled": true,
-  "copilot_enabled": true
+  "perplexity_enabled": false,
+  "you_enabled": false,
+  "copilot_enabled": false
 }

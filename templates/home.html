@@ -620,14 +620,9 @@
                             <li><a class="dropdown-item" href="{{ url_for('knowledge') }}">
                                 <i class="bi bi-lightbulb"></i> Knowledge
                             </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('manage_quotes') }}">
-                                <i class="bi bi-chat-quote"></i> Quote
+                            <li><a class="dropdown-item" href="{{ url_for('vocabulary') }}">
+                                <i class="bi bi-chat-quote"></i> Vocabulary
                             </a></li>
-                            <li class="nav-item">
-                                <a class="dropdown-item" href="#" id="showLinksBtn">
-                                    <i class="bi bi-link-45deg"></i> Links
-                                </a>
-                            </li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -849,68 +844,107 @@
                             </form>
                         </div>
                         <div class="tab-pane fade" id="profileTab">
-                            <form id="profileForm" class="mb-3">
+                            <form id="profileForm">
                                 <div class="mb-3">
-                                    <label class="form-label">Name</label>
-                                    <input type="text" class="form-control" name="name" id="profileName" required>
+                                    <label for="profileName" class="form-label">
+                                        <i class="bi bi-person me-1"></i>
+                                        Name
+                                    </label>
+                                    <input type="text" class="form-control" id="profileName" placeholder="Enter your name">
                                 </div>
+                                
                                 <div class="mb-3">
-                                    <label class="form-label">Job</label>
-                                    <input type="text" class="form-control" name="job" id="profileJob">
+                                    <label for="profileJob" class="form-label">
+                                        <i class="bi bi-briefcase me-1"></i>
+                                        Job Title
+                                    </label>
+                                    <input type="text" class="form-control" id="profileJob" placeholder="Enter your job title">
                                 </div>
+                                
                                 <div class="mb-3">
-                                    <label class="form-label">Email</label>
-                                    <input type="email" class="form-control" name="email" id="profileEmail">
+                                    <label for="profileEmail" class="form-label">
+                                        <i class="bi bi-envelope me-1"></i>
+                                        Email
+                                    </label>
+                                    <input type="email" class="form-control" id="profileEmail" placeholder="Enter your email">
                                 </div>
+                                
                                 <div class="mb-3">
-                                    <label class="form-label">Phone</label>
-                                    <input type="text" class="form-control" name="phone" id="profilePhone">
+                                    <label for="profilePhone" class="form-label">
+                                        <i class="bi bi-phone me-1"></i>
+                                        Phone
+                                    </label>
+                                    <input type="tel" class="form-control" id="profilePhone" placeholder="Enter your phone">
                                 </div>
+                                
                                 <div class="mb-3">
-                                    <label class="form-label">SNS</label>
-                                    <input type="text" class="form-control" name="sns" id="profileSNS">
+                                    <label for="profileSNS" class="form-label">
+                                        <i class="bi bi-share me-1"></i>
+                                        Social Media
+                                    </label>
+                                    <input type="text" class="form-control" id="profileSNS" placeholder="Enter your social media">
                                 </div>
+                                
                                 <div class="mb-3">
-                                    <label class="form-label">Slogan</label>
-                                    <input type="text" class="form-control" name="slogan" id="profileSlogan">
+                                    <label for="profileSlogan" class="form-label">
+                                        <i class="bi bi-chat-quote me-1"></i>
+                                        Slogan
+                                    </label>
+                                    <input type="text" class="form-control" id="profileSlogan" placeholder="Enter your slogan">
                                 </div>
-                                <button type="submit" class="btn btn-primary w-100">
+                                
+                                <button type="button" class="btn btn-primary w-100" onclick="ProfileManager.saveProfile()">
                                     <i class="bi bi-check-circle me-1"></i>
-                                    Update
+                                    Save Profile
                                 </button>
+                                
+                                <div class="mt-3">
+                                    <div id="profileMsg" class="text-center text-success"></div>
+                                </div>
                             </form>
-                            <div id="profileMsg" class="text-success text-center"></div>
                         </div>
-                            <div class="tab-pane fade" id="aiSearchTab">
-                                <form id="aiSearchForm">
-                                    <div class="mb-3">
+                        <div class="tab-pane fade" id="aiSearchTab">
+                            <form id="aiSearchForm" onsubmit="return false;"> <!-- Thêm onsubmit="return false;" -->
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="bi bi-chat-text me-1"></i>
+                                        AI Question Template (Knowledge)
+                                    </label>
+                                    <textarea class="form-control" id="aiQuestionTemplate" name="ai_question_template" rows="4" placeholder="Enter your question template. Use {keyword} as placeholder for the keyword."></textarea>
+                                    <div class="form-text">
+                                        <strong>Example:</strong> "abc {keyword} xyz."
+                                        <br><strong>Note:</strong> Must contain {keyword} placeholder
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        <i class="bi bi-book me-1"></i>
+                                        Vocabulary Query Template
+                                    </label>
+                                    <textarea class="form-control" id="vocabularyQueryTemplate" name="vocabulary_query_template" rows="3" placeholder="Enter your vocabulary query template. Use {word} as placeholder for the word."></textarea>
+                                    <div class="form-text">
+                                        <strong>Example:</strong> "Explain the meaning of {word} with examples and usage"
+                                        <br><strong>Note:</strong> Must contain {word} placeholder
+                                    </div>
+                                </div>
+                                
+                                <hr class="my-4">
+                                
+                                <div class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
                                         <label class="form-label">
-                                            <i class="bi bi-chat-text me-1"></i>
-                                            AI Question Template
+                                            <i class="bi bi-robot me-1"></i>
+                                            ChatGPT
                                         </label>
-                                        <textarea class="form-control" id="aiQuestionTemplate" name="ai_question_template" rows="4" placeholder="Enter your question template. Use {keyword} as placeholder for the keyword."></textarea>
-                                        <div class="form-text">
-                                            <strong>Example:</strong> "abc {keyword} xyz."
-                                            <br><strong>Note:</strong> Must contain {keyword} placeholder
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="chatgptEnabled" name="chatgpt_enabled" checked>
+                                            <label class="form-check-label" for="chatgptEnabled">Enabled</label>
                                         </div>
                                     </div>
-                                    
-                                    <hr class="my-4">
-                                    
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <label class="form-label">
-                                                <i class="bi bi-robot me-1"></i>
-                                                ChatGPT
-                                            </label>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="chatgptEnabled" name="chatgpt_enabled" checked>
-                                                <label class="form-check-label" for="chatgptEnabled">Enabled</label>
-                                            </div>
-                                        </div>
-                                        <input type="text" class="form-control" id="chatgptUrl" name="chatgpt_url" value="https://chat.openai.com/?q={query}" placeholder="URL must contain {query}">
-                                        <div class="form-text">AI assistant for comprehensive answers</div>
-                                    </div>
+                                    <input type="text" class="form-control" id="chatgptUrl" name="chatgpt_url" value="https://chat.openai.com/?q={query}" placeholder="URL must contain {query}">
+                                    <div class="form-text">AI assistant for comprehensive answers</div>
+                                </div>
                                     
                                     <div class="mb-3">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -974,7 +1008,7 @@
                                     
                                     <div class="row">
                                         <div class="col-6">
-                                            <button type="submit" class="btn btn-primary w-100">
+                                            <button type="button" class="btn btn-primary w-100" onclick="AISettingsManager.saveAISettings(event)"> <!-- Thay đổi type từ "submit" thành "button" và thêm onclick -->
                                                 <i class="bi bi-check-circle me-1"></i>
                                                 Save Settings
                                             </button>
@@ -1173,8 +1207,6 @@
                 }
             },
 
-            // ... existing API methods ...
-
             async getConfig() {
                 return this.fetchWithErrorHandling('/api/config');
             },
@@ -1197,9 +1229,52 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(settings)
                 });
+            },
+
+            async getUISettings() {
+                return this.fetchWithErrorHandling('/api/ui_settings');
+            },
+
+            async updateUISettings(settings) {
+                return this.fetchWithErrorHandling('/api/ui_settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+            },
+
+            async getLinksTree() {
+                return this.fetchWithErrorHandling('/api/links_tree');
+            },
+
+            async updateLinksTree(treeData) {
+                return this.fetchWithErrorHandling('/api/links_tree', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ links_tree: treeData })
+                });
+            },
+
+            async getCardList() {
+                return this.fetchWithErrorHandling('/api/card_list');
+            },
+
+            async getCardHash(filename) {
+                return this.fetchWithErrorHandling(`/api/card_hash/${encodeURIComponent(filename)}`);
+            },
+
+            async getCardInfo() {
+                return this.fetchWithErrorHandling('/api/card_info');
+            },
+
+            async updateCardInfo(data) {
+                return this.fetchWithErrorHandling('/api/card_info', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
             }
         };
-
         // ===== MINDFULNESS TIMER =====
         const MindfulnessTimer = {
             init() {
@@ -1434,7 +1509,7 @@
 
         // ===== AI SETTINGS MANAGER =====
         const AISettingsManager = {
-            // Default URLs và question template
+            // Default URLs và question templates
             defaultUrls: {
                 chatgpt: "https://chat.openai.com/?q={query}",
                 grok: "https://x.com/i/grok?q={query}",
@@ -1445,9 +1520,12 @@
 
             defaultQuestionTemplate: "1.hãy nêu tổng quan và các khía cạnh chi tiết về {keyword} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật (những từ vựng jlpt N1 thì thêm furigana). 2.sao cho sau khi đọc xong thì có đủ kiến thức để trình bày lại cho người khác. 3.hãy cho bảng từ vựn (đầy đủ phiên âm, âm hán việt) liên quan đến chủ đề này. 4.nêu 1 số link nguồn để tìm hiểu sâu hơn về chủ đề này.",
 
+            defaultVocabularyTemplate: "Please explain the word '{word}' in detail including: 1. Definition and meaning, 2. Pronunciation guide, 3. Example sentences with context, 4. Common collocations and phrases, 5. Etymology if interesting, 6. Similar or related words",
+
             init() {
                 document.getElementById('ai-search-tab').addEventListener('shown.bs.tab', () => this.loadAISettings());
-                document.getElementById('aiSearchForm').addEventListener('submit', (e) => this.saveAISettings(e));
+                // Xóa event listener cho form submit vì ta đã thay đổi cách xử lý
+                // document.getElementById('aiSearchForm').addEventListener('submit', (e) => this.saveAISettings(e));
                 document.getElementById('resetAiSettings').addEventListener('click', () => this.resetAISettings());
                 
                 // Add visual feedback for disabled checkboxes
@@ -1472,12 +1550,15 @@
                     // Load AI settings
                     const aiResponse = await API.getAISettings();
                     
-                    // Load question template from config
+                    // Load templates from config
                     const configResponse = await API.getConfig();
                     
-                    // Load question template
+                    // Load question templates
                     const questionTemplate = configResponse.ai_question_template || this.defaultQuestionTemplate;
+                    const vocabularyTemplate = configResponse.vocabulary_query_template || this.defaultVocabularyTemplate;
+                    
                     document.getElementById('aiQuestionTemplate').value = questionTemplate;
+                    document.getElementById('vocabularyQueryTemplate').value = vocabularyTemplate;
                     
                     // Load URLs
                     document.getElementById('chatgptUrl').value = aiResponse.chatgpt_url || this.defaultUrls.chatgpt;
@@ -1514,7 +1595,7 @@
             },
 
             async saveAISettings(e) {
-                e.preventDefault();
+                e.preventDefault(); // Thêm dòng này để ngăn form submit mặc định
                 
                 // Validate question template
                 const questionTemplate = document.getElementById('aiQuestionTemplate').value.trim();
@@ -1525,6 +1606,18 @@
                 
                 if (!questionTemplate.includes('{keyword}')) {
                     this.showMessage('Question template must contain {keyword} placeholder', 'danger');
+                    return;
+                }
+                
+                // Validate vocabulary template
+                const vocabularyTemplate = document.getElementById('vocabularyQueryTemplate').value.trim();
+                if (!vocabularyTemplate) {
+                    this.showMessage('Vocabulary query template is required', 'danger');
+                    return;
+                }
+                
+                if (!vocabularyTemplate.includes('{word}')) {
+                    this.showMessage('Vocabulary template must contain {word} placeholder', 'danger');
                     return;
                 }
                 
@@ -1562,9 +1655,10 @@
                     // Save AI settings
                     const aiResponse = await API.updateAISettings(aiSettings);
                     
-                    // Save question template to config
+                    // Save templates to config
                     const configResponse = await API.updateConfig({
-                        ai_question_template: questionTemplate
+                        ai_question_template: questionTemplate,
+                        vocabulary_query_template: vocabularyTemplate
                     });
                     
                     if (aiResponse.status === 'success' && configResponse.status === 'success') {
@@ -1578,8 +1672,9 @@
 
             resetAISettings() {
                 if (confirm('Are you sure you want to reset AI settings to default?')) {
-                    // Reset question template
+                    // Reset templates
                     document.getElementById('aiQuestionTemplate').value = this.defaultQuestionTemplate;
+                    document.getElementById('vocabularyQueryTemplate').value = this.defaultVocabularyTemplate;
                     
                     // Reset URLs to default
                     document.getElementById('chatgptUrl').value = this.defaultUrls.chatgpt;
@@ -1924,40 +2019,64 @@
         const ProfileManager = {
             init() {
                 document.getElementById('profile-tab').addEventListener('shown.bs.tab', () => this.loadProfileData());
-                document.getElementById('profileForm').addEventListener('submit', (e) => this.saveProfile(e));
+                
+                // Thêm event listener sau khi DOM đã loaded
+                const profileForm = document.getElementById('profileForm');
+                if (profileForm) {
+                    profileForm.addEventListener('submit', (e) => this.saveProfile(e));
+                }
             },
 
             async loadProfileData() {
                 try {
                     const data = await API.getCardInfo();
-                    document.getElementById('profileName').value = data.Name || '';
-                    document.getElementById('profileJob').value = data.Job || '';
-                    document.getElementById('profileEmail').value = data.Email || '';
-                    document.getElementById('profilePhone').value = data.Phone || '';
-                    document.getElementById('profileSNS').value = data.SNS || '';
-                    document.getElementById('profileSlogan').value = data.SubSlogan || '';
+                    // Kiểm tra element tồn tại trước khi set value
+                    const profileName = document.getElementById('profileName');
+                    const profileJob = document.getElementById('profileJob');
+                    const profileEmail = document.getElementById('profileEmail');
+                    const profilePhone = document.getElementById('profilePhone');
+                    const profileSNS = document.getElementById('profileSNS');
+                    const profileSlogan = document.getElementById('profileSlogan');
+                    
+                    if (profileName) profileName.value = data.Name || '';
+                    if (profileJob) profileJob.value = data.Job || '';
+                    if (profileEmail) profileEmail.value = data.Email || '';
+                    if (profilePhone) profilePhone.value = data.Phone || '';
+                    if (profileSNS) profileSNS.value = data.SNS || '';
+                    if (profileSlogan) profileSlogan.value = data.SubSlogan || '';
                 } catch (error) {
                     console.error('Failed to load profile data:', error);
                 }
             },
 
             async saveProfile(e) {
-                e.preventDefault();
+                if (e) e.preventDefault();
+                
+                // Kiểm tra element tồn tại trước khi lấy value
+                const profileName = document.getElementById('profileName');
+                const profileJob = document.getElementById('profileJob');
+                const profileEmail = document.getElementById('profileEmail');
+                const profilePhone = document.getElementById('profilePhone');
+                const profileSNS = document.getElementById('profileSNS');
+                const profileSlogan = document.getElementById('profileSlogan');
+                
                 const data = {
-                    Name: document.getElementById('profileName').value,
-                    Job: document.getElementById('profileJob').value,
-                    Email: document.getElementById('profileEmail').value,
-                    Phone: document.getElementById('profilePhone').value,
-                    SNS: document.getElementById('profileSNS').value,
-                    SubSlogan: document.getElementById('profileSlogan').value
+                    Name: profileName ? profileName.value : '',
+                    Job: profileJob ? profileJob.value : '',
+                    Email: profileEmail ? profileEmail.value : '',
+                    Phone: profilePhone ? profilePhone.value : '',
+                    SNS: profileSNS ? profileSNS.value : '',
+                    SubSlogan: profileSlogan ? profileSlogan.value : ''
                 };
                 
                 try {
                     const response = await API.updateCardInfo(data);
                     if (response.status === 'success') {
                         const msgElement = document.getElementById('profileMsg');
-                        msgElement.textContent = 'Cập nhật thành công!';
-                        setTimeout(() => { msgElement.textContent = ''; }, 2000);
+                        if (msgElement) {
+                            msgElement.textContent = 'Cập nhật thành công!';
+                            setTimeout(() => { msgElement.textContent = ''; }, 2000);
+                        }
                     }
                 } catch (error) {
                     console.error('Failed to save profile:', error);

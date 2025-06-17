@@ -34,6 +34,8 @@ import shutil
 import hashlib
 import json
 import time
+import urllib.parse
+import hashlib
 
 try:
     from PIL import Image as PILImage
@@ -1628,6 +1630,53 @@ def get_card_info_api():
     info = get_card_info()
     return jsonify(info)
 
+@app.route('/api/card_info', methods=['GET', 'POST'])
+@login_required
+def api_card_info():
+    """API endpoint for card info management"""
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            config = load_config()
+            config['card'] = {
+                'Name': data.get('Name', ''),
+                'Job': data.get('Job', ''),
+                'Email': data.get('Email', ''),
+                'Phone': data.get('Phone', ''),
+                'SNS': data.get('SNS', ''),
+                'SubSlogan': data.get('SubSlogan', '')
+            }
+            save_config(config)
+            app.logger.info(f"Card info saved successfully: {list(data.keys())}")
+            return jsonify({'status': 'success'})
+        except Exception as e:
+            app.logger.error(f"Error updating card info: {str(e)}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+    else:
+        try:
+            config = load_config()
+            card_info = config.get('card', {})
+            return jsonify(card_info)
+        except Exception as e:
+            app.logger.error(f"Error loading card info: {str(e)}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/card_list')
+@login_required
+def api_card_list():
+    """API endpoint for card list"""
+    try:
+        card_dir = os.path.join(app.template_folder, 'Card')
+        files = []
+        if os.path.exists(card_dir):
+            for fname in os.listdir(card_dir):
+                if fname.endswith('.html'):
+                    files.append(fname)
+        return jsonify({'files': files})
+    except Exception as e:
+        app.logger.error(f"Error getting card list: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    
 @app.route('/update_card_info', methods=['POST'])
 @login_required
 def update_card_info():
@@ -1644,7 +1693,54 @@ def update_card_info():
     save_config(config)
     return jsonify({'status': 'success'})
 
-import hashlib
+@app.route('/api/ui_settings', methods=['GET', 'POST'])
+@login_required
+def api_ui_settings():
+    """API endpoint for UI settings"""
+    config = load_config()
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            config['ui_settings'] = {
+                'show_bg_image': bool(data.get('show_bg_image', True)),
+                'show_quote': bool(data.get('show_quote', True))
+            }
+            save_config(config)
+            return jsonify({'status': 'success'})
+        except Exception as e:
+            app.logger.error(f"Error saving UI settings: {str(e)}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+    else:
+        try:
+            ui_settings = config.get('ui_settings', {'show_bg_image': True, 'show_quote': True})
+            return jsonify(ui_settings)
+        except Exception as e:
+            app.logger.error(f"Error loading UI settings: {str(e)}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/links_tree', methods=['GET', 'POST'])
+@login_required
+def api_links_tree():
+    """API endpoint for links tree"""
+    config = load_config()
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            config['links_tree'] = data.get('links_tree', [])
+            save_config(config)
+            return jsonify({'status': 'success'})
+        except Exception as e:
+            app.logger.error(f"Error saving links tree: {str(e)}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+    else:
+        try:
+            links_tree = config.get('links_tree', [])
+            return jsonify({'links_tree': links_tree})
+        except Exception as e:
+            app.logger.error(f"Error loading links tree: {str(e)}")
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+        
+
 
 def encode_card(filename):
     # Có thể dùng thêm salt hoặc user_id nếu muốn bảo mật hơn
@@ -2292,7 +2388,8 @@ def auto_save_edit_diary(diary_id):
 
 @app.route('/knowledge')
 def knowledge():
-    return render_template('knowledge.html')
+    return render_template('learning/knowledge.html') 
+
 
 
 @app.route('/api/config', methods=['GET', 'POST'])
@@ -2308,7 +2405,11 @@ def api_config():
             if 'ai_question_template' in data:
                 config['ai_question_template'] = data['ai_question_template']
             
+            if 'vocabulary_query_template' in data:  # Thêm dòng này
+                config['vocabulary_query_template'] = data['vocabulary_query_template']
+            
             save_config(config)
+            app.logger.info(f"Config saved successfully: {list(data.keys())}")  # Log để debug
             return jsonify({'status': 'success'})
         except Exception as e:
             app.logger.error(f"Error updating config: {str(e)}")
@@ -3020,11 +3121,92 @@ def get_available_vocabulary():
     
     return available_words
 
+def generate_vocabulary_links(word):
+    """Generate AI search links for vocabulary with custom query"""
+    encoded_word = urllib.parse.quote(word)
+    
+    # Load AI settings
+    ai_settings = load_ai_settings()
+    
+    # Load vocabulary query template from config
+    config = load_config()
+    vocabulary_template = config.get('vocabulary_query_template', 
+        "Please explain the word '{word}' in detail including: 1. Definition and meaning, 2. Pronunciation guide, 3. Example sentences with context, 4. Common collocations and phrases, 5. Etymology if interesting, 6. Similar or related words")
+    
+    # Replace {word} with actual word
+    query = vocabulary_template.replace('{word}', word)
+    sources = []
+    
+    
+    # Use URLs from settings - these can now be customized
+    ai_services = {
+        'chatgpt': {
+            'url': ai_settings.get('chatgpt_url', "https://chat.openai.com/?q={query}"),
+            'title': 'ChatGPT AI',
+            'icon': 'bi-robot',
+            'description': f'Ask ChatGPT about "{word}"',
+            'color': 'success'
+        },
+        'grok': {
+            'url': ai_settings.get('grok_url', "https://x.com/i/grok?q={query}"),
+            'title': 'Grok AI',
+            'icon': 'bi-lightning',
+            'description': f'Ask Grok AI about "{word}"',
+            'color': 'dark'
+        },
+        'perplexity': {
+            'url': ai_settings.get('perplexity_url', "https://www.perplexity.ai/?q={query}"),
+            'title': 'Perplexity AI',
+            'icon': 'bi-search',
+            'description': f'Search Perplexity AI for "{word}"',
+            'color': 'info'
+        },
+        'you': {
+            'url': ai_settings.get('you_url', "https://you.com/search?q={query}"),
+            'title': 'You.com Search',
+            'icon': 'bi-globe',
+            'description': f'Search You.com for "{word}"',
+            'color': 'warning'
+        },
+        'copilot': {
+            'url': ai_settings.get('copilot_url', "https://copilot.microsoft.com/?q={query}"),
+            'title': 'Copilot AI',
+            'icon': 'bi-microsoft',
+            'description': f'Ask Microsoft Copilot about "{word}"',
+            'color': 'secondary'
+        }
+    }
+    
+    # Add enabled AI services
+    for service_name, service_info in ai_services.items():
+        if ai_settings.get(f'{service_name}_enabled'):
+            # Get the URL template from settings
+            url_template = service_info['url']
+            
+            # Replace {query} with the full query template (for detailed explanation)
+            # And also support {word} for simple word lookup
+            if '{word}' in url_template:
+                # If URL template has {word}, use just the word
+                service_url = url_template.replace('{word}', encoded_word)
+            else:
+                # If URL template has {query}, use the full query
+                service_url = url_template.replace('{query}', urllib.parse.quote(query))
+            
+            sources.append({
+                'title': service_info['title'],
+                'url': service_url,
+                'icon': service_info['icon'],
+                'description': service_info['description'],
+                'color': service_info['color']
+            })
+    
+    return sources
+
 # Add vocabulary routes
 @app.route('/vocabulary')
 @login_required
 def vocabulary():
-    return render_template('vocabulary.html')
+    return render_template('learning/vocabulary.html')
 
 @app.route('/api/daily_vocabulary')
 def get_daily_vocabulary_api():
@@ -3036,6 +3218,9 @@ def get_daily_vocabulary_api():
         # Check if current word is completed
         is_completed = word in progress.get('completed_words', [])
         
+        # Generate AI links for vocabulary
+        ai_links = generate_vocabulary_links(word)
+        
         return jsonify({
             'status': 'success',
             'word': word,
@@ -3043,6 +3228,7 @@ def get_daily_vocabulary_api():
             'japanese_meaning': japanese_meaning,
             'vietnamese_meaning': vietnamese_meaning,
             'is_completed': is_completed,
+            'ai_links': ai_links,  # Add AI links
             'date': datetime.now().strftime('%Y-%m-%d'),
             'stats': progress.get('stats', {})
         })
@@ -3081,6 +3267,9 @@ def get_random_vocabulary_api():
         word, level, japanese_meaning, vietnamese_meaning = random.choice(all_available)
         progress = load_vocabulary_progress()
         
+        # Generate AI links for vocabulary
+        ai_links = generate_vocabulary_links(word)
+        
         app.logger.info(f"Random vocabulary selected: {word} from level: {level}")
         
         return jsonify({
@@ -3090,6 +3279,7 @@ def get_random_vocabulary_api():
             'japanese_meaning': japanese_meaning,
             'vietnamese_meaning': vietnamese_meaning,
             'is_completed': False,
+            'ai_links': ai_links,  # Add AI links
             'date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'stats': progress.get('stats', {}),
             'is_random': True
