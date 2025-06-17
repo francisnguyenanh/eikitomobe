@@ -144,15 +144,31 @@ class Quote(db_quote.Model):
     content = db_quote.Column(db_quote.Text, nullable=False)
     category_id = db_quote.Column(db_quote.Integer, db_quote.ForeignKey('quote_category.id'), nullable=False)
 
+# Thêm model mới cho Folder
+class EvernoteFolder(db.Model):
+    __tablename__ = 'evernote_folder'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    parent_id = db.Column(db.Integer, db.ForeignKey('evernote_folder.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # Self-referential relationship for nested folders
+    children = db.relationship('EvernoteFolder', backref=db.backref('parent', remote_side=[id]))
+    notes = db.relationship('EvernoteNote', backref='folder', lazy=True)
+
+# Cập nhật EvernoteNote model - thêm folder_id
 class EvernoteNote(db.Model):
     __tablename__ = 'evernote_note'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
+    folder_id = db.Column(db.Integer, db.ForeignKey('evernote_folder.id'), nullable=True)  # Thêm dòng này
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     images = db.Column(db.Text, nullable=True)
-    share_id = db.Column(db.String(36), nullable=True, unique=True)  # Thêm field này
+    share_id = db.Column(db.String(36), nullable=True, unique=True)
+
     
 class Todo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -384,6 +400,13 @@ with app.app_context():
     load_knowledge_categories()
     load_criteria_methods()
     db.create_all()
+    
+    if not EvernoteFolder.query.first():
+        default_folder = EvernoteFolder(name="General Notes")
+        db.session.add(default_folder)
+        db.session.commit()
+        app.logger.info("Created default folder: General Notes")
+    
     # Add default categories if not exist
     for name, color in [('Work', '#FF9999'), ('Personal', '#99FF99'), ('Ideas', '#9999FF')]:
         if not Category.query.filter_by(name=name, user_id='default').first():
@@ -1819,41 +1842,243 @@ def ever_note():
     theme = session.get('theme', 'light')
     return render_template('Memo/ever_note.html', theme=theme)
 
-# Thêm mới ghi chú Evernote
+@app.route('/api/evernote_folders', methods=['GET'])
+@login_required
+def get_evernote_folders():
+    """Get all folders in tree structure"""
+    try:
+        folders = EvernoteFolder.query.all()
+        
+        def build_folder_tree(parent_id=None):
+            tree = []
+            for folder in folders:
+                if folder.parent_id == parent_id:
+                    folder_data = {
+                        'id': folder.id,
+                        'name': folder.name,
+                        'parent_id': folder.parent_id,
+                        'created_at': folder.created_at.isoformat() if folder.created_at else None,
+                        'children': build_folder_tree(folder.id),
+                        'notes_count': len(folder.notes)
+                    }
+                    tree.append(folder_data)
+            return tree
+        
+        return jsonify({
+            'status': 'success',
+            'folders': build_folder_tree()
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting folders: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/evernote_folders', methods=['POST'])
+@login_required
+def create_evernote_folder():
+    """Create new folder"""
+    try:
+        data = request.json
+        name = data.get('name', '').strip()
+        parent_id = data.get('parent_id')
+        
+        if not name:
+            return jsonify({'status': 'error', 'message': 'Folder name is required'}), 400
+        
+        # Check if parent exists (if parent_id provided)
+        if parent_id and not EvernoteFolder.query.get(parent_id):
+            return jsonify({'status': 'error', 'message': 'Parent folder not found'}), 404
+        
+        folder = EvernoteFolder(name=name, parent_id=parent_id)
+        db.session.add(folder)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'folder': {
+                'id': folder.id,
+                'name': folder.name,
+                'parent_id': folder.parent_id,
+                'created_at': folder.created_at.isoformat()
+            }
+        })
+    except Exception as e:
+        app.logger.error(f"Error creating folder: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/evernote_folders/<int:folder_id>', methods=['PUT'])
+@login_required
+def update_evernote_folder(folder_id):
+    """Update folder"""
+    try:
+        folder = EvernoteFolder.query.get_or_404(folder_id)
+        data = request.json
+        
+        name = data.get('name', '').strip()
+        if not name:
+            return jsonify({'status': 'error', 'message': 'Folder name is required'}), 400
+        
+        parent_id = data.get('parent_id')
+        
+        # Prevent making folder its own parent or creating circular reference
+        if parent_id == folder_id:
+            return jsonify({'status': 'error', 'message': 'Folder cannot be its own parent'}), 400
+        
+        # Check if parent exists (if parent_id provided)
+        if parent_id and not EvernoteFolder.query.get(parent_id):
+            return jsonify({'status': 'error', 'message': 'Parent folder not found'}), 404
+        
+        folder.name = name
+        folder.parent_id = parent_id
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'folder': {
+                'id': folder.id,
+                'name': folder.name,
+                'parent_id': folder.parent_id
+            }
+        })
+    except Exception as e:
+        app.logger.error(f"Error updating folder: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/evernote_folders/<int:folder_id>', methods=['DELETE'])
+@login_required
+def delete_evernote_folder(folder_id):
+    """Delete folder and optionally move notes/subfolders"""
+    try:
+        folder = EvernoteFolder.query.get_or_404(folder_id)
+        data = request.json or {}
+        action = data.get('action', 'move_to_parent')  # 'move_to_parent' or 'delete_all'
+        
+        if action == 'delete_all':
+            # Delete all notes and subfolders recursively
+            def delete_recursive(folder_to_delete):
+                # Delete all notes in this folder
+                EvernoteNote.query.filter_by(folder_id=folder_to_delete.id).delete()
+                
+                # Recursively delete subfolders
+                for child in folder_to_delete.children:
+                    delete_recursive(child)
+                
+                db.session.delete(folder_to_delete)
+            
+            delete_recursive(folder)
+        else:
+            # Move notes and subfolders to parent
+            parent_id = folder.parent_id
+            
+            # Move all notes to parent folder
+            EvernoteNote.query.filter_by(folder_id=folder_id).update({'folder_id': parent_id})
+            
+            # Move all subfolders to parent
+            EvernoteFolder.query.filter_by(parent_id=folder_id).update({'parent_id': parent_id})
+            
+            # Delete the folder
+            db.session.delete(folder)
+        
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        app.logger.error(f"Error deleting folder: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/evernote_folders/<int:folder_id>/notes', methods=['GET'])
+@login_required
+def get_folder_notes(folder_id):
+    """Get all notes in a specific folder"""
+    try:
+        folder = EvernoteFolder.query.get_or_404(folder_id)
+        notes = EvernoteNote.query.filter_by(folder_id=folder_id).order_by(EvernoteNote.updated_at.desc()).all()
+        
+        return jsonify({
+            'status': 'success',
+            'folder': {
+                'id': folder.id,
+                'name': folder.name
+            },
+            'notes': [
+                {
+                    'id': n.id,
+                    'title': n.title,
+                    'content': n.content,
+                    'folder_id': n.folder_id,
+                    'created_at': n.created_at.isoformat() if n.created_at else None,
+                    'updated_at': n.updated_at.isoformat() if n.updated_at else None,
+                    'images': json.loads(n.images) if n.images else []
+                } for n in notes
+            ]
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting folder notes: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# Cập nhật API tạo note để hỗ trợ folder_id
 @app.route('/api/evernote_notes', methods=['POST'])
+@login_required
 def add_evernote_note():
-    data = request.json
-    note = EvernoteNote(
-        title=data.get('title', ''),
-        content=data.get('content', ''),
-        images=data.get('images')  # Thêm images
-    )
-    db.session.add(note)
-    db.session.commit()
-    
-    return jsonify({
-        'status': 'success', 
-        'id': note.id,
-        'created_at': note.created_at.isoformat() if note.created_at else None,
-        'updated_at': note.updated_at.isoformat() if note.updated_at else None
-    })
+    try:
+        data = request.json
+        folder_id = data.get('folder_id')
+        
+        # Validate folder exists if provided
+        if folder_id and not EvernoteFolder.query.get(folder_id):
+            return jsonify({'status': 'error', 'message': 'Folder not found'}), 404
+        
+        note = EvernoteNote(
+            title=data.get('title', ''),
+            content=data.get('content', ''),
+            folder_id=folder_id,
+            images=data.get('images')
+        )
+        db.session.add(note)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success', 
+            'id': note.id,
+            'folder_id': note.folder_id,
+            'created_at': note.created_at.isoformat() if note.created_at else None,
+            'updated_at': note.updated_at.isoformat() if note.updated_at else None
+        })
+    except Exception as e:
+        app.logger.error(f"Error creating note: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
-
-# Sửa ghi chú Evernote
+# Cập nhật API update note để hỗ trợ folder_id
 @app.route('/api/evernote_notes/<int:note_id>', methods=['PUT'])
+@login_required
 def update_evernote_note(note_id):
-    note = EvernoteNote.query.get_or_404(note_id)
-    data = request.json
-    note.title = data.get('title', note.title)
-    note.content = data.get('content', note.content)
-    if 'images' in data:  # Cập nhật images nếu có
-        note.images = data['images']
-    db.session.commit()
-    
-    return jsonify({
-        'status': 'success',
-        'updated_at': note.updated_at.isoformat() if note.updated_at else None
-    })
+    try:
+        note = EvernoteNote.query.get_or_404(note_id)
+        data = request.json
+        
+        note.title = data.get('title', note.title)
+        note.content = data.get('content', note.content)
+        
+        # Update folder if provided
+        if 'folder_id' in data:
+            folder_id = data['folder_id']
+            if folder_id and not EvernoteFolder.query.get(folder_id):
+                return jsonify({'status': 'error', 'message': 'Folder not found'}), 404
+            note.folder_id = folder_id
+        
+        if 'images' in data:
+            note.images = data['images']
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'folder_id': note.folder_id,
+            'updated_at': note.updated_at.isoformat() if note.updated_at else None
+        })
+    except Exception as e:
+        app.logger.error(f"Error updating note: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 # Xóa ghi chú Evernote
 @app.route('/api/evernote_notes/<int:note_id>', methods=['DELETE'])
@@ -1863,19 +2088,35 @@ def delete_evernote_note(note_id):
     db.session.commit()
     return jsonify({'status': 'success'})
 
+# Cập nhật API get notes để include folder info
 @app.route('/api/evernote_notes', methods=['GET'])
+@login_required
 def get_evernote_notes():
-    notes = EvernoteNote.query.order_by(EvernoteNote.id).all()
-    return jsonify([
-        {
-            'id': n.id,
-            'title': n.title,
-            'content': n.content,
-            'created_at': n.created_at.isoformat() if n.created_at else None,
-            'updated_at': n.updated_at.isoformat() if n.updated_at else None,
-            'images': json.loads(n.images) if n.images else []  # Thêm images
-        } for n in notes
-    ])
+    try:
+        folder_id = request.args.get('folder_id', type=int)
+        
+        if folder_id:
+            # Get notes for specific folder
+            notes = EvernoteNote.query.filter_by(folder_id=folder_id).order_by(EvernoteNote.updated_at.desc()).all()
+        else:
+            # Get all notes
+            notes = EvernoteNote.query.order_by(EvernoteNote.updated_at.desc()).all()
+        
+        return jsonify([
+            {
+                'id': n.id,
+                'title': n.title,
+                'content': n.content,
+                'folder_id': n.folder_id,
+                'folder_name': n.folder.name if n.folder else None,
+                'created_at': n.created_at.isoformat() if n.created_at else None,
+                'updated_at': n.updated_at.isoformat() if n.updated_at else None,
+                'images': json.loads(n.images) if n.images else []
+            } for n in notes
+        ])
+    except Exception as e:
+        app.logger.error(f"Error getting notes: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/evernote_notes/<int:note_id>/upload_images', methods=['POST'])
 @login_required

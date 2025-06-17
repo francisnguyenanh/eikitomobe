@@ -33,12 +33,28 @@
         <!-- Sidebar -->
         <div class="note-sidebar" id="note-sidebar">
             <div class="sidebar-header">
-                <h3>Notes</h3>
-                <button class="sidebar-toggle" id="toggle-sidebar-btn">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
+                <h3>Folders & Notes</h3>
+                <div class="sidebar-actions">
+                    <button class="btn btn-sm btn-outline-primary" id="add-folder-btn" title="Add folder">
+                        <i class="bi bi-folder-plus"></i>
+                    </button>
+                    <button class="sidebar-toggle" id="toggle-sidebar-btn">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                </div>
             </div>
-            <ul class="note-list" id="note-list"></ul>
+            
+            <!-- Folder Tree -->
+            <div id="folder-tree" class="folder-tree"></div>
+            
+            <!-- Notes List for selected folder -->
+            <div class="notes-section">
+                <div class="notes-header">
+                    <span id="current-folder-name">All Notes</span>
+                    <span id="notes-count" class="badge bg-secondary">0</span>
+                </div>
+                <ul class="note-list" id="note-list"></ul>
+            </div>
         </div>
 
         <!-- Editor -->
@@ -140,6 +156,73 @@
             
             <!-- Meta Info -->
             <div id="note-meta" class="note-meta"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals cho Folder Management -->
+<div class="modal fade" id="folderModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="folderModalTitle">
+                    <i class="bi bi-folder me-2"></i>
+                    Create Folder
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="folderForm">
+                    <div class="mb-3">
+                        <label for="folder-name" class="form-label">Folder Name</label>
+                        <input type="text" class="form-control" id="folder-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="parent-folder" class="form-label">Parent Folder</label>
+                        <select class="form-select" id="parent-folder">
+                            <option value="">Root Level</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="folder-id">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-folder-btn">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteFolderModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Delete Folder
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>What would you like to do with the contents of this folder?</p>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="deleteAction" id="moveToParent" value="move_to_parent" checked>
+                    <label class="form-check-label" for="moveToParent">
+                        Move notes and subfolders to parent folder
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="deleteAction" id="deleteAll" value="delete_all">
+                    <label class="form-check-label" for="deleteAll">
+                        Delete everything (notes and subfolders)
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-folder-btn">Delete</button>
+            </div>
         </div>
     </div>
 </div>
@@ -848,6 +931,116 @@
 .note-sidebar.collapsed .sidebar-toggle i {
     transform: rotate(180deg);
 }
+/* Folder Tree Styles */
+.sidebar-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.folder-tree {
+    max-height: 300px;
+    overflow-y: auto;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+}
+
+.folder-item {
+    padding: 0.25rem 0;
+    border-radius: 6px;
+    margin: 2px 0;
+    transition: background-color 0.2s ease;
+}
+
+.folder-item:hover {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.05);
+}
+
+.folder-item.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.folder-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+}
+
+.folder-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    flex: 1;
+}
+
+.folder-icon {
+    color: var(--warning-color, #f39c12);
+    font-size: 1rem;
+}
+
+.folder-name {
+    font-weight: 500;
+    flex: 1;
+}
+
+.notes-count {
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    margin-left: auto;
+}
+
+.folder-item.active .notes-count {
+    color: rgba(255,255,255,0.8);
+}
+
+.folder-actions {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.folder-item:hover .folder-actions {
+    opacity: 1;
+}
+
+.folder-item.active .folder-actions {
+    opacity: 1;
+}
+
+.notes-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    background: rgba(0,0,0,0.02);
+    font-weight: 600;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .folder-tree {
+        max-height: 150px;
+    }
+    
+    .folder-actions {
+        opacity: 1; /* Always show on mobile */
+    }
+    
+    .folder-content {
+        padding: 0.75rem 0.5rem;
+    }
+}
 </style>
 
 <script>
@@ -947,34 +1140,219 @@ const API = {
         return await res.json();
     },
 
-    async createNote(title, content) {
+    async createNote(title, content, folderId = null) {
         const res = await fetch('/api/evernote_notes', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({title, content})
+            body: JSON.stringify({title, content, folder_id: folderId})
         });
         return await res.json();
     },
 
-    async updateNote(id, title, content) {
+    async updateNote(id, title, content, folderId = null) {
+        const body = {title, content};
+        if (folderId !== null) body.folder_id = folderId;
+        
         const res = await fetch(`/api/evernote_notes/${id}`, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({title, content})
+            body: JSON.stringify(body)
         });
         return await res.json();
     },
+
 
     async deleteNote(id) {
         await fetch(`/api/evernote_notes/${id}`, {method: 'DELETE'});
     }
 };
 
+// ===== FOLDER MANAGER =====
+const FolderManager = {
+    folders: [],
+    currentFolderId: null,
+
+    async loadFolders() {
+        try {
+            const response = await fetch('/api/evernote_folders');
+            const data = await response.json();
+            if (data.status === 'success') {
+                this.folders = data.folders;
+                this.renderFolderTree();
+                this.populateParentSelect();
+            }
+        } catch (error) {
+            console.error('Error loading folders:', error);
+        }
+    },
+
+    renderFolderTree() {
+        const treeContainer = document.getElementById('folder-tree');
+        treeContainer.innerHTML = this.buildFolderTreeHTML(this.folders);
+    },
+
+    buildFolderTreeHTML(folders, level = 0) {
+        let html = '';
+        folders.forEach(folder => {
+            const indent = level * 20;
+            html += `
+                <div class="folder-item" data-folder-id="${folder.id}" style="padding-left: ${indent}px">
+                    <div class="folder-content">
+                        <div class="folder-info" onclick="FolderManager.selectFolder(${folder.id})">
+                            <i class="bi bi-folder${folder.children.length > 0 ? '' : '2'} folder-icon"></i>
+                            <span class="folder-name">${folder.name}</span>
+                            <span class="notes-count">(${folder.notes_count})</span>
+                        </div>
+                        <div class="folder-actions">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="FolderManager.editFolder(${folder.id})" title="Edit">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="FolderManager.deleteFolder(${folder.id})" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            if (folder.children.length > 0) {
+                html += this.buildFolderTreeHTML(folder.children, level + 1);
+            }
+        });
+        return html;
+    },
+
+    populateParentSelect() {
+        const select = document.getElementById('parent-folder');
+        select.innerHTML = '<option value="">Root Level</option>';
+        
+        const addFolderOptions = (folders, level = 0) => {
+            folders.forEach(folder => {
+                const indent = '  '.repeat(level);
+                select.innerHTML += `<option value="${folder.id}">${indent}${folder.name}</option>`;
+                if (folder.children.length > 0) {
+                    addFolderOptions(folder.children, level + 1);
+                }
+            });
+        };
+        
+        addFolderOptions(this.folders);
+    },
+
+    selectFolder(folderId) {
+        this.currentFolderId = folderId;
+        
+        // Update UI
+        document.querySelectorAll('.folder-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelector(`[data-folder-id="${folderId}"]`).classList.add('active');
+        
+        // Load notes for this folder
+        NoteManager.loadNotes(folderId);
+        
+        // Update current folder name
+        const folder = this.findFolder(folderId);
+        document.getElementById('current-folder-name').textContent = folder ? folder.name : 'All Notes';
+    },
+
+    findFolder(id, folders = this.folders) {
+        for (const folder of folders) {
+            if (folder.id === id) return folder;
+            const found = this.findFolder(id, folder.children);
+            if (found) return found;
+        }
+        return null;
+    },
+
+    async createFolder(name, parentId = null) {
+        try {
+            const response = await fetch('/api/evernote_folders', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, parent_id: parentId})
+            });
+            
+            const data = await response.json();
+            if (data.status === 'success') {
+                await this.loadFolders();
+                return true;
+            } else {
+                alert(data.message);
+                return false;
+            }
+        } catch (error) {
+            console.error('Error creating folder:', error);
+            return false;
+        }
+    },
+
+    async updateFolder(id, name, parentId = null) {
+        try {
+            const response = await fetch(`/api/evernote_folders/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, parent_id: parentId})
+            });
+            
+            const data = await response.json();
+            if (data.status === 'success') {
+                await this.loadFolders();
+                return true;
+            } else {
+                alert(data.message);
+                return false;
+            }
+        } catch (error) {
+            console.error('Error updating folder:', error);
+            return false;
+        }
+    },
+
+    async deleteFolder(id, action = 'move_to_parent') {
+        try {
+            const response = await fetch(`/api/evernote_folders/${id}`, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({action})
+            });
+            
+            if (response.ok) {
+                await this.loadFolders();
+                if (this.currentFolderId === id) {
+                    this.currentFolderId = null;
+                    NoteManager.loadNotes();
+                }
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error deleting folder:', error);
+            return false;
+        }
+    },
+
+    editFolder(id) {
+        const folder = this.findFolder(id);
+        if (!folder) return;
+        
+        document.getElementById('folderModalTitle').innerHTML = '<i class="bi bi-folder me-2"></i>Edit Folder';
+        document.getElementById('folder-name').value = folder.name;
+        document.getElementById('parent-folder').value = folder.parent_id || '';
+        document.getElementById('folder-id').value = id;
+        
+        new bootstrap.Modal(document.getElementById('folderModal')).show();
+    }
+};
+
 // ===== NOTE MANAGER =====
 const NoteManager = {
-    async loadNotes() {
-        AppState.notes = await API.fetchNotes();
+    async loadNotes(folderId = null) {
+        const url = folderId ? `/api/evernote_notes?folder_id=${folderId}` : '/api/evernote_notes';
+        AppState.notes = await fetch(url).then(res => res.json());
         this.renderNoteList();
+        
+        // Update notes count
+        document.getElementById('notes-count').textContent = AppState.notes.length;
         
         if (AppState.notes.length > 0) {
             const stillExists = AppState.notes.some(n => n.id === AppState.currentId);
@@ -1040,8 +1418,8 @@ const NoteManager = {
 
     async addNote() {
         const title = `Note ${new Date().toLocaleString()}`;
-        const data = await API.createNote(title, "");
-        await this.loadNotes();
+        const data = await API.createNote(title, "", FolderManager.currentFolderId);
+        await this.loadNotes(FolderManager.currentFolderId);
         this.selectNote(data.id);
     },
 
@@ -1305,7 +1683,52 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Escape') ImageManager.closeLightbox();
     });
 
+    // Initialize folder management
+    FolderManager.loadFolders();
     
+    // Add folder button
+    document.getElementById('add-folder-btn').onclick = () => {
+        document.getElementById('folderModalTitle').innerHTML = '<i class="bi bi-folder me-2"></i>Create Folder';
+        document.getElementById('folder-name').value = '';
+        document.getElementById('parent-folder').value = FolderManager.currentFolderId || '';
+        document.getElementById('folder-id').value = '';
+        
+        new bootstrap.Modal(document.getElementById('folderModal')).show();
+    };
+    
+    // Save folder button
+    document.getElementById('save-folder-btn').onclick = async () => {
+        const name = document.getElementById('folder-name').value.trim();
+        const parentId = document.getElementById('parent-folder').value || null;
+        const folderId = document.getElementById('folder-id').value;
+        
+        if (!name) {
+            alert('Please enter a folder name');
+            return;
+        }
+        
+        let success;
+        if (folderId) {
+            success = await FolderManager.updateFolder(folderId, name, parentId);
+        } else {
+            success = await FolderManager.createFolder(name, parentId);
+        }
+        
+        if (success) {
+            bootstrap.Modal.getInstance(document.getElementById('folderModal')).hide();
+        }
+    };
+    
+    // Delete folder confirmation
+    document.getElementById('confirm-delete-folder-btn').onclick = async () => {
+        const action = document.querySelector('input[name="deleteAction"]:checked').value;
+        const folderId = document.getElementById('confirm-delete-folder-btn').dataset.folderId;
+        
+        if (await FolderManager.deleteFolder(folderId, action)) {
+            bootstrap.Modal.getInstance(document.getElementById('deleteFolderModal')).hide();
+        }
+    };
+
     // Setup editor events
     const editor = document.getElementById('evernote-editor');
     const titleInput = document.getElementById('note-title');
@@ -1322,6 +1745,11 @@ document.addEventListener('DOMContentLoaded', () => {
     NoteManager.loadNotes();
 });
 
+// Global function for deleting folder (called from folder tree)
+FolderManager.deleteFolder = function(id) {
+    document.getElementById('confirm-delete-folder-btn').dataset.folderId = id;
+    new bootstrap.Modal(document.getElementById('deleteFolderModal')).show();
+};
 
 // ===== MOBILE CURSOR MANAGER =====
 const MobileCursorManager = {
