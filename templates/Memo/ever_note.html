@@ -44,8 +44,8 @@
                 </div>
             </div>
             
-            <!-- Folder Tree -->
-            <div id="folder-tree" class="folder-tree"></div>
+            <!-- Folder Tree với Apple-style expand/collapse -->
+            <div id="folder-tree" class="folder-tree-container"></div>
             
             <!-- Notes List for selected folder -->
             <div class="notes-section">
@@ -1041,6 +1041,354 @@
         padding: 0.75rem 0.5rem;
     }
 }
+/* ===== APPLE-STYLE FOLDER TREE ===== */
+.folder-tree-container {
+    max-height: 40vh;
+    overflow-y: auto;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+}
+
+.folder-tree-item {
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.folder-tree-item.root-level {
+    margin-bottom: 0.25rem;
+}
+
+.folder-item-content {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.75rem;
+    margin: 1px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 32px;
+}
+
+.folder-item-content:hover {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.08);
+}
+
+.folder-item-content.selected {
+    background: var(--primary-color);
+    color: white;
+}
+
+.folder-item-content.selected:hover {
+    background: var(--primary-color);
+}
+
+/* Expand/Collapse Toggle (Apple-style) */
+.folder-toggle {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--secondary-color);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.folder-toggle:hover {
+    color: var(--primary-color);
+}
+
+.folder-toggle i {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.folder-toggle.expanded i {
+    transform: rotate(90deg);
+}
+
+.folder-toggle.no-children {
+    visibility: hidden;
+}
+
+/* Folder Icon */
+.folder-icon {
+    margin-right: 0.5rem;
+    color: #f39c12;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.folder-item-content.selected .folder-icon {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Folder Name */
+.folder-name {
+    flex: 1;
+    font-weight: 500;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+/* Notes Count Badge */
+.folder-notes-count {
+    background: rgba(var(--secondary-color-rgb, 108, 117, 125), 0.2);
+    color: var(--secondary-color);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 10px;
+    margin-left: 0.5rem;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.folder-item-content.selected .folder-notes-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Folder Actions */
+.folder-actions {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+    opacity: 0;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.folder-item-content:hover .folder-actions {
+    opacity: 1;
+}
+
+.folder-item-content.selected .folder-actions {
+    opacity: 1;
+}
+
+.folder-action-btn {
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: rgba(var(--secondary-color-rgb, 108, 117, 125), 0.1);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.folder-action-btn:hover {
+    background: rgba(var(--secondary-color-rgb, 108, 117, 125), 0.2);
+}
+
+.folder-action-btn i {
+    font-size: 0.7rem;
+    color: var(--secondary-color);
+}
+
+.folder-item-content.selected .folder-action-btn {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.folder-item-content.selected .folder-action-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.folder-item-content.selected .folder-action-btn i {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Children Container */
+.folder-children {
+    margin-left: 1.5rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.folder-children.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.folder-children.expanded {
+    max-height: 1000px;
+    opacity: 1;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+/* All Notes Button */
+.all-notes-item {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.all-notes-content {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(var(--info-color-rgb, 23, 162, 184), 0.05);
+    border: 1px solid rgba(var(--info-color-rgb, 23, 162, 184), 0.2);
+}
+
+.all-notes-content:hover {
+    background: rgba(var(--info-color-rgb, 23, 162, 184), 0.1);
+}
+
+.all-notes-content.selected {
+    background: var(--info-color, #17a2b8);
+    color: white;
+}
+
+.all-notes-icon {
+    margin-right: 0.5rem;
+    color: var(--info-color, #17a2b8);
+    font-size: 0.9rem;
+}
+
+.all-notes-content.selected .all-notes-icon {
+    color: white;
+}
+
+.all-notes-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Notes Section Updates */
+.notes-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    background: rgba(0,0,0,0.02);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.notes-header #current-folder-name {
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+.notes-header #notes-count {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Note List Updates */
+.note-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+    margin: 0;
+    list-style: none;
+}
+
+.note-list li {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    line-height: 1.3;
+    border-radius: 0;
+    margin: 0 0.5rem;
+}
+
+.note-list li:hover {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.08);
+    border-radius: 6px;
+}
+
+.note-list li.active {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 500;
+    border-radius: 6px;
+}
+
+/* Scrollbar Styling */
+.folder-tree-container::-webkit-scrollbar,
+.note-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.folder-tree-container::-webkit-scrollbar-track,
+.note-list::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px;
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb,
+.note-list::-webkit-scrollbar-thumb {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.3);
+    border-radius: 3px;
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb:hover,
+.note-list::-webkit-scrollbar-thumb:hover {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.5);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .folder-tree-container {
+        max-height: 25vh;
+    }
+    
+    .folder-item-content {
+        padding: 0.5rem;
+    }
+    
+    .folder-children {
+        margin-left: 1rem;
+    }
+    
+    .folder-actions {
+        opacity: 1; /* Always show on mobile */
+    }
+    
+    .folder-toggle {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .note-list li {
+        padding: 1rem 0.75rem;
+        font-size: 0.85rem;
+    }
+}
 </style>
 
 <script>
@@ -1108,17 +1456,34 @@ const SaveManager = {
 
         try {
             if (!AppState.currentId) {
+                // QUAN TRỌNG: Khi tạo note mới từ auto-save, cần truyền folder_id
                 if (title !== "" || content !== "") {
-                    const data = await API.createNote(title, content);
-                    await NoteManager.loadNotes();
+                    console.log('Auto-save creating new note with folder_id:', FolderManager.currentFolderId);
+                    
+                    // Sử dụng folder hiện tại đang được chọn
+                    const currentFolderId = FolderManager.currentFolderId;
+                    
+                    const data = await API.createNote(title, content, currentFolderId);
+                    
+                    // Cập nhật AppState.currentId để lần save tiếp theo sẽ update thay vì tạo mới
+                    AppState.currentId = data.id;
+                    
+                    // Reload notes để cập nhật UI
+                    await NoteManager.loadNotes(currentFolderId);
+                    
+                    // Select note vừa tạo
                     NoteManager.selectNote(data.id);
+                    
+                    console.log(`Auto-save created note ${data.id} in folder ${currentFolderId || 'root'}`);
                 }
             } else {
+                // Update existing note - không cần folder_id
                 const note = AppState.notes.find(n => n.id === AppState.currentId);
                 if (note) {
                     note.title = title;
                     note.content = content;
                     await API.updateNote(AppState.currentId, title, content);
+                    console.log(`Auto-save updated note ${AppState.currentId}`);
                 }
             }
 
@@ -1136,34 +1501,104 @@ const SaveManager = {
 // ===== API FUNCTIONS =====
 const API = {
     async fetchNotes() {
-        const res = await fetch('/api/evernote_notes');
-        return await res.json();
+        try {
+            const res = await fetch('/api/evernote_notes');
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            return await res.json();
+        } catch (error) {
+            console.error('Error fetching notes:', error);
+            return [];
+        }
     },
 
     async createNote(title, content, folderId = null) {
-        const res = await fetch('/api/evernote_notes', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({title, content, folder_id: folderId})
-        });
-        return await res.json();
+        try {
+            console.log('API.createNote called with:', { title, content, folderId }); // Debug log
+            
+            const requestBody = {
+                title: title || '',
+                content: content || '',
+                folder_id: folderId  // Ensure this is correctly set
+            };
+            
+            console.log('Request body:', requestBody); // Debug log
+            
+            const res = await fetch('/api/evernote_notes', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(requestBody)
+            });
+            
+            console.log('Response status:', res.status); // Debug log
+            
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            
+            const data = await res.json();
+            console.log('Response data:', data); // Debug log
+            
+            if (data.status === 'error') {
+                throw new Error(data.message);
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Error creating note:', error);
+            throw error;
+        }
     },
 
-    async updateNote(id, title, content, folderId = null) {
-        const body = {title, content};
-        if (folderId !== null) body.folder_id = folderId;
-        
-        const res = await fetch(`/api/evernote_notes/${id}`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(body)
-        });
-        return await res.json();
+    async updateNote(id, title, content) {
+        try {
+            const res = await fetch(`/api/evernote_notes/${id}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    title: title, 
+                    content: content
+                    // Không cần folder_id khi update
+                })
+            });
+            
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            
+            const data = await res.json();
+            
+            if (data.status === 'error') {
+                throw new Error(data.message);
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Error updating note:', error);
+            throw error;
+        }
     },
-
 
     async deleteNote(id) {
-        await fetch(`/api/evernote_notes/${id}`, {method: 'DELETE'});
+        try {
+            const res = await fetch(`/api/evernote_notes/${id}`, {method: 'DELETE'});
+            
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            }
+            
+            const data = await res.json();
+            
+            if (data.status === 'error') {
+                throw new Error(data.message);
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Error deleting note:', error);
+            throw error;
+        }
     }
 };
 
@@ -1171,6 +1606,7 @@ const API = {
 const FolderManager = {
     folders: [],
     currentFolderId: null,
+    expandedFolders: new Set(),
 
     async loadFolders() {
         try {
@@ -1188,39 +1624,197 @@ const FolderManager = {
 
     renderFolderTree() {
         const treeContainer = document.getElementById('folder-tree');
-        treeContainer.innerHTML = this.buildFolderTreeHTML(this.folders);
+        
+        let html = `
+            <!-- All Notes Button -->
+            <div class="all-notes-item">
+                <div class="all-notes-content ${this.currentFolderId === null ? 'selected' : ''}" 
+                     onclick="FolderManager.selectAllNotes()">
+                    <i class="bi bi-collection all-notes-icon"></i>
+                    <span class="all-notes-title">All Notes</span>
+                    <span class="folder-notes-count" id="all-notes-count">0</span>
+                </div>
+            </div>
+        `;
+        
+        html += this.buildFolderTreeHTML(this.folders, 0);
+        treeContainer.innerHTML = html;
+        
+        // Update all notes count
+        this.updateAllNotesCount();
     },
 
     buildFolderTreeHTML(folders, level = 0) {
         let html = '';
+        
         folders.forEach(folder => {
-            const indent = level * 20;
+            const hasChildren = folder.children && folder.children.length > 0;
+            const isExpanded = this.expandedFolders.has(folder.id);
+            const isSelected = this.currentFolderId === folder.id;
+            
             html += `
-                <div class="folder-item" data-folder-id="${folder.id}" style="padding-left: ${indent}px">
-                    <div class="folder-content">
-                        <div class="folder-info" onclick="FolderManager.selectFolder(${folder.id})">
-                            <i class="bi bi-folder${folder.children.length > 0 ? '' : '2'} folder-icon"></i>
-                            <span class="folder-name">${folder.name}</span>
-                            <span class="notes-count">(${folder.notes_count})</span>
+                <div class="folder-tree-item ${level === 0 ? 'root-level' : ''}">
+                    <div class="folder-item-content ${isSelected ? 'selected' : ''}" 
+                         data-folder-id="${folder.id}">
+                        
+                        <!-- Expand/Collapse Toggle -->
+                        <button class="folder-toggle ${hasChildren ? (isExpanded ? 'expanded' : '') : 'no-children'}" 
+                                onclick="FolderManager.toggleFolder(event, ${folder.id})">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                        
+                        <!-- Folder Content -->
+                        <div style="display: flex; align-items: center; flex: 1; min-width: 0;" 
+                             onclick="FolderManager.selectFolder(${folder.id})">
+                            <i class="bi bi-folder${hasChildren ? '' : '2'} folder-icon"></i>
+                            <span class="folder-name" title="${folder.name}">${folder.name}</span>
+                            <span class="folder-notes-count">${folder.notes_count || 0}</span>
                         </div>
+                        
+                        <!-- Folder Actions -->
                         <div class="folder-actions">
-                            <button class="btn btn-sm btn-outline-secondary" onclick="FolderManager.editFolder(${folder.id})" title="Edit">
+                            <button class="folder-action-btn" 
+                                    onclick="FolderManager.editFolder(event, ${folder.id})" 
+                                    title="Edit folder">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="FolderManager.deleteFolder(${folder.id})" title="Delete">
+                            <button class="folder-action-btn" 
+                                    onclick="FolderManager.deleteFolder(event, ${folder.id})" 
+                                    title="Delete folder">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
                     </div>
+                    
+                    <!-- Children Container -->
+                    ${hasChildren ? `
+                        <div class="folder-children ${isExpanded ? 'expanded' : 'collapsed'}">
+                            ${this.buildFolderTreeHTML(folder.children, level + 1)}
+                        </div>
+                    ` : ''}
                 </div>
             `;
-            if (folder.children.length > 0) {
-                html += this.buildFolderTreeHTML(folder.children, level + 1);
-            }
         });
+        
         return html;
     },
 
+    toggleFolder(event, folderId) {
+        event.stopPropagation();
+        
+        if (this.expandedFolders.has(folderId)) {
+            this.expandedFolders.delete(folderId);
+        } else {
+            this.expandedFolders.add(folderId);
+        }
+        
+        // Re-render tree to update expand/collapse state
+        this.renderFolderTree();
+    },
+
+    selectFolder(folderId) {
+        console.log('FolderManager.selectFolder called with:', folderId);
+        console.log('Setting currentFolderId from', this.currentFolderId, 'to', folderId);
+        
+        this.currentFolderId = folderId;
+        
+        console.log('FolderManager.currentFolderId is now:', this.currentFolderId);
+        
+        // Update UI selection
+        document.querySelectorAll('.folder-item-content').forEach(item => {
+            item.classList.remove('selected');
+        });
+        document.querySelector('.all-notes-content').classList.remove('selected');
+        
+        const selectedItem = document.querySelector(`[data-folder-id="${folderId}"]`);
+        if (selectedItem) {
+            selectedItem.classList.add('selected');
+            console.log('UI updated - folder selected');
+        } else {
+            console.warn('Could not find folder element with ID:', folderId);
+        }
+        
+        // Load notes for this folder
+        NoteManager.loadNotes(folderId);
+        
+        // Update current folder name
+        const folder = this.findFolder(folderId);
+        document.getElementById('current-folder-name').textContent = folder ? folder.name : 'All Notes';
+        
+        // Clear current note selection khi chuyển folder
+        AppState.currentId = null;
+        NoteManager.clearEditor();
+    },
+
+    selectAllNotes() {
+        console.log('FolderManager.selectAllNotes called');
+        console.log('Setting currentFolderId from', this.currentFolderId, 'to null');
+        
+        this.currentFolderId = null;
+        
+        console.log('FolderManager.currentFolderId is now:', this.currentFolderId);
+        
+        // Update UI selection
+        document.querySelectorAll('.folder-item-content').forEach(item => {
+            item.classList.remove('selected');
+        });
+        document.querySelector('.all-notes-content').classList.add('selected');
+        
+        // Load all notes
+        NoteManager.loadNotes(null);
+        
+        // Update current folder name
+        document.getElementById('current-folder-name').textContent = 'All Notes';
+        
+        // Clear current note selection
+        AppState.currentId = null;
+        NoteManager.clearEditor();
+    },
+
+    async updateAllNotesCount() {
+        try {
+            const response = await fetch('/api/evernote_notes');
+            const notes = await response.json();
+            const allNotesCount = Array.isArray(notes) ? notes.length : 0;
+            
+            const countElement = document.getElementById('all-notes-count');
+            if (countElement) {
+                countElement.textContent = allNotesCount;
+            }
+        } catch (error) {
+            console.error('Error updating all notes count:', error);
+        }
+    },
+
+    findFolder(id, folders = this.folders) {
+        for (const folder of folders) {
+            if (folder.id === id) return folder;
+            const found = this.findFolder(id, folder.children);
+            if (found) return found;
+        }
+        return null;
+    },
+
+    editFolder(event, id) {
+        event.stopPropagation();
+        const folder = this.findFolder(id);
+        if (!folder) return;
+        
+        document.getElementById('folderModalTitle').innerHTML = '<i class="bi bi-folder me-2"></i>Edit Folder';
+        document.getElementById('folder-name').value = folder.name;
+        document.getElementById('parent-folder').value = folder.parent_id || '';
+        document.getElementById('folder-id').value = id;
+        
+        new bootstrap.Modal(document.getElementById('folderModal')).show();
+    },
+
+    deleteFolder(event, id) {
+        event.stopPropagation();
+        document.getElementById('confirm-delete-folder-btn').dataset.folderId = id;
+        new bootstrap.Modal(document.getElementById('deleteFolderModal')).show();
+    },
+
+    // ... các methods khác giữ nguyên ...
     populateParentSelect() {
         const select = document.getElementById('parent-folder');
         select.innerHTML = '<option value="">Root Level</option>';
@@ -1236,32 +1830,6 @@ const FolderManager = {
         };
         
         addFolderOptions(this.folders);
-    },
-
-    selectFolder(folderId) {
-        this.currentFolderId = folderId;
-        
-        // Update UI
-        document.querySelectorAll('.folder-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        document.querySelector(`[data-folder-id="${folderId}"]`).classList.add('active');
-        
-        // Load notes for this folder
-        NoteManager.loadNotes(folderId);
-        
-        // Update current folder name
-        const folder = this.findFolder(folderId);
-        document.getElementById('current-folder-name').textContent = folder ? folder.name : 'All Notes';
-    },
-
-    findFolder(id, folders = this.folders) {
-        for (const folder of folders) {
-            if (folder.id === id) return folder;
-            const found = this.findFolder(id, folder.children);
-            if (found) return found;
-        }
-        return null;
     },
 
     async createFolder(name, parentId = null) {
@@ -1319,8 +1887,7 @@ const FolderManager = {
             if (response.ok) {
                 await this.loadFolders();
                 if (this.currentFolderId === id) {
-                    this.currentFolderId = null;
-                    NoteManager.loadNotes();
+                    this.selectAllNotes();
                 }
                 return true;
             }
@@ -1329,46 +1896,70 @@ const FolderManager = {
             console.error('Error deleting folder:', error);
             return false;
         }
-    },
-
-    editFolder(id) {
-        const folder = this.findFolder(id);
-        if (!folder) return;
-        
-        document.getElementById('folderModalTitle').innerHTML = '<i class="bi bi-folder me-2"></i>Edit Folder';
-        document.getElementById('folder-name').value = folder.name;
-        document.getElementById('parent-folder').value = folder.parent_id || '';
-        document.getElementById('folder-id').value = id;
-        
-        new bootstrap.Modal(document.getElementById('folderModal')).show();
     }
 };
 
 // ===== NOTE MANAGER =====
 const NoteManager = {
     async loadNotes(folderId = null) {
-        const url = folderId ? `/api/evernote_notes?folder_id=${folderId}` : '/api/evernote_notes';
-        AppState.notes = await fetch(url).then(res => res.json());
-        this.renderNoteList();
-        
-        // Update notes count
-        document.getElementById('notes-count').textContent = AppState.notes.length;
-        
-        if (AppState.notes.length > 0) {
-            const stillExists = AppState.notes.some(n => n.id === AppState.currentId);
-            if (!stillExists) {
-                AppState.currentId = AppState.notes[0].id;
+        try {
+            const url = folderId ? `/api/evernote_notes?folder_id=${folderId}` : '/api/evernote_notes';
+            console.log('Loading notes from:', url);
+            
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            console.log('API response:', data);
+            
+            // Validate response data
+            if (Array.isArray(data)) {
+                AppState.notes = data;
+            } else if (data && Array.isArray(data.notes)) {
+                AppState.notes = data.notes;
+            } else if (data && data.status === 'error') {
+                console.error('API error:', data.message);
+                AppState.notes = [];
+            } else {
+                console.warn('Unexpected API response format:', data);
+                AppState.notes = [];
             }
-            this.selectNote(AppState.currentId);
-        } else {
-            AppState.currentId = null;
-            this.clearEditor();
+            
+            console.log('Final AppState.notes:', AppState.notes);
+            
+            this.renderNoteList();
+            
+            // Update notes count
+            document.getElementById('notes-count').textContent = AppState.notes.length;
+            
+            if (AppState.notes.length > 0) {
+                const stillExists = AppState.notes.some(n => n.id === AppState.currentId);
+                if (!stillExists) {
+                    AppState.currentId = AppState.notes[0].id;
+                }
+                this.selectNote(AppState.currentId);
+            } else {
+                AppState.currentId = null;
+                this.clearEditor();
+            }
+        } catch (error) {
+            console.error('Error loading notes:', error);
+            AppState.notes = []; // Fallback to empty array
+            this.renderNoteList();
+            document.getElementById('notes-count').textContent = '0';
         }
     },
 
     renderNoteList() {
         const list = document.getElementById('note-list');
         list.innerHTML = '';
+        
+        // Validate that AppState.notes is an array
+        if (!Array.isArray(AppState.notes)) {
+            console.error('AppState.notes is not an array:', AppState.notes);
+            AppState.notes = [];
+            return;
+        }
+        
         AppState.notes.forEach(note => {
             const li = document.createElement('li');
             li.className = note.id === AppState.currentId ? 'active' : '';
@@ -1380,13 +1971,23 @@ const NoteManager = {
 
     selectNote(id) {
         AppState.currentId = id;
-        const note = AppState.notes.find(n => n.id === id);
-        if (!note) return;
         
-        document.getElementById('note-title').value = note.title;
+        // Validate that AppState.notes is an array
+        if (!Array.isArray(AppState.notes)) {
+            console.error('AppState.notes is not an array in selectNote:', AppState.notes);
+            return;
+        }
+        
+        const note = AppState.notes.find(n => n.id === id);
+        if (!note) {
+            console.warn('Note not found:', id);
+            return;
+        }
+        
+        document.getElementById('note-title').value = note.title || '';
         
         const editor = document.getElementById('evernote-editor');
-        editor.innerHTML = note.content;
+        editor.innerHTML = note.content || '';
         
         // Handle images
         if (note.images && note.images.length > 0) {
@@ -1406,6 +2007,13 @@ const NoteManager = {
         const metaDiv = document.getElementById('note-meta');
         if (note.created_at && note.updated_at) {
             metaDiv.innerHTML = `Created: ${new Date(note.created_at).toLocaleString()}<br>Updated: ${new Date(note.updated_at).toLocaleString()}`;
+            
+            // Hiển thị thông tin folder nếu có
+            if (note.folder_name) {
+                metaDiv.innerHTML += `<br>Folder: ${note.folder_name}`;
+            }
+        } else {
+            metaDiv.innerHTML = '';
         }
     },
 
@@ -1417,16 +2025,64 @@ const NoteManager = {
     },
 
     async addNote() {
-        const title = `Note ${new Date().toLocaleString()}`;
-        const data = await API.createNote(title, "", FolderManager.currentFolderId);
-        await this.loadNotes(FolderManager.currentFolderId);
-        this.selectNote(data.id);
+        try {
+            // Tạo title với timestamp
+            const title = `Note ${new Date().toLocaleString()}`;
+            
+            // Lấy folder hiện tại đang được chọn
+            const currentFolderId = FolderManager.currentFolderId;
+            
+            console.log('NoteManager.addNote - Creating note in folder:', currentFolderId);
+            console.log('FolderManager.currentFolderId value:', FolderManager.currentFolderId);
+            
+            // Tạo note với folder_id - ĐẢM BẢO TRUYỀN ĐÚNG THAM SỐ
+            const data = await API.createNote(title, "", currentFolderId);
+            
+            console.log('Note creation response:', data);
+            
+            if (data && data.id) {
+                // Reload notes cho folder hiện tại
+                await this.loadNotes(currentFolderId);
+                
+                // Update folder tree để cập nhật notes count
+                await FolderManager.loadFolders();
+                
+                // Chọn note vừa tạo
+                this.selectNote(data.id);
+                
+                // Focus vào title input để user có thể edit ngay
+                document.getElementById('note-title').focus();
+                document.getElementById('note-title').select();
+                
+                console.log(`Created note ${data.id} in folder ${currentFolderId || 'root'}`);
+            } else {
+                console.error('Failed to create note:', data);
+                alert('Failed to create note');
+            }
+        } catch (error) {
+            console.error('Error creating note:', error);
+            alert('Error creating note: ' + error.message);
+        }
     },
 
     async deleteNote() {
-        if (!AppState.currentId) return;
-        await API.deleteNote(AppState.currentId);
-        await this.loadNotes();
+        if (!AppState.currentId) {
+            alert('No note selected');
+            return;
+        }
+        
+        try {
+            await API.deleteNote(AppState.currentId);
+            
+            // Reload notes cho folder hiện tại
+            await this.loadNotes(FolderManager.currentFolderId);
+            
+            // Update folder tree để cập nhật notes count
+            await FolderManager.loadFolders();
+        } catch (error) {
+            console.error('Error deleting note:', error);
+            alert('Error deleting note');
+        }
     }
 };
 

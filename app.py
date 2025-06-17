@@ -2027,6 +2027,7 @@ def add_evernote_note():
         if folder_id and not EvernoteFolder.query.get(folder_id):
             return jsonify({'status': 'error', 'message': 'Folder not found'}), 404
         
+        app.logger.debug(f"Creating note with folder id: {folder_id}")
         note = EvernoteNote(
             title=data.get('title', ''),
             content=data.get('content', ''),
@@ -2046,6 +2047,7 @@ def add_evernote_note():
     except Exception as e:
         app.logger.error(f"Error creating note: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
+    
 
 # Cập nhật API update note để hỗ trợ folder_id
 @app.route('/api/evernote_notes/<int:note_id>', methods=['PUT'])
