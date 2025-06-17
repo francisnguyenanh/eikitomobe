@@ -1575,8 +1575,13 @@ const MobileCursorManager = {
                 window.visualViewport.height : 
                 (window.innerHeight - this.keyboardHeight);
             
-            // Target position: 1/3 from top of visible area
-            const targetY = viewportHeight * 0.33;
+            // Thay đổi target position: đặt cursor ở 1/4 từ trên (cao hơn)
+            // hoặc 1/5 để an toàn hơn
+            const targetY = Math.min(
+                viewportHeight * 0.20,  // 20% từ trên
+                200  // Hoặc tối đa 200px từ trên
+            );
+            
             const currentCursorY = cursorRect.top;
             const scrollNeeded = currentCursorY - targetY;
 

@@ -3202,6 +3202,7 @@ def generate_vocabulary_links(word):
     
     return sources
 
+
 # Add vocabulary routes
 @app.route('/vocabulary')
 @login_required
