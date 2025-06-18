@@ -367,6 +367,7 @@ def load_criteria_methods():
         app.logger.error(f"Error loading method.txt: {str(e)}")
         return default_methods
     
+    
 def initialize_keywords_file():
     """Initialize keywords.txt file if it doesn't exist"""
     file_path = get_keywords_file_path()
@@ -3705,6 +3706,35 @@ def get_vocabulary_stats():
 # Initialize vocabulary progress on app start
 with app.app_context():
     initialize_vocabulary_progress()
+    
+@app.route('/api/evernote_notes/<int:note_id>/move', methods=['PUT'])
+@login_required
+def move_evernote_note(note_id):
+    """Move note to different folder"""
+    try:
+        note = EvernoteNote.query.get_or_404(note_id)
+        data = request.json
+        
+        new_folder_id = data.get('folder_id')
+        
+        # Validate folder exists if provided
+        if new_folder_id and not EvernoteFolder.query.get(new_folder_id):
+            return jsonify({'status': 'error', 'message': 'Target folder not found'}), 404
+        
+        old_folder_id = note.folder_id
+        note.folder_id = new_folder_id
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Note moved successfully',
+            'old_folder_id': old_folder_id,
+            'new_folder_id': new_folder_id
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error moving note: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1422,6 +1422,463 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
+/* ===== DRAG AND DROP STYLES ===== */
+.note-item {
+    cursor: move;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    margin: 0 0.5rem;
+    position: relative;
+}
+
+.note-item:hover {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.note-item.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+    z-index: 1000;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+.note-item.active {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 500;
+}
+
+/* Drag indicator */
+.note-item::before {
+    content: '⋮⋮';
+    position: absolute;
+    left: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--secondary-color);
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    line-height: 0.8;
+}
+
+.note-item:hover::before {
+    opacity: 0.5;
+}
+
+.note-item.active::before {
+    color: rgba(255,255,255,0.7);
+}
+
+/* Folder drop zones */
+.folder-item-content {
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.folder-item-content.drag-over {
+    background: rgba(var(--success-color-rgb, 40, 167, 69), 0.2) !important;
+    border: 2px dashed var(--success-color, #28a745);
+    transform: scale(1.02);
+}
+
+.folder-item-content.drag-over::after {
+    content: 'Drop note here';
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: var(--success-color, #28a745);
+    font-weight: 600;
+    pointer-events: none;
+}
+
+/* All notes drop zone */
+.all-notes-content.drag-over {
+    background: rgba(var(--info-color-rgb, 23, 162, 184), 0.3) !important;
+    border: 2px dashed var(--info-color, #17a2b8);
+    transform: scale(1.02);
+}
+
+.all-notes-content.drag-over::after {
+    content: 'Drop to move to root';
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: var(--info-color, #17a2b8);
+    font-weight: 600;
+    pointer-events: none;
+}
+
+/* Drag feedback */
+.drag-feedback {
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: var(--primary-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    z-index: 10000;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    opacity: 0.9;
+    transform: translate(-50%, -50%);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .note-item::before {
+        opacity: 0.3; /* Always show on mobile */
+        left: 0.5rem;
+    }
+    
+    .note-item {
+        padding-left: 2rem; /* Extra space for drag handle */
+    }
+    
+    /* Larger touch targets */
+    .folder-item-content,
+    .all-notes-content {
+        min-height: 44px;
+    }
+}
+
+/* Smooth transitions */
+.folder-tree-item,
+.note-item {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Success animation */
+@keyframes moveSuccess {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); background: var(--success-color); }
+    100% { transform: scale(1); }
+}
+
+.move-success {
+    animation: moveSuccess 0.5s ease;
+}
+/* ===== ENHANCED SIDEBAR COLLAPSE (APPLE-STYLE) ===== */
+.note-sidebar {
+    width: 280px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    min-width: 280px;
+    overflow: hidden;
+}
+
+
+/* Sidebar header - KHÔNG ẨN khi collapsed */
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    position: relative;
+    /* Không có transition ở đây */
+}
+
+/* Sidebar title - CHỈ ẨN CÁI NÀY */
+.sidebar-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.sidebar-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Toggle button - LUÔN HIỂN THỊ */
+.sidebar-toggle {
+    background: rgba(255,255,255,0.95);
+    border: 1px solid rgba(0,0,0,0.1);
+    color: var(--secondary-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 100;
+    flex-shrink: 0;
+    /* QUAN TRỌNG: Không bị ẩn */
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+.sidebar-toggle:hover {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
+    color: var(--primary-color);
+    transform: scale(1.05) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Icon rotation for collapsed state */
+.sidebar-toggle i {
+    transition: transform 0.3s ease;
+}
+
+.note-sidebar.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
+}
+
+
+.sidebar-toggle {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 16px rgba(var(--primary-color-rgb, 52, 152, 219), 0.4);
+}
+
+.sidebar-toggle:hover {
+    background: var(--primary-color);
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(var(--primary-color-rgb, 52, 152, 219), 0.6);
+}
+
+.sidebar-toggle i {
+    transform: rotate(180deg);
+}
+
+/* Layout adjustments when sidebar is collapsed */
+.note-layout.sidebar-hidden {
+    gap: 0;
+}
+
+.note-layout.sidebar-hidden .note-editor-wrapper {
+    margin-left: 0;
+    width: 100%;
+    flex: 1;
+}
+
+/* Smooth animation for content area */
+.note-editor-wrapper {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hide content when collapsing - CHỈ ẨN NHỮNG PHẦN NÀY */
+.note-sidebar.collapsed .sidebar-header h3,
+.note-sidebar.collapsed .folder-tree-container,
+.note-sidebar.collapsed .notes-section {
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: all 0.2s ease;
+}
+
+/* QUAN TRỌNG: Đảm bảo toggle button và add-folder button KHÔNG BỊ ẨN */
+.note-sidebar.collapsed .sidebar-toggle,
+.note-sidebar.collapsed #add-folder-btn {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    visibility: visible !important;
+}
+
+/* Animation delays for smooth collapse */
+.note-sidebar.collapsed .notes-section {
+    transition-delay: 0s;
+}
+
+.note-sidebar.collapsed .folder-tree-container {
+    transition-delay: 0.05s;
+}
+
+.note-sidebar.collapsed .sidebar-header h3 {
+    transition-delay: 0.1s;
+}
+
+/* Expanding animation */
+.note-sidebar:not(.collapsed) .sidebar-header h3 {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.2s;
+}
+
+.note-sidebar:not(.collapsed) .folder-tree-container {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.25s;
+}
+
+.note-sidebar:not(.collapsed) .notes-section {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.3s;
+}
+
+/* Overlay for mobile when sidebar is open */
+@media (max-width: 768px) {
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 990;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .sidebar-overlay.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .note-sidebar {
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        bottom: 1rem;
+        z-index: 1000;
+        width: calc(100vw - 2rem);
+        max-width: 320px;
+        transform: translateX(-100%);
+    }
+    
+    .note-sidebar:not(.collapsed) {
+        transform: translateX(0);
+    }
+    
+    .note-layout {
+        flex-direction: column;
+    }
+    
+}
+
+/* Ensure proper stacking order */
+.note-header {
+    position: relative;
+    z-index: 50;
+}
+
+/* Base sidebar - KHÔNG thay đổi structure khi collapsed */
+.note-sidebar {
+    width: 280px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    min-width: 280px;
+    overflow: hidden;
+}
+
+/* Collapsed state - CHỈ thu nhỏ width, KHÔNG ẩn hoàn toàn */
+.note-sidebar.collapsed {
+    width: 60px; /* Chỉ thu về 60px để chứa toggle button */
+    min-width: 60px;
+}
+
+/* Sidebar header - LUÔN hiển thị */
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+/* Khi collapsed - chỉ hiển thị toggle button */
+.note-sidebar.collapsed .sidebar-header {
+    padding: 1rem 0.5rem; /* Giảm padding để fit button */
+    justify-content: center; /* Center the toggle button */
+    border-bottom: none;
+}
+
+/* Ẩn title khi collapsed */
+.note-sidebar.collapsed .sidebar-header h3 {
+    display: none;
+}
+
+/* Ẩn add-folder button khi collapsed */
+.note-sidebar.collapsed #add-folder-btn {
+    display: none;
+}
+
+/* Toggle button - TUYỆT ĐỐI KHÔNG ẨN */
+.sidebar-toggle {
+    background: rgba(255,255,255,0.95);
+    border: 1px solid rgba(0,0,0,0.1);
+    color: var(--secondary-color, #6c757d);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    width: 40px;
+    height: 40px;
+    display: flex !important; /* FORCE display */
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 100;
+    flex-shrink: 0;
+}
+
+.sidebar-toggle:hover {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
+    color: var(--primary-color, #3498db);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* Icon rotation */
+.sidebar-toggle i {
+    transition: transform 0.3s ease;
+}
+
+.note-sidebar.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
+}
+
+/* Ẩn nội dung khi collapsed */
+.note-sidebar.collapsed .folder-tree-container,
+.note-sidebar.collapsed .notes-section {
+    display: none;
+}
+
+/* Layout adjustments */
+.note-layout.sidebar-hidden .note-editor-wrapper {
+    margin-left: 0;
+    width: 100%;
+    flex: 1;
+}
 </style>
 
 <script>
@@ -2444,6 +2901,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Initializing mobile cursor management');
     MobileCursorManager.init();
     EditorFocusManager.init();
+    SidebarManager.init();
 
     // Add keyboard open/close styles
     const keyboardStyles = document.createElement('style');
@@ -2468,6 +2926,7 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     document.head.appendChild(keyboardStyles);
 
+    DragDropManager.init();
 
     // Initialize auto-save
     SaveManager.autoSave = SaveManager.debounce(() => {
@@ -2591,6 +3050,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         await FolderManager.handleDeleteFolder();
     });
+
+    // Add resize handler
+    window.addEventListener('resize', () => {
+        SidebarManager.handleResize();
+    });
+
+    // Restore sidebar state after everything is loaded
+    setTimeout(() => {
+        SidebarManager.restoreState();
+    }, 500);
 
     // Setup editor events
     const editor = document.getElementById('evernote-editor');
@@ -3073,6 +3542,384 @@ document.getElementById('deleteFolderModal').addEventListener('hidden.bs.modal',
 document.getElementById('deleteFolderModal').addEventListener('show.bs.modal', function (event) {
     console.log('Delete folder modal shown');
 });
+// ===== DRAG AND DROP MANAGER =====
+const DragDropManager = {
+    draggedNote: null,
+    dragFeedback: null,
+    
+    init() {
+        console.log('Initializing drag and drop manager');
+        this.setupEventListeners();
+    },
+    
+    setupEventListeners() {
+        // We'll set up drag listeners when notes are rendered
+        document.addEventListener('dragover', this.handleDragOver.bind(this));
+        document.addEventListener('drop', this.handleDrop.bind(this));
+        document.addEventListener('dragend', this.handleDragEnd.bind(this));
+    },
+    
+    makeNotesDraggable() {
+        const noteItems = document.querySelectorAll('.note-item');
+        noteItems.forEach(item => {
+            item.draggable = true;
+            item.addEventListener('dragstart', this.handleDragStart.bind(this));
+            item.addEventListener('dragend', this.handleDragEnd.bind(this));
+        });
+        
+        // Setup drop zones
+        this.setupDropZones();
+    },
+    
+    setupDropZones() {
+        // Folder drop zones
+        const folderItems = document.querySelectorAll('.folder-item-content');
+        folderItems.forEach(item => {
+            item.addEventListener('dragenter', this.handleDragEnter.bind(this));
+            item.addEventListener('dragleave', this.handleDragLeave.bind(this));
+            item.addEventListener('dragover', this.handleDragOver.bind(this));
+            item.addEventListener('drop', this.handleDrop.bind(this));
+        });
+        
+        // All notes drop zone
+        const allNotesItem = document.querySelector('.all-notes-content');
+        if (allNotesItem) {
+            allNotesItem.addEventListener('dragenter', this.handleDragEnter.bind(this));
+            allNotesItem.addEventListener('dragleave', this.handleDragLeave.bind(this));
+            allNotesItem.addEventListener('dragover', this.handleDragOver.bind(this));
+            allNotesItem.addEventListener('drop', this.handleDrop.bind(this));
+        }
+    },
+    
+    handleDragStart(e) {
+        console.log('Drag start');
+        const noteItem = e.target.closest('.note-item');
+        if (!noteItem) return;
+        
+        const noteId = parseInt(noteItem.dataset.noteId);
+        this.draggedNote = AppState.notes.find(n => n.id === noteId);
+        
+        if (!this.draggedNote) {
+            e.preventDefault();
+            return;
+        }
+        
+        noteItem.classList.add('dragging');
+        
+        // Create drag feedback
+        this.createDragFeedback(this.draggedNote.title);
+        
+        // Set drag data
+        e.dataTransfer.setData('text/plain', noteId.toString());
+        e.dataTransfer.effectAllowed = 'move';
+        
+        console.log('Dragging note:', this.draggedNote.title);
+    },
+    
+    createDragFeedback(title) {
+        this.dragFeedback = document.createElement('div');
+        this.dragFeedback.className = 'drag-feedback';
+        this.dragFeedback.textContent = `Moving: ${title}`;
+        document.body.appendChild(this.dragFeedback);
+        
+        // Position feedback at cursor
+        document.addEventListener('dragover', this.updateFeedbackPosition.bind(this));
+    },
+    
+    updateFeedbackPosition(e) {
+        if (this.dragFeedback) {
+            this.dragFeedback.style.left = e.clientX + 'px';
+            this.dragFeedback.style.top = e.clientY + 'px';
+        }
+    },
+    
+    handleDragEnter(e) {
+        e.preventDefault();
+        const dropZone = e.target.closest('.folder-item-content, .all-notes-content');
+        if (dropZone && this.draggedNote) {
+            dropZone.classList.add('drag-over');
+        }
+    },
+    
+    handleDragLeave(e) {
+        const dropZone = e.target.closest('.folder-item-content, .all-notes-content');
+        if (dropZone) {
+            // Only remove highlight if actually leaving the drop zone
+            const rect = dropZone.getBoundingClientRect();
+            const x = e.clientX;
+            const y = e.clientY;
+            
+            if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+                dropZone.classList.remove('drag-over');
+            }
+        }
+    },
+    
+    handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    },
+    
+    async handleDrop(e) {
+        e.preventDefault();
+        console.log('Drop event');
+        
+        const dropZone = e.target.closest('.folder-item-content, .all-notes-content');
+        if (!dropZone || !this.draggedNote) {
+            console.log('Invalid drop - no drop zone or dragged note');
+            return;
+        }
+        
+        dropZone.classList.remove('drag-over');
+        
+        // Determine target folder
+        let targetFolderId = null;
+        if (dropZone.classList.contains('folder-item-content')) {
+            targetFolderId = parseInt(dropZone.dataset.folderId);
+        }
+        // If dropping on all-notes, targetFolderId stays null (root)
+        
+        console.log('Dropping note', this.draggedNote.id, 'into folder', targetFolderId);
+        
+        // Don't move if already in target folder
+        if (this.draggedNote.folder_id === targetFolderId) {
+            console.log('Note already in target folder');
+            return;
+        }
+        
+        try {
+            await this.moveNote(this.draggedNote.id, targetFolderId);
+            
+            // Show success animation
+            dropZone.classList.add('move-success');
+            setTimeout(() => {
+                dropZone.classList.remove('move-success');
+            }, 500);
+            
+        } catch (error) {
+            console.error('Error moving note:', error);
+            alert('Failed to move note: ' + error.message);
+        }
+    },
+    
+    handleDragEnd(e) {
+        console.log('Drag end');
+        
+        // Clean up
+        const noteItem = e.target.closest('.note-item');
+        if (noteItem) {
+            noteItem.classList.remove('dragging');
+        }
+        
+        // Remove all drag-over classes
+        document.querySelectorAll('.drag-over').forEach(el => {
+            el.classList.remove('drag-over');
+        });
+        
+        // Remove drag feedback
+        if (this.dragFeedback) {
+            document.removeEventListener('dragover', this.updateFeedbackPosition.bind(this));
+            this.dragFeedback.remove();
+            this.dragFeedback = null;
+        }
+        
+        this.draggedNote = null;
+    },
+    
+    async moveNote(noteId, targetFolderId) {
+        try {
+            const response = await fetch(`/api/evernote_notes/${noteId}/move`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    folder_id: targetFolderId
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            if (data.status === 'error') {
+                throw new Error(data.message);
+            }
+            
+            console.log('Note moved successfully:', data);
+            
+            // Update local state
+            const note = AppState.notes.find(n => n.id === noteId);
+            if (note) {
+                note.folder_id = targetFolderId;
+            }
+            
+            // Refresh UI
+            await this.refreshAfterMove(data.old_folder_id, data.new_folder_id);
+            
+            return data;
+            
+        } catch (error) {
+            console.error('Error in moveNote:', error);
+            throw error;
+        }
+    },
+    
+    async refreshAfterMove(oldFolderId, newFolderId) {
+        try {
+            // Reload folder tree to update counts
+            await FolderManager.loadFolders();
+            
+            // If currently viewing the source folder, reload notes
+            if (FolderManager.currentFolderId === oldFolderId) {
+                await NoteManager.loadNotes(oldFolderId);
+            }
+            // If currently viewing all notes, reload all notes
+            else if (FolderManager.currentFolderId === null) {
+                await NoteManager.loadNotes(null);
+            }
+            
+            console.log('UI refreshed after move');
+            
+        } catch (error) {
+            console.error('Error refreshing UI after move:', error);
+        }
+    }
+};
+
+// ===== UPDATE NOTE MANAGER =====
+// Cập nhật NoteManager.renderNoteList method
+const OriginalNoteManager = NoteManager;
+NoteManager.renderNoteList = function() {
+    const list = document.getElementById('note-list');
+    list.innerHTML = '';
+    
+    // Validate that AppState.notes is an array
+    if (!Array.isArray(AppState.notes)) {
+        console.error('AppState.notes is not an array:', AppState.notes);
+        AppState.notes = [];
+        return;
+    }
+    
+    AppState.notes.forEach(note => {
+        const li = document.createElement('li');
+        li.className = `note-item ${note.id === AppState.currentId ? 'active' : ''}`;
+        li.dataset.noteId = note.id;
+        li.textContent = note.title || 'Untitled';
+        li.onclick = () => this.selectNote(note.id);
+        list.appendChild(li);
+    });
+    
+    // Setup drag and drop for newly rendered notes
+    DragDropManager.makeNotesDraggable();
+};
+
+// ===== UPDATE FOLDER MANAGER =====
+// Update folder tree rendering to setup drop zones
+const OriginalRenderFolderTree = FolderManager.renderFolderTree;
+FolderManager.renderFolderTree = function() {
+    // Call original method
+    OriginalRenderFolderTree.call(this);
+    
+    // Setup drag and drop
+    DragDropManager.setupDropZones();
+};
+const SidebarManager = {
+    isCollapsed: false,
+    collapsedToggleElement: null,
+
+    init() {
+        console.log('Initializing SidebarManager');
+        this.setupToggleButton();
+        this.cleanupOldHandlers();
+    },
+
+    cleanupOldHandlers() {
+        // Remove any old toggle handlers that might conflict
+        const toggleBtn = document.getElementById('toggle-sidebar-btn');
+        if (toggleBtn) {
+            // Clone node to remove all event listeners
+            const newToggleBtn = toggleBtn.cloneNode(true);
+            toggleBtn.parentNode.replaceChild(newToggleBtn, toggleBtn);
+            
+            // Add our handler
+            newToggleBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.toggleSidebar();
+            };
+        }
+    },
+
+    setupToggleButton() {
+        const toggleBtn = document.getElementById('toggle-sidebar-btn');
+        if (toggleBtn) {
+            console.log('Setting up toggle button handler');
+            toggleBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Toggle button clicked');
+                this.toggleSidebar();
+            };
+        } else {
+            console.error('Toggle button not found!');
+        }
+    },
+
+    
+
+    toggleSidebar() {
+        console.log('=== TOGGLE SIDEBAR ===');
+        console.log('Current state - isCollapsed:', this.isCollapsed);
+        
+        const sidebar = document.getElementById('note-sidebar');
+        const layout = document.querySelector('.note-layout');
+
+        if (!sidebar) {
+            console.error('Sidebar element not found!');
+            return;
+        }
+
+        if (this.isCollapsed) {
+            console.log('Showing sidebar...');
+            sidebar.classList.remove('collapsed');
+            layout.classList.remove('sidebar-hidden');
+        } else {
+            console.log('Hiding sidebar...');
+            sidebar.classList.add('collapsed');
+            layout.classList.add('sidebar-hidden');
+        }
+
+        this.isCollapsed = !this.isCollapsed;
+        console.log('New state - isCollapsed:', this.isCollapsed);
+        
+        // Store state
+        localStorage.setItem('sidebarCollapsed', this.isCollapsed.toString());
+    },
+
+
+
+    restoreState() {
+        const savedState = localStorage.getItem('sidebarCollapsed');
+        if (savedState === 'true') {
+            console.log('Restoring collapsed state');
+            setTimeout(() => {
+                this.toggleSidebar();
+            }, 100);
+        }
+    },
+
+    handleResize() {
+        if (window.innerWidth > 768) {
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (overlay) {
+                overlay.classList.remove('visible');
+            }
+        }
+    }
+};
 
 // Expose managers globally
 window.ImageManager = ImageManager;
