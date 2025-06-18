@@ -441,27 +441,14 @@
 }
 
 
-/* Sidebar Styles */
-.note-sidebar {
-    width: 280px;
-    min-width: 280px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-}
 
 .note-sidebar.collapsed {
     width: 60px;
     min-width: 60px;
-    background: transparent;
-    box-shadow: none;
+    background: transparent !important;
+    box-shadow: none !important;
     border-radius: 0;
+    backdrop-filter: none !important;
 }
 
 .sidebar-header {
@@ -469,15 +456,26 @@
     justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+    border-bottom: none !important; /* Bỏ luôn border dưới */
     position: relative;
+    background-color: transparent !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
 }
 
 .note-sidebar.collapsed .sidebar-header {
     padding: 1rem 0.5rem;
     justify-content: center;
     border-bottom: none;
-    background: transparent;
+    background: transparent !important;
+}
+
+/* Ensure the toggle button remains visible */
+.note-sidebar.collapsed .sidebar-toggle {
+    background: rgba(255,255,255,0.95) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
 }
 
 .sidebar-header h3 {
@@ -1437,6 +1435,35 @@
         order: -1; /* Đưa folder button lên đầu trên mobile */
     }
 }
+.sidebar-header::before,
+.sidebar-header::after {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    backdrop-filter: none !important;
+}
+
+/* Keep sidebar body with background but header transparent */
+.note-sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: rgba(255,255,255,0.9);
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Ensure folder-tree and notes section keep their background */
+.folder-tree-container,
+.notes-section {
+    background: inherit;
+}
+
 </style>
 
 <script>
@@ -3474,6 +3501,8 @@ const SidebarManager = {
         }
     }
 };
+
+
 
 // Expose managers globally
 window.ImageManager = ImageManager;

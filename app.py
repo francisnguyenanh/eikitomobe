@@ -218,6 +218,7 @@ def get_method_file_path():
     return os.path.join(app.root_path, 'method.txt')
 
 
+
 def load_knowledge_categories():
     """Load knowledge categories from kw.txt"""
     file_path = get_kw_file_path()
