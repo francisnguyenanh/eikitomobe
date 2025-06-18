@@ -16,6 +16,9 @@
             </span>
         </div>
         <div class="header-actions">
+            <button id="add-folder-btn" class="action-btn folder-btn" title="Add Folder">
+                <i class="bi bi-folder-plus"></i>
+            </button>
             <button class="action-btn success-btn" id="add-note-btn" title="Add new note">
                 <i class="bi bi-plus"></i>
             </button>
@@ -34,9 +37,6 @@
         <div class="note-sidebar" id="note-sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-actions">
-                    <button class="btn btn-sm btn-outline-primary" id="add-folder-btn" title="Add folder">
-                        <i class="bi bi-folder-plus"></i>
-                    </button>
                     <button class="sidebar-toggle" id="toggle-sidebar-btn">
                         <i class="bi bi-chevron-left"></i>
                     </button>
@@ -421,6 +421,16 @@
     background: linear-gradient(135deg, var(--alert-danger-color), #c0392b);
     color: white;
 }
+.folder-btn {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+}
+
+.folder-btn:hover {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(243, 156, 18, 0.3);
+}
 
 /* Layout Styles */
 .note-layout {
@@ -480,8 +490,7 @@
 
 .note-sidebar.collapsed .sidebar-header h3,
 .note-sidebar.collapsed .folder-tree-container,
-.note-sidebar.collapsed .notes-section,
-.note-sidebar.collapsed #add-folder-btn {
+.note-sidebar.collapsed .notes-section {
     display: none;
 }
 
@@ -1411,6 +1420,21 @@
 @media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: 0.001dpcm) {
     .note-editor {
         font-size: 16px !important;
+    }
+}
+@media (max-width: 768px) {
+    .header-actions {
+        gap: 0.25rem;
+    }
+    
+    .action-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .folder-btn {
+        order: -1; /* Đưa folder button lên đầu trên mobile */
     }
 }
 </style>
