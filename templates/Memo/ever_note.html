@@ -33,7 +33,6 @@
         <!-- Sidebar -->
         <div class="note-sidebar" id="note-sidebar">
             <div class="sidebar-header">
-                <h3>Folders & Notes</h3>
                 <div class="sidebar-actions">
                     <button class="btn btn-sm btn-outline-primary" id="add-folder-btn" title="Add folder">
                         <i class="bi bi-folder-plus"></i>
@@ -305,7 +304,7 @@
 </div>
 
 <style>
-/* ===== MODERN STYLES ===== */
+/* Modern Note Container */
 .modern-note-container {
     max-width: 100%;
     margin: 0 auto;
@@ -327,6 +326,8 @@
     margin-bottom: 2rem;
     padding-bottom: 1rem;
     border-bottom: 2px solid rgba(255,255,255,0.3);
+    position: relative;
+    z-index: 50;
 }
 
 .header-left {
@@ -361,7 +362,25 @@
     padding: 0.5rem 1rem;
     border-radius: 50px;
     border: 1px solid var(--alert-success-color);
-    opacity: 0.2;
+}
+
+.save-indicator.show {
+    display: flex !important;
+    animation: fadeInScale 0.3s ease;
+}
+
+.save-indicator.hide {
+    animation: fadeOutScale 0.3s ease forwards;
+}
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeOutScale {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.8); }
 }
 
 .header-actions {
@@ -383,6 +402,11 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
 .success-btn {
     background: linear-gradient(135deg, var(--alert-success-color), #27ae60);
     color: white;
@@ -398,11 +422,6 @@
     color: white;
 }
 
-.action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-}
-
 /* Layout Styles */
 .note-layout {
     display: flex;
@@ -411,24 +430,44 @@
     min-height: 0;
 }
 
+
 /* Sidebar Styles */
 .note-sidebar {
     width: 280px;
+    min-width: 280px;
     background: rgba(255,255,255,0.9);
     border-radius: 15px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
     backdrop-filter: blur(10px);
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.note-sidebar.collapsed {
+    width: 60px;
+    min-width: 60px;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
 }
 
 .sidebar-header {
     display: flex;
-    justify-content: between;
+    justify-content: space-between;
     align-items: center;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.note-sidebar.collapsed .sidebar-header {
+    padding: 1rem 0.5rem;
+    justify-content: center;
+    border-bottom: none;
+    background: transparent;
 }
 
 .sidebar-header h3 {
@@ -436,52 +475,333 @@
     font-size: 1.2rem;
     font-weight: 600;
     color: var(--text-color);
-    flex: 1;
-}
-
-.sidebar-toggle {
-    background: none;
-    border: none;
-    color: var(--secondary-color);
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 6px;
     transition: all 0.3s ease;
 }
 
+.note-sidebar.collapsed .sidebar-header h3,
+.note-sidebar.collapsed .folder-tree-container,
+.note-sidebar.collapsed .notes-section,
+.note-sidebar.collapsed #add-folder-btn {
+    display: none;
+}
+
+.sidebar-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.note-sidebar.collapsed .sidebar-actions {
+    flex-direction: column;
+}
+
+.sidebar-toggle {
+    background: rgba(255,255,255,0.95);
+    border: 1px solid rgba(0,0,0,0.1);
+    color: var(--secondary-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 100;
+    flex-shrink: 0;
+}
+
 .sidebar-toggle:hover {
-    background: rgba(0,0,0,0.05);
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
     color: var(--primary-color);
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.sidebar-toggle i {
+    transition: transform 0.3s ease;
+}
+
+.note-sidebar.collapsed .sidebar-toggle {
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 12px;
+}
+
+.note-sidebar.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
+}
+/* Folder Tree Styles */
+.folder-tree-container {
+    max-height: 40vh;
+    overflow-y: auto;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    padding: 0.5rem 0;
+}
+
+.note-sidebar.collapsed .folder-tree-container {
+    display: none;
+}
+
+.folder-tree-item {
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.folder-item-content {
+    display: flex;
+    align-items: center;
+    padding: 0.4rem 0.75rem;
+    margin: 1px 0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 32px;
+}
+
+.folder-item-content:hover {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.08);
+}
+
+.folder-item-content.selected {
+    background: var(--primary-color);
+    color: white;
+}
+
+.folder-toggle {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--secondary-color);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.folder-toggle:hover {
+    color: var(--primary-color);
+}
+
+.folder-toggle i {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.folder-toggle.expanded i {
+    transform: rotate(90deg);
+}
+
+.folder-toggle.no-children {
+    visibility: hidden;
+}
+
+.folder-icon {
+    margin-right: 0.5rem;
+    color: #f39c12;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.folder-item-content.selected .folder-icon {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.folder-name {
+    flex: 1;
+    font-weight: 500;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.folder-notes-count {
+    background: rgba(var(--secondary-color-rgb, 108, 117, 125), 0.2);
+    color: var(--secondary-color);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 10px;
+    margin-left: 0.5rem;
+    flex-shrink: 0;
+}
+
+.folder-item-content.selected .folder-notes-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.folder-actions {
+    display: flex;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+    opacity: 0;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.folder-item-content:hover .folder-actions,
+.folder-item-content.selected .folder-actions {
+    opacity: 1;
+}
+
+.folder-action-btn {
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: rgba(var(--secondary-color-rgb, 108, 117, 125), 0.1);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.folder-action-btn:hover {
+    background: rgba(var(--secondary-color-rgb, 108, 117, 125), 0.2);
+}
+
+.folder-action-btn i {
+    font-size: 0.7rem;
+    color: var(--secondary-color);
+}
+
+.folder-item-content.selected .folder-action-btn {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.folder-item-content.selected .folder-action-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.folder-item-content.selected .folder-action-btn i {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.folder-children {
+    margin-left: 1.5rem;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.folder-children.collapsed {
+    max-height: 0;
+    opacity: 0;
+}
+
+.folder-children.expanded {
+    max-height: 1000px;
+    opacity: 1;
+    margin: 0.25rem 0;
+}
+
+/* Notes Section */
+.notes-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.note-sidebar.collapsed .notes-section {
+    display: none;
+}
+
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    background: rgba(0,0,0,0.02);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.notes-header #current-folder-name {
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+.notes-header #notes-count {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
 }
 
 .note-list {
     flex: 1;
     overflow-y: auto;
-    padding: 0;
+    padding: 0.5rem 0;
     margin: 0;
     list-style: none;
 }
 
-.note-list li {
-    padding: 1rem 1.5rem;
-    cursor: pointer;
+.note-item {
+    padding: 0.75rem 1rem;
+    cursor: move;
     border-bottom: 1px solid rgba(0,0,0,0.05);
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     color: var(--text-color);
+    font-size: 0.9rem;
+    line-height: 1.3;
+    border-radius: 6px;
+    margin: 0 0.5rem;
+    position: relative;
 }
 
-.note-list li:hover {
-    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.05);
+.note-item:hover {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.08);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.note-list li.active {
+.note-item.active {
     background: var(--primary-color);
     color: white;
-    font-weight: 600;
+    font-weight: 500;
 }
 
-/* Editor Wrapper */
+.note-item.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+    z-index: 1000;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+.note-item::before {
+    content: '⋮⋮';
+    position: absolute;
+    left: 0.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--secondary-color);
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.note-item:hover::before {
+    opacity: 0.5;
+}
+
+.note-item.active::before {
+    color: rgba(255,255,255,0.7);
+}
+
+/* Editor Styles */
 .note-editor-wrapper {
     flex: 1;
     display: flex;
@@ -491,9 +811,9 @@
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     backdrop-filter: blur(10px);
     min-height: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Title Group */
 .title-group {
     position: relative;
     margin: 1.5rem 1.5rem 0;
@@ -542,7 +862,6 @@
     color: var(--alert-danger-color);
 }
 
-/* Toolbar Styles */
 .editor-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -607,7 +926,6 @@
     margin: 0 0.5rem;
 }
 
-/* Editor Content */
 .note-editor {
     flex: 1;
     padding: 1.5rem;
@@ -647,7 +965,6 @@
     font-weight: 600;
 }
 
-/* Meta Info */
 .note-meta {
     padding: 1rem 1.5rem;
     font-size: 0.9rem;
@@ -657,7 +974,7 @@
     border-radius: 0 0 15px 15px;
 }
 
-/* Images */
+/* Image Styles */
 .image-container {
     margin: 1rem 0;
     position: relative;
@@ -707,15 +1024,7 @@
     margin-top: 1rem;
 }
 
-/* Search Highlight */
-.search-highlight {
-    background: #ffeb3b;
-    color: #333;
-    border-radius: 3px;
-    padding: 1px 2px;
-}
-
-/* Lightbox */
+/* Lightbox Styles */
 .image-lightbox {
     display: none;
     position: fixed;
@@ -760,485 +1069,23 @@
     padding: 10px 0;
 }
 
-/* Responsive Design */
-/* Enhanced Mobile Responsive Design */
-@media (max-width: 768px) {
-    .modern-note-container {
-        padding: 1rem;
-        border-radius: 0;
-        min-height: 100vh;
-    }
-
-    .note-header {
-        flex-direction: column;
-        gap: 1rem;
-        position: sticky;
-        top: 0;
-        background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(10px);
-        z-index: 100;
-    }
-
-    .note-layout {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .note-sidebar {
-        width: 100%;
-        order: 2;
-        max-height: 200px;
-        position: relative;
-    }
-
-    .note-editor-wrapper {
-        order: 1;
-        min-height: calc(100vh - 300px);
-        /* Extra padding for keyboard space */
-    }
-
-    .editor-toolbar {
-        gap: 0.25rem;
-        padding: 0.75rem;
-        flex-wrap: wrap;
-        position: sticky;
-        top: 120px;
-        background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(10px);
-        z-index: 90;
-    }
-
-    .toolbar-btn {
-        width: 40px;
-        height: 40px;
-        /* Better touch targets */
-        min-height: 44px;
-        min-width: 44px;
-    }
-
-    .toolbar-select {
-        min-width: 80px;
-        font-size: 0.8rem;
-        height: 40px;
-    }
-
-    .title-input {
-        font-size: 16px !important; /* Prevent iOS zoom */
-        padding: 1rem;
-        /* Prevent zoom on focus */
-        transform: scale(1);
-    }
-
-    .note-editor {
-        padding: 1rem;
-        font-size: 16px !important; /* Prevent iOS zoom */
-        line-height: 1.6;
-        /* Better mobile editing experience */
-        min-height: calc(100vh - 400px);
-        /* Ensure content is scrollable above keyboard */
-        margin-bottom: 50vh;
-    }
-
-    /* Smooth scrolling for all elements */
-    * {
-        scroll-behavior: smooth;
-    }
-
-    /* Better keyboard handling */
-    .note-editor:focus,
-    .title-input:focus {
-        outline: 2px solid var(--primary-color);
-        outline-offset: 2px;
-    }
-
-    /* Lightbox adjustments for mobile */
-    .lightbox-content {
-        width: 95%;
-        max-height: 70%;
-        margin-top: 10%;
-    }
-
-    .lightbox-close {
-        top: 10px;
-        right: 20px;
-        font-size: 30px;
-        background: rgba(0,0,0,0.7);
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+/* Drag and Drop Styles */
+.folder-item-content.drag-over {
+    background: rgba(var(--success-color-rgb, 40, 167, 69), 0.2) !important;
+    border: 2px dashed var(--success-color, #28a745);
+    transform: scale(1.02);
 }
 
-/* iOS specific fixes */
-@supports (-webkit-touch-callout: none) {
-    .note-editor,
-    .title-input {
-        font-size: 16px !important;
-        transform: scale(1);
-    }
-}
-
-/* Android specific fixes */
-@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: 0.001dpcm) {
-    .note-editor {
-        font-size: 16px !important;
-    }
-}
-
-
-/* Animation Classes */
-.save-indicator.show {
-    display: flex !important;
-    animation: fadeInScale 0.3s ease;
-}
-
-.save-indicator.hide {
-    animation: fadeOutScale 0.3s ease forwards;
-}
-
-@keyframes fadeInScale {
-    from {
-        opacity: 0;
-        transform: scale(0.8);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-@keyframes fadeOutScale {
-    from {
-        opacity: 1;
-        transform: scale(1);
-    }
-    to {
-        opacity: 0;
-        transform: scale(0.8);
-    }
-}
-
-/* Sidebar collapsed state */
-.note-sidebar.collapsed {
-    width: 60px;
-}
-
-.note-sidebar.collapsed .sidebar-header h3,
-.note-sidebar.collapsed .note-list {
-    display: none;
-}
-
-.note-sidebar.collapsed .sidebar-toggle i {
-    transform: rotate(180deg);
-}
-/* Folder Tree Styles */
-.sidebar-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.folder-tree {
-    max-height: 300px;
-    overflow-y: auto;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    margin-bottom: 1rem;
-}
-
-.folder-item {
-    padding: 0.25rem 0;
-    border-radius: 6px;
-    margin: 2px 0;
-    transition: background-color 0.2s ease;
-}
-
-.folder-item:hover {
-    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.05);
-}
-
-.folder-item.active {
-    background: var(--primary-color);
-    color: white;
-}
-
-.folder-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem;
-}
-
-.folder-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    flex: 1;
-}
-
-.folder-icon {
-    color: var(--warning-color, #f39c12);
-    font-size: 1rem;
-}
-
-.folder-name {
-    font-weight: 500;
-    flex: 1;
-}
-
-.notes-count {
-    font-size: 0.8rem;
-    color: var(--secondary-color);
-    margin-left: auto;
-}
-
-.folder-item.active .notes-count {
-    color: rgba(255,255,255,0.8);
-}
-
-.folder-actions {
-    display: flex;
-    gap: 0.25rem;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.folder-item:hover .folder-actions {
-    opacity: 1;
-}
-
-.folder-item.active .folder-actions {
-    opacity: 1;
-}
-
-.notes-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.notes-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1.5rem;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    background: rgba(0,0,0,0.02);
+.folder-item-content.drag-over::after {
+    content: 'Drop note here';
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: var(--success-color, #28a745);
     font-weight: 600;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .folder-tree {
-        max-height: 150px;
-    }
-    
-    .folder-actions {
-        opacity: 1; /* Always show on mobile */
-    }
-    
-    .folder-content {
-        padding: 0.75rem 0.5rem;
-    }
-}
-/* ===== APPLE-STYLE FOLDER TREE ===== */
-.folder-tree-container {
-    max-height: 40vh;
-    overflow-y: auto;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    margin-bottom: 1rem;
-    padding: 0.5rem 0;
-}
-
-.folder-tree-item {
-    user-select: none;
-    transition: all 0.2s ease;
-}
-
-.folder-tree-item.root-level {
-    margin-bottom: 0.25rem;
-}
-
-.folder-item-content {
-    display: flex;
-    align-items: center;
-    padding: 0.4rem 0.75rem;
-    margin: 1px 0;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    min-height: 32px;
-}
-
-.folder-item-content:hover {
-    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.08);
-}
-
-.folder-item-content.selected {
-    background: var(--primary-color);
-    color: white;
-}
-
-.folder-item-content.selected:hover {
-    background: var(--primary-color);
-}
-
-/* Expand/Collapse Toggle (Apple-style) */
-.folder-toggle {
-    width: 16px;
-    height: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 0.5rem;
-    border: none;
-    background: none;
-    cursor: pointer;
-    color: var(--secondary-color);
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-}
-
-.folder-toggle:hover {
-    color: var(--primary-color);
-}
-
-.folder-toggle i {
-    font-size: 0.75rem;
-    transition: transform 0.2s ease;
-}
-
-.folder-toggle.expanded i {
-    transform: rotate(90deg);
-}
-
-.folder-toggle.no-children {
-    visibility: hidden;
-}
-
-/* Folder Icon */
-.folder-icon {
-    margin-right: 0.5rem;
-    color: #f39c12;
-    font-size: 0.9rem;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
-}
-
-.folder-item-content.selected .folder-icon {
-    color: rgba(255, 255, 255, 0.9);
-}
-
-/* Folder Name */
-.folder-name {
-    flex: 1;
-    font-weight: 500;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.2;
-}
-
-/* Notes Count Badge */
-.folder-notes-count {
-    background: rgba(var(--secondary-color-rgb, 108, 117, 125), 0.2);
-    color: var(--secondary-color);
-    font-size: 0.7rem;
-    padding: 0.2rem 0.4rem;
-    border-radius: 10px;
-    margin-left: 0.5rem;
-    flex-shrink: 0;
-    transition: all 0.2s ease;
-}
-
-.folder-item-content.selected .folder-notes-count {
-    background: rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 0.8);
-}
-
-/* Folder Actions */
-.folder-actions {
-    display: flex;
-    gap: 0.25rem;
-    margin-left: 0.5rem;
-    opacity: 0;
-    transition: all 0.2s ease;
-    flex-shrink: 0;
-}
-
-.folder-item-content:hover .folder-actions {
-    opacity: 1;
-}
-
-.folder-item-content.selected .folder-actions {
-    opacity: 1;
-}
-
-.folder-action-btn {
-    width: 20px;
-    height: 20px;
-    border: none;
-    background: rgba(var(--secondary-color-rgb, 108, 117, 125), 0.1);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.folder-action-btn:hover {
-    background: rgba(var(--secondary-color-rgb, 108, 117, 125), 0.2);
-}
-
-.folder-action-btn i {
-    font-size: 0.7rem;
-    color: var(--secondary-color);
-}
-
-.folder-item-content.selected .folder-action-btn {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-.folder-item-content.selected .folder-action-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-}
-
-.folder-item-content.selected .folder-action-btn i {
-    color: rgba(255, 255, 255, 0.8);
-}
-
-/* Children Container */
-.folder-children {
-    margin-left: 1.5rem;
-    transition: all 0.3s ease;
-    overflow: hidden;
-}
-
-.folder-children.collapsed {
-    max-height: 0;
-    opacity: 0;
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-.folder-children.expanded {
-    max-height: 1000px;
-    opacity: 1;
-    margin-top: 0.25rem;
-    margin-bottom: 0.25rem;
-}
-
-/* All Notes Button */
-.all-notes-item {
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
+    pointer-events: none;
 }
 
 .all-notes-content {
@@ -1261,6 +1108,24 @@
     color: white;
 }
 
+.all-notes-content.drag-over {
+    background: rgba(var(--info-color-rgb, 23, 162, 184), 0.3) !important;
+    border: 2px dashed var(--info-color, #17a2b8);
+    transform: scale(1.02);
+}
+
+.all-notes-content.drag-over::after {
+    content: 'Drop to move to root';
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: var(--info-color, #17a2b8);
+    font-weight: 600;
+    pointer-events: none;
+}
+
 .all-notes-icon {
     margin-right: 0.5rem;
     color: var(--info-color, #17a2b8);
@@ -1277,68 +1142,31 @@
     font-size: 0.9rem;
 }
 
-/* Notes Section Updates */
-.notes-section {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-}
-
-.notes-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    background: rgba(0,0,0,0.02);
-    font-weight: 600;
-    position: sticky;
+.drag-feedback {
+    position: fixed;
     top: 0;
-    z-index: 10;
-}
-
-.notes-header #current-folder-name {
-    font-size: 0.9rem;
-    color: var(--text-color);
-}
-
-.notes-header #notes-count {
-    font-size: 0.75rem;
-    padding: 0.25rem 0.5rem;
-}
-
-/* Note List Updates */
-.note-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0.5rem 0;
-    margin: 0;
-    list-style: none;
-}
-
-.note-list li {
-    padding: 0.75rem 1rem;
-    cursor: pointer;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-    transition: all 0.2s ease;
-    color: var(--text-color);
-    font-size: 0.9rem;
-    line-height: 1.3;
-    border-radius: 0;
-    margin: 0 0.5rem;
-}
-
-.note-list li:hover {
-    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.08);
-    border-radius: 6px;
-}
-
-.note-list li.active {
+    left: 0;
     background: var(--primary-color);
     color: white;
-    font-weight: 500;
+    padding: 0.5rem 1rem;
     border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    z-index: 10000;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    opacity: 0.9;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes moveSuccess {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); background: var(--success-color); }
+    100% { transform: scale(1); }
+}
+
+.move-success {
+    animation: moveSuccess 0.5s ease;
 }
 
 /* Scrollbar Styling */
@@ -1364,41 +1192,12 @@
     background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.5);
 }
 
-/* Mobile Responsive */
-@media (max-width: 768px) {
-    .folder-tree-container {
-        max-height: 25vh;
-    }
-    
-    .folder-item-content {
-        padding: 0.5rem;
-    }
-    
-    .folder-children {
-        margin-left: 1rem;
-    }
-    
-    .folder-actions {
-        opacity: 1; /* Always show on mobile */
-    }
-    
-    .folder-toggle {
-        width: 20px;
-        height: 20px;
-    }
-    
-    .note-list li {
-        padding: 1rem 0.75rem;
-        font-size: 0.85rem;
-    }
-}
-.form-control{
-    border: 1px solid #212529;
-}
+/* Form and Modal Styles */
+.form-control,
 .form-select {
     border: 1px solid #212529;
 }
-/* Prevent modal backdrop stacking */
+
 .modal-backdrop {
     z-index: 1040;
 }
@@ -1407,13 +1206,11 @@
     z-index: 1050;
 }
 
-/* Disable button state */
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
 
-/* Loading state for delete button */
 .btn:disabled .bi-hourglass-split {
     animation: spin 1s linear infinite;
 }
@@ -1422,319 +1219,147 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
-/* ===== DRAG AND DROP STYLES ===== */
-.note-item {
-    cursor: move;
-    transition: all 0.2s ease;
-    border-radius: 6px;
-    margin: 0 0.5rem;
-    position: relative;
+
+/* Search Highlight */
+.search-highlight {
+    background: #ffeb3b;
+    color: #333;
+    border-radius: 3px;
+    padding: 1px 2px;
 }
 
-.note-item:hover {
-    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.08);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.note-item.dragging {
-    opacity: 0.5;
-    transform: rotate(2deg);
-    z-index: 1000;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-}
-
-.note-item.active {
-    background: var(--primary-color);
-    color: white;
-    font-weight: 500;
-}
-
-/* Drag indicator */
-.note-item::before {
-    content: '⋮⋮';
-    position: absolute;
-    left: 0.25rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--secondary-color);
-    font-size: 0.8rem;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    line-height: 0.8;
-}
-
-.note-item:hover::before {
-    opacity: 0.5;
-}
-
-.note-item.active::before {
-    color: rgba(255,255,255,0.7);
-}
-
-/* Folder drop zones */
-.folder-item-content {
-    transition: all 0.2s ease;
-    position: relative;
-}
-
-.folder-item-content.drag-over {
-    background: rgba(var(--success-color-rgb, 40, 167, 69), 0.2) !important;
-    border: 2px dashed var(--success-color, #28a745);
-    transform: scale(1.02);
-}
-
-.folder-item-content.drag-over::after {
-    content: 'Drop note here';
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.7rem;
-    color: var(--success-color, #28a745);
-    font-weight: 600;
-    pointer-events: none;
-}
-
-/* All notes drop zone */
-.all-notes-content.drag-over {
-    background: rgba(var(--info-color-rgb, 23, 162, 184), 0.3) !important;
-    border: 2px dashed var(--info-color, #17a2b8);
-    transform: scale(1.02);
-}
-
-.all-notes-content.drag-over::after {
-    content: 'Drop to move to root';
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.7rem;
-    color: var(--info-color, #17a2b8);
-    font-weight: 600;
-    pointer-events: none;
-}
-
-/* Drag feedback */
-.drag-feedback {
-    position: fixed;
-    top: 0;
-    left: 0;
-    background: var(--primary-color);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    z-index: 10000;
-    pointer-events: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    opacity: 0.9;
-    transform: translate(-50%, -50%);
-}
-
-/* Mobile optimizations */
+/* Responsive Design */
 @media (max-width: 768px) {
-    .note-item::before {
-        opacity: 0.3; /* Always show on mobile */
-        left: 0.5rem;
+    .modern-note-container {
+        padding: 1rem;
+        border-radius: 0;
+        min-height: 100vh;
     }
-    
-    .note-item {
-        padding-left: 2rem; /* Extra space for drag handle */
+
+    .note-header {
+        flex-direction: column;
+        gap: 1rem;
+        position: sticky;
+        top: 0;
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        z-index: 100;
     }
-    
-    /* Larger touch targets */
+
+    .note-layout {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .note-sidebar {
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        bottom: 1rem;
+        z-index: 1000;
+        width: calc(100vw - 2rem);
+        max-width: 320px;
+        transform: translateX(-100%);
+    }
+
+    .note-sidebar:not(.collapsed) {
+        transform: translateX(0);
+    }
+
+    .note-editor-wrapper {
+        order: 1;
+        min-height: calc(100vh - 300px);
+    }
+
+    .editor-toolbar {
+        gap: 0.25rem;
+        padding: 0.75rem;
+        position: sticky;
+        top: 120px;
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        z-index: 90;
+    }
+
+    .toolbar-btn {
+        width: 40px;
+        height: 40px;
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .toolbar-select {
+        min-width: 80px;
+        font-size: 0.8rem;
+        height: 40px;
+    }
+
+    .title-input {
+        font-size: 16px !important;
+        padding: 1rem;
+        transform: scale(1);
+    }
+
+    .note-editor {
+        padding: 1rem;
+        font-size: 16px !important;
+        line-height: 1.6;
+        min-height: calc(100vh - 400px);
+        margin-bottom: 50vh;
+    }
+
+    .folder-tree-container {
+        max-height: 25vh;
+    }
+
     .folder-item-content,
     .all-notes-content {
+        padding: 0.5rem;
         min-height: 44px;
     }
-}
 
-/* Smooth transitions */
-.folder-tree-item,
-.note-item {
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
+    .folder-children {
+        margin-left: 1rem;
+    }
 
-/* Success animation */
-@keyframes moveSuccess {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); background: var(--success-color); }
-    100% { transform: scale(1); }
-}
+    .folder-actions {
+        opacity: 1;
+    }
 
-.move-success {
-    animation: moveSuccess 0.5s ease;
-}
-/* ===== ENHANCED SIDEBAR COLLAPSE (APPLE-STYLE) ===== */
-.note-sidebar {
-    width: 280px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    min-width: 280px;
-    overflow: hidden;
-}
+    .folder-toggle {
+        width: 20px;
+        height: 20px;
+    }
 
+    .note-item {
+        padding: 1rem 0.75rem 1rem 2rem;
+        font-size: 0.85rem;
+    }
 
-/* Sidebar header - KHÔNG ẨN khi collapsed */
-.sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    position: relative;
-    /* Không có transition ở đây */
-}
+    .note-item::before {
+        opacity: 0.3;
+        left: 0.5rem;
+    }
 
-/* Sidebar title - CHỈ ẨN CÁI NÀY */
-.sidebar-header h3 {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--text-color);
-    transition: all 0.3s ease;
-}
+    .lightbox-content {
+        width: 95%;
+        max-height: 70%;
+        margin-top: 10%;
+    }
 
-.sidebar-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-}
+    .lightbox-close {
+        top: 10px;
+        right: 20px;
+        font-size: 30px;
+        background: rgba(0,0,0,0.7);
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-/* Toggle button - LUÔN HIỂN THỊ */
-.sidebar-toggle {
-    background: rgba(255,255,255,0.95);
-    border: 1px solid rgba(0,0,0,0.1);
-    color: var(--secondary-color);
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px);
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    z-index: 100;
-    flex-shrink: 0;
-    /* QUAN TRỌNG: Không bị ẩn */
-    opacity: 1 !important;
-    transform: none !important;
-}
-
-.sidebar-toggle:hover {
-    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
-    color: var(--primary-color);
-    transform: scale(1.05) !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-/* Icon rotation for collapsed state */
-.sidebar-toggle i {
-    transition: transform 0.3s ease;
-}
-
-.note-sidebar.collapsed .sidebar-toggle i {
-    transform: rotate(180deg);
-}
-
-
-.sidebar-toggle {
-    background: var(--primary-color);
-    color: white;
-    box-shadow: 0 4px 16px rgba(var(--primary-color-rgb, 52, 152, 219), 0.4);
-}
-
-.sidebar-toggle:hover {
-    background: var(--primary-color);
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(var(--primary-color-rgb, 52, 152, 219), 0.6);
-}
-
-.sidebar-toggle i {
-    transform: rotate(180deg);
-}
-
-/* Layout adjustments when sidebar is collapsed */
-.note-layout.sidebar-hidden {
-    gap: 0;
-}
-
-.note-layout.sidebar-hidden .note-editor-wrapper {
-    margin-left: 0;
-    width: 100%;
-    flex: 1;
-}
-
-/* Smooth animation for content area */
-.note-editor-wrapper {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Hide content when collapsing - CHỈ ẨN NHỮNG PHẦN NÀY */
-.note-sidebar.collapsed .sidebar-header h3,
-.note-sidebar.collapsed .folder-tree-container,
-.note-sidebar.collapsed .notes-section {
-    opacity: 0;
-    transform: translateX(-20px);
-    transition: all 0.2s ease;
-}
-
-/* QUAN TRỌNG: Đảm bảo toggle button và add-folder button KHÔNG BỊ ẨN */
-.note-sidebar.collapsed .sidebar-toggle,
-.note-sidebar.collapsed #add-folder-btn {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
-    visibility: visible !important;
-}
-
-/* Animation delays for smooth collapse */
-.note-sidebar.collapsed .notes-section {
-    transition-delay: 0s;
-}
-
-.note-sidebar.collapsed .folder-tree-container {
-    transition-delay: 0.05s;
-}
-
-.note-sidebar.collapsed .sidebar-header h3 {
-    transition-delay: 0.1s;
-}
-
-/* Expanding animation */
-.note-sidebar:not(.collapsed) .sidebar-header h3 {
-    opacity: 1;
-    transform: none;
-    transition-delay: 0.2s;
-}
-
-.note-sidebar:not(.collapsed) .folder-tree-container {
-    opacity: 1;
-    transform: none;
-    transition-delay: 0.25s;
-}
-
-.note-sidebar:not(.collapsed) .notes-section {
-    opacity: 1;
-    transform: none;
-    transition-delay: 0.3s;
-}
-
-/* Overlay for mobile when sidebar is open */
-@media (max-width: 768px) {
     .sidebar-overlay {
         position: fixed;
         top: 0;
@@ -1747,137 +1372,46 @@
         visibility: hidden;
         transition: all 0.3s ease;
     }
-    
+
     .sidebar-overlay.visible {
         opacity: 1;
         visibility: visible;
     }
-    
-    .note-sidebar {
-        position: fixed;
-        top: 1rem;
-        left: 1rem;
-        bottom: 1rem;
-        z-index: 1000;
-        width: calc(100vw - 2rem);
-        max-width: 320px;
-        transform: translateX(-100%);
+
+    * {
+        scroll-behavior: smooth;
     }
-    
-    .note-sidebar:not(.collapsed) {
-        transform: translateX(0);
+
+    .note-editor:focus,
+    .title-input:focus {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
     }
-    
-    .note-layout {
-        flex-direction: column;
-    }
-    
+}
+.note-layout.sidebar-collapsed {
+    gap: 1rem;
 }
 
-/* Ensure proper stacking order */
-.note-header {
-    position: relative;
-    z-index: 50;
-}
-
-/* Base sidebar - KHÔNG thay đổi structure khi collapsed */
-.note-sidebar {
-    width: 280px;
-    background: rgba(255,255,255,0.9);
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    min-width: 280px;
-    overflow: hidden;
-}
-
-/* Collapsed state - CHỈ thu nhỏ width, KHÔNG ẩn hoàn toàn */
-.note-sidebar.collapsed {
-    width: 60px; /* Chỉ thu về 60px để chứa toggle button */
-    min-width: 60px;
-}
-
-/* Sidebar header - LUÔN hiển thị */
-.sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    position: relative;
-    transition: all 0.3s ease;
-}
-
-/* Khi collapsed - chỉ hiển thị toggle button */
-.note-sidebar.collapsed .sidebar-header {
-    padding: 1rem 0.5rem; /* Giảm padding để fit button */
-    justify-content: center; /* Center the toggle button */
-    border-bottom: none;
-}
-
-/* Ẩn title khi collapsed */
-.note-sidebar.collapsed .sidebar-header h3 {
-    display: none;
-}
-
-/* Ẩn add-folder button khi collapsed */
-.note-sidebar.collapsed #add-folder-btn {
-    display: none;
-}
-
-/* Toggle button - TUYỆT ĐỐI KHÔNG ẨN */
-.sidebar-toggle {
-    background: rgba(255,255,255,0.95);
-    border: 1px solid rgba(0,0,0,0.1);
-    color: var(--secondary-color, #6c757d);
-    font-size: 1.2rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px);
-    width: 40px;
-    height: 40px;
-    display: flex !important; /* FORCE display */
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    z-index: 100;
-    flex-shrink: 0;
-}
-
-.sidebar-toggle:hover {
-    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
-    color: var(--primary-color, #3498db);
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-/* Icon rotation */
-.sidebar-toggle i {
-    transition: transform 0.3s ease;
-}
-
-.note-sidebar.collapsed .sidebar-toggle i {
-    transform: rotate(180deg);
-}
-
-/* Ẩn nội dung khi collapsed */
-.note-sidebar.collapsed .folder-tree-container,
-.note-sidebar.collapsed .notes-section {
-    display: none;
-}
-
-/* Layout adjustments */
-.note-layout.sidebar-hidden .note-editor-wrapper {
+.note-layout.sidebar-collapsed .note-editor-wrapper {
     margin-left: 0;
     width: 100%;
     flex: 1;
+}
+
+/* iOS Specific Fixes */
+@supports (-webkit-touch-callout: none) {
+    .note-editor,
+    .title-input {
+        font-size: 16px !important;
+        transform: scale(1);
+    }
+}
+
+/* Android Specific Fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: 0.001dpcm) {
+    .note-editor {
+        font-size: 16px !important;
+    }
 }
 </style>
 
@@ -3868,8 +3402,6 @@ const SidebarManager = {
         }
     },
 
-    
-
     toggleSidebar() {
         console.log('=== TOGGLE SIDEBAR ===');
         console.log('Current state - isCollapsed:', this.isCollapsed);
@@ -3885,11 +3417,11 @@ const SidebarManager = {
         if (this.isCollapsed) {
             console.log('Showing sidebar...');
             sidebar.classList.remove('collapsed');
-            layout.classList.remove('sidebar-hidden');
+            layout.classList.remove('sidebar-collapsed');
         } else {
             console.log('Hiding sidebar...');
             sidebar.classList.add('collapsed');
-            layout.classList.add('sidebar-hidden');
+            layout.classList.add('sidebar-collapsed');
         }
 
         this.isCollapsed = !this.isCollapsed;
@@ -3898,8 +3430,6 @@ const SidebarManager = {
         // Store state
         localStorage.setItem('sidebarCollapsed', this.isCollapsed.toString());
     },
-
-
 
     restoreState() {
         const savedState = localStorage.getItem('sidebarCollapsed');
