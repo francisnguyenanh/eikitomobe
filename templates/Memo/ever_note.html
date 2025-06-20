@@ -1231,7 +1231,7 @@
     }
 
     .sidebar-toggle {
-        background: rgba(255,255,255,0.95);
+        background: var(--primary-color);
         border: 2px solid rgba(0,0,0,0.1);
         color: var(--primary-color);
         font-size: 1.4rem;
@@ -1724,6 +1724,82 @@
     }
 }
 
+@media (max-width: 768px) {
+    /* Di chuyển toggle button lên cao hơn và làm dẹp */
+    .mobile-toggle-container {
+        position: fixed;
+        top: 20px; /* Giảm từ 80px xuống 20px */
+        left: 10px;
+        transform: none; /* Bỏ translateY để không ảnh hưởng vị trí */
+        z-index: 1100;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .mobile-toggle-container.sidebar-open {
+        left: calc(320px + 10px);
+    }
+
+    .sidebar-toggle {
+        background: var(--primary-color);
+        border: 2px solid rgba(0,0,0,0.1);
+        color: var(--primary-color);
+        font-size: 1.2rem; /* Giảm từ 1.4rem */
+        cursor: pointer;
+        padding: 0.5rem 0.75rem; /* Thay đổi padding để tạo hình dẹp */
+        border-radius: 25px; /* Thay đổi từ 50% thành border-radius oval */
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        backdrop-filter: blur(10px);
+        width: auto; /* Thay đổi từ fixed width */
+        min-width: 20px; /* Đảm bảo không quá nhỏ */
+        height: 35px; /* Giảm chiều cao từ 50px */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .sidebar-toggle:hover {
+        background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
+        color: var(--primary-color);
+        transform: scale(1.05);
+        box-shadow: 0 6px 25px rgba(0,0,0,0.4);
+    }
+
+    .mobile-toggle-container.sidebar-open .sidebar-toggle i {
+        transform: rotate(180deg);
+    }
+
+    /* Đảm bảo editor không bị che */
+    .note-editor-wrapper {
+        padding-top: 10px; /* Thêm padding nhỏ ở top */
+    }
+
+    /* Tùy chọn: Làm toggle button trong suốt hơn khi không hover */
+    .mobile-toggle-container .sidebar-toggle {
+        opacity: 0.3;
+    }
+
+    .mobile-toggle-container .sidebar-toggle:hover {
+        opacity: 1;
+    }
+
+    /* Responsive cho màn hình rất nhỏ */
+    @media (max-width: 480px) {
+        .sidebar-toggle {
+            width: 20px;
+            height: 100px;
+        }
+    }
+}
+
+/* Thêm animation mượt mà hơn */
+.mobile-toggle-container {
+    will-change: transform;
+}
+
+.sidebar-toggle {
+    will-change: transform, box-shadow;
+}
 
 
 </style>
