@@ -3211,39 +3211,36 @@ const MobileCursorManager = {
     },
 
     scrollToKeepCursorCentered() {
-        if (!this.currentSelection) {
-            console.log('No current selection, skipping scroll');
-            return;
+        // Kiểm tra toggle setting
+        if (!AutoScrollSettings.isEnabled()) {
+            console.log('❌ Auto-scroll DISABLED - Function disabled');
+            return; // HOÀN TOÀN KHÔNG LÀM GÌ
         }
-
+        
+        console.log('✅ Auto-scroll ENABLED - Executing scroll');
+        
+        // Logic scroll chỉ chạy khi enabled
+        if (!this.currentSelection) return;
+        
         try {
             const cursorRect = this.getCursorPosition();
-            if (!cursorRect) {
-                console.log('Could not get cursor position');
-                return;
-            }
+            if (!cursorRect) return;
 
             const viewportHeight = window.visualViewport ? 
                 window.visualViewport.height : 
                 (window.innerHeight - this.keyboardHeight);
             
-            // Thay đổi target position: đặt cursor ở 1/4 từ trên (cao hơn)
-            // hoặc 1/5 để an toàn hơn
             const targetY = Math.min(
-                viewportHeight * 0.20,  // 20% từ trên
-                Math.max(200, Math.min(300, viewportHeight * 0.4))  // Adaptive max
+                viewportHeight * 0.20,
+                Math.max(200, Math.min(300, viewportHeight * 0.4))
             );
             
             const currentCursorY = cursorRect.top;
             const scrollNeeded = currentCursorY - targetY;
 
-            console.log(`Scroll calculation: cursorY=${currentCursorY}, targetY=${targetY}, scrollNeeded=${scrollNeeded}, viewportHeight=${viewportHeight}`);
-
             if (Math.abs(scrollNeeded) > 30) {
                 const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
                 const newScrollPosition = currentScroll + scrollNeeded;
-                
-                console.log(`Scrolling from ${currentScroll} to ${newScrollPosition}`);
                 
                 window.scrollTo({
                     top: Math.max(0, newScrollPosition),
@@ -3251,7 +3248,7 @@ const MobileCursorManager = {
                 });
             }
         } catch (error) {
-            console.error('Error in scrollToKeepCursorCentered:', error);
+            console.error('Error in scroll:', error);
         }
     },
 
