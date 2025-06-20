@@ -1391,6 +1391,7 @@
     }
 
     .sidebar-toggle {
+        top: 100px;
         background: var(--primary-color);
         border: 2px solid rgba(0,0,0,0.1);
         color: var(--primary-color);
@@ -2210,39 +2211,45 @@ const FolderManager = {
     },
 
     showDeleteFolderModal(folderId) {
-        console.log('showDeleteFolderModal called with folderId:', folderId);
-        
-        if (!folderId || isNaN(folderId)) {
-            console.error('Invalid folder ID:', folderId);
-            return;
+        const modalElement = document.getElementById('deleteFolderModal');
+        if (!modalElement) return;
+
+        // Tìm folder name để hiển thị trên tiêu đề
+        const folder = this.findFolder(folderId);
+        const folderName = folder ? folder.name : 'this folder';
+
+        // 1. Sửa tiêu đề của modal
+        const modalTitle = modalElement.querySelector('.modal-title');
+        if (modalTitle) {
+            modalTitle.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2 text-danger"></i> Delete: ${folderName}`;
         }
-        
-        // Reset form state
-        document.getElementById('moveToParent').checked = true;
-        document.getElementById('deleteAll').checked = false;
-        
-        // Set folder ID on the confirm button
-        const confirmBtn = document.getElementById('confirm-delete-folder-btn');
-        confirmBtn.dataset.folderId = folderId.toString();
-        confirmBtn.disabled = false;
-        confirmBtn.innerHTML = 'Delete';
-        
-        console.log('Set confirm button data-folder-id to:', confirmBtn.dataset.folderId);
-        
-        // Show modal
-        const modal = new bootstrap.Modal(document.getElementById('deleteFolderModal'), {
-            backdrop: 'static',
-            keyboard: true
-        });
+
+        // 2. Sửa nội dung của modal, loại bỏ các lựa chọn
+        const modalBody = modalElement.querySelector('.modal-body');
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <p>Are you sure you want to delete this folder?</p>
+                <p class="text-danger fw-bold mt-3">
+                    Warning: All notes and subfolders inside will be permanently deleted. This action cannot be undone.
+                </p>
+            `;
+        }
+
+        // 3. Sửa nút xác nhận
+        const confirmBtn = modalElement.querySelector('#confirm-delete-folder-btn');
+        if (confirmBtn) {
+            confirmBtn.dataset.folderId = folderId.toString();
+            confirmBtn.innerHTML = 'Delete Everything'; // Đổi text cho rõ ràng
+        }
+
+        // Hiển thị modal
+        const modal = new bootstrap.Modal(modalElement);
         modal.show();
-        
-        console.log('Delete folder modal should be visible now');
     },
 
     async handleDeleteFolder() {
         const deleteBtn = document.getElementById('confirm-delete-folder-btn');
         const folderId = deleteBtn.dataset.folderId;
-        const actionElement = document.querySelector('input[name="deleteAction"]:checked');
         
         console.log('handleDeleteFolder - folderId from dataset:', folderId);
         
@@ -2253,13 +2260,7 @@ const FolderManager = {
             return false;
         }
         
-        if (!actionElement) {
-            console.error('No action selected');
-            alert('Please select an action');
-            return false;
-        }
-        
-        const action = actionElement.value;
+        const action = 'delete_all';
         
         try {
             // Disable button and show loading
@@ -3388,16 +3389,16 @@ document.getElementById('deleteFolderModal').addEventListener('hidden.bs.modal',
         form.reset();
     }
     
-    // Reset default selection
-    document.getElementById('moveToParent').checked = true;
-    
     // Reset button state
     const deleteBtn = document.getElementById('confirm-delete-folder-btn');
-    deleteBtn.disabled = false;
-    deleteBtn.innerHTML = 'Delete';
+    if (deleteBtn) {
+        deleteBtn.disabled = false;
+        // Trả lại text gốc của nút trong HTML
+        deleteBtn.innerHTML = 'Delete';
     
-    // Clear folder ID
-    delete deleteBtn.dataset.folderId;
+        // Clear folder ID để chuẩn bị cho lần mở sau
+        delete deleteBtn.dataset.folderId;
+    }
     
     console.log('Delete folder modal cleaned up');
 });
@@ -3923,26 +3924,49 @@ MobileCursorManager.handleInput = function() {
 };
 
 
+EditorFocusManager.isHandlingFocus = false;
+
 EditorFocusManager.ensureEditorVisible = function(editor) {
-    if (AppState.isFocusLocked) return;
+    // CHỐT CHẶN 1: Nếu focus bị khóa bởi lightbox hoặc đang trong quá trình xử lý, thoát ngay.
+    if (AppState.isFocusLocked || EditorFocusManager.isHandlingFocus) {
+        return;
+    }
     
     if (!AutoScrollSettings.isEnabled()) {
         return;
     }
     
-    return OriginalEditorFocusManager.ensureEditorVisible.call(this, editor);
+    // Đặt cờ để ngăn các lần gọi lồng nhau trong cùng một chuỗi sự kiện
+    EditorFocusManager.isHandlingFocus = true;
+
+    try {
+        // Gọi hàm gốc để thực hiện việc cuộn
+        OriginalEditorFocusManager.ensureEditorVisible.call(this, editor);
+    } finally {
+        // Luôn gỡ cờ sau khi xử lý xong, dùng setTimeout để thoát khỏi chuỗi sự kiện hiện tại
+        setTimeout(() => {
+            EditorFocusManager.isHandlingFocus = false;
+        }, 0);
+    }
 };
 
 EditorFocusManager.handleEditorFocus = function(editor) {
-    if (!AutoScrollSettings.isEnabled()) {
+    // CHỐT CHẶN 2: Kiểm tra cờ ngay tại hàm xử lý sự kiện
+    if (EditorFocusManager.isHandlingFocus || AppState.isFocusLocked) {
         return;
     }
     
-    return OriginalEditorFocusManager.handleEditorFocus.call(this, editor);
+    // Logic gốc của bạn là gọi ensureEditorVisible, chúng ta sẽ giữ lại nó.
+    // Lưu ý: Lệnh gọi OriginalEditorFocusManager.handleEditorFocus đã bị xóa vì nó không tồn tại và gây lỗi.
+    this.ensureEditorVisible(editor);
 };
+
+// ========================================
+
 
 // Cập nhật EditorFocusManager
 const OriginalEditorFocusManager = { ...EditorFocusManager };
+
 // Cập nhật MobileCursorManager
 const OriginalMobileCursorManager = { ...MobileCursorManager };
 // Expose managers globally
