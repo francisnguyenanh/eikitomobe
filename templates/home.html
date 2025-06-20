@@ -1264,7 +1264,7 @@
             },
 
             async getCardHash(filename) {
-                return this.fetchWithErrorHandling(`/api/card_hash/${encodeURIComponent(filename)}`);
+                return this.fetchWithErrorHandling(`/get_card_hash/${encodeURIComponent(filename)}`);
             },
 
             async getCardInfo() {
