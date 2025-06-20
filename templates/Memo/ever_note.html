@@ -3230,7 +3230,7 @@ const MobileCursorManager = {
                 window.visualViewport.height : 
                 (window.innerHeight - this.keyboardHeight);
             
-            const targetY = viewportHeight * 0.5;
+            const targetY = viewportHeight * 0.65; 
             
             const currentCursorY = cursorRect.top;
             const scrollNeeded = currentCursorY - targetY;
@@ -3963,10 +3963,7 @@ MobileCursorManager.scrollToKeepCursorCentered = function() {
             window.visualViewport.height : 
             (window.innerHeight - this.keyboardHeight);
         
-        const targetY = Math.min(
-            viewportHeight * 0.20,
-            Math.max(200, Math.min(300, viewportHeight * 0.4))
-        );
+        const targetY = viewportHeight * 0.65; 
         
         const currentCursorY = cursorRect.top;
         const scrollNeeded = currentCursorY - targetY;
