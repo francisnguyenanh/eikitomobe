@@ -144,6 +144,7 @@ class Quote(db_quote.Model):
     content = db_quote.Column(db_quote.Text, nullable=False)
     category_id = db_quote.Column(db_quote.Integer, db_quote.ForeignKey('quote_category.id'), nullable=False)
 
+
 # Thêm model mới cho Folder
 class EvernoteFolder(db.Model):
     __tablename__ = 'evernote_folder'
