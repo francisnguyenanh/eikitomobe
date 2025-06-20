@@ -1703,7 +1703,8 @@ const AppState = {
     lastSavedTitle: "",
     lastSavedContent: "",
     searchModalInstance: null,
-    currentImages: []
+    currentImages: [],
+    isFocusLocked: false
 };
 
 const AutoScrollSettings = {
@@ -2649,6 +2650,7 @@ const ImageManager = {
     },
 
     showLightbox(imageSrc, filename) {
+        AppState.isFocusLocked = true;
         const lightbox = document.getElementById('imageLightbox');
         const lightboxImg = document.getElementById('lightboxImg');
         const lightboxCaption = document.getElementById('lightboxCaption');
@@ -2663,6 +2665,7 @@ const ImageManager = {
         const lightbox = document.getElementById('imageLightbox');
         lightbox.style.display = 'none';
         document.body.style.overflow = '';
+        AppState.isFocusLocked = false;
     },
 
     async deleteImage(imageId, noteId) {
@@ -3919,6 +3922,8 @@ MobileCursorManager.handleInput = function() {
 
 
 EditorFocusManager.ensureEditorVisible = function(editor) {
+    if (AppState.isFocusLocked) return;
+    
     if (!AutoScrollSettings.isEnabled()) {
         return;
     }
