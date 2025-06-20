@@ -96,6 +96,12 @@
                     <button class="toolbar-btn" id="strike-btn" title="Strikethrough" onmousedown="toggleFormat(event, 'strikeThrough', this)">
                         <i class="bi bi-type-strikethrough"></i>
                     </button>
+                    <label class="auto-scroll-toggle" title="Bật/tắt tự động cuộn theo cursor">
+                        <input type="checkbox" id="autoScrollToggle" checked>
+                        <span class="toggle-slider"></span>
+                        <i class="fas fa-arrows-alt-v"></i>
+                        <span class="toggle-label">Scroll</span>
+                    </label>
                 </div>
 
                 <div class="toolbar-divider"></div>
@@ -1436,6 +1442,7 @@
         background: rgba(255,255,255,0.98);
         box-shadow: 0 0 50px rgba(0,0,0,0.3);
         border-radius: 0 15px 15px 0;
+        height: 80%;
     }
 
     .note-sidebar.collapsed .sidebar-header h3,
@@ -1801,7 +1808,105 @@
     will-change: transform, box-shadow;
 }
 
+/* Auto-scroll Toggle Styles */
+.auto-scroll-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(0,0,0,0.1);
+    user-select: none;
+    font-size: 0.85rem;
+    color: var(--text-color);
+}
 
+.auto-scroll-toggle:hover {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
+    border-color: var(--primary-color);
+}
+
+.auto-scroll-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.toggle-slider {
+    position: relative;
+    width: 34px;
+    height: 18px;
+    background: #ccc;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    left: 2px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.auto-scroll-toggle input:checked + .toggle-slider {
+    background: var(--primary-color);
+}
+
+.auto-scroll-toggle input:checked + .toggle-slider::before {
+    transform: translateX(16px);
+}
+
+.auto-scroll-toggle i {
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.auto-scroll-toggle input:checked ~ i {
+    color: var(--primary-color);
+}
+
+.toggle-label {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.auto-scroll-toggle input:checked ~ .toggle-label {
+    color: var(--primary-color);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .auto-scroll-toggle {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+    }
+    
+    .toggle-slider {
+        width: 28px;
+        height: 16px;
+    }
+    
+    .toggle-slider::before {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .auto-scroll-toggle input:checked + .toggle-slider::before {
+        transform: translateX(12px);
+    }
+    
+    .toggle-label {
+        display: none; /* Ẩn text trên mobile */
+    }
+}
 </style>
 
 <script>
@@ -1820,6 +1925,48 @@ const AppState = {
     searchModalInstance: null,
     currentImages: []
 };
+
+const AutoScrollSettings = {
+    enabled: true,
+    
+    init() {
+        // Load setting từ localStorage
+        const saved = localStorage.getItem('autoScrollEnabled');
+        this.enabled = saved !== null ? JSON.parse(saved) : true;
+        
+        // Set checkbox state
+        const checkbox = document.getElementById('autoScrollToggle');
+        if (checkbox) {
+            checkbox.checked = this.enabled;
+            checkbox.addEventListener('change', (e) => {
+                this.toggle(e.target.checked);
+            });
+        }
+    },
+    
+    toggle(enabled) {
+        this.enabled = enabled;
+        localStorage.setItem('autoScrollEnabled', JSON.stringify(enabled));
+        
+        console.log(`Auto-scroll ${enabled ? 'enabled' : 'disabled'}`);
+        
+        // Nếu tắt auto-scroll, clear các timer đang chạy
+        if (!enabled) {
+            if (MobileCursorManager.scrollTimeout) {
+                clearTimeout(MobileCursorManager.scrollTimeout);
+            }
+            if (EditorFocusManager.focusTimeout) {
+                clearTimeout(EditorFocusManager.focusTimeout);
+            }
+        }
+    },
+    
+    isEnabled() {
+        return this.enabled;
+    }
+};
+
+
 
 // ===== SAVE FUNCTIONALITY =====
 const SaveManager = {
@@ -2822,6 +2969,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     SidebarManager.init();
     SidebarManager.restoreState(); 
+    AutoScrollSettings.init();
 
     // Handle window resize
     window.addEventListener('resize', () => {
@@ -3970,6 +4118,46 @@ const SidebarManager = {
     }
 };
 
+
+MobileCursorManager.scrollToKeepCursorCentered = function() {
+    // Check if auto-scroll is enabled
+    if (!AutoScrollSettings.isEnabled()) {
+        return;
+    }
+    
+    // Call original function
+    return OriginalMobileCursorManager.scrollToKeepCursorCentered.call(this);
+};
+
+MobileCursorManager.handleInput = function() {
+    if (!AutoScrollSettings.isEnabled()) {
+        return;
+    }
+    
+    return OriginalMobileCursorManager.handleInput.call(this);
+};
+
+
+EditorFocusManager.ensureEditorVisible = function(editor) {
+    if (!AutoScrollSettings.isEnabled()) {
+        return;
+    }
+    
+    return OriginalEditorFocusManager.ensureEditorVisible.call(this, editor);
+};
+
+EditorFocusManager.handleEditorFocus = function(editor) {
+    if (!AutoScrollSettings.isEnabled()) {
+        return;
+    }
+    
+    return OriginalEditorFocusManager.handleEditorFocus.call(this, editor);
+};
+
+// Cập nhật EditorFocusManager
+const OriginalEditorFocusManager = { ...EditorFocusManager };
+// Cập nhật MobileCursorManager
+const OriginalMobileCursorManager = { ...MobileCursorManager };
 // Expose managers globally
 window.ImageManager = ImageManager;
 </script>
