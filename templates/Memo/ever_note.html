@@ -21,9 +21,6 @@
             <button class="action-btn primary-btn" id="share-link-btn" title="Share note">
                 <i class="bi bi-share"></i>
             </button>
-            <button class="action-btn danger-btn" id="delete-note-btn" title="Delete note">
-                <i class="bi bi-trash"></i>
-            </button>
         </div>
     </div>
 
@@ -262,27 +259,6 @@
                         This link allows anyone to view the note without login.
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    Confirm Delete
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                Are you sure you want to delete this note?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirm-delete-btn">Delete</button>
             </div>
         </div>
     </div>
@@ -1728,6 +1704,84 @@
      
 }
 
+/* Note Item với Delete Icon */
+.note-item {
+    padding: 0.75rem 1rem;
+    cursor: move;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+    color: var(--text-color);
+    font-size: 0.9rem;
+    line-height: 1.3;
+    border-radius: 6px;
+    margin: 0 0.5rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.note-item-content {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-right: 0.5rem;
+}
+
+.note-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    flex-shrink: 0;
+}
+
+.note-item:hover .note-item-actions,
+.note-item.active .note-item-actions {
+    opacity: 1;
+}
+
+.note-delete-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--alert-danger-color);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+}
+
+.note-delete-btn:hover {
+    background: var(--alert-danger-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+.note-delete-btn:active {
+    transform: scale(0.95);
+}
+
+/* Mobile: Always show delete buttons */
+@media (max-width: 768px) {
+    .note-item-actions {
+        opacity: 1;
+    }
+    
+    .note-delete-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+}
 </style>
 
 <script>
@@ -2840,18 +2894,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup button events
     document.getElementById('add-note-btn').onclick = () => NoteManager.addNote();
-    document.getElementById('delete-note-btn').onclick = () => {
-        AppState.pendingDelete = true;
-        const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-        modal.show();
-    };
-    document.getElementById('confirm-delete-btn').onclick = async () => {
-        if (AppState.pendingDelete) {
-            await NoteManager.deleteNote();
-            AppState.pendingDelete = false;
-            bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
-        }
-    };
     document.getElementById('clear-title-btn').onclick = () => {
         document.getElementById('note-title').value = "";
         document.getElementById('note-title').focus();
@@ -3456,7 +3498,13 @@ const DragDropManager = {
         const noteItems = document.querySelectorAll('.note-item');
         noteItems.forEach(item => {
             item.draggable = true;
-            item.addEventListener('dragstart', this.handleDragStart.bind(this));
+            
+            // Add drag listeners to the note content area, not the whole item
+            const noteContent = item.querySelector('.note-item-content');
+            if (noteContent) {
+                noteContent.addEventListener('dragstart', this.handleDragStart.bind(this));
+            }
+            
             item.addEventListener('dragend', this.handleDragEnd.bind(this));
         });
         
@@ -3700,13 +3748,116 @@ NoteManager.renderNoteList = function() {
         const li = document.createElement('li');
         li.className = `note-item ${note.id === AppState.currentId ? 'active' : ''}`;
         li.dataset.noteId = note.id;
-        li.textContent = note.title || 'Untitled';
-        li.onclick = () => this.selectNote(note.id);
+        
+        // Create note content
+        const noteContent = document.createElement('div');
+        noteContent.className = 'note-item-content';
+        noteContent.textContent = note.title || 'Untitled';
+        noteContent.onclick = () => this.selectNote(note.id);
+        
+        // Create actions container
+        const actionsContainer = document.createElement('div');
+        actionsContainer.className = 'note-item-actions';
+        
+        // Create delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'note-delete-btn';
+        deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+        deleteBtn.title = 'Delete note';
+        deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            this.deleteNoteFromList(note.id, note.title);
+        };
+        
+        actionsContainer.appendChild(deleteBtn);
+        
+        li.appendChild(noteContent);
+        li.appendChild(actionsContainer);
         list.appendChild(li);
     });
     
     // Setup drag and drop for newly rendered notes
     DragDropManager.makeNotesDraggable();
+};
+
+// Thêm method này vào NoteManager object
+NoteManager.deleteNoteFromList = async function(noteId, noteTitle) {
+    try {
+        // Gọi API xóa note trực tiếp không cần confirm
+        await API.deleteNote(noteId);
+        
+        // Nếu note đang được chọn, clear editor
+        if (AppState.currentId === noteId) {
+            AppState.currentId = null;
+            this.clearEditor();
+        }
+        
+        // QUAN TRỌNG: Reload folder tree trước để cập nhật notes_count
+        await FolderManager.loadFolders();
+        
+        // Sau đó reload notes cho folder hiện tại
+        await this.loadNotes(FolderManager.currentFolderId);
+        
+        // Hiển thị thông báo thành công
+        this.showDeleteSuccess(noteTitle);
+        
+    } catch (error) {
+        console.error('Error deleting note:', error);
+        alert('Error deleting note: ' + error.message);
+    }
+},
+
+// Thêm method hiển thị thông báo thành công
+NoteManager.showDeleteSuccess = function(noteTitle) {
+    // Tạo toast notification
+    const toast = document.createElement('div');
+    toast.className = 'delete-success-toast';
+    toast.innerHTML = `
+        <i class="bi bi-check-circle-fill"></i>
+        <span>Deleted "${noteTitle}"</span>
+    `;
+    
+    // Thêm CSS cho toast
+    const toastStyle = document.createElement('style');
+    toastStyle.textContent = `
+        .delete-success-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--alert-success-color);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            animation: slideInRight 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+        }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    `;
+    
+    document.head.appendChild(toastStyle);
+    document.body.appendChild(toast);
+    
+    // Tự động xóa toast sau 3 giây
+    setTimeout(() => {
+        toast.remove();
+        toastStyle.remove();
+    }, 3000);
 };
 
 // ===== UPDATE FOLDER MANAGER =====
