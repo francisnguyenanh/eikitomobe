@@ -427,6 +427,7 @@
     background: linear-gradient(135deg, var(--alert-danger-color), #c0392b);
     color: white;
 }
+
 .folder-btn {
     background: linear-gradient(135deg, #f39c12, #e67e22);
     color: white;
@@ -446,6 +447,15 @@
     min-height: 0;
 }
 
+.note-layout.sidebar-collapsed {
+    gap: 1rem;
+}
+
+.note-layout.sidebar-collapsed .note-editor-wrapper {
+    margin-left: 0;
+    width: 100%;
+    flex: 1;
+}
 
 /* Sidebar Styles */
 .note-sidebar {
@@ -551,16 +561,35 @@
 .note-sidebar.collapsed .sidebar-toggle i {
     transform: rotate(180deg);
 }
+
 /* Folder Tree Styles */
 .folder-tree-container {
     max-height: 40vh;
     overflow-y: auto;
     border-bottom: 1px solid rgba(0,0,0,0.1);
     padding: 0.5rem 0;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+    -webkit-overflow-scrolling: touch;
 }
 
-.note-sidebar.collapsed .folder-tree-container {
-    display: none;
+.folder-tree-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.folder-tree-container::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 4px;
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 4px;
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
 }
 
 .folder-tree-item {
@@ -727,10 +756,8 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-}
-
-.note-sidebar.collapsed .notes-section {
-    display: none;
+    height: 100%;
+    max-height: calc(100vh - 120px);
 }
 
 .notes-header {
@@ -744,6 +771,7 @@
     position: sticky;
     top: 0;
     z-index: 10;
+    flex-shrink: 0;
 }
 
 .notes-header #current-folder-name {
@@ -758,10 +786,34 @@
 
 .note-list {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: scroll !important;
     padding: 0.5rem 0;
     margin: 0;
     list-style: none;
+    max-height: calc(100vh - 200px);
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+    -webkit-overflow-scrolling: touch;
+    min-height: 0;
+}
+
+.note-list::-webkit-scrollbar {
+    width: 8px !important;
+    height: 8px !important;
+}
+
+.note-list::-webkit-scrollbar-track {
+    background: #f7fafc !important;
+    border-radius: 4px !important;
+}
+
+.note-list::-webkit-scrollbar-thumb {
+    background: #cbd5e0 !important;
+    border-radius: 4px !important;
+}
+
+.note-list::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0 !important;
 }
 
 .note-item {
@@ -1184,7 +1236,6 @@
     animation: moveSuccess 0.5s ease;
 }
 
-
 /* Form and Modal Styles */
 .form-control,
 .form-select {
@@ -1219,593 +1270,6 @@
     color: #333;
     border-radius: 3px;
     padding: 1px 2px;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .mobile-toggle-container {
-        position: fixed;
-        top: 50%;
-        left: 10px;
-        transform: translateY(-50%);
-        z-index: 1100;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-
-    .mobile-toggle-container.sidebar-open {
-        left: calc(320px + 10px);
-    }
-
-    .sidebar-toggle {
-        background: var(--primary-color);
-        border: 2px solid rgba(0,0,0,0.1);
-        color: var(--primary-color);
-        font-size: 1.4rem;
-        cursor: pointer;
-        padding: 0.75rem;
-        border-radius: 50%;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        backdrop-filter: blur(10px);
-        width: 50px;
-        height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-
-    .mobile-toggle-container.sidebar-open .sidebar-toggle i {
-        transform: rotate(180deg);
-    }
-
-    .modern-note-container {
-        padding: 1rem;
-        border-radius: 0;
-        min-height: 100vh;
-    }
-
-    .note-header {
-        flex-direction: column;
-        gap: 1rem;
-        position: sticky;
-        top: 0;
-        background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(10px);
-        z-index: 100;
-    }
-
-    .note-layout {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .note-sidebar {
-        position: fixed;
-        top: 1rem;
-        left: 1rem;
-        bottom: 1rem;
-        z-index: 1000;
-        width: calc(100vw - 2rem);
-        max-width: 320px;
-        transform: translateX(-100%);
-    }
-
-    .note-sidebar:not(.collapsed) {
-        transform: translateX(0);
-    }
-
-    .note-editor-wrapper {
-        order: 1;
-        min-height: calc(100vh - 300px);
-    }
-
-    .editor-toolbar {
-        gap: 0.25rem;
-        padding: 0.75rem;
-        position: sticky;
-        top: 10px;
-        background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(10px);
-        z-index: 90;
-    }
-
-    .toolbar-btn {
-        width: 40px;
-        height: 40px;
-        min-height: 44px;
-        min-width: 44px;
-    }
-
-    .toolbar-select {
-        min-width: 80px;
-        font-size: 0.8rem;
-        height: 40px;
-    }
-
-    .title-input {
-        font-size: 16px !important;
-        padding: 1rem;
-        transform: scale(1);
-    }
-
-    .note-editor {
-        padding: 1rem;
-        font-size: 16px !important;
-        line-height: 1.6;
-        min-height: calc(100vh - 400px);
-        margin-bottom: 50vh;
-    }
-
-    .folder-tree-container {
-        max-height: 25vh;
-    }
-
-    .folder-item-content,
-    .all-notes-content {
-        padding: 0.5rem;
-        min-height: 44px;
-    }
-
-    .folder-children {
-        margin-left: 1rem;
-    }
-
-    .folder-actions {
-        opacity: 1;
-    }
-
-    .folder-toggle {
-        width: 20px;
-        height: 20px;
-    }
-
-    .note-item {
-        padding: 1rem 0.75rem 1rem 2rem;
-        font-size: 0.85rem;
-    }
-
-    .note-item::before {
-        opacity: 0.3;
-        left: 0.5rem;
-    }
-
-    .lightbox-content {
-        width: 95%;
-        max-height: 70%;
-        margin-top: 10%;
-    }
-
-    .lightbox-close {
-        top: 10px;
-        right: 20px;
-        font-size: 30px;
-        background: rgba(0,0,0,0.7);
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .sidebar-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 990;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-    }
-
-    .sidebar-overlay.visible {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    * {
-        scroll-behavior: smooth;
-    }
-
-    .note-editor:focus,
-    .title-input:focus {
-        outline: 2px solid var(--primary-color);
-        outline-offset: 2px;
-    }
-    .note-sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        width: 320px;
-        max-width: 80vw;
-        z-index: 1050;
-        background: rgba(255,255,255,0.98);
-        backdrop-filter: blur(20px);
-        border-radius: 0 15px 15px 0;
-        box-shadow: 0 0 50px rgba(0,0,0,0.3);
-        transform: translateX(-100%);
-        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        border-right: 3px solid var(--primary-color);
-    }
-
-    .note-sidebar.mobile-open {
-        transform: translateX(0);
-    }
-
-    .note-sidebar.collapsed {
-        width: 320px;
-        min-width: 320px;
-        background: rgba(255,255,255,0.98);
-        box-shadow: 0 0 50px rgba(0,0,0,0.3);
-        border-radius: 0 15px 15px 0;
-        height: 80%;
-    }
-
-    .note-sidebar.collapsed .sidebar-header h3,
-    .note-sidebar.collapsed .folder-tree-container,
-    .note-sidebar.collapsed .notes-section {
-        display: block !important;
-    }
-
-    /* ===== SIDEBAR OVERLAY BACKDROP ===== */
-    .sidebar-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 1040;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(2px);
-    }
-
-    .sidebar-overlay.visible {
-        opacity: 1;
-        visibility: visible;
-    }
-}
-.note-layout.sidebar-collapsed {
-    gap: 1rem;
-}
-
-.note-layout.sidebar-collapsed .note-editor-wrapper {
-    margin-left: 0;
-    width: 100%;
-    flex: 1;
-}
-
-/* iOS Specific Fixes */
-@supports (-webkit-touch-callout: none) {
-    .note-editor,
-    .title-input {
-        font-size: 16px !important;
-        transform: scale(1);
-    }
-}
-
-/* Android Specific Fixes */
-@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: 0.001dpcm) {
-    .note-editor {
-        font-size: 16px !important;
-    }
-}
-
-/* ===== DESKTOP SIDEBAR ===== */
-@media (min-width: 769px) {
-    .mobile-toggle-container {
-        display: none;
-    }
-    
-    .sidebar-overlay {
-        display: none;
-    }
-}
-
-@media (max-width: 768px) {
-    .header-actions {
-        gap: 0.25rem;
-    }
-    
-    .action-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-    
-    .folder-btn {
-        order: -1; /* Đưa folder button lên đầu trên mobile */
-    }
-    
-}
-@media (max-width: 768px) {
-    /* Ẩn mobile toggle button khi sidebar đang mở */
-    .mobile-toggle-container.sidebar-open {
-        display: none;
-    }
-    
-    /* Đảm bảo overlay có thể click được */
-    .sidebar-overlay {
-        cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-    }
-}
-@media (max-width: 768px) {
-    /* Ẩn sidebar header khi sidebar mở trên mobile */
-    .note-sidebar.mobile-open .sidebar-header {
-        display: none;
-    }
-    
-    /* Tối ưu layout khi header bị ẩn */
-    .note-sidebar.mobile-open {
-        padding-top: 0;
-    }
-    
-    .note-sidebar.mobile-open .folder-tree-container {
-        margin-top: 0;
-        border-top: none;
-    }
-    
-    /* Existing CSS... */
-    .mobile-toggle-container.sidebar-open {
-        display: none;
-    }
-    
-    .sidebar-overlay {
-        cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-    }
-}
-@media (max-width: 768px) {
-    /* Chỉ ẩn header khi mobile-open và không collapsed */
-    .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .sidebar-header {
-        display: none !important;
-    }
-    
-    /* Điều chỉnh layout */
-    .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .folder-tree-container {
-        padding-top: 1rem;
-        margin-top: 0;
-    }
-    
-    /* Các CSS khác giữ nguyên */
-    .mobile-toggle-container.sidebar-open {
-        display: none;
-    }
-    
-    .sidebar-overlay {
-        cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-    }
-}
-
-/* Scrollbar Styling - Hiển thị trên cả mobile và desktop */
-.folder-tree-container,
-.note-list {
-    /* Luôn hiển thị scrollbar */
-    overflow-y: scroll;
-    scrollbar-width: thin; /* Firefox */
-    scrollbar-color: #cbd5e0 #f7fafc; /* Firefox */
-}
-
-/* WebKit browsers (Chrome, Safari, Edge) */
-.folder-tree-container::-webkit-scrollbar,
-.note-list::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-.folder-tree-container::-webkit-scrollbar-track,
-.note-list::-webkit-scrollbar-track {
-    background: #f7fafc;
-    border-radius: 4px;
-}
-
-.folder-tree-container::-webkit-scrollbar-thumb,
-.note-list::-webkit-scrollbar-thumb {
-    background: #cbd5e0;
-    border-radius: 4px;
-}
-
-.folder-tree-container::-webkit-scrollbar-thumb:hover,
-.note-list::-webkit-scrollbar-thumb:hover {
-    background: #a0aec0;
-}
-
-/* Mobile specific scrollbar */
-@media (max-width: 768px) {
-    .folder-tree-container,
-    .note-list {
-        /* Đảm bảo scrollbar hiển thị trên mobile */
-        -webkit-overflow-scrolling: touch;
-        overflow-y: scroll;
-    }
-    
-    /* Scrollbar cho mobile webkit */
-    .folder-tree-container::-webkit-scrollbar,
-    .note-list::-webkit-scrollbar {
-        width: 6px; /* Nhỏ hơn một chút cho mobile */
-        height: 6px;
-    }
-    
-    .folder-tree-container::-webkit-scrollbar-track,
-    .note-list::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 3px;
-    }
-    
-    .folder-tree-container::-webkit-scrollbar-thumb,
-    .note-list::-webkit-scrollbar-thumb {
-        background: #94a3b8;
-        border-radius: 3px;
-    }
-    
-    .folder-tree-container::-webkit-scrollbar-thumb:hover,
-    .note-list::-webkit-scrollbar-thumb:hover {
-        background: #64748b;
-    }
-}
-
-/* Đảm bảo scrollbar luôn hiển thị ngay cả khi không cần scroll */
-.folder-tree-container,
-.note-list {
-    overflow-y: auto; /* Thay vì scroll */
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e0 #f7fafc;
-    -webkit-overflow-scrolling: touch; /* Smooth scrolling trên iOS */
-}
-
-.note-list {
-    max-height: calc(100vh - 200px); /* Hoặc chiều cao cụ thể */
-    overflow-y: scroll !important;
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e0 #f7fafc;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Notes Section - Đảm bảo có chiều cao cố định */
-.notes-section {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    max-height: calc(100vh - 120px); /* Điều chỉnh theo header */
-}
-
-.notes-header {
-    flex-shrink: 0; /* Không cho header co lại */
-}
-
-.note-list {
-    flex: 1; /* Chiếm phần còn lại */
-    overflow-y: scroll !important;
-    min-height: 0; /* Quan trọng cho flex item */
-}
-
-/* WebKit scrollbar cho note-list */
-.note-list::-webkit-scrollbar {
-    width: 8px !important;
-    height: 8px !important;
-}
-
-.note-list::-webkit-scrollbar-track {
-    background: #f7fafc !important;
-    border-radius: 4px !important;
-}
-
-.note-list::-webkit-scrollbar-thumb {
-    background: #cbd5e0 !important;
-    border-radius: 4px !important;
-}
-
-.note-list::-webkit-scrollbar-thumb:hover {
-    background: #a0aec0 !important;
-}
-
-/* Mobile */
-@media (max-width: 768px) {
-    .note-list {
-        max-height: calc(100vh - 180px);
-    }
-    
-    .note-list::-webkit-scrollbar {
-        width: 6px !important;
-        height: 6px !important;
-    }
-}
-@media (max-width: 768px) {
-    /* Di chuyển toggle button lên cao hơn */
-    .mobile-toggle-container,
-    .sidebar-toggle {
-        top: 80px !important; /* Hoặc giá trị mong muốn: 5px, 10px, 12px */
-    }
-    
-    /* Nếu cần điều chỉnh margin/padding */
-    .mobile-toggle-container .sidebar-toggle {
-        margin-top: -5px; /* Di chuyển lên 5px */
-    }
-}
-
-@media (max-width: 768px) {
-    /* Di chuyển toggle button lên cao hơn và làm dẹp */
-    .mobile-toggle-container {
-        position: fixed;
-        top: 20px; /* Giảm từ 80px xuống 20px */
-        left: 10px;
-        transform: none; /* Bỏ translateY để không ảnh hưởng vị trí */
-        z-index: 1100;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-
-    .mobile-toggle-container.sidebar-open {
-        left: calc(320px + 10px);
-    }
-
-    .sidebar-toggle {
-        background: var(--primary-color);
-        border: 2px solid rgba(0,0,0,0.1);
-        color: var(--primary-color);
-        font-size: 1.2rem; /* Giảm từ 1.4rem */
-        cursor: pointer;
-        padding: 0.5rem 0.75rem; /* Thay đổi padding để tạo hình dẹp */
-        border-radius: 25px; /* Thay đổi từ 50% thành border-radius oval */
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        backdrop-filter: blur(10px);
-        width: auto; /* Thay đổi từ fixed width */
-        min-width: 20px; /* Đảm bảo không quá nhỏ */
-        height: 35px; /* Giảm chiều cao từ 50px */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-
-    .sidebar-toggle:hover {
-        background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
-        color: var(--primary-color);
-        transform: scale(1.05);
-        box-shadow: 0 6px 25px rgba(0,0,0,0.4);
-    }
-
-    .mobile-toggle-container.sidebar-open .sidebar-toggle i {
-        transform: rotate(180deg);
-    }
-
-    /* Đảm bảo editor không bị che */
-    .note-editor-wrapper {
-        padding-top: 10px; /* Thêm padding nhỏ ở top */
-    }
-
-    /* Tùy chọn: Làm toggle button trong suốt hơn khi không hover */
-    .mobile-toggle-container .sidebar-toggle {
-        opacity: 0.3;
-    }
-
-    .mobile-toggle-container .sidebar-toggle:hover {
-        opacity: 1;
-    }
-
-    /* Responsive cho màn hình rất nhỏ */
-    @media (max-width: 480px) {
-        .sidebar-toggle {
-            width: 20px;
-            height: 100px;
-        }
-    }
-}
-
-/* Thêm animation mượt mà hơn */
-.mobile-toggle-container {
-    will-change: transform;
-}
-
-.sidebar-toggle {
-    will-change: transform, box-shadow;
 }
 
 /* Auto-scroll Toggle Styles */
@@ -1882,30 +1346,346 @@
     color: var(--primary-color);
 }
 
-/* Mobile responsive */
-@media (max-width: 768px) {
-    .auto-scroll-toggle {
-        padding: 0.4rem 0.6rem;
-        font-size: 0.8rem;
+/* iOS Specific Fixes */
+@supports (-webkit-touch-callout: none) {
+    .note-editor,
+    .title-input {
+        font-size: 16px !important;
+        transform: scale(1);
+    }
+}
+
+/* Android Specific Fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: 0.001dpcm) {
+    .note-editor {
+        font-size: 16px !important;
+    }
+}
+
+/* Desktop Sidebar */
+@media (min-width: 769px) {
+    .mobile-toggle-container {
+        display: none;
     }
     
-    .toggle-slider {
+    .sidebar-overlay {
+        display: none;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .mobile-toggle-container {
+        position: fixed;
+        top: 20px;
+        left: 10px;
+        transform: none;
+        z-index: 1100;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        will-change: transform;
+    }
+
+    .mobile-toggle-container.sidebar-open {
+        left: calc(320px + 10px);
+        display: none;
+    }
+
+    .sidebar-toggle {
+        background: var(--primary-color);
+        border: 2px solid rgba(0,0,0,0.1);
+        color: var(--primary-color);
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0.5rem 0.75rem;
+        border-radius: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        backdrop-filter: blur(10px);
+        width: auto;
+        min-width: 20px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        will-change: transform, box-shadow;
+        opacity: 0.3;
+    }
+
+    .sidebar-toggle:hover {
+        background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
+        color: var(--primary-color);
+        transform: scale(1.05);
+        box-shadow: 0 6px 25px rgba(0,0,0,0.4);
+        opacity: 1;
+    }
+
+    .mobile-toggle-container .sidebar-toggle:hover {
+        opacity: 1;
+    }
+
+    .mobile-toggle-container.sidebar-open .sidebar-toggle i {
+        transform: rotate(180deg);
+    }
+
+    .modern-note-container {
+        padding: 1rem;
+        border-radius: 0;
+        min-height: 100vh;
+    }
+
+    .note-header {
+        flex-direction: column;
+        gap: 1rem;
+        position: sticky;
+        top: 0;
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        z-index: 100;
+    }
+
+    .note-layout {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .note-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 320px;
+        max-width: 80vw;
+        z-index: 1050;
+        background: rgba(255,255,255,0.98);
+        backdrop-filter: blur(20px);
+        border-radius: 0 15px 15px 0;
+        box-shadow: 0 0 50px rgba(0,0,0,0.3);
+        transform: translateX(-100%);
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-right: 3px solid var(--primary-color);
+    }
+
+    .note-sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .sidebar-header {
+        display: none !important;
+    }
+
+    .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .folder-tree-container {
+        padding-top: 1rem;
+        margin-top: 0;
+    }
+
+    .note-sidebar.collapsed {
+        width: 320px;
+        min-width: 320px;
+        background: rgba(255,255,255,0.98);
+        box-shadow: 0 0 50px rgba(0,0,0,0.3);
+        border-radius: 0 15px 15px 0;
+        height: 95%;
+    }
+
+    .note-sidebar.collapsed .sidebar-header h3,
+    .note-sidebar.collapsed .folder-tree-container,
+    .note-sidebar.collapsed .notes-section {
+        display: block !important;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1040;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(2px);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .sidebar-overlay.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .note-editor-wrapper {
+        order: 1;
+        min-height: calc(100vh - 300px);
+        padding-top: 10px;
+    }
+
+    .editor-toolbar {
+        gap: 0.25rem;
+        padding: 0.75rem;
+        position: sticky;
+        top: 10px;
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        z-index: 90;
+    }
+
+    .toolbar-btn {
+        width: 40px;
+        height: 40px;
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .toolbar-select {
+        min-width: 80px;
+        font-size: 0.8rem;
+        height: 40px;
+    }
+
+    .title-input {
+        font-size: 16px !important;
+        padding: 1rem;
+        transform: scale(1);
+    }
+
+    .note-editor {
+        padding: 1rem;
+        font-size: 16px !important;
+        line-height: 1.6;
+        min-height: calc(100vh - 400px);
+        margin-bottom: 50vh;
+    }
+
+    .folder-tree-container {
+        max-height: 25vh;
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .folder-tree-container::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .folder-tree-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 3px;
+    }
+
+    .folder-tree-container::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 3px;
+    }
+
+    .folder-tree-container::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+    }
+
+    .folder-item-content,
+    .all-notes-content {
+        padding: 0.5rem;
+        min-height: 44px;
+    }
+
+    .folder-children {
+        margin-left: 1rem;
+    }
+
+    .folder-actions {
+        opacity: 1;
+    }
+
+    .folder-toggle {
+        width: 20px;
+        height: 20px;
+    }
+
+    .note-item {
+        padding: 1rem 0.75rem 1rem 2rem !important;
+        font-size: 0.85rem;
+    }
+
+ .note-item::before {
+        opacity: 0.3;
+        left: 0.5rem;
+    }
+
+    .lightbox-content {
+        width: 95%;
+        max-height: 70%;
+        margin-top: 10px;
+    }
+
+ .lightbox-close {
+        top: 10px;
+        right: 20px;
+        background: rgba(0,0,0,0.7);
+        font-size: 30px;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+     .note-list {
+        max-height: calc(100vh - 180px);
+    }
+
+     .note-list::-webkit-scrollbar {
+        width: 6px !important;
+        height: 6px !important;
+    }
+
+     .header-actions {
+        gap: 0.25rem;
+    }
+
+     .action-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+     .folder-btn {
+        order: -1;
+    }
+
+     .auto-scroll-toggle {
+        padding: 0.4rem;
+        font-size: 0.8rem;
+    }
+
+     .tile-scroll-bar {
         width: 28px;
         height: 16px;
     }
-    
-    .toggle-slider::before {
-        width: 12px;
-        height: 12px;
+
+     .toggle-slider::before {
+         width: 12px;
+         height: 12px;
+     }
+
+     .auto-scroll-toggle input:checked + .tile-scroll-bar::before {
+         transform: translateX(12px);
+     }
+
+     .toggle-label {
+         display: none;
+     }
+
+     .note-sidebar .sidebar-header {
+        display: none !important;
     }
-    
-    .auto-scroll-toggle input:checked + .toggle-slider::before {
-        transform: translateX(12px);
-    }
-    
-    .toggle-label {
-        display: none; /* Ẩn text trên mobile */
-    }
+
+     @media (max-width: 480px) {
+         .sidebar-toggle {
+             width: 20px;
+             height: 100px;
+         }
+     }
 }
 </style>
 
