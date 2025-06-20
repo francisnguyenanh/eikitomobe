@@ -6,10 +6,6 @@
     <!-- Header -->
     <div class="note-header">
         <div class="header-left">
-            <h1 class="note-title">
-                <i class="bi bi-journal-richtext"></i>
-                Notes
-            </h1>
             <span id="save-status" class="save-indicator">
                 <i class="bi bi-cloud-check-fill"></i>
                 <span class="save-text">Saved</span>
@@ -1451,16 +1447,20 @@
         position: fixed;
         top: 0;
         left: 0;
-        width: 350px; /* ✅ TĂNG TỪ 320px LÊN 350px */
-        max-width: 85vw; /* ✅ TĂNG TỪ 80vw LÊN 85vw */
-        height: 100vh;
+        bottom: 0;
+        width: 320px;
+        max-width: 80vw;
         z-index: 1050;
         background: rgba(255,255,255,0.98);
+        backdrop-filter: blur(20px);
         border-radius: 0 15px 15px 0;
+        box-shadow: 0 0 50px rgba(0,0,0,0.3);
         transform: translateX(-100%);
         transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-right: 3px solid var(--primary-color);
         display: flex;
         flex-direction: column;
+        height: 100vh;
         overflow: hidden;
     }
 
@@ -1518,22 +1518,13 @@
         top: 0;
         z-index: 10;
         background: rgba(255, 255, 255, 0.98);
-        border-bottom: 1px solid rgba(0,0,0,0.1);
     }
 
     /* 6. Danh sách note: Co giãn và scroll */
     .note-list {
-        flex: 1;
-        overflow-y: scroll !important; /* ✅ Dùng scroll thay vì auto */
+        flex: 1; /* Lấp đầy không gian còn lại trong .notes-section */
+        overflow-y: auto !important;
         -webkit-overflow-scrolling: touch;
-        padding: 0.5rem 0;
-        margin: 0;
-        list-style: none;
-        max-height: none;
-        
-        /* ✅ THÊM: Đảm bảo có không gian cho scrollbar */
-        padding-right: 12px !important; /* Để chỗ cho scrollbar */
-        box-sizing: border-box;
     }
 
     .sidebar-overlay {
@@ -1600,15 +1591,14 @@
         margin-bottom: 50vh;
     }
 
-    /* 2. Container cây thư mục: Cố định chiều cao, bên trong tự scroll */
     .folder-tree-container {
-        flex-shrink: 0; /* Ngăn nó co lại */
-        max-height: 25vh; /* Giới hạn chiều cao, ví dụ 40% màn hình */
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;
+        flex-shrink: 0;
+        max-height: 20vh; /* Giới hạn chiều cao, ví dụ 35% màn hình */
         display: flex;
         flex-direction: column;
-        overflow: hidden; /* Container này không scroll */
-        border-bottom: 1px solid rgba(0,0,0,0.1);
-        padding: 0.5rem 0;
+        overflow: hidden;
     }
 
     .folder-tree-container::-webkit-scrollbar {
@@ -1650,8 +1640,8 @@
     }
 
     .note-item {
-        padding: 0.75rem 0.5rem 0.75rem 1rem !important; /* Giảm padding-right */
-        margin-right: 4px !important; /* Thêm margin để tránh scrollbar */
+        padding: 1rem 0.75rem 1rem 2rem !important;
+        font-size: 0.85rem;
     }
 
  .note-item::before {
@@ -1676,6 +1666,15 @@
         display: flex;
         align-items: center;
         justify-content: center;
+    }
+
+     .note-list {
+        max-height: calc(100vh - 180px);
+    }
+
+     .note-list::-webkit-scrollbar {
+        width: 6px !important;
+        height: 6px !important;
     }
 
      .header-actions {
@@ -1728,70 +1727,17 @@
 
      
 }
-// ... existing code ...
+
 @media (max-width: 768px) {
-    /* ... existing mobile styles ... */
-
-    /* ===== SCROLLBAR MÀU SẮC CHO MOBILE ===== */
+    .notes-section {
+        overflow: visible; /* Change from 'hidden' to 'visible' */
+    }
+    
     .note-list {
-        min-height: 200vh !important; /* Force scrollbar xuất hiện */
-        background: red !important; /* Để thấy vùng scroll */
+        overflow-y: scroll !important; /* Force scrolling */
+        max-height: 50vh; /* Ensure a fixed height to enable scrolling */
     }
-
-    /* Scrollbar cho note-list - Màu xanh dương */
-    .note-list::-webkit-scrollbar {
-        width: 12px !important; /* Tăng từ 10px lên 12px */
-        height: 12px !important;
-    }
-
-    .note-list::-webkit-scrollbar-track {
-        background:rgb(227, 16, 16) !important; /* Nền xanh nhạt */
-        border-radius: 6px !important;
-        border: 1px solid #bbdefb !important;
-        margin: 4px 0 !important; /* Thêm margin cho track */
-    }
-
-    .note-list::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #2196f3, #1976d2) !important; /* Gradient xanh */
-        border-radius: 6px !important;
-        border: 1px solid #1565c0 !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.3) !important;
-        min-height: 30px !important;
-    }
-
-    .note-list::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(180deg, #1976d2, #0d47a1) !important; /* Xanh đậm khi hover */
-    }
-
-    /* Scrollbar cho folder-tree - Màu xanh lá */
-    #folder-tree::-webkit-scrollbar {
-        width: 10px !important;
-        height: 10px !important;
-    }
-
-    #folder-tree::-webkit-scrollbar-track {
-        background: #e8f5e8 !important; /* Nền xanh lá nhạt */
-        border-radius: 6px !important;
-        border: 1px solid #c8e6c9 !important;
-    }
-
-    #folder-tree::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #4caf50, #388e3c) !important; /* Gradient xanh lá */
-        border-radius: 6px !important;
-        border: 1px solid #2e7d32 !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,0.3) !important;
-    }
-
-    #folder-tree::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(180deg, #388e3c, #1b5e20) !important; /* Xanh lá đậm khi hover */
-    }
-
-    /* ============================================ */
-
-    /* ... existing mobile styles ... */
 }
-// ... existing code ...
-
 </style>
 
 <script>
