@@ -1451,21 +1451,17 @@
         position: fixed;
         top: 0;
         left: 0;
-        bottom: 0;
         width: 320px;
         max-width: 80vw;
         z-index: 1050;
         background: rgba(255,255,255,0.98);
-        backdrop-filter: blur(20px);
         border-radius: 0 15px 15px 0;
-        box-shadow: 0 0 50px rgba(0,0,0,0.3);
         transform: translateX(-100%);
         transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        border-right: 3px solid var(--primary-color);
         display: flex;
         flex-direction: column;
         height: 100vh;
-        overflow: hidden;
+        overflow: hidden; /* Chính sidebar không được scroll */
     }
 
     .note-sidebar.mobile-open {
@@ -1522,6 +1518,7 @@
         top: 0;
         z-index: 10;
         background: rgba(255, 255, 255, 0.98);
+        border-bottom: 1px solid rgba(0,0,0,0.1);
     }
 
     /* 6. Danh sách note: Co giãn và scroll */
@@ -1529,6 +1526,10 @@
         flex: 1; /* Lấp đầy không gian còn lại trong .notes-section */
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch;
+        padding: 0.5rem 0;
+        margin: 0;
+        list-style: none;
+        max-height: none;
     }
 
     .sidebar-overlay {
@@ -1595,14 +1596,15 @@
         margin-bottom: 50vh;
     }
 
+    /* 2. Container cây thư mục: Cố định chiều cao, bên trong tự scroll */
     .folder-tree-container {
-        overflow-y: scroll;
-        -webkit-overflow-scrolling: touch;
-        flex-shrink: 0;
-        max-height: 20vh; /* Giới hạn chiều cao, ví dụ 35% màn hình */
+        flex-shrink: 0; /* Ngăn nó co lại */
+        max-height: 40vh; /* Giới hạn chiều cao, ví dụ 40% màn hình */
         display: flex;
         flex-direction: column;
-        overflow: hidden;
+        overflow: hidden; /* Container này không scroll */
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        padding: 0.5rem 0;
     }
 
     .folder-tree-container::-webkit-scrollbar {
