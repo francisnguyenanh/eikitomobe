@@ -1599,7 +1599,7 @@
     /* 2. Container cây thư mục: Cố định chiều cao, bên trong tự scroll */
     .folder-tree-container {
         flex-shrink: 0; /* Ngăn nó co lại */
-        max-height: 40vh; /* Giới hạn chiều cao, ví dụ 40% màn hình */
+        max-height: 25vh; /* Giới hạn chiều cao, ví dụ 40% màn hình */
         display: flex;
         flex-direction: column;
         overflow: hidden; /* Container này không scroll */
@@ -1672,10 +1672,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-
-     .note-list {
-        max-height: calc(100vh - 180px);
     }
 
      .note-list::-webkit-scrollbar {
