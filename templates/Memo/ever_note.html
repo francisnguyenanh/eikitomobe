@@ -756,8 +756,6 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    height: 100%;
-    max-height: calc(100vh - 120px);
 }
 
 .notes-header {
@@ -786,7 +784,7 @@
 
 .note-list {
     flex: 1;
-    overflow-y: scroll !important;
+    overflow-y: auto !important;
     padding: 0.5rem 0;
     margin: 0;
     list-style: none;
@@ -1464,10 +1462,18 @@
         transform: translateX(-100%);
         transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
         border-right: 3px solid var(--primary-color);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
     }
 
     .note-sidebar.mobile-open {
         transform: translateX(0);
+    }
+
+    .all-notes-item {
+        flex-shrink: 0;
     }
 
     .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .sidebar-header {
@@ -1488,10 +1494,41 @@
         height: 95%;
     }
 
+    #folder-tree {
+        flex: 1;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .note-sidebar.collapsed .sidebar-header h3,
     .note-sidebar.collapsed .folder-tree-container,
     .note-sidebar.collapsed .notes-section {
         display: block !important;
+    }
+
+    .notes-section {
+        flex: 1; /* Quan trọng: Lấp đầy không gian trống */
+        min-height: 0; /* Rất quan trọng: Cho phép flexbox tính toán đúng */
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* Khu vực này không scroll, chỉ có .note-list scroll */
+    }
+
+    /* 5. Header của danh sách note: Cố định khi cuộn */
+    .notes-header {
+        flex-shrink: 0;
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.98);
+    }
+
+    /* 6. Danh sách note: Co giãn và scroll */
+    .note-list {
+        flex: 1; /* Lấp đầy không gian còn lại trong .notes-section */
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
     }
 
     .sidebar-overlay {
@@ -1559,9 +1596,13 @@
     }
 
     .folder-tree-container {
-        max-height: 25vh;
         overflow-y: scroll;
         -webkit-overflow-scrolling: touch;
+        flex-shrink: 0;
+        max-height: 20vh; /* Giới hạn chiều cao, ví dụ 35% màn hình */
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .folder-tree-container::-webkit-scrollbar {
