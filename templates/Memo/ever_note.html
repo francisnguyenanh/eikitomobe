@@ -3939,156 +3939,132 @@ const SidebarManager = {
 };
 
 
-// ===== AUTO-SCROLL INTEGRATION =====
-// Backup original methods SAFELY
-const OriginalMobileCursorManager = {};
-const OriginalEditorFocusManager = {};
-
-// Safely backup MobileCursorManager methods
-if (typeof MobileCursorManager.scrollToKeepCursorCentered === 'function') {
-    OriginalMobileCursorManager.scrollToKeepCursorCentered = MobileCursorManager.scrollToKeepCursorCentered.bind(MobileCursorManager);
-}
-
-if (typeof MobileCursorManager.onCursorMove === 'function') {
-    OriginalMobileCursorManager.onCursorMove = MobileCursorManager.onCursorMove.bind(MobileCursorManager);
-}
-
-if (typeof MobileCursorManager.handleKeyboardOpen === 'function') {
-    OriginalMobileCursorManager.handleKeyboardOpen = MobileCursorManager.handleKeyboardOpen.bind(MobileCursorManager);
-}
-
-if (typeof MobileCursorManager.executeManualScroll === 'function') {
-    OriginalMobileCursorManager.executeManualScroll = MobileCursorManager.executeManualScroll.bind(MobileCursorManager);
-}
-
-// Safely backup EditorFocusManager methods
-if (typeof EditorFocusManager.ensureEditorVisible === 'function') {
-    OriginalEditorFocusManager.ensureEditorVisible = EditorFocusManager.ensureEditorVisible.bind(EditorFocusManager);
-}
-
-if (typeof EditorFocusManager.ensureElementVisible === 'function') {
-    OriginalEditorFocusManager.ensureElementVisible = EditorFocusManager.ensureElementVisible.bind(EditorFocusManager);
-}
-
-// Override MobileCursorManager methods
+// ===== COMPLETE AUTO-SCROLL OVERRIDE =====
+// HOÀN TOÀN thay thế methods gốc thay vì wrap
 MobileCursorManager.scrollToKeepCursorCentered = function() {
     console.log('=== CURSOR CENTERING CALLED ===');
+    console.log('Auto-scroll enabled:', AutoScrollSettings.isEnabled());
     
     if (!AutoScrollSettings.isEnabled()) {
-        console.log('❌ Auto-scroll disabled, skipping cursor centering');
+        console.log('❌ Auto-scroll DISABLED - Completely blocking scroll');
+        return; // HOÀN TOÀN CHẶN - không gọi logic gốc
+    }
+    
+    console.log('✅ Auto-scroll ENABLED - Executing scroll');
+    
+    // Logic scroll được điều khiển hoàn toàn bởi toggle
+    if (!this.currentSelection) {
+        console.log('No current selection, skipping scroll');
         return;
     }
-    
-    console.log('✅ Auto-scroll enabled, executing cursor centering');
-    
-    // Call original if exists, otherwise use fallback
-    if (OriginalMobileCursorManager.scrollToKeepCursorCentered) {
-        try {
-            return OriginalMobileCursorManager.scrollToKeepCursorCentered();
-        } catch (error) {
-            console.error('Error in original scroll function:', error);
-        }
-    }
-    
-    // Fallback scroll logic
-    console.log('Using fallback scroll logic');
-    this.executeManualScroll();
-};
 
-// Override onCursorMove only if it exists
-if (typeof MobileCursorManager.onCursorMove === 'function') {
-    MobileCursorManager.onCursorMove = function() {
-        if (!AutoScrollSettings.isEnabled()) {
-            console.log('Auto-scroll disabled, skipping cursor move handling');
+    try {
+        const cursorRect = this.getCursorPosition();
+        if (!cursorRect) {
+            console.log('Could not get cursor position');
             return;
         }
-        
-        console.log('Auto-scroll enabled, handling cursor move');
-        
-        if (OriginalMobileCursorManager.onCursorMove) {
-            return OriginalMobileCursorManager.onCursorMove();
-        }
-    };
-} else {
-    console.log('onCursorMove method not found in original MobileCursorManager');
-}
 
-// Add executeManualScroll if it doesn't exist
-if (typeof MobileCursorManager.executeManualScroll !== 'function') {
-    MobileCursorManager.executeManualScroll = function() {
-        console.log('Executing manual scroll fallback');
+        const viewportHeight = window.visualViewport ? 
+            window.visualViewport.height : 
+            (window.innerHeight - this.keyboardHeight);
         
-        const editor = document.getElementById('note-editor');
-        if (!editor) {
-            console.log('Editor not found');
-            return;
-        }
+        const targetY = Math.min(
+            viewportHeight * 0.20,
+            Math.max(200, Math.min(300, viewportHeight * 0.4))
+        );
         
-        const selection = window.getSelection();
-        if (!selection.rangeCount) {
-            console.log('No selection found');
-            return;
-        }
-        
-        const range = selection.getRangeAt(0);
-        const rect = range.getBoundingClientRect();
-        
-        console.log('Cursor position:', rect);
-        
-        const viewportHeight = window.innerHeight;
-        const targetY = viewportHeight / 2;
-        const currentY = rect.top;
-        
-        if (Math.abs(currentY - targetY) > 50) {
-            const scrollAmount = currentY - targetY;
-            console.log('Scrolling by:', scrollAmount);
+        const currentCursorY = cursorRect.top;
+        const scrollNeeded = currentCursorY - targetY;
+
+        console.log(`Controlled scroll: cursorY=${currentCursorY}, targetY=${targetY}, scrollNeeded=${scrollNeeded}`);
+
+        if (Math.abs(scrollNeeded) > 30) {
+            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+            const newScrollPosition = currentScroll + scrollNeeded;
             
-            window.scrollBy({
-                top: scrollAmount,
+            console.log(`Scrolling from ${currentScroll} to ${newScrollPosition}`);
+            
+            window.scrollTo({
+                top: Math.max(0, newScrollPosition),
                 behavior: 'smooth'
             });
-        } else {
-            console.log('Cursor already centered, no scroll needed');
         }
-    };
-}
+    } catch (error) {
+        console.error('Error in controlled scroll:', error);
+    }
+};
 
-// Override handleKeyboardOpen only if it exists
-if (typeof MobileCursorManager.handleKeyboardOpen === 'function') {
-    MobileCursorManager.handleKeyboardOpen = function() {
-        console.log('Keyboard opened');
-        
-        if (OriginalMobileCursorManager.handleKeyboardOpen) {
-            OriginalMobileCursorManager.handleKeyboardOpen();
-        }
-        
-        // Only auto-scroll if enabled
-        if (AutoScrollSettings.isEnabled() && this.currentSelection) {
-            setTimeout(() => {
-                this.scrollToKeepCursorCentered();
-            }, 300);
-        }
-    };
-}
+// HOÀN TOÀN override onCursorMove
+MobileCursorManager.onCursorMove = function() {
+    console.log('onCursorMove called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
+    
+    if (!AutoScrollSettings.isEnabled()) {
+        console.log('❌ Auto-scroll DISABLED - Blocking cursor move handling');
+        return; // HOÀN TOÀN CHẶN
+    }
+    
+    console.log('✅ Auto-scroll ENABLED - Handling cursor move');
+    
+    if (this.isKeyboardOpen) {
+        clearTimeout(this.scrollTimeout);
+        this.scrollTimeout = setTimeout(() => {
+            this.scrollToKeepCursorCentered();
+        }, 150);
+    }
+};
 
-// Override EditorFocusManager methods
+// HOÀN TOÀN override handleKeyboardOpen
+MobileCursorManager.handleKeyboardOpen = function() {
+    console.log('handleKeyboardOpen called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
+    
+    document.body.classList.add('keyboard-open');
+    
+    if (!AutoScrollSettings.isEnabled()) {
+        console.log('❌ Auto-scroll DISABLED - Blocking keyboard open handling');
+        return; // HOÀN TOÀN CHẶN
+    }
+    
+    console.log('✅ Auto-scroll ENABLED - Handling keyboard open');
+    
+    if (this.currentSelection) {
+        setTimeout(() => {
+            this.scrollToKeepCursorCentered();
+        }, 300);
+    }
+};
+
+// HOÀN TOÀN override EditorFocusManager methods
 EditorFocusManager.ensureEditorVisible = function(editor) {
+    console.log('ensureEditorVisible called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
+    
     if (AppState.isFocusLocked || EditorFocusManager.isHandlingFocus) {
         console.log('Focus locked or already handling, skipping');
         return;
     }
     
     if (!AutoScrollSettings.isEnabled()) {
-        console.log('Auto-scroll disabled, skipping editor visibility');
-        return;
+        console.log('❌ Auto-scroll DISABLED - Blocking editor visibility');
+        return; // HOÀN TOÀN CHẶN
     }
     
+    console.log('✅ Auto-scroll ENABLED - Ensuring editor visible');
+    
     EditorFocusManager.isHandlingFocus = true;
-    console.log('Auto-scroll enabled, ensuring editor visible');
     
     try {
-        if (OriginalEditorFocusManager.ensureEditorVisible) {
-            return OriginalEditorFocusManager.ensureEditorVisible(editor);
+        const rect = editor.getBoundingClientRect();
+        const viewportHeight = window.visualViewport ? 
+            window.visualViewport.height : window.innerHeight;
+        
+        if (rect.top < 50 || rect.top > viewportHeight - 150) {
+            const targetScroll = editor.offsetTop - (viewportHeight / 3);
+            console.log(`Scrolling editor into view: targetScroll=${targetScroll}`);
+            
+            window.scrollTo({
+                top: Math.max(0, targetScroll),
+                behavior: 'smooth'
+            });
         }
     } finally {
         setTimeout(() => {
@@ -4098,15 +4074,25 @@ EditorFocusManager.ensureEditorVisible = function(editor) {
 };
 
 EditorFocusManager.ensureElementVisible = function(element) {
+    console.log('ensureElementVisible called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
+    
     if (!AutoScrollSettings.isEnabled()) {
-        console.log('Auto-scroll disabled, skipping element visibility');
-        return;
+        console.log('❌ Auto-scroll DISABLED - Blocking element visibility');
+        return; // HOÀN TOÀN CHẶN
     }
     
-    console.log('Auto-scroll enabled, ensuring element visible');
+    console.log('✅ Auto-scroll ENABLED - Ensuring element visible');
     
-    if (OriginalEditorFocusManager.ensureElementVisible) {
-        return OriginalEditorFocusManager.ensureElementVisible(element);
+    const rect = element.getBoundingClientRect();
+    const viewportHeight = window.visualViewport ? 
+        window.visualViewport.height : window.innerHeight;
+    
+    if (rect.top < 50 || rect.bottom > viewportHeight - 100) {
+        console.log('Scrolling element into view');
+        element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        });
     }
 };
 
