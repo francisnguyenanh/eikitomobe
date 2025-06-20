@@ -1723,6 +1723,9 @@
         margin-top: -5px; /* Di chuyển lên 5px */
     }
 }
+
+
+
 </style>
 
 <script>
@@ -3780,26 +3783,42 @@ const SidebarManager = {
     },
 
     toggleDesktopSidebar() {
-        if (this.isAnimating || window.innerWidth <= 768) return;
-        
-        this.isAnimating = true;
-        
-        const sidebar = document.getElementById('note-sidebar');
-        const layout = document.querySelector('.note-layout');
+    if (this.isAnimating || window.innerWidth <= 768) return;
+    
+    this.isAnimating = true;
+    
+    const sidebar = document.getElementById('note-sidebar');
+    const layout = document.querySelector('.note-layout');
 
-        if (this.isCollapsed) {
-            sidebar.classList.remove('collapsed');
-            layout.classList.remove('sidebar-collapsed');
-        } else {
-            sidebar.classList.add('collapsed');
-            layout.classList.add('sidebar-collapsed');
-        }
-
-        this.isCollapsed = !this.isCollapsed;
-        localStorage.setItem('sidebarCollapsed', this.isCollapsed.toString());
+    if (this.isCollapsed) {
+        // Expanding
+        sidebar.classList.add('expanding');
+        sidebar.classList.remove('collapsed');
+        layout.classList.remove('sidebar-collapsed');
         
-        setTimeout(() => { this.isAnimating = false; }, 400);
-    },
+        // Remove expanding class sau khi transition xong
+        setTimeout(() => {
+            sidebar.classList.remove('expanding');
+        }, 800);
+    } else {
+        // Collapsing  
+        sidebar.classList.add('collapsing');
+        sidebar.classList.add('collapsed');
+        layout.classList.add('sidebar-collapsed');
+        
+        // Remove collapsing class sau khi transition xong
+        setTimeout(() => {
+            sidebar.classList.remove('collapsing');
+        }, 800);
+    }
+
+    this.isCollapsed = !this.isCollapsed;
+    localStorage.setItem('sidebarCollapsed', this.isCollapsed.toString());
+    
+    setTimeout(() => { 
+        this.isAnimating = false; 
+    }, 1000);
+},
 
     setMobileDefault() {
         // Đặt mặc định sidebar collapsed trên mobile khi load page
