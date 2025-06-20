@@ -1507,7 +1507,7 @@
         min-height: 0; /* Rất quan trọng: Cho phép flexbox tính toán đúng */
         display: flex;
         flex-direction: column;
-        overflow: hidden; /* Khu vực này không scroll, chỉ có .note-list scroll */
+        overflow: visible; /* Khu vực này không scroll, chỉ có .note-list scroll */
     }
 
     /* 5. Header của danh sách note: Cố định khi cuộn */
@@ -1523,7 +1523,7 @@
     /* 6. Danh sách note: Co giãn và scroll */
     .note-list {
         flex: 1; /* Lấp đầy không gian còn lại trong .notes-section */
-        overflow-y: auto !important;
+        overflow-y: scroll !important;
         -webkit-overflow-scrolling: touch;
     }
 
@@ -1595,7 +1595,7 @@
         overflow-y: scroll;
         -webkit-overflow-scrolling: touch;
         flex-shrink: 0;
-        max-height: 20vh; /* Giới hạn chiều cao, ví dụ 35% màn hình */
+        max-height: 30vh; /* Giới hạn chiều cao, ví dụ 35% màn hình */
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -1669,7 +1669,7 @@
     }
 
      .note-list {
-        max-height: calc(100vh - 180px);
+        max-height: 55vh;
     }
 
      .note-list::-webkit-scrollbar {
@@ -1728,16 +1728,6 @@
      
 }
 
-@media (max-width: 768px) {
-    .notes-section {
-        overflow: visible; /* Change from 'hidden' to 'visible' */
-    }
-    
-    .note-list {
-        overflow-y: scroll !important; /* Force scrolling */
-        max-height: 50vh; /* Ensure a fixed height to enable scrolling */
-    }
-}
 </style>
 
 <script>
