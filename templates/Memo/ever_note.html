@@ -1178,28 +1178,6 @@
     animation: moveSuccess 0.5s ease;
 }
 
-/* Scrollbar Styling */
-.folder-tree-container::-webkit-scrollbar,
-.note-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.folder-tree-container::-webkit-scrollbar-track,
-.note-list::-webkit-scrollbar-track {
-    background: rgba(0,0,0,0.05);
-    border-radius: 3px;
-}
-
-.folder-tree-container::-webkit-scrollbar-thumb,
-.note-list::-webkit-scrollbar-thumb {
-    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.3);
-    border-radius: 3px;
-}
-
-.folder-tree-container::-webkit-scrollbar-thumb:hover,
-.note-list::-webkit-scrollbar-thumb:hover {
-    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.5);
-}
 
 /* Form and Modal Styles */
 .form-control,
@@ -1549,6 +1527,200 @@
     .sidebar-overlay {
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
+    }
+}
+@media (max-width: 768px) {
+    /* Ẩn sidebar header khi sidebar mở trên mobile */
+    .note-sidebar.mobile-open .sidebar-header {
+        display: none;
+    }
+    
+    /* Tối ưu layout khi header bị ẩn */
+    .note-sidebar.mobile-open {
+        padding-top: 0;
+    }
+    
+    .note-sidebar.mobile-open .folder-tree-container {
+        margin-top: 0;
+        border-top: none;
+    }
+    
+    /* Existing CSS... */
+    .mobile-toggle-container.sidebar-open {
+        display: none;
+    }
+    
+    .sidebar-overlay {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+@media (max-width: 768px) {
+    /* Chỉ ẩn header khi mobile-open và không collapsed */
+    .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .sidebar-header {
+        display: none !important;
+    }
+    
+    /* Điều chỉnh layout */
+    .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .folder-tree-container {
+        padding-top: 1rem;
+        margin-top: 0;
+    }
+    
+    /* Các CSS khác giữ nguyên */
+    .mobile-toggle-container.sidebar-open {
+        display: none;
+    }
+    
+    .sidebar-overlay {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+/* Scrollbar Styling - Hiển thị trên cả mobile và desktop */
+.folder-tree-container,
+.note-list {
+    /* Luôn hiển thị scrollbar */
+    overflow-y: scroll;
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #cbd5e0 #f7fafc; /* Firefox */
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) */
+.folder-tree-container::-webkit-scrollbar,
+.note-list::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.folder-tree-container::-webkit-scrollbar-track,
+.note-list::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 4px;
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb,
+.note-list::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 4px;
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb:hover,
+.note-list::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+/* Mobile specific scrollbar */
+@media (max-width: 768px) {
+    .folder-tree-container,
+    .note-list {
+        /* Đảm bảo scrollbar hiển thị trên mobile */
+        -webkit-overflow-scrolling: touch;
+        overflow-y: scroll;
+    }
+    
+    /* Scrollbar cho mobile webkit */
+    .folder-tree-container::-webkit-scrollbar,
+    .note-list::-webkit-scrollbar {
+        width: 6px; /* Nhỏ hơn một chút cho mobile */
+        height: 6px;
+    }
+    
+    .folder-tree-container::-webkit-scrollbar-track,
+    .note-list::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 3px;
+    }
+    
+    .folder-tree-container::-webkit-scrollbar-thumb,
+    .note-list::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 3px;
+    }
+    
+    .folder-tree-container::-webkit-scrollbar-thumb:hover,
+    .note-list::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+    }
+}
+
+/* Đảm bảo scrollbar luôn hiển thị ngay cả khi không cần scroll */
+.folder-tree-container,
+.note-list {
+    overflow-y: auto; /* Thay vì scroll */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling trên iOS */
+}
+
+.note-list {
+    max-height: calc(100vh - 200px); /* Hoặc chiều cao cụ thể */
+    overflow-y: scroll !important;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Notes Section - Đảm bảo có chiều cao cố định */
+.notes-section {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: calc(100vh - 120px); /* Điều chỉnh theo header */
+}
+
+.notes-header {
+    flex-shrink: 0; /* Không cho header co lại */
+}
+
+.note-list {
+    flex: 1; /* Chiếm phần còn lại */
+    overflow-y: scroll !important;
+    min-height: 0; /* Quan trọng cho flex item */
+}
+
+/* WebKit scrollbar cho note-list */
+.note-list::-webkit-scrollbar {
+    width: 8px !important;
+    height: 8px !important;
+}
+
+.note-list::-webkit-scrollbar-track {
+    background: #f7fafc !important;
+    border-radius: 4px !important;
+}
+
+.note-list::-webkit-scrollbar-thumb {
+    background: #cbd5e0 !important;
+    border-radius: 4px !important;
+}
+
+.note-list::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0 !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .note-list {
+        max-height: calc(100vh - 180px);
+    }
+    
+    .note-list::-webkit-scrollbar {
+        width: 6px !important;
+        height: 6px !important;
+    }
+}
+@media (max-width: 768px) {
+    /* Di chuyển toggle button lên cao hơn */
+    .mobile-toggle-container,
+    .sidebar-toggle {
+        top: 80px !important; /* Hoặc giá trị mong muốn: 5px, 10px, 12px */
+    }
+    
+    /* Nếu cần điều chỉnh margin/padding */
+    .mobile-toggle-container .sidebar-toggle {
+        margin-top: -5px; /* Di chuyển lên 5px */
     }
 }
 </style>
@@ -2570,12 +2742,11 @@ function updateFormatButtons() {
 document.addEventListener('DOMContentLoaded', () => {
 
     SidebarManager.init();
+    SidebarManager.restoreState(); 
 
     // Handle window resize
     window.addEventListener('resize', () => {
-        if (window.innerWidth > 768 && SidebarManager.isMobileOpen) {
-            SidebarManager.closeMobileSidebar();
-        }
+        SidebarManager.handleResize();
     });
 
     // Initialize mobile managers first
@@ -3630,36 +3801,76 @@ const SidebarManager = {
         setTimeout(() => { this.isAnimating = false; }, 400);
     },
 
-    handleResize() {
-        const isMobile = window.innerWidth <= 768;
-        
-        if (isMobile) {
-            // Close mobile sidebar if window becomes larger
-            if (this.isMobileOpen) {
-                this.closeMobileSidebar();
-            }
-        } else {
-            // Clean up mobile state on desktop
+    setMobileDefault() {
+        // Đặt mặc định sidebar collapsed trên mobile khi load page
+        if (window.innerWidth <= 768) {
             const sidebar = document.getElementById('note-sidebar');
-            const overlay = document.querySelector('.sidebar-overlay');
+            const layout = document.querySelector('.note-layout');
             
-            if (sidebar) sidebar.classList.remove('mobile-open');
-            if (overlay) overlay.classList.remove('visible');
-            
-            this.isMobileOpen = false;
-            document.body.style.overflow = '';
+            if (sidebar && layout) {
+                sidebar.classList.add('collapsed');
+                layout.classList.add('sidebar-collapsed');
+                this.isCollapsed = true;
+            }
         }
     },
 
     restoreState() {
-        // Only restore desktop state on desktop
-        if (window.innerWidth > 768) {
+        // Kiểm tra nếu là mobile thì set collapsed mặc định
+        if (window.innerWidth <= 768) {
+            this.setMobileDefault();
+        } else {
+            // Desktop: restore từ localStorage
             const savedState = localStorage.getItem('sidebarCollapsed');
             if (savedState === 'true') {
                 setTimeout(() => {
                     this.toggleDesktopSidebar();
                 }, 100);
             }
+        }
+    },
+
+    handleResize() {
+        const isMobile = window.innerWidth <= 768;
+        
+        if (isMobile) {
+            // Khi chuyển sang mobile, set collapsed mặc định
+            if (!this.isCollapsed) {
+                const sidebar = document.getElementById('note-sidebar');
+                const layout = document.querySelector('.note-layout');
+                
+                if (sidebar && layout) {
+                    sidebar.classList.add('collapsed');
+                    layout.classList.add('sidebar-collapsed');
+                    this.isCollapsed = true;
+                }
+            }
+            
+            // Close mobile sidebar if open
+            if (this.isMobileOpen) {
+                this.closeMobileSidebar();
+            }
+        } else {
+            // Desktop: restore từ localStorage nếu cần
+            const savedState = localStorage.getItem('sidebarCollapsed');
+            if (savedState !== 'true' && this.isCollapsed) {
+                // Nếu desktop và không nên collapsed, thì expand
+                const sidebar = document.getElementById('note-sidebar');
+                const layout = document.querySelector('.note-layout');
+                
+                if (sidebar && layout) {
+                    sidebar.classList.remove('collapsed');
+                    layout.classList.remove('sidebar-collapsed');
+                    this.isCollapsed = false;
+                }
+            }
+            
+            // Clean up mobile state
+            const overlay = document.querySelector('.sidebar-overlay');
+            if (overlay) overlay.classList.remove('visible');
+            
+            this.isMobileOpen = false;
+            document.body.style.overflow = '';
         }
     }
 };
