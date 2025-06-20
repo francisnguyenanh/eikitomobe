@@ -1752,38 +1752,34 @@ const AutoScrollSettings = {
     enabled: true,
     
     init() {
-        // Load setting từ localStorage
-        const saved = localStorage.getItem('autoScrollEnabled');
-        this.enabled = saved !== null ? JSON.parse(saved) : true;
+        console.log('AutoScrollSettings.init() called');
+        // Load from localStorage
+        const saved = localStorage.getItem('autoScroll');
+        this.enabled = saved !== 'false'; // Default to true
         
-        // Set checkbox state
+        // Setup checkbox
         const checkbox = document.getElementById('autoScrollToggle');
         if (checkbox) {
             checkbox.checked = this.enabled;
+            console.log('Checkbox state set to:', this.enabled);
+            
+            // Add event listener
             checkbox.addEventListener('change', (e) => {
+                console.log('Checkbox changed to:', e.target.checked);
                 this.toggle(e.target.checked);
             });
         }
     },
     
     toggle(enabled) {
+        console.log('AutoScrollSettings.toggle() called with:', enabled);
         this.enabled = enabled;
-        localStorage.setItem('autoScrollEnabled', JSON.stringify(enabled));
-        
-        console.log(`Auto-scroll ${enabled ? 'enabled' : 'disabled'}`);
-        
-        // Nếu tắt auto-scroll, clear các timer đang chạy
-        if (!enabled) {
-            if (MobileCursorManager.scrollTimeout) {
-                clearTimeout(MobileCursorManager.scrollTimeout);
-            }
-            if (EditorFocusManager.focusTimeout) {
-                clearTimeout(EditorFocusManager.focusTimeout);
-            }
-        }
+        localStorage.setItem('autoScroll', enabled ? 'true' : 'false');
+        console.log('AutoScroll setting saved:', enabled);
     },
     
     isEnabled() {
+        console.log('AutoScrollSettings.isEnabled() called, returning:', this.enabled);
         return this.enabled;
     }
 };
@@ -3943,71 +3939,182 @@ const SidebarManager = {
 };
 
 
+// ===== AUTO-SCROLL INTEGRATION =====
+// Backup original methods SAFELY
+const OriginalMobileCursorManager = {};
+const OriginalEditorFocusManager = {};
+
+// Safely backup MobileCursorManager methods
+if (typeof MobileCursorManager.scrollToKeepCursorCentered === 'function') {
+    OriginalMobileCursorManager.scrollToKeepCursorCentered = MobileCursorManager.scrollToKeepCursorCentered.bind(MobileCursorManager);
+}
+
+if (typeof MobileCursorManager.onCursorMove === 'function') {
+    OriginalMobileCursorManager.onCursorMove = MobileCursorManager.onCursorMove.bind(MobileCursorManager);
+}
+
+if (typeof MobileCursorManager.handleKeyboardOpen === 'function') {
+    OriginalMobileCursorManager.handleKeyboardOpen = MobileCursorManager.handleKeyboardOpen.bind(MobileCursorManager);
+}
+
+if (typeof MobileCursorManager.executeManualScroll === 'function') {
+    OriginalMobileCursorManager.executeManualScroll = MobileCursorManager.executeManualScroll.bind(MobileCursorManager);
+}
+
+// Safely backup EditorFocusManager methods
+if (typeof EditorFocusManager.ensureEditorVisible === 'function') {
+    OriginalEditorFocusManager.ensureEditorVisible = EditorFocusManager.ensureEditorVisible.bind(EditorFocusManager);
+}
+
+if (typeof EditorFocusManager.ensureElementVisible === 'function') {
+    OriginalEditorFocusManager.ensureElementVisible = EditorFocusManager.ensureElementVisible.bind(EditorFocusManager);
+}
+
+// Override MobileCursorManager methods
 MobileCursorManager.scrollToKeepCursorCentered = function() {
-    // Check if auto-scroll is enabled
+    console.log('=== CURSOR CENTERING CALLED ===');
+    
     if (!AutoScrollSettings.isEnabled()) {
+        console.log('❌ Auto-scroll disabled, skipping cursor centering');
         return;
     }
     
-    // Call original function
-    return OriginalMobileCursorManager.scrollToKeepCursorCentered.call(this);
-};
-
-MobileCursorManager.handleInput = function() {
-    if (!AutoScrollSettings.isEnabled()) {
-        return;
+    console.log('✅ Auto-scroll enabled, executing cursor centering');
+    
+    // Call original if exists, otherwise use fallback
+    if (OriginalMobileCursorManager.scrollToKeepCursorCentered) {
+        try {
+            return OriginalMobileCursorManager.scrollToKeepCursorCentered();
+        } catch (error) {
+            console.error('Error in original scroll function:', error);
+        }
     }
     
-    return OriginalMobileCursorManager.handleInput.call(this);
+    // Fallback scroll logic
+    console.log('Using fallback scroll logic');
+    this.executeManualScroll();
 };
 
+// Override onCursorMove only if it exists
+if (typeof MobileCursorManager.onCursorMove === 'function') {
+    MobileCursorManager.onCursorMove = function() {
+        if (!AutoScrollSettings.isEnabled()) {
+            console.log('Auto-scroll disabled, skipping cursor move handling');
+            return;
+        }
+        
+        console.log('Auto-scroll enabled, handling cursor move');
+        
+        if (OriginalMobileCursorManager.onCursorMove) {
+            return OriginalMobileCursorManager.onCursorMove();
+        }
+    };
+} else {
+    console.log('onCursorMove method not found in original MobileCursorManager');
+}
 
-EditorFocusManager.isHandlingFocus = false;
+// Add executeManualScroll if it doesn't exist
+if (typeof MobileCursorManager.executeManualScroll !== 'function') {
+    MobileCursorManager.executeManualScroll = function() {
+        console.log('Executing manual scroll fallback');
+        
+        const editor = document.getElementById('note-editor');
+        if (!editor) {
+            console.log('Editor not found');
+            return;
+        }
+        
+        const selection = window.getSelection();
+        if (!selection.rangeCount) {
+            console.log('No selection found');
+            return;
+        }
+        
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        
+        console.log('Cursor position:', rect);
+        
+        const viewportHeight = window.innerHeight;
+        const targetY = viewportHeight / 2;
+        const currentY = rect.top;
+        
+        if (Math.abs(currentY - targetY) > 50) {
+            const scrollAmount = currentY - targetY;
+            console.log('Scrolling by:', scrollAmount);
+            
+            window.scrollBy({
+                top: scrollAmount,
+                behavior: 'smooth'
+            });
+        } else {
+            console.log('Cursor already centered, no scroll needed');
+        }
+    };
+}
 
+// Override handleKeyboardOpen only if it exists
+if (typeof MobileCursorManager.handleKeyboardOpen === 'function') {
+    MobileCursorManager.handleKeyboardOpen = function() {
+        console.log('Keyboard opened');
+        
+        if (OriginalMobileCursorManager.handleKeyboardOpen) {
+            OriginalMobileCursorManager.handleKeyboardOpen();
+        }
+        
+        // Only auto-scroll if enabled
+        if (AutoScrollSettings.isEnabled() && this.currentSelection) {
+            setTimeout(() => {
+                this.scrollToKeepCursorCentered();
+            }, 300);
+        }
+    };
+}
+
+// Override EditorFocusManager methods
 EditorFocusManager.ensureEditorVisible = function(editor) {
-    // CHỐT CHẶN 1: Nếu focus bị khóa bởi lightbox hoặc đang trong quá trình xử lý, thoát ngay.
     if (AppState.isFocusLocked || EditorFocusManager.isHandlingFocus) {
+        console.log('Focus locked or already handling, skipping');
         return;
     }
     
     if (!AutoScrollSettings.isEnabled()) {
+        console.log('Auto-scroll disabled, skipping editor visibility');
         return;
     }
     
-    // Đặt cờ để ngăn các lần gọi lồng nhau trong cùng một chuỗi sự kiện
     EditorFocusManager.isHandlingFocus = true;
-
+    console.log('Auto-scroll enabled, ensuring editor visible');
+    
     try {
-        // Gọi hàm gốc để thực hiện việc cuộn
-        OriginalEditorFocusManager.ensureEditorVisible.call(this, editor);
+        if (OriginalEditorFocusManager.ensureEditorVisible) {
+            return OriginalEditorFocusManager.ensureEditorVisible(editor);
+        }
     } finally {
-        // Luôn gỡ cờ sau khi xử lý xong, dùng setTimeout để thoát khỏi chuỗi sự kiện hiện tại
         setTimeout(() => {
             EditorFocusManager.isHandlingFocus = false;
         }, 0);
     }
 };
 
-EditorFocusManager.handleEditorFocus = function(editor) {
-    // CHỐT CHẶN 2: Kiểm tra cờ ngay tại hàm xử lý sự kiện
-    if (EditorFocusManager.isHandlingFocus || AppState.isFocusLocked) {
+EditorFocusManager.ensureElementVisible = function(element) {
+    if (!AutoScrollSettings.isEnabled()) {
+        console.log('Auto-scroll disabled, skipping element visibility');
         return;
     }
     
-    // Logic gốc của bạn là gọi ensureEditorVisible, chúng ta sẽ giữ lại nó.
-    // Lưu ý: Lệnh gọi OriginalEditorFocusManager.handleEditorFocus đã bị xóa vì nó không tồn tại và gây lỗi.
-    this.ensureEditorVisible(editor);
+    console.log('Auto-scroll enabled, ensuring element visible');
+    
+    if (OriginalEditorFocusManager.ensureElementVisible) {
+        return OriginalEditorFocusManager.ensureElementVisible(element);
+    }
 };
 
-// ========================================
+// Initialize focus handling flag
+EditorFocusManager.isHandlingFocus = false;
 
-
-// Cập nhật EditorFocusManager
-const OriginalEditorFocusManager = { ...EditorFocusManager };
-
-// Cập nhật MobileCursorManager
-const OriginalMobileCursorManager = { ...MobileCursorManager };
 // Expose managers globally
 window.ImageManager = ImageManager;
+window.AutoScrollSettings = AutoScrollSettings;
 </script>
 {% endblock %}
