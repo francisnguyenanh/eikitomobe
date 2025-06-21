@@ -1896,21 +1896,25 @@ def ever_note():
 def get_evernote_folders():
     """Get all folders in tree structure"""
     try:
-        folders = EvernoteFolder.query.all()
+        # Sắp xếp folders theo tên tăng dần
+        folders = EvernoteFolder.query.order_by(EvernoteFolder.name.asc()).all()
         
         def build_folder_tree(parent_id=None):
             tree = []
-            for folder in folders:
-                if folder.parent_id == parent_id:
-                    folder_data = {
-                        'id': folder.id,
-                        'name': folder.name,
-                        'parent_id': folder.parent_id,
-                        'created_at': folder.created_at.isoformat() if folder.created_at else None,
-                        'children': build_folder_tree(folder.id),
-                        'notes_count': len(folder.notes)
-                    }
-                    tree.append(folder_data)
+            # Lọc và sắp xếp folders cùng level theo tên
+            level_folders = [f for f in folders if f.parent_id == parent_id]
+            level_folders.sort(key=lambda x: x.name.lower())  # Case-insensitive sort
+            
+            for folder in level_folders:
+                folder_data = {
+                    'id': folder.id,
+                    'name': folder.name,
+                    'parent_id': folder.parent_id,
+                    'created_at': folder.created_at.isoformat() if folder.created_at else None,
+                    'children': build_folder_tree(folder.id),
+                    'notes_count': len(folder.notes)
+                }
+                tree.append(folder_data)
             return tree
         
         return jsonify({
@@ -2090,7 +2094,8 @@ def get_folder_notes(folder_id):
     """Get all notes in a specific folder"""
     try:
         folder = EvernoteFolder.query.get_or_404(folder_id)
-        notes = EvernoteNote.query.filter_by(folder_id=folder_id).order_by(EvernoteNote.updated_at.desc()).all()
+        # Sắp xếp notes theo title tăng dần
+        notes = EvernoteNote.query.filter_by(folder_id=folder_id).order_by(EvernoteNote.title.asc()).all()
         
         return jsonify({
             'status': 'success',
@@ -2286,9 +2291,11 @@ def get_evernote_notes():
         folder_id = request.args.get('folder_id', type=int)
         
         if folder_id:
-            notes = EvernoteNote.query.filter_by(folder_id=folder_id).order_by(EvernoteNote.updated_at.desc()).all()
+            # Sắp xếp notes theo title tăng dần
+            notes = EvernoteNote.query.filter_by(folder_id=folder_id).order_by(EvernoteNote.title.asc()).all()
         else:
-            notes = EvernoteNote.query.order_by(EvernoteNote.updated_at.desc()).all()
+            # Sắp xếp tất cả notes theo title tăng dần
+            notes = EvernoteNote.query.order_by(EvernoteNote.title.asc()).all()
         
         notes_data = []
         for note in notes:

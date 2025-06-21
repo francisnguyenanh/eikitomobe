@@ -2143,6 +2143,8 @@ const SaveManager = {
         }
 
         try {
+            let shouldReloadNotes = false;
+            
             if (!AppState.currentId) {
                 // QUAN TRỌNG: Khi tạo note mới từ auto-save, cần truyền folder_id
                 if (title !== "" || content !== "") {
@@ -2159,11 +2161,8 @@ const SaveManager = {
                     // QUAN TRỌNG: Update folder tree để refresh notes_count
                     await FolderManager.loadFolders();
                     
-                    // Reload notes để cập nhật UI
-                    await NoteManager.loadNotes(currentFolderId);
-                    
-                    // Select note vừa tạo
-                    NoteManager.selectNote(data.id);
+                    // Reload notes để cập nhật UI và sort
+                    shouldReloadNotes = true;
                     
                     console.log(`Auto-save created note ${data.id} in folder ${currentFolderId || 'root'}`);
                 }
@@ -2171,10 +2170,26 @@ const SaveManager = {
                 // Update existing note - không cần folder_id
                 const note = AppState.notes.find(n => n.id === AppState.currentId);
                 if (note) {
+                    const oldTitle = note.title;
                     note.title = title;
                     note.content = content;
                     await API.updateNote(AppState.currentId, title, content);
+                    
+                    // Nếu title thay đổi, cần re-sort
+                    if (oldTitle !== title) {
+                        shouldReloadNotes = true;
+                    }
+                    
                     console.log(`Auto-save updated note ${AppState.currentId}`);
+                }
+            }
+            
+            // Reload notes nếu cần để maintain sort order
+            if (shouldReloadNotes) {
+                await NoteManager.loadNotes(FolderManager.currentFolderId);
+                // Re-select current note
+                if (AppState.currentId) {
+                    NoteManager.selectNote(AppState.currentId);
                 }
             }
 
@@ -2315,18 +2330,21 @@ const FolderManager = {
 
     renderFolderTree() {
         const treeContainer = document.getElementById('folder-tree');
-        
+    
         let html = `
             <!-- All Notes Button -->
             <div class="all-notes-item">
                 <div class="all-notes-content ${this.currentFolderId === null ? 'selected' : ''}" 
-                     onclick="FolderManager.selectAllNotes()">
+                    onclick="FolderManager.selectAllNotes()">
                     <i class="bi bi-collection all-notes-icon"></i>
                     <span class="all-notes-title">All Notes</span>
                     <span class="folder-notes-count" id="all-notes-count">0</span>
                 </div>
             </div>
         `;
+        
+        // Sort folders trước khi build HTML
+        this.sortFoldersRecursively(this.folders);
         
         html += this.buildFolderTreeHTML(this.folders, 0);
         treeContainer.innerHTML = html;
@@ -2336,6 +2354,19 @@ const FolderManager = {
 
         // Update all notes count
         this.updateAllNotesCount();
+    },
+
+    // Thêm method để sort folders recursively
+    sortFoldersRecursively(folders) {
+        // Sort current level
+        folders.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+        
+        // Sort children recursively
+        folders.forEach(folder => {
+            if (folder.children && folder.children.length > 0) {
+                this.sortFoldersRecursively(folder.children);
+            }
+        });
     },
 
     attachFolderActionListeners() {
@@ -2787,7 +2818,14 @@ const NoteManager = {
                 AppState.notes = [];
             }
             
-            console.log('Final AppState.notes:', AppState.notes);
+            // Sort notes by title (case-insensitive)
+            AppState.notes.sort((a, b) => {
+                const titleA = (a.title || 'Untitled').toLowerCase();
+                const titleB = (b.title || 'Untitled').toLowerCase();
+                return titleA.localeCompare(titleB);
+            });
+            
+            console.log('Final AppState.notes (sorted):', AppState.notes);
             
             this.renderNoteList();
             
@@ -2907,7 +2945,7 @@ const NoteManager = {
                 // QUAN TRỌNG: Reload folder tree trước để cập nhật notes_count
                 await FolderManager.loadFolders();
                 
-                // Sau đó reload notes cho folder hiện tại
+                // Sau đó reload notes cho folder hiện tại (đã sorted ở loadNotes)
                 await this.loadNotes(currentFolderId);
                 
                 // Chọn note vừa tạo
@@ -4143,19 +4181,19 @@ const DragDropManager = {
     
     async refreshAfterMove(oldFolderId, newFolderId) {
         try {
-            // Reload folder tree to update counts
+            // Reload folder tree to update counts (folders already sorted)
             await FolderManager.loadFolders();
             
-            // If currently viewing the source folder, reload notes
+            // If currently viewing the source folder, reload notes (sorted)
             if (FolderManager.currentFolderId === oldFolderId) {
                 await NoteManager.loadNotes(oldFolderId);
             }
-            // If currently viewing all notes, reload all notes
+            // If currently viewing all notes, reload all notes (sorted)
             else if (FolderManager.currentFolderId === null) {
                 await NoteManager.loadNotes(null);
             }
             
-            console.log('UI refreshed after move');
+            console.log('UI refreshed after move with sorted order');
             
         } catch (error) {
             console.error('Error refreshing UI after move:', error);
@@ -4244,7 +4282,7 @@ NoteManager.deleteNoteFromList = async function(noteId, noteTitle) {
             this.clearEditor();
         }
         
-        // Reload folder tree và notes
+        // Reload folder tree và notes (đã sorted)
         await FolderManager.loadFolders();
         await this.loadNotes(FolderManager.currentFolderId);
         
