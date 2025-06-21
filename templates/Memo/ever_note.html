@@ -66,87 +66,94 @@
 
             <!-- Toolbar -->
             <div class="editor-toolbar">
-                <div class="toolbar-group">
-                    <button id="search-btn" class="toolbar-btn" title="Search">
-                        <i class="bi bi-search"></i>
-                    </button>
-                    <button id="upload-btn" class="toolbar-btn" title="Upload image">
-                        <i class="bi bi-image"></i>
+                <!-- Mobile Toolbar Toggle (chỉ hiện trên mobile) -->
+                <div class="mobile-toolbar-toggle" id="mobile-toolbar-toggle">
+                    <button class="toolbar-toggle-btn" title="Toggle toolbar">
+                        <i class="bi bi-chevron-down"></i>
                     </button>
                 </div>
                 
-                <div class="toolbar-divider"></div>
-                
-                <div class="toolbar-group">
-                    <button class="toolbar-btn" id="bold-btn" title="Bold" onmousedown="toggleFormat(event, 'bold', this)">
-                        <i class="bi bi-type-bold"></i>
-                    </button>
-                    <button class="toolbar-btn" id="italic-btn" title="Italic" onmousedown="toggleFormat(event, 'italic', this)">
-                        <i class="bi bi-type-italic"></i>
-                    </button>
-                    <button class="toolbar-btn" id="underline-btn" title="Underline" onmousedown="toggleFormat(event, 'underline', this)">
-                        <i class="bi bi-type-underline"></i>
-                    </button>
-                    <button class="toolbar-btn" id="strike-btn" title="Strikethrough" onmousedown="toggleFormat(event, 'strikeThrough', this)">
-                        <i class="bi bi-type-strikethrough"></i>
-                    </button>
-                    <label class="auto-scroll-toggle" title="Bật/tắt tự động cuộn theo cursor">
-                        <input type="checkbox" id="autoScrollToggle" checked>
-                        <span class="toggle-slider"></span>
-                        <i class="fas fa-arrows-alt-v"></i>
-                        <span class="toggle-label">Scroll</span>
-                    </label>
-                </div>
-
-                <div class="toolbar-divider"></div>
-
-                <div class="toolbar-group">
-                    <select class="toolbar-select" onchange="format('formatBlock', this.value)">
-                        <option value="p">Paragraph</option>
-                        <option value="h1">Heading 1</option>
-                        <option value="h2">Heading 2</option>
-                        <option value="h3">Heading 3</option>
-                    </select>
+                <!-- Toolbar Content (sẽ ẩn/hiện trên mobile) -->
+                <div class="toolbar-content" id="toolbar-content">
+                    <div class="toolbar-group">
+                        <button id="search-btn" class="toolbar-btn" title="Search">
+                            <i class="bi bi-search"></i>
+                        </button>
+                        <button id="upload-btn" class="toolbar-btn" title="Upload image">
+                            <i class="bi bi-image"></i>
+                        </button>
+                        <label class="auto-scroll-toggle" title="Bật/tắt tự động cuộn theo cursor">
+                            <input type="checkbox" id="autoScrollToggle" checked>
+                            <span class="toggle-slider"></span>
+                            <i class="fas fa-arrows-alt-v"></i>
+                            <span class="toggle-label">Scroll</span>
+                        </label>
+                    </div>
                     
-                    <select class="toolbar-select" onchange="setFontSize(this.value)">
-                        <option value="">Font Size</option>
-                        <option value="12pt">12</option>
-                        <option value="14pt">14</option>
-                        <option value="16pt">16</option>
-                        <option value="18pt">18</option>
-                        <option value="20pt">20</option>
-                        <option value="24pt">24</option>
-                    </select>
+                    <div class="toolbar-divider"></div>
                     
-                    <input type="color" class="color-picker" title="Text color" onchange="format('foreColor', this.value)">
-                </div>
+                    <div class="toolbar-group">
+                        <input type="color" class="color-picker" title="Text color" onchange="format('foreColor', this.value)">
+                        <button class="toolbar-btn" id="bold-btn" title="Bold" onmousedown="toggleFormat(event, 'bold', this)">
+                            <i class="bi bi-type-bold"></i>
+                        </button>
+                        <button class="toolbar-btn" id="italic-btn" title="Italic" onmousedown="toggleFormat(event, 'italic', this)">
+                            <i class="bi bi-type-italic"></i>
+                        </button>
+                        <button class="toolbar-btn" id="underline-btn" title="Underline" onmousedown="toggleFormat(event, 'underline', this)">
+                            <i class="bi bi-type-underline"></i>
+                        </button>
+                        <button class="toolbar-btn" id="strike-btn" title="Strikethrough" onmousedown="toggleFormat(event, 'strikeThrough', this)">
+                            <i class="bi bi-type-strikethrough"></i>
+                        </button>
+                        
+                    </div>
 
-                <div class="toolbar-divider"></div>
+                    <div class="toolbar-divider"></div>
 
-                <div class="toolbar-group">
-                    <button class="toolbar-btn" id="ordered-btn" title="Ordered list" onmousedown="toggleFormat(event, 'insertOrderedList', this)">
-                        <i class="bi bi-list-ol"></i>
-                    </button>
-                    <button class="toolbar-btn" id="unordered-btn" title="Bullet list" onmousedown="toggleFormat(event, 'insertUnorderedList', this)">
-                        <i class="bi bi-list-ul"></i>
-                    </button>
-                    <button class="toolbar-btn" id="checklist-btn" title="Checklist" onmousedown="toggleChecklist(event, this)">
-                        <i class="bi bi-check2-square"></i>
-                    </button>
-                </div>
+                    <div class="toolbar-group">
+                        <select class="toolbar-select" onchange="format('formatBlock', this.value)">
+                            <option value="p">Paragraph</option>
+                            <option value="h1">Heading 1</option>
+                            <option value="h2">Heading 2</option>
+                            <option value="h3">Heading 3</option>
+                        </select>
+                        
+                        <select class="toolbar-select" onchange="setFontSize(this.value)">
+                            <option value="">Font Size</option>
+                            <option value="12pt">12</option>
+                            <option value="14pt">14</option>
+                            <option value="16pt">16</option>
+                            <option value="18pt">18</option>
+                            <option value="20pt">20</option>
+                            <option value="24pt">24</option>
+                        </select>
+                        
+                        
+                    </div>
 
-                <div class="toolbar-divider"></div>
+                    <div class="toolbar-divider"></div>
 
-                <div class="toolbar-group">
-                    <button class="toolbar-btn" id="left-btn" title="Align left" onmousedown="toggleFormat(event, 'justifyLeft', this)">
-                        <i class="bi bi-text-left"></i>
-                    </button>
-                    <button class="toolbar-btn" id="center-btn" title="Align center" onmousedown="toggleFormat(event, 'justifyCenter', this)">
-                        <i class="bi bi-text-center"></i>
-                    </button>
-                    <button class="toolbar-btn" id="right-btn" title="Align right" onmousedown="toggleFormat(event, 'justifyRight', this)">
-                        <i class="bi bi-text-right"></i>
-                    </button>
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" id="ordered-btn" title="Ordered list" onmousedown="toggleFormat(event, 'insertOrderedList', this)">
+                            <i class="bi bi-list-ol"></i>
+                        </button>
+                        <button class="toolbar-btn" id="unordered-btn" title="Bullet list" onmousedown="toggleFormat(event, 'insertUnorderedList', this)">
+                            <i class="bi bi-list-ul"></i>
+                        </button>
+                        <button class="toolbar-btn" id="checklist-btn" title="Checklist" onmousedown="toggleChecklist(event, this)">
+                            <i class="bi bi-check2-square"></i>
+                        </button>
+                        <button class="toolbar-btn" id="left-btn" title="Align left" onmousedown="toggleFormat(event, 'justifyLeft', this)">
+                            <i class="bi bi-text-left"></i>
+                        </button>
+                        <button class="toolbar-btn" id="center-btn" title="Align center" onmousedown="toggleFormat(event, 'justifyCenter', this)">
+                            <i class="bi bi-text-center"></i>
+                        </button>
+                        <button class="toolbar-btn" id="right-btn" title="Align right" onmousedown="toggleFormat(event, 'justifyRight', this)">
+                            <i class="bi bi-text-right"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -2094,6 +2101,172 @@
     }
 }
 
+/* ===== MOBILE TOOLBAR TOGGLE ===== */
+.mobile-toolbar-toggle {
+    display: none;
+    justify-content: center;
+    align-items: center;
+}
+
+.toolbar-toggle-btn {
+    background: rgba(var(--primary-color-rgb), 0.1);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.2);
+    color: var(--primary-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.toolbar-toggle-btn:hover {
+    background: rgba(var(--primary-color-rgb), 0.15);
+    transform: translateY(-1px);
+}
+
+.toolbar-toggle-btn i {
+    transition: transform 0.3s ease;
+    font-size: 1rem;
+}
+
+.toolbar-toggle-btn.expanded i {
+    transform: rotate(180deg);
+}
+
+/* Toolbar Content */
+.toolbar-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+/* Mobile Responsive Updates */
+@media (max-width: 768px) {
+    .mobile-toolbar-toggle {
+        display: flex !important;
+    }
+    
+    .editor-toolbar {
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 10px !important;
+        z-index: 100 !important;
+        
+        /* Mobile specific styling */
+        flex-direction: column;
+        gap: 0;
+        padding: 0.5rem;
+        background: rgba(255,255,255,0.98) !important;
+        backdrop-filter: blur(15px) !important;
+        border-radius: 12px;
+        margin: 0.5rem;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        
+        will-change: transform;
+        isolation: isolate;
+    }
+    
+    .editor-toolbar.scrolled {
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2) !important;
+        background: rgba(255,255,255,1) !important;
+        border-color: rgba(0,0,0,0.1) !important;
+    }
+    
+    /* Toolbar content - mặc định collapsed trên mobile */
+    .toolbar-content {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        flex-direction: column;
+        gap: 0.75rem;
+        width: 100%;
+    }
+    
+    .toolbar-content.expanded {
+        max-height: 500px; /* Đủ cao cho tất cả tools */
+        opacity: 1;
+        padding-top: 0.75rem;
+    }
+    
+    /* Mobile toolbar groups */
+    .toolbar-content .toolbar-group {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+        width: 100%;
+    }
+    
+    .toolbar-content .toolbar-divider {
+        width: 80%;
+        height: 1px;
+        margin: 0;
+        align-self: center;
+    }
+    
+    /* Mobile toolbar buttons */
+    .toolbar-content .toolbar-btn {
+        width: 44px;
+        height: 44px;
+        min-height: 44px;
+        min-width: 44px;
+        font-size: 1.1rem;
+    }
+    
+    .toolbar-content .toolbar-select {
+        min-width: 120px;
+        font-size: 0.9rem;
+        height: 44px;
+        flex: 1;
+        max-width: 200px;
+    }
+    
+    .toolbar-content .auto-scroll-toggle {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        border-radius: 10px;
+        min-height: 44px;
+    }
+    
+    .toolbar-content .color-picker {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+    }
+}
+
+/* Desktop - ẩn toggle button */
+@media (min-width: 769px) {
+    .mobile-toolbar-toggle {
+        display: none !important;
+    }
+    
+    .toolbar-content {
+        display: flex !important;
+        max-height: none !important;
+        opacity: 1 !important;
+        overflow: visible !important;
+    }
+}
+.toolbar-toggle-btn::after {
+    content: 'Tools';
+    margin-left: 0.25rem;
+}
+
+.toolbar-toggle-btn.expanded::after {
+    content: 'Hide';
+}
+
+@media (max-width: 480px) {
+    .toolbar-toggle-btn::after {
+        display: none;
+    }
+}
 </style>
 
 <script>
@@ -2112,6 +2285,86 @@ const AppState = {
     searchModalInstance: null,
     currentImages: [],
     isFocusLocked: false
+};
+
+// ===== MOBILE TOOLBAR MANAGER =====
+const MobileToolbarManager = {
+    isExpanded: false,
+    
+    init() {
+        if (window.innerWidth <= 768) {
+            this.setupToggleListener();
+            this.restoreState();
+        }
+    },
+    
+    setupToggleListener() {
+        const toggleBtn = document.getElementById('mobile-toolbar-toggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                this.toggle();
+            });
+        }
+    },
+    
+    toggle() {
+        this.isExpanded = !this.isExpanded;
+        this.updateUI();
+        this.saveState();
+    },
+    
+    expand() {
+        this.isExpanded = true;
+        this.updateUI();
+        this.saveState();
+    },
+    
+    collapse() {
+        this.isExpanded = false;
+        this.updateUI();
+        this.saveState();
+    },
+    
+    updateUI() {
+        const toggleBtn = document.querySelector('.toolbar-toggle-btn');
+        const toolbarContent = document.getElementById('toolbar-content');
+        
+        if (toggleBtn && toolbarContent) {
+            if (this.isExpanded) {
+                toggleBtn.classList.add('expanded');
+                toolbarContent.classList.add('expanded');
+                toggleBtn.title = 'Collapse toolbar';
+            } else {
+                toggleBtn.classList.remove('expanded');
+                toolbarContent.classList.remove('expanded');
+                toggleBtn.title = 'Expand toolbar';
+            }
+        }
+    },
+    
+    saveState() {
+        localStorage.setItem('mobileToolbarExpanded', this.isExpanded.toString());
+    },
+    
+    restoreState() {
+        // Mặc định collapsed trên mobile
+        const savedState = localStorage.getItem('mobileToolbarExpanded');
+        this.isExpanded = savedState === 'true';
+        this.updateUI();
+    },
+    
+    handleResize() {
+        if (window.innerWidth <= 768) {
+            this.setupToggleListener();
+            this.updateUI();
+        } else {
+            // Desktop: luôn expanded
+            const toolbarContent = document.getElementById('toolbar-content');
+            if (toolbarContent) {
+                toolbarContent.classList.remove('expanded');
+            }
+        }
+    }
 };
 
 const AutoScrollSettings = {
@@ -3335,11 +3588,8 @@ document.addEventListener('DOMContentLoaded', () => {
     SidebarManager.init();
     SidebarManager.restoreState(); 
     AutoScrollSettings.init();
+    MobileToolbarManager.init();
 
-    // Handle window resize
-    window.addEventListener('resize', () => {
-        SidebarManager.handleResize();
-    });
 
     // Initialize mobile managers first
     console.log('Initializing mobile cursor management');
@@ -3527,6 +3777,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add resize handler
     window.addEventListener('resize', () => {
         SidebarManager.handleResize();
+        MobileToolbarManager.handleResize();
     });
 
     // Restore sidebar state after everything is loaded
