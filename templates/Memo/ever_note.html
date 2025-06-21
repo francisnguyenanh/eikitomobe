@@ -2403,6 +2403,15 @@
     font-style: italic;
     pointer-events: none;
 }
+
+.note-editor p:empty {
+    min-height: 1.2em;
+}
+
+.note-editor p:empty::before {
+    content: '\00a0'; /* Non-breaking space để <p> có thể click được */
+    color: transparent;
+}
 </style>
 
 <script>
@@ -2590,17 +2599,34 @@ const ImageDragDropManager = {
         }
 
         try {
-            console.log(`Uploading ${imageFiles.length} images via drag & drop`);
             const result = await ImageManager.uploadImages(imageFiles, AppState.currentId);
             
             if (result && result.status === 'success') {
-                // Reload note images to update the editor
                 await ImageManager.loadNoteImages(AppState.currentId);
                 
-                // QUAN TRỌNG: Trigger auto-save để lưu note với images mới
                 setTimeout(() => {
+                    ImageManager.cleanupDuplicateSections();
+                    
+                    // Focus vào <p> tag đầu tiên thay vì complex cursor positioning
+                    const editor = document.getElementById('evernote-editor');
+                    const firstP = editor.querySelector('p');
+                    if (firstP) {
+                        const range = document.createRange();
+                        const selection = window.getSelection();
+                        
+                        range.selectNodeContents(firstP);
+                        range.collapse(false);
+                        
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        
+                        editor.focus();
+                    } else {
+                        editor.focus();
+                    }
+                    
                     SaveManager.saveNote();
-                }, 500); // Delay để đảm bảo images đã được load
+                }, 500);
                 
                 this.showSuccess(`Successfully uploaded ${imageFiles.length} image(s)`);
             }
@@ -2828,12 +2854,8 @@ const SaveManager = {
         let title = document.getElementById('note-title').value.trim();
         const editor = document.getElementById('evernote-editor');
         
-        // Get content without images-section
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = editor.innerHTML;
-        const imagesSections = tempDiv.querySelectorAll('.images-section');
-        imagesSections.forEach(section => section.remove());
-        const content = tempDiv.innerHTML;
+        // CLEAN UP CONTENT: Remove duplicate images sections and get clean content
+        const cleanContent = this.cleanEditorContent(editor);
 
         if (title === "") {
             title = `Note_${new Date().toLocaleString('sv-SE').replace(/[:\s]/g, '_').slice(0, -3)}`;
@@ -2841,28 +2863,19 @@ const SaveManager = {
         }
 
         try {
-            // Hiện trạng thái đang lưu
             this.showSaveStatus('saving');
             
             let shouldReloadNotes = false;
             
             if (!AppState.currentId) {
-                // Tạo note mới với images hiện tại
-                const data = await API.createNote(title, content, FolderManager.currentFolderId);
+                const data = await API.createNote(title, cleanContent, FolderManager.currentFolderId);
                 
                 if (data && data.id) {
                     AppState.currentId = data.id;
                     shouldReloadNotes = true;
-                    
-                    // Nếu có images, cần upload chúng cho note mới
-                    if (AppState.currentImages && AppState.currentImages.length > 0) {
-                        console.log('Uploading images for new note:', AppState.currentImages.length);
-                        // Note: Images đã được upload qua drag&drop, chỉ cần reload
-                    }
                 }
             } else {
-                // Update note hiện có - THÊM IMAGES VÀO REQUEST
-                const data = await API.updateNote(AppState.currentId, title, content);
+                const data = await API.updateNote(AppState.currentId, title, cleanContent);
                 
                 if (data && data.status === 'success') {
                     console.log('Note updated successfully');
@@ -2878,15 +2891,26 @@ const SaveManager = {
             }
 
             AppState.lastSavedTitle = title;
-            AppState.lastSavedContent = content;
+            AppState.lastSavedContent = cleanContent;
             
-            // Hiện trạng thái đã lưu
             this.showSaveStatus('saved');
             
         } catch (error) {
             console.error('Save failed:', error);
             this.showSaveStatus('error');
         }
+    },
+
+    // Thêm method mới để clean content
+    cleanEditorContent(editor) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = editor.innerHTML;
+        
+        // Remove ALL images sections
+        const imagesSections = tempDiv.querySelectorAll('.images-section');
+        imagesSections.forEach(section => section.remove());
+        
+        return tempDiv.innerHTML;
     },
 
     autoSave: null
@@ -3184,8 +3208,9 @@ const FolderManager = {
         const folder = this.findFolder(folderId);
         document.getElementById('current-folder-name').textContent = folder ? folder.name : 'All Notes';
         
-        // Clear current note selection khi chuyển folder
+        // QUAN TRỌNG: Clear current note selection và images khi chuyển folder
         AppState.currentId = null;
+        AppState.currentImages = [];
         NoteManager.clearEditor();
     },
 
@@ -3209,8 +3234,9 @@ const FolderManager = {
         // Update current folder name
         document.getElementById('current-folder-name').textContent = 'All Notes';
         
-        // Clear current note selection
+        // QUAN TRỌNG: Clear current note selection và images
         AppState.currentId = null;
+        AppState.currentImages = [];
         NoteManager.clearEditor();
     },
 
@@ -3561,6 +3587,7 @@ const NoteManager = {
     selectNote(id) {
         AppState.currentId = id;
         ImageDragDropManager.enhanceDropZones();
+        
         // Validate that AppState.notes is an array
         if (!Array.isArray(AppState.notes)) {
             console.error('AppState.notes is not an array in selectNote:', AppState.notes);
@@ -3573,20 +3600,31 @@ const NoteManager = {
             return;
         }
         
-        document.getElementById('note-title').value = note.title || '';
-        
+        // Clear previous state first
+        AppState.currentImages = [];
         const editor = document.getElementById('evernote-editor');
+        
+        // Remove existing images sections
+        const existingSections = editor.querySelectorAll('.images-section');
+        existingSections.forEach(section => section.remove());
+        
+        // Set title and content
+        document.getElementById('note-title').value = note.title || '';
         editor.innerHTML = note.content || '';
         
-        // Handle images
-        if (note.images && note.images.length > 0) {
-            AppState.currentImages = note.images;
-            ImageManager.updateImagesInEditor(note.images);
-        } else {
+        // Load images from server for this specific note
+        ImageManager.loadNoteImages(id).then(images => {
+            AppState.currentImages = images || [];
+            console.log('Images loaded for note:', id, AppState.currentImages.length);
+            
+            // Only update images in editor if there are actually images for this note
+            if (AppState.currentImages.length > 0) {
+                ImageManager.updateImagesInEditor(AppState.currentImages);
+            }
+        }).catch(error => {
+            console.error('Error loading images for note:', id, error);
             AppState.currentImages = [];
-            const existingSections = editor.querySelectorAll('.images-section');
-            existingSections.forEach(section => section.remove());
-        }
+        });
         
         this.renderNoteList();
         this.updateMeta(note);
@@ -3608,59 +3646,68 @@ const NoteManager = {
 
     clearEditor() {
         document.getElementById('note-title').value = '';
-        document.getElementById('evernote-editor').innerHTML = '';
+        
+        // QUAN TRỌNG: Luôn có sẵn <p> tag trong editor
+        const editor = document.getElementById('evernote-editor');
+        editor.innerHTML = '<p><br></p>'; // Thay vì innerHTML = ''
+        
         document.getElementById('note-meta').textContent = '';
+        
+        // Clear images state và remove images sections
         AppState.currentImages = [];
+        
+        // Remove any existing images sections from editor
+        const existingSections = editor.querySelectorAll('.images-section');
+        existingSections.forEach(section => section.remove());
+        
         ImageDragDropManager.enhanceDropZones();
     },
 
     async addNote() {
         try {
-            // Tạo title với timestamp
-            const title = `Note ${new Date().toLocaleString()}`;
+            // Clear editor (đã có <p> tag sẵn)
+            this.clearEditor();
             
-            // Lấy folder hiện tại đang được chọn
+            const title = `Note ${new Date().toLocaleString()}`;
             const currentFolderId = FolderManager.currentFolderId;
             
-            console.log('NoteManager.addNote - Creating note in folder:', currentFolderId);
-            console.log('FolderManager.currentFolderId value:', FolderManager.currentFolderId);
-            
-            // Tạo note với folder_id - ĐẢM BẢO TRUYỀN ĐÚNG THAM SỐ
-            const data = await API.createNote(title, "", currentFolderId);
-            
-            console.log('Note creation response:', data);
+            // Tạo note với content có sẵn <p> tag
+            const data = await API.createNote(title, "<p><br></p>", currentFolderId);
             
             if (data && data.id) {
-                // QUAN TRỌNG: Reload folder tree trước để cập nhật notes_count
+                AppState.currentId = data.id;
+                
                 await FolderManager.loadFolders();
-                
-                // Sau đó reload notes cho folder hiện tại (đã sorted ở loadNotes)
                 await this.loadNotes(currentFolderId);
-                
-                // Chọn note vừa tạo
                 this.selectNote(data.id);
                 
-                // === MOBILE BEHAVIOR ===
-                // Trên mobile: collapse sidebar và focus vào title input
+                // Focus và đặt cursor trong <p> tag
+                setTimeout(() => {
+                    const editor = document.getElementById('evernote-editor');
+                    const firstP = editor.querySelector('p');
+                    if (firstP) {
+                        // Đặt cursor trong <p> tag
+                        const range = document.createRange();
+                        const selection = window.getSelection();
+                        
+                        range.setStart(firstP, 0);
+                        range.collapse(true);
+                        
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        
+                        editor.focus();
+                    }
+                }, 100);
+                
                 if (window.innerWidth <= 768) {
-                    console.log('Mobile detected - collapsing sidebar and focusing title');
-                    
-                    // Collapse sidebar
                     SidebarManager.closeMobileSidebar();
-                    
-                    // Focus vào title input sau khi sidebar animation hoàn tất
                     setTimeout(() => {
                         this.focusNoteTitle();
-                    }, 450); // Đợi animation sidebar (400ms) + thêm 50ms buffer
+                    }, 450);
                 } else {
-                    // Desktop: focus ngay vào title input
                     this.focusNoteTitle();
                 }
-                
-                console.log(`Created note ${data.id} in folder ${currentFolderId || 'root'}`);
-            } else {
-                console.error('Failed to create note:', data);
-                alert('Failed to create note');
             }
         } catch (error) {
             console.error('Error creating note:', error);
@@ -3788,11 +3835,18 @@ const ImageManager = {
     // Load images for a note
     async loadNoteImages(noteId) {
         try {
+            // Validate noteId
+            if (!noteId) {
+                console.log('No noteId provided, clearing images');
+                AppState.currentImages = [];
+                return [];
+            }
+            
             const response = await fetch(`/api/evernote_notes/${noteId}/images`);
             if (response.ok) {
                 const data = await response.json();
                 if (data.status === 'success' && data.images) {
-                    // Update AppState with current images
+                    // Update AppState with current images for this specific note
                     AppState.currentImages = data.images;
                     
                     // Update images display in editor
@@ -3807,18 +3861,100 @@ const ImageManager = {
         } catch (error) {
             console.error('Error loading note images:', error);
         }
+        
+        // Fallback: clear images
+        AppState.currentImages = [];
         return [];
+    },
+
+    cleanupDuplicateSections() {
+        const editor = document.getElementById('evernote-editor');
+        const imagesSections = editor.querySelectorAll('.images-section');
+        
+        if (imagesSections.length > 1) {
+            console.log(`Found ${imagesSections.length} images sections, cleaning up...`);
+            
+            // Keep only the last one (most recent)
+            for (let i = 0; i < imagesSections.length - 1; i++) {
+                imagesSections[i].remove();
+            }
+            
+            console.log('Cleaned up duplicate images sections');
+        }
     },
     
     // Update images display in editor
     updateImagesInEditor(images) {
         const editor = document.getElementById('evernote-editor');
+        
+        // Remove existing images sections
         const existingSections = editor.querySelectorAll('.images-section');
         existingSections.forEach(section => section.remove());
         
         if (images && images.length > 0) {
+            // Đảm bảo có content trước images section
+            const hasContent = editor.innerHTML.trim() !== '';
+            
+            if (!hasContent) {
+                // Nếu editor trống, thêm <p> tag
+                editor.innerHTML = '<p><br></p>';
+            }
+            
+            // Add images section at the end
             const imagesHTML = '<div class="images-section">' + this.displayImages(images) + '</div>';
             editor.insertAdjacentHTML('beforeend', imagesHTML);
+            
+            // Cursor sẽ tự nhiên ở trong <p> tag đầu tiên
+            this.setCursorInFirstParagraph();
+        }
+    },
+
+    // Thêm method mới
+    setCursorInFirstParagraph() {
+        const editor = document.getElementById('evernote-editor');
+        const firstP = editor.querySelector('p');
+        
+        if (firstP) {
+            try {
+                const range = document.createRange();
+                const selection = window.getSelection();
+                
+                // Đặt cursor ở cuối nội dung trong <p> tag
+                range.selectNodeContents(firstP);
+                range.collapse(false); // false = collapse to end
+                
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                editor.focus();
+            } catch (error) {
+                console.error('Error setting cursor in paragraph:', error);
+                editor.focus();
+            }
+        }
+    },
+
+    ensureCursorBeforeImages() {
+        const editor = document.getElementById('evernote-editor');
+        const imagesSection = editor.querySelector('.images-section');
+        
+        if (imagesSection) {
+            // Create a text node before images if needed
+            const previousNode = imagesSection.previousSibling;
+            if (!previousNode || previousNode.nodeType !== Node.TEXT_NODE) {
+                const textNode = document.createTextNode('\n');
+                editor.insertBefore(textNode, imagesSection);
+            }
+            
+            // Set cursor before images section
+            const range = document.createRange();
+            const selection = window.getSelection();
+            
+            range.setStart(editor, editor.childNodes.length - 1); // Before images section
+            range.collapse(true);
+            
+            selection.removeAllRanges();
+            selection.addRange(range);
         }
     },
     
@@ -4139,6 +4275,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    const editor = document.getElementById('evernote-editor');
+    if (editor) {
+        editor.addEventListener('input', () => {
+            // Check for duplicate images sections after any input
+            ImageManager.cleanupDuplicateSections();
+        });
+        
+        editor.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                // Prevent Enter from creating new sections
+                setTimeout(() => {
+                    ImageManager.cleanupDuplicateSections();
+                }, 10);
+            }
+        });
+    }
+
     // Setup image upload
     const imageInput = document.createElement('input');
     imageInput.type = 'file';
@@ -4243,7 +4396,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 500);
 
     // Setup editor events
-    const editor = document.getElementById('evernote-editor');
     const titleInput = document.getElementById('note-title');
     
     editor.addEventListener('input', SaveManager.autoSave);
