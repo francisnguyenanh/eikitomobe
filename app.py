@@ -2119,6 +2119,7 @@ def get_folder_notes(folder_id):
         app.logger.error(f"Error getting folder notes: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+
 # Cập nhật API tạo note để hỗ trợ folder_id
 @app.route('/api/evernote_notes', methods=['POST'])
 @login_required
