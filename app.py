@@ -936,8 +936,17 @@ def view_shared_evernote(share_id):
     try:
         note = EvernoteNote.query.filter_by(share_id=share_id).first_or_404()
         
-        # Parse images
-        images = json.loads(note.images) if note.images else []
+        # Get images if any
+        image_files = note.get_image_files() if hasattr(note, 'get_image_files') else []
+        images = []
+        for filename in image_files:
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(file_path):
+                images.append({
+                    'id': filename,  # Use filename as id for compatibility
+                    'filename': filename,
+                    'url': url_for('get_evernote_image_file', filename=filename)
+                })
         
         return render_template('Memo/shared_evernote.html', 
                              note=note, 
@@ -946,7 +955,7 @@ def view_shared_evernote(share_id):
     except Exception as e:
         app.logger.error(f"Error viewing shared note: {str(e)}")
         return render_template('error.html', 
-                             error_message="Ghi chú không tồn tại hoặc đã bị xóa"), 404
+                             error_message="Note not found or has been deleted"), 404
 
 # API lấy ảnh từ shared note (không cần login)
 @app.route('/shared/evernote/<share_id>/image/<string:image_id>')
@@ -1081,11 +1090,6 @@ def export_pdf(id):
     p.save()
     buffer.seek(0)
     return send_file(buffer, download_name=f"{note.title}.pdf", as_attachment=True)
-
-@app.route('/share/<share_id>')
-def share_note(share_id):
-    note = Note.query.filter_by(share_id=share_id).first_or_404()
-    return render_template('Memo/share_note.html', note=note)
 
 @app.route('/Card')
 @login_required
@@ -2157,16 +2161,33 @@ def add_evernote_note():
 @app.route('/api/evernote_notes/<int:note_id>/share', methods=['POST'])
 @login_required
 def create_evernote_share_link(note_id):
+    app.logger.info(f"Creating share link for note_id: {note_id}")
+    
     try:
-        note = EvernoteNote.query.get_or_404(note_id)
+        # Check if note exists
+        note = EvernoteNote.query.get(note_id)
+        if not note:
+            app.logger.error(f"Note {note_id} not found")
+            return jsonify({'status': 'error', 'message': 'Note not found'}), 404
         
-        # Tạo share_id nếu chưa có
-        if not note.share_id:
-            note.share_id = str(uuid4())
+        app.logger.info(f"Found note: {note.title}")
+        
+        # ✅ FORCE generate new share_id (luôn tạo mới)
+        from uuid import uuid4
+        note.share_id = str(uuid4())
+        app.logger.info(f"Generated NEW share_id: {note.share_id}")
+        
+        try:
             db.session.commit()
+            app.logger.info("Database commit successful")
+        except Exception as db_error:
+            app.logger.error(f"Database commit failed: {db_error}")
+            db.session.rollback()
+            raise db_error
         
         # Tạo URL chia sẻ
         share_url = url_for('view_shared_evernote', share_id=note.share_id, _external=True)
+        app.logger.info(f"Generated share URL: {share_url}")
         
         return jsonify({
             'status': 'success',
@@ -2175,8 +2196,12 @@ def create_evernote_share_link(note_id):
         })
         
     except Exception as e:
-        app.logger.error(f"Error creating share link: {str(e)}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        app.logger.error(f"Error creating share link for note {note_id}: {str(e)}")
+        app.logger.error(f"Exception type: {type(e).__name__}")
+        return jsonify({
+            'status': 'error', 
+            'message': f'Failed to create share link: {str(e)}'
+        }), 500
     
 # Cập nhật API update note để hỗ trợ folder_id
 @app.route('/api/evernote_notes/<int:note_id>', methods=['PUT'])
