@@ -2388,6 +2388,70 @@ def get_evernote_note_images(note_id):
         app.logger.error(f"Error getting images for note {note_id}: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+# app.py - Thêm route này
+@app.route('/api/evernote_notes/<int:note_id>', methods=['GET'])
+@login_required
+def get_single_evernote_note(note_id):
+    """Get a single note by ID"""
+    try:
+        # ✅ SỬA: Bỏ user_id filter nếu model không có field này
+        note = EvernoteNote.query.get_or_404(note_id)
+        
+        # ✅ Kiểm tra ownership nếu có user_id field
+        # if hasattr(note, 'user_id') and note.user_id != current_user.id:
+        #     return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+        
+        # Get folder info if exists
+        folder_name = note.folder.name if note.folder else None
+        
+        # Get image URLs - check if method exists
+        image_files = []
+        if hasattr(note, 'get_image_files'):
+            try:
+                image_files = note.get_image_files() or []
+            except Exception as e:
+                app.logger.warning(f"Error getting image files: {e}")
+                image_files = []
+        
+        images = []
+        for filename in image_files:
+            try:
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                if os.path.exists(file_path):
+                    images.append({
+                        'filename': filename,
+                        'url': url_for('get_evernote_image_file', filename=filename),
+                        'size': os.path.getsize(file_path)
+                    })
+            except Exception as e:
+                app.logger.warning(f"Error processing image {filename}: {e}")
+                continue
+        
+        return jsonify({
+            'status': 'success',
+            'note': {
+                'id': note.id,
+                'title': note.title,
+                'content': note.content,
+                'folder_id': note.folder_id,
+                'folder_name': folder_name,
+                'created_at': note.created_at.isoformat() if note.created_at else None,
+                'updated_at': note.updated_at.isoformat() if note.updated_at else None,
+                'images': images
+            }
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error getting single note {note_id}: {str(e)}")
+        app.logger.error(f"Exception type: {type(e).__name__}")
+        
+        # ✅ Return detailed error for debugging
+        return jsonify({
+            'status': 'error', 
+            'message': f'Failed to get note: {str(e)}',
+            'error_type': type(e).__name__
+        }), 500
+    
 @app.route('/api/evernote_notes/<int:note_id>/upload_images', methods=['POST'])
 @login_required
 def upload_evernote_images(note_id):

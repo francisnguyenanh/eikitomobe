@@ -3288,7 +3288,6 @@ const SaveManager = {
         let title = document.getElementById('note-title').value.trim();
         const editor = document.getElementById('evernote-editor');
         
-        // CLEAN UP CONTENT: Remove duplicate images sections and get clean content
         const cleanContent = this.cleanEditorContent(editor);
 
         if (title === "") {
@@ -3300,27 +3299,65 @@ const SaveManager = {
             this.showSaveStatus('saving');
             
             let shouldReloadNotes = false;
+            let noteData;
             
             if (!AppState.currentId) {
-                const data = await API.createNote(title, cleanContent, FolderManager.currentFolderId);
+                // Creating new note
+                noteData = await API.createNote(title, cleanContent, FolderManager.currentFolderId);
                 
-                if (data && data.id) {
-                    AppState.currentId = data.id;
-                    shouldReloadNotes = true;
+                if (noteData && noteData.id) {
+                    AppState.currentId = noteData.id;
+                    
+                    // ✅ ADD to local state immediately
+                    const newNote = {
+                        id: noteData.id,
+                        title: title,
+                        content: cleanContent,
+                        folder_id: noteData.folder_id,
+                        folder_name: noteData.folder_name || null,
+                        created_at: noteData.created_at || new Date().toISOString(),
+                        updated_at: noteData.updated_at || new Date().toISOString(),
+                        images: AppState.currentImages || []
+                    };
+                    
+                    AppState.notes.push(newNote);
+                    console.log('✅ Added new note to local state:', newNote);
+                    
+                    shouldReloadNotes = true; // Still need to reload for folder counts
                 }
             } else {
-                const data = await API.updateNote(AppState.currentId, title, cleanContent);
+                // Updating existing note
+                noteData = await API.updateNote(AppState.currentId, title, cleanContent);
                 
-                if (data && data.status === 'success') {
-                    console.log('Note updated successfully');
+                if (noteData && noteData.status === 'success') {
+                    console.log('Note updated successfully, updating local state...');
+                    
+                    // ✅ UPDATE local state immediately
+                    const noteIndex = AppState.notes.findIndex(n => n.id === AppState.currentId);
+                    if (noteIndex !== -1) {
+                        AppState.notes[noteIndex] = {
+                            ...AppState.notes[noteIndex],
+                            title: title,
+                            content: cleanContent,
+                            updated_at: new Date().toISOString()
+                        };
+                        console.log('✅ Updated note in local state:', AppState.notes[noteIndex]);
+                        
+                        // ✅ Re-render note list với fresh local data
+                        NoteManager.renderNoteList();
+                        
+                        // ✅ Update meta with fresh data
+                        NoteManager.updateMeta(AppState.notes[noteIndex]);
+                    }
                 }
             }
             
             if (shouldReloadNotes) {
+                // Only for new notes - reload folder structure
                 await FolderManager.loadFolders();
                 await NoteManager.loadNotes(FolderManager.currentFolderId);
                 if (AppState.currentId) {
-                    NoteManager.selectNote(AppState.currentId);
+                    await NoteManager.selectNote(AppState.currentId);
                 }
             }
 
@@ -3335,7 +3372,6 @@ const SaveManager = {
         }
     },
 
-    // Thêm method mới để clean content
     cleanEditorContent(editor) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = editor.innerHTML;
@@ -3941,17 +3977,29 @@ const FolderManager = {
     }
 };
 
-// ===== NOTE MANAGER =====
+// ===== NOTE MANAGER ===== (UNIFIED VERSION)
 const NoteManager = {
     async loadNotes(folderId = null) {
         try {
+            // ✅ ALWAYS fetch fresh data với cache busting
             const url = folderId ? `/api/evernote_notes?folder_id=${folderId}` : '/api/evernote_notes';
-            console.log('Loading notes from:', url);
+            const timestamp = Date.now(); // Cache busting
+            const fullUrl = `${url}${url.includes('?') ? '&' : '?'}t=${timestamp}`;
             
-            const response = await fetch(url);
+            console.log('Loading fresh notes from:', fullUrl);
+            
+            const response = await fetch(fullUrl, {
+                cache: 'no-cache',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            });
+            
             const data = await response.json();
             
-            console.log('API response:', data);
+            console.log('Fresh API response:', data);
             
             // Validate response data
             if (Array.isArray(data)) {
@@ -3966,36 +4014,61 @@ const NoteManager = {
                 AppState.notes = [];
             }
             
-            // Sort notes by title (case-insensitive)
+            // Sort notes by updated_at (newest first), then by title
             AppState.notes.sort((a, b) => {
+                const dateA = new Date(a.updated_at || a.created_at || 0);
+                const dateB = new Date(b.updated_at || b.created_at || 0);
+                if (dateB.getTime() !== dateA.getTime()) {
+                    return dateB.getTime() - dateA.getTime();
+                }
+                
                 const titleA = (a.title || 'Untitled').toLowerCase();
                 const titleB = (b.title || 'Untitled').toLowerCase();
                 return titleA.localeCompare(titleB);
             });
             
-            console.log('Final AppState.notes (sorted):', AppState.notes);
+            console.log('Fresh AppState.notes (sorted by update time):', AppState.notes);
             
             this.renderNoteList();
-            
-            // Update notes count
             document.getElementById('notes-count').textContent = AppState.notes.length;
             
+            // ✅ Smart selection với fresh data check
             if (AppState.notes.length > 0) {
-                const stillExists = AppState.notes.some(n => n.id === AppState.currentId);
-                if (!stillExists) {
+                if (AppState.currentId) {
+                    const stillExists = AppState.notes.some(n => n.id === AppState.currentId);
+                    if (stillExists) {
+                        await this.selectNote(AppState.currentId); // Will fetch fresh data
+                    } else {
+                        AppState.currentId = AppState.notes[0].id;
+                        await this.selectNote(AppState.currentId);
+                    }
+                } else {
                     AppState.currentId = AppState.notes[0].id;
+                    await this.selectNote(AppState.currentId);
                 }
-                this.selectNote(AppState.currentId);
             } else {
                 AppState.currentId = null;
                 this.clearEditor();
             }
         } catch (error) {
-            console.error('Error loading notes:', error);
-            AppState.notes = []; // Fallback to empty array
+            console.error('Error loading fresh notes:', error);
+            AppState.notes = [];
             this.renderNoteList();
             document.getElementById('notes-count').textContent = '0';
         }
+    },
+
+    async forceRefreshCurrentNote() {
+        if (AppState.currentId) {
+            console.log('Force refreshing current note:', AppState.currentId);
+            await this.selectNote(AppState.currentId);
+        }
+    },
+
+    // Thêm method để refresh note list
+    async forceRefreshNoteList() {
+        console.log('Force refreshing note list');
+        await this.loadNotes(FolderManager.currentFolderId);
     },
 
     renderNoteList() {
@@ -4011,30 +4084,73 @@ const NoteManager = {
         
         AppState.notes.forEach(note => {
             const li = document.createElement('li');
-            li.className = note.id === AppState.currentId ? 'active' : '';
-            li.textContent = note.title || 'Untitled';
-            li.onclick = () => this.selectNote(note.id);
+            li.className = `note-item ${note.id === AppState.currentId ? 'active' : ''}`;
+            li.dataset.noteId = note.id;
+            
+            // Create note content
+            const noteContent = document.createElement('div');
+            noteContent.className = 'note-item-content';
+            
+            // Thêm icon để phân biệt note thuộc folder hay không
+            const noteIcon = document.createElement('i');
+            if (note.folder_id) {
+                noteIcon.className = 'bi bi-file-earmark-text note-icon in-folder';
+                noteIcon.title = 'Note in folder';
+            } else {
+                noteIcon.className = 'bi bi-file-earmark note-icon root-level';
+                noteIcon.title = 'Root level note';
+            }
+            
+            const noteTitle = document.createElement('span');
+            noteTitle.className = 'note-title-text';
+            noteTitle.textContent = note.title || 'Untitled';
+            
+            noteContent.appendChild(noteIcon);
+            noteContent.appendChild(noteTitle);
+            noteContent.onclick = () => this.selectNote(note.id);
+            
+            // Create actions container
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'note-item-actions';
+            
+            // Create delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'note-delete-btn';
+            deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+            deleteBtn.title = 'Delete note';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                this.deleteNoteFromList(note.id, note.title);
+            };
+            
+            actionsContainer.appendChild(deleteBtn);
+            
+            li.appendChild(noteContent);
+            li.appendChild(actionsContainer);
             list.appendChild(li);
         });
+        
+        // Setup drag and drop for newly rendered notes
+        DragDropManager.makeNotesDraggable();
     },
 
-    selectNote(id) {
+    async selectNote(id) {
         AppState.currentId = id;
         ImageDragDropManager.enhanceDropZones();
         
-        // Validate that AppState.notes is an array
-        if (!Array.isArray(AppState.notes)) {
-            console.error('AppState.notes is not an array in selectNote:', AppState.notes);
-            return;
-        }
-        
+        // ✅ SỬ DỤNG LOCAL DATA ONLY
         const note = AppState.notes.find(n => n.id === id);
         if (!note) {
-            console.warn('Note not found:', id);
+            console.warn('Note not found in local state:', id);
+            // Fallback: reload từ server nếu cần
+            this.loadNotes(FolderManager.currentFolderId);
             return;
         }
         
-        // Clear previous state first
+        console.log('✅ Using LOCAL data for note:', note.title);
+        
+        // Clear previous images state
         AppState.currentImages = [];
         const editor = document.getElementById('evernote-editor');
         
@@ -4042,16 +4158,15 @@ const NoteManager = {
         const existingSections = editor.querySelectorAll('.images-section');
         existingSections.forEach(section => section.remove());
         
-        // Set title and content
+        // ✅ Set UI với local data
         document.getElementById('note-title').value = note.title || '';
         editor.innerHTML = note.content || '';
         
-        // Load images from server for this specific note
-        ImageManager.loadNoteImages(id).then(images => {
+        // ✅ Load images (vẫn cần fetch vì images có thể thay đổi)
+        this.loadNoteImages(id).then(images => {
             AppState.currentImages = images || [];
             console.log('Images loaded for note:', id, AppState.currentImages.length);
             
-            // Only update images in editor if there are actually images for this note
             if (AppState.currentImages.length > 0) {
                 ImageManager.updateImagesInEditor(AppState.currentImages);
             }
@@ -4060,8 +4175,34 @@ const NoteManager = {
             AppState.currentImages = [];
         });
         
+        // ✅ Update UI với local data
         this.renderNoteList();
         this.updateMeta(note);
+        
+        console.log('Successfully selected note using local data');
+    },
+
+
+    async loadNoteImages(noteId) {
+        try {
+            if (!noteId) {
+                console.warn('No noteId provided for image loading');
+                return [];
+            }
+            
+            const response = await fetch(`/api/evernote_notes/${noteId}/images`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.status === 'success') {
+                    return data.images || [];
+                }
+            }
+            console.warn('Failed to load images for note:', noteId);
+            return [];
+        } catch (error) {
+            console.error('Error loading note images:', error);
+            return [];
+        }
     },
 
     updateMeta(note) {
@@ -4069,7 +4210,6 @@ const NoteManager = {
         if (note.created_at && note.updated_at) {
             metaDiv.innerHTML = `Created: ${new Date(note.created_at).toLocaleString()}<br>Updated: ${new Date(note.updated_at).toLocaleString()}`;
             
-            // Hiển thị thông tin folder nếu có
             if (note.folder_name) {
                 metaDiv.innerHTML += `<br>Folder: ${note.folder_name}`;
             }
@@ -4078,12 +4218,23 @@ const NoteManager = {
         }
     },
 
+    // ✅ Thêm method để manual refresh khi cần
+    async forceRefreshFromServer() {
+        console.log('Force refreshing all data from server...');
+        await this.loadNotes(FolderManager.currentFolderId);
+        
+        // Re-select current note với fresh data
+        if (AppState.currentId) {
+            this.selectNote(AppState.currentId);
+        }
+    },
+
     clearEditor() {
         document.getElementById('note-title').value = '';
         
         // QUAN TRỌNG: Luôn có sẵn <p> tag trong editor
         const editor = document.getElementById('evernote-editor');
-        editor.innerHTML = '<p><br></p>'; // Thay vì innerHTML = ''
+        editor.innerHTML = '<p><br></p>';
         
         document.getElementById('note-meta').textContent = '';
         
@@ -4120,7 +4271,6 @@ const NoteManager = {
                     const editor = document.getElementById('evernote-editor');
                     const firstP = editor.querySelector('p');
                     if (firstP) {
-                        // Đặt cursor trong <p> tag
                         const range = document.createRange();
                         const selection = window.getSelection();
                         
@@ -4149,17 +4299,14 @@ const NoteManager = {
         }
     },
 
-    // Thêm method riêng để focus title với retry logic
     focusNoteTitle() {
         const titleInput = document.getElementById('note-title');
         if (titleInput) {
-            // Scroll title input vào view trước
             titleInput.scrollIntoView({ 
                 behavior: 'smooth', 
                 block: 'center' 
             });
             
-            // Focus và select text
             setTimeout(() => {
                 titleInput.focus();
                 titleInput.select();
@@ -4175,18 +4322,120 @@ const NoteManager = {
         }
         
         try {
+            const noteTitle = AppState.notes.find(n => n.id === AppState.currentId)?.title || 'Unknown';
+            
             await API.deleteNote(AppState.currentId);
             
-            // QUAN TRỌNG: Reload folder tree trước để cập nhật notes_count
+            // ✅ REMOVE from local state
+            AppState.notes = AppState.notes.filter(note => note.id !== AppState.currentId);
+            
+            // Clear editor
+            AppState.currentId = null;
+            this.clearEditor();
+            
+            // ✅ Re-render với local data
+            this.renderNoteList();
+            document.getElementById('notes-count').textContent = AppState.notes.length;
+            
+            // Reload folder tree
             await FolderManager.loadFolders();
             
-            // Sau đó reload notes cho folder hiện tại
-            await this.loadNotes(FolderManager.currentFolderId);
+            this.showDeleteSuccess(noteTitle);
+            
         } catch (error) {
             console.error('Error deleting note:', error);
             alert('Error deleting note');
+            
+            // Refresh nếu có lỗi
+            this.forceRefreshFromServer();
         }
     },
+
+    // ===== NEW METHODS FROM DRAG & DROP =====
+    async deleteNoteFromList(noteId, noteTitle) {
+        try {
+            // Delete từ server
+            await API.deleteNote(noteId);
+            
+            // ✅ REMOVE from local state immediately
+            AppState.notes = AppState.notes.filter(note => note.id !== noteId);
+            console.log('✅ Removed note from local state:', noteTitle);
+            
+            // Nếu note đang được chọn, clear editor
+            if (AppState.currentId === noteId) {
+                AppState.currentId = null;
+                this.clearEditor();
+            }
+            
+            // ✅ Re-render với local data
+            this.renderNoteList();
+            document.getElementById('notes-count').textContent = AppState.notes.length;
+            
+            // Reload folder tree để update counts
+            await FolderManager.loadFolders();
+            
+            this.showDeleteSuccess(noteTitle);
+            
+        } catch (error) {
+            console.error('Error deleting note:', error);
+            alert('Error deleting note: ' + error.message);
+            
+            // Refresh từ server nếu delete fail
+            this.forceRefreshFromServer();
+        }
+    },
+
+    showDeleteSuccess(noteTitle) {
+        const toast = document.createElement('div');
+        toast.className = 'delete-success-toast';
+        toast.innerHTML = `
+            <i class="bi bi-check-circle-fill"></i>
+            <span>Deleted "${noteTitle}"</span>
+        `;
+        
+        // Thêm CSS cho toast nếu chưa có
+        if (!document.getElementById('delete-toast-styles')) {
+            const toastStyle = document.createElement('style');
+            toastStyle.id = 'delete-toast-styles';
+            toastStyle.textContent = `
+                .delete-success-toast {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: var(--alert-success-color);
+                    color: white;
+                    padding: 0.75rem 1rem;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    font-size: 0.9rem;
+                    font-weight: 500;
+                    animation: slideInRight 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
+                }
+                
+                @keyframes slideInRight {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                
+                @keyframes fadeOut {
+                    from { opacity: 1; }
+                    to { opacity: 0; }
+                }
+            `;
+            document.head.appendChild(toastStyle);
+        }
+        
+        document.body.appendChild(toast);
+        
+        // Tự động xóa toast sau 3 giây
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
 };
 
 // ===== IMAGE MANAGER =====
@@ -4613,7 +4862,6 @@ const SearchManager = {
 
     init() {
         this.setupSearchModal();
-        this.setupKeyboardShortcuts();
     },
 
     setupSearchModal() {
@@ -4667,15 +4915,6 @@ const SearchManager = {
                 this.navigateResults(-1);
                 break;
         }
-    },
-
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-                e.preventDefault();
-                this.openSearchModal();
-            }
-        });
     },
 
     openSearchModal() {
@@ -4916,7 +5155,7 @@ const SearchManager = {
         
         // Select note
         setTimeout(() => {
-            NoteManager.selectNote(result.note.id);
+             NoteManager.selectNote(result.note.id);
             
             // Close mobile sidebar if open
             if (window.innerWidth <= 768 && SidebarManager.isMobileOpen) {
@@ -5030,11 +5269,21 @@ document.addEventListener('DOMContentLoaded', () => {
     SaveManager.autoSave = SaveManager.debounce(() => {
         const title = document.getElementById('note-title').value.trim();
         const editor = document.getElementById('evernote-editor');
-        const content = editor.innerHTML;
+        const content = SaveManager.cleanEditorContent(editor);
         
-        if (title !== SaveManager.lastSavedTitle || content !== SaveManager.lastSavedContent) {
-            SaveManager.saveNote();
+        // ✅ So sánh với dữ liệu thực tế từ server
+        if (AppState.currentId) {
+            const currentNote = AppState.notes.find(n => n.id === AppState.currentId);
+            if (currentNote && 
+                title === currentNote.title && 
+                content === currentNote.content) {
+                console.log('No changes detected, skipping auto-save');
+                return;
+            }
         }
+        
+        console.log('Auto-saving changes...');
+         SaveManager.saveNote();
     }, 3000);
 
     const preventScrollConflicts = () => {
@@ -6381,185 +6630,6 @@ const DragDropManager = {
             console.error('Error refreshing UI after move:', error);
         }
     }
-};
-
-// ===== UPDATE NOTE MANAGER =====
-// Cập nhật NoteManager.renderNoteList method
-const OriginalNoteManager = NoteManager;
-NoteManager.renderNoteList = function() {
-    const list = document.getElementById('note-list');
-    list.innerHTML = '';
-    
-    // Validate that AppState.notes is an array
-    if (!Array.isArray(AppState.notes)) {
-        console.error('AppState.notes is not an array:', AppState.notes);
-        AppState.notes = [];
-        return;
-    }
-    
-    AppState.notes.forEach(note => {
-        const li = document.createElement('li');
-        li.className = `note-item ${note.id === AppState.currentId ? 'active' : ''}`;
-        li.dataset.noteId = note.id;
-        
-        // Create note content
-        const noteContent = document.createElement('div');
-        noteContent.className = 'note-item-content';
-        
-        // Thêm icon để phân biệt note thuộc folder hay không
-        const noteIcon = document.createElement('i');
-        if (note.folder_id) {
-            // Note thuộc folder
-            noteIcon.className = 'bi bi-file-earmark-text note-icon in-folder';
-            noteIcon.title = 'Note in folder';
-        } else {
-            // Note không thuộc folder (root level)
-            noteIcon.className = 'bi bi-file-earmark note-icon root-level';
-            noteIcon.title = 'Root level note';
-        }
-        
-        const noteTitle = document.createElement('span');
-        noteTitle.className = 'note-title-text';
-        noteTitle.textContent = note.title || 'Untitled';
-        
-        noteContent.appendChild(noteIcon);
-        noteContent.appendChild(noteTitle);
-        noteContent.onclick = () => this.selectNote(note.id);
-        
-        // Create actions container
-        const actionsContainer = document.createElement('div');
-        actionsContainer.className = 'note-item-actions';
-        
-        // Create delete button
-        const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'note-delete-btn';
-        deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
-        deleteBtn.title = 'Delete note';
-        deleteBtn.onclick = (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            this.deleteNoteFromList(note.id, note.title);
-        };
-        
-        actionsContainer.appendChild(deleteBtn);
-        
-        li.appendChild(noteContent);
-        li.appendChild(actionsContainer);
-        list.appendChild(li);
-    });
-    
-    // Setup drag and drop for newly rendered notes
-    DragDropManager.makeNotesDraggable();
-};
-
-// Thêm method này vào NoteManager object
-NoteManager.deleteNoteFromList = async function(noteId, noteTitle) {
-    try {
-        // Xóa note
-        await API.deleteNote(noteId);
-        
-        // Nếu note đang được chọn, clear editor
-        if (AppState.currentId === noteId) {
-            AppState.currentId = null;
-            this.clearEditor();
-        }
-        
-        // Reload folder tree và notes (đã sorted)
-        await FolderManager.loadFolders();
-        await this.loadNotes(FolderManager.currentFolderId);
-        
-
-        
-        this.showDeleteSuccess(noteTitle);
-        
-    } catch (error) {
-        console.error('Error deleting note:', error);
-        alert('Error deleting note: ' + error.message);
-    }
-},
-
-
-// Thêm method hiển thị thông báo thành công
-NoteManager.showDeleteSuccess = function(noteTitle) {
-    // Tạo toast notification
-    const toast = document.createElement('div');
-    toast.className = 'delete-success-toast';
-    toast.innerHTML = `
-        <i class="bi bi-check-circle-fill"></i>
-        <span>Deleted "${noteTitle}"</span>
-    `;
-    
-    // Thêm CSS cho toast
-    const toastStyle = document.createElement('style');
-    toastStyle.textContent = `
-        .delete-success-toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--alert-success-color);
-            color: white;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            font-weight: 500;
-            animation: slideInRight 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
-        }
-        
-        @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
-        }
-    `;
-    
-    document.head.appendChild(toastStyle);
-    document.body.appendChild(toast);
-    
-    // Tự động xóa toast sau 3 giây
-    setTimeout(() => {
-        toast.remove();
-        toastStyle.remove();
-    }, 3000);
-};
-
-NoteManager.selectNote = function(id) {
-    AppState.currentId = id;
-    ImageDragDropManager.enhanceDropZones();
-    
-    // Validate that AppState.notes is an array
-    if (!Array.isArray(AppState.notes)) {
-        console.error('AppState.notes is not an array in selectNote:', AppState.notes);
-        return;
-    }
-    
-    const note = AppState.notes.find(n => n.id === id);
-    if (!note) {
-        console.warn('Note not found:', id);
-        return;
-    }
-    
-    document.getElementById('note-title').value = note.title || '';
-    
-    const editor = document.getElementById('evernote-editor');
-    editor.innerHTML = note.content || '';
-    
-    // Load images from server for this note
-    ImageManager.loadNoteImages(id).then(images => {
-        AppState.currentImages = images || [];
-        console.log('Images loaded for note:', id, AppState.currentImages.length);
-    });
-    
-    this.renderNoteList();
-    this.updateMeta(note);
 };
 
 // ===== UPDATE FOLDER MANAGER =====
