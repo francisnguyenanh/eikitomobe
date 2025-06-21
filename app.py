@@ -2158,6 +2158,12 @@ def add_evernote_note():
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 500
     
+@app.route('/share/<share_id>')
+def share_note(share_id):
+    note = Note.query.filter_by(share_id=share_id).first_or_404()
+    return render_template('Memo/share_note.html', note=note)
+
+
 @app.route('/api/evernote_notes/<int:note_id>/share', methods=['POST'])
 @login_required
 def create_evernote_share_link(note_id):
