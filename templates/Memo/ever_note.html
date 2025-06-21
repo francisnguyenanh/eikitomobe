@@ -2390,7 +2390,7 @@
         margin: 0.8rem 0 0.4rem 0;
         line-height: 1.25;
     }
-    
+
     .drop-indicator-content i {
         font-size: 3rem;
     }
@@ -2444,6 +2444,76 @@
 .note-editor p:empty::before {
     content: '\00a0'; /* Non-breaking space để <p> có thể click được */
     color: transparent;
+}
+
+.auto-scroll-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(0,0,0,0.1);
+    user-select: none;
+    font-size: 0.85rem;
+    color: var(--text-color);
+}
+
+/* Remove mobile-only restriction */
+@media (max-width: 768px) {
+    .auto-scroll-toggle {
+        padding: 0.4rem;
+        font-size: 0.8rem;
+    }
+    
+    .toggle-label {
+        display: none; /* Hide label on mobile only */
+    }
+}
+
+/* Desktop specific styles */
+@media (min-width: 769px) {
+    .auto-scroll-toggle {
+        min-width: 120px; /* Ensure enough space for label */
+    }
+    
+    .toggle-label {
+        display: block; /* Show label on desktop */
+    }
+}
+/* ===== SMOOTH SCROLL ENHANCEMENTS ===== */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Override scroll behavior khi cần thiết */
+.instant-scroll {
+    scroll-behavior: auto !important;
+}
+
+/* Better momentum scrolling on iOS */
+@supports (-webkit-overflow-scrolling: touch) {
+    .note-editor,
+    .note-list,
+    .folder-tree-container {
+        -webkit-overflow-scrolling: touch;
+        overflow-scrolling: touch;
+    }
+}
+
+/* Reduce motion cho users có preference */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+    
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 </style>
 
@@ -2793,6 +2863,7 @@ const MobileToolbarManager = {
 
 const AutoScrollSettings = {
     enabled: true,
+    debounceTimeout: null,
     
     init() {
         console.log('AutoScrollSettings.init() called');
@@ -2806,10 +2877,13 @@ const AutoScrollSettings = {
             checkbox.checked = this.enabled;
             console.log('Checkbox state set to:', this.enabled);
             
-            // Add event listener
+            // Add event listener with debouncing
             checkbox.addEventListener('change', (e) => {
-                console.log('Checkbox changed to:', e.target.checked);
-                this.toggle(e.target.checked);
+                clearTimeout(this.debounceTimeout);
+                this.debounceTimeout = setTimeout(() => {
+                    console.log('Checkbox changed to:', e.target.checked);
+                    this.toggle(e.target.checked);
+                }, 100);
             });
         }
     },
@@ -2819,11 +2893,29 @@ const AutoScrollSettings = {
         this.enabled = enabled;
         localStorage.setItem('autoScroll', enabled ? 'true' : 'false');
         console.log('AutoScroll setting saved:', enabled);
+        
+        // Immediate feedback - stop any ongoing scrolls nếu disabled
+        if (!enabled) {
+            this.stopAllScrolling();
+        }
     },
     
     isEnabled() {
-        console.log('AutoScrollSettings.isEnabled() called, returning:', this.enabled);
         return this.enabled;
+    },
+    
+    stopAllScrolling() {
+        // Stop all ongoing scroll timeouts
+        clearTimeout(MobileCursorManager.scrollTimeout);
+        clearTimeout(DesktopCursorManager.scrollTimeout);
+        
+        // Stop any smooth scrolling
+        if (window.scrollTo) {
+            window.scrollTo({
+                top: window.pageYOffset,
+                behavior: 'auto' // Stop smooth scrolling immediately
+            });
+        }
     }
 };
 
@@ -4210,12 +4302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     SidebarManager.restoreState(); 
     AutoScrollSettings.init();
     MobileToolbarManager.init();
-
-
-    // Initialize mobile managers first
-    console.log('Initializing mobile cursor management');
-    MobileCursorManager.init();
-    EditorFocusManager.init();
+    UniversalCursorManager.init();
     SidebarManager.init();
     ImageDragDropManager.init();
 
@@ -4421,6 +4508,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', () => {
         SidebarManager.handleResize();
         MobileToolbarManager.handleResize();
+        UniversalCursorManager.handleResize(); // Add this line
     });
 
     // Restore sidebar state after everything is loaded
@@ -4483,6 +4571,7 @@ const MobileCursorManager = {
     currentSelection: null,
     scrollTimeout: null,
     keyboardHeight: 0,
+    isScrolling: false,
 
     init() {
         this.originalViewportHeight = window.innerHeight;
@@ -4509,19 +4598,16 @@ const MobileCursorManager = {
         mobileStyle.id = 'mobile-cursor-styles';
         mobileStyle.textContent = `
             @media (max-width: 768px) {
-                /* Prevent zoom on focus */
                 input, textarea, [contenteditable] {
                     font-size: 16px !important;
                     transform: scale(1);
                 }
                 
-                /* Better scrolling behavior */
                 html, body {
                     scroll-behavior: smooth;
                     -webkit-overflow-scrolling: touch;
                 }
                 
-                /* Ensure enough space for keyboard */
                 .note-editor-wrapper {
                     min-height: 100vh;
                 }
@@ -4684,19 +4770,41 @@ const MobileCursorManager = {
         this.currentSelection = null;
     },
 
+    // UNIFIED onCursorMove with auto-scroll control
     onCursorMove() {
-        console.log('Cursor moved, keyboard open:', this.isKeyboardOpen);
+        console.log('onCursorMove called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
+        
+        if (!AutoScrollSettings.isEnabled()) {
+            console.log('❌ Auto-scroll DISABLED - Blocking cursor move handling');
+            return;
+        }
+        
+        console.log('✅ Auto-scroll ENABLED - Handling cursor move');
+        
+        if (this.isScrolling) {
+            return; // Prevent multiple concurrent scrolls
+        }
+        
         if (this.isKeyboardOpen) {
             clearTimeout(this.scrollTimeout);
             this.scrollTimeout = setTimeout(() => {
                 this.scrollToKeepCursorCentered();
-            }, 150);
+            }, 100);
         }
     },
 
+    // UNIFIED handleKeyboardOpen with auto-scroll control
     handleKeyboardOpen() {
-        console.log('Handling keyboard open');
+        console.log('handleKeyboardOpen called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
+        
         document.body.classList.add('keyboard-open');
+        
+        if (!AutoScrollSettings.isEnabled()) {
+            console.log('❌ Auto-scroll DISABLED - Blocking keyboard open handling');
+            return;
+        }
+        
+        console.log('✅ Auto-scroll ENABLED - Handling keyboard open');
         
         if (this.currentSelection) {
             setTimeout(() => {
@@ -4710,43 +4818,92 @@ const MobileCursorManager = {
         document.body.classList.remove('keyboard-open');
     },
 
+    // UNIFIED scrollToKeepCursorCentered with auto-scroll control
     scrollToKeepCursorCentered() {
-        // Kiểm tra toggle setting
+        console.log('=== CURSOR CENTERING CALLED ===');
+        console.log('Auto-scroll enabled:', AutoScrollSettings.isEnabled());
+        
         if (!AutoScrollSettings.isEnabled()) {
-            console.log('❌ Auto-scroll DISABLED - Function disabled');
-            return; // HOÀN TOÀN KHÔNG LÀM GÌ
+            console.log('❌ Auto-scroll DISABLED - Completely blocking scroll');
+            return;
         }
         
         console.log('✅ Auto-scroll ENABLED - Executing scroll');
         
-        // Logic scroll chỉ chạy khi enabled
-        if (!this.currentSelection) return;
-        
+        if (this.isScrolling || !this.currentSelection) {
+            return;
+        }
+
+        this.isScrolling = true;
+
         try {
             const cursorRect = this.getCursorPosition();
-            if (!cursorRect) return;
+            if (!cursorRect) {
+                this.isScrolling = false;
+                return;
+            }
 
             const viewportHeight = window.visualViewport ? 
                 window.visualViewport.height : 
                 (window.innerHeight - this.keyboardHeight);
             
-            const targetY = viewportHeight * 0.65; 
-            
+            // More responsive target positioning
+            const targetY = viewportHeight * 0.65;
             const currentCursorY = cursorRect.top;
             const scrollNeeded = currentCursorY - targetY;
 
-            if (Math.abs(scrollNeeded) > 30) {
+            console.log(`Controlled scroll: cursorY=${currentCursorY}, targetY=${targetY}, scrollNeeded=${scrollNeeded}`);
+
+            // Only scroll if significant difference
+            if (Math.abs(scrollNeeded) > 20) {
                 const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-                const newScrollPosition = currentScroll + scrollNeeded;
+                const newScrollPosition = Math.max(0, currentScroll + scrollNeeded);
                 
-                window.scrollTo({
-                    top: Math.max(0, newScrollPosition),
-                    behavior: 'smooth'
-                });
+                console.log(`Scrolling from ${currentScroll} to ${newScrollPosition}`);
+                
+                // Use requestAnimationFrame for smoother animation
+                this.smoothScrollTo(newScrollPosition);
+            } else {
+                this.isScrolling = false;
             }
         } catch (error) {
-            console.error('Error in scroll:', error);
+            console.error('Error in mobile cursor scroll:', error);
+            this.isScrolling = false;
         }
+    },
+
+    smoothScrollTo(targetPosition) {
+        const startPosition = window.pageYOffset || document.documentElement.scrollTop;
+        const distance = targetPosition - startPosition;
+        const duration = 300;
+        const startTime = performance.now();
+
+        const animateScroll = (currentTime) => {
+            if (!AutoScrollSettings.isEnabled()) {
+                this.isScrolling = false;
+                return;
+            }
+
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            const easeProgress = this.easeInOutQuad(progress);
+            const currentPosition = startPosition + (distance * easeProgress);
+            
+            window.scrollTo(0, currentPosition);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animateScroll);
+            } else {
+                this.isScrolling = false;
+            }
+        };
+
+        requestAnimationFrame(animateScroll);
+    },
+
+    easeInOutQuad(t) {
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
     },
 
     getCursorPosition() {
@@ -4768,9 +4925,273 @@ const MobileCursorManager = {
         const element = this.currentSelection;
         const rect = element.getBoundingClientRect();
         
-        // For simple inputs, use center of element
         return {
             top: rect.top + (rect.height / 2),
+            left: rect.left,
+            bottom: rect.bottom,
+            right: rect.right,
+            height: rect.height,
+            width: rect.width
+        };
+    },
+
+    getContentEditableCursorPosition() {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) {
+            return this.currentSelection.getBoundingClientRect();
+        }
+
+        const range = selection.getRangeAt(0);
+        let rect = range.getBoundingClientRect();
+        
+        if (rect.width === 0 && rect.height === 0) {
+            const tempSpan = document.createElement('span');
+            tempSpan.innerHTML = '&#8203;';
+            range.insertNode(tempSpan);
+            rect = tempSpan.getBoundingClientRect();
+            tempSpan.remove();
+        }
+        
+        return rect;
+    },
+
+    checkKeyboardAndScroll() {
+        setTimeout(() => {
+            const currentHeight = window.innerHeight;
+            const heightDiff = this.originalViewportHeight - currentHeight;
+            
+            console.log(`Checking keyboard: heightDiff=${heightDiff}`);
+            
+            if (heightDiff > 150) {
+                this.isKeyboardOpen = true;
+                this.keyboardHeight = heightDiff;
+                console.log('Keyboard detected, scrolling to center cursor');
+                this.scrollToKeepCursorCentered();
+            }
+        }, 200);
+    },
+
+    isMobile() {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        const isMobileUserAgent = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+        const isMobileViewport = window.innerWidth <= 768;
+        const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
+        return isMobileUserAgent || (isMobileViewport && hasTouchScreen);
+    },
+
+    isInputElement(element) {
+        if (!element) return false;
+        const inputTypes = ['INPUT', 'TEXTAREA'];
+        return inputTypes.includes(element.tagName) || element.contentEditable === 'true';
+    }
+};
+
+
+// ===== DESKTOP CURSOR MANAGER =====
+const DesktopCursorManager = {
+    currentSelection: null,
+    scrollTimeout: null,
+    isTracking: false,
+    isScrolling: false, // Add this flag
+
+    init() {
+        // Only initialize on desktop devices
+        if (!this.isMobile()) {
+            console.log('Desktop detected, initializing cursor manager');
+            this.setupDesktopTracking();
+        }
+    },
+
+    setupDesktopTracking() {
+        const editor = document.getElementById('evernote-editor');
+        const titleInput = document.getElementById('note-title');
+
+        if (editor) {
+            editor.addEventListener('focus', (e) => {
+                console.log('Desktop editor focused');
+                this.startTrackingCursor(editor);
+            });
+
+            editor.addEventListener('blur', () => {
+                console.log('Desktop editor blurred');
+                this.stopTrackingCursor();
+            });
+        }
+
+        if (titleInput) {
+            titleInput.addEventListener('focus', (e) => {
+                console.log('Desktop title input focused');
+                this.startTrackingCursor(titleInput);
+            });
+
+            titleInput.addEventListener('blur', () => {
+                console.log('Desktop title input blurred');
+                this.stopTrackingCursor();
+            });
+        }
+    },
+
+    startTrackingCursor(element) {
+        console.log('Desktop: Starting to track cursor for:', element.tagName);
+        this.currentSelection = element;
+        this.isTracking = true;
+        
+        // Remove old listeners first
+        element.removeEventListener('keyup', this.boundOnCursorMove);
+        element.removeEventListener('click', this.boundOnCursorMove);
+        element.removeEventListener('input', this.boundOnCursorMove);
+        element.removeEventListener('scroll', this.boundOnCursorMove);
+        
+        // Bind methods to preserve 'this' context
+        this.boundOnCursorMove = () => this.onCursorMove();
+        
+        // Add new listeners - including scroll event
+        element.addEventListener('keyup', this.boundOnCursorMove);
+        element.addEventListener('click', this.boundOnCursorMove);
+        element.addEventListener('input', this.boundOnCursorMove);
+        
+        // Track scrolling trong editor
+        if (element.tagName === 'DIV' && element.contentEditable === 'true') {
+            element.addEventListener('scroll', this.boundOnCursorMove);
+        }
+    },
+
+    stopTrackingCursor() {
+        console.log('Desktop: Stopped tracking cursor');
+        if (this.currentSelection && this.boundOnCursorMove) {
+            this.currentSelection.removeEventListener('keyup', this.boundOnCursorMove);
+            this.currentSelection.removeEventListener('click', this.boundOnCursorMove);
+            this.currentSelection.removeEventListener('input', this.boundOnCursorMove);
+            this.currentSelection.removeEventListener('scroll', this.boundOnCursorMove);
+        }
+        this.currentSelection = null;
+        this.isTracking = false;
+    },
+
+    onCursorMove() {
+        if (!AutoScrollSettings.isEnabled()) {
+            return;
+        }
+        
+        if (this.isScrolling) {
+            return; // Prevent concurrent scrolls
+        }
+        
+        clearTimeout(this.scrollTimeout);
+        this.scrollTimeout = setTimeout(() => {
+            this.scrollToKeepCursorVisible();
+        }, 100); // Reduced delay
+    },
+
+    scrollToKeepCursorVisible() {
+        if (!AutoScrollSettings.isEnabled() || this.isScrolling) {
+            return;
+        }
+        
+        if (!this.currentSelection || !this.isTracking) {
+            return;
+        }
+
+        this.isScrolling = true;
+
+        try {
+            const cursorRect = this.getCursorPosition();
+            if (!cursorRect) {
+                this.isScrolling = false;
+                return;
+            }
+
+            const viewportHeight = window.innerHeight;
+            const viewportTop = window.pageYOffset || document.documentElement.scrollTop;
+
+            // Cursor position relative to viewport
+            const cursorTop = cursorRect.top + viewportTop;
+            const cursorBottom = cursorRect.bottom + viewportTop;
+
+            // More responsive zones
+            const topZone = viewportTop + (viewportHeight * 0.2); // 20% from top
+            const bottomZone = viewportTop + (viewportHeight * 0.8); // 20% from bottom
+
+            let scrollNeeded = 0;
+
+            if (cursorTop < topZone) {
+                // Cursor too high, scroll up
+                scrollNeeded = cursorTop - (viewportTop + (viewportHeight * 0.35));
+            } else if (cursorBottom > bottomZone) {
+                // Cursor too low, scroll down
+                scrollNeeded = cursorBottom - (viewportTop + (viewportHeight * 0.65));
+            }
+
+            if (Math.abs(scrollNeeded) > 10) {
+                const newScrollPosition = viewportTop + scrollNeeded;
+                this.smoothScrollTo(Math.max(0, newScrollPosition));
+            } else {
+                this.isScrolling = false;
+            }
+        } catch (error) {
+            console.error('Error in desktop cursor scroll:', error);
+            this.isScrolling = false;
+        }
+    },
+
+    smoothScrollTo(targetPosition) {
+        const startPosition = window.pageYOffset || document.documentElement.scrollTop;
+        const distance = targetPosition - startPosition;
+        const duration = 250; // Slightly faster for desktop
+        const startTime = performance.now();
+
+        const animateScroll = (currentTime) => {
+            if (!AutoScrollSettings.isEnabled()) {
+                this.isScrolling = false;
+                return;
+            }
+
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Smoother easing for desktop
+            const easeProgress = this.easeOutCubic(progress);
+            const currentPosition = startPosition + (distance * easeProgress);
+            
+            window.scrollTo(0, currentPosition);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animateScroll);
+            } else {
+                this.isScrolling = false;
+            }
+        };
+
+        requestAnimationFrame(animateScroll);
+    },
+
+    easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
+    },
+
+    getCursorPosition() {
+        if (!this.currentSelection) return null;
+
+        try {
+            if (this.currentSelection.tagName === 'INPUT' || this.currentSelection.tagName === 'TEXTAREA') {
+                return this.getInputCursorPosition();
+            } else {
+                return this.getContentEditableCursorPosition();
+            }
+        } catch (error) {
+            console.error('Error getting cursor position:', error);
+            return this.currentSelection.getBoundingClientRect();
+        }
+    },
+
+    getInputCursorPosition() {
+        const element = this.currentSelection;
+        const rect = element.getBoundingClientRect();
+        
+        // For inputs, use element bounds
+        return {
+            top: rect.top,
             left: rect.left,
             bottom: rect.bottom,
             right: rect.right,
@@ -4801,46 +5222,60 @@ const MobileCursorManager = {
         return rect;
     },
 
-    checkKeyboardAndScroll() {
-        setTimeout(() => {
-            const currentHeight = window.innerHeight;
-            const heightDiff = this.originalViewportHeight - currentHeight;
-            
-            console.log(`Checking keyboard: heightDiff=${heightDiff}`);
-            
-            if (heightDiff > 150) {
-                this.isKeyboardOpen = true;
-                this.keyboardHeight = heightDiff;
-                console.log('Keyboard detected, scrolling to center cursor');
-                this.scrollToKeepCursorCentered();
-            }
-        }, 200);
-    },
-
     isMobile() {
-        // More comprehensive mobile detection
         const userAgent = navigator.userAgent || navigator.vendor || window.opera;
         const isMobileUserAgent = /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
         const isMobileViewport = window.innerWidth <= 768;
         const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         
         return isMobileUserAgent || (isMobileViewport && hasTouchScreen);
+    }
+};
+
+// ===== UNIVERSAL CURSOR MANAGER =====
+const UniversalCursorManager = {
+    init() {
+        console.log('Initializing Universal Cursor Manager');
+        
+        // Initialize both managers
+        MobileCursorManager.init();
+        DesktopCursorManager.init();
+        
+        // Listen for resize events to switch between managers
+        window.addEventListener('resize', () => {
+            this.handleResize();
+        });
     },
 
-    isInputElement(element) {
-        if (!element) return false;
-        const inputTypes = ['INPUT', 'TEXTAREA'];
-        return inputTypes.includes(element.tagName) || element.contentEditable === 'true';
+    handleResize() {
+        const isMobile = window.innerWidth <= 768;
+        console.log('Resize detected, isMobile:', isMobile);
+        
+        if (isMobile) {
+            // Switch to mobile tracking
+            DesktopCursorManager.stopTrackingCursor();
+            // Mobile manager will be reinitialized if needed
+        } else {
+            // Switch to desktop tracking
+            MobileCursorManager.stopTrackingCursor();
+            DesktopCursorManager.setupDesktopTracking();
+        }
+    },
+
+    // Unified method để stop tất cả tracking
+    stopAllTracking() {
+        MobileCursorManager.stopTrackingCursor();
+        DesktopCursorManager.stopTrackingCursor();
     }
 };
 
 // ===== ENHANCED EDITOR FOCUS MANAGER =====
 const EditorFocusManager = {
+    isHandlingFocus: false,
+    
     init() {
-        if (MobileCursorManager.isMobile()) {
-            console.log('Setting up mobile editor focus handling');
-            this.setupEnhancedFocusHandling();
-        }
+        console.log('Setting up universal editor focus handling');
+        this.setupEnhancedFocusHandling();
     },
 
     setupEnhancedFocusHandling() {
@@ -4852,16 +5287,7 @@ const EditorFocusManager = {
                 console.log('Editor focus - scheduling visibility check');
                 setTimeout(() => {
                     this.ensureEditorVisible(editor);
-                }, 400);
-            });
-
-            // Handle input events
-            editor.addEventListener('input', () => {
-                if (MobileCursorManager.isKeyboardOpen) {
-                    setTimeout(() => {
-                        MobileCursorManager.scrollToKeepCursorCentered();
-                    }, 100);
-                }
+                }, 200);
             });
         }
 
@@ -4870,43 +5296,73 @@ const EditorFocusManager = {
                 console.log('Title focus - scheduling visibility check');
                 setTimeout(() => {
                     this.ensureElementVisible(titleInput);
-                }, 400);
+                }, 200);
             });
         }
     },
 
     ensureEditorVisible(editor) {
-        const rect = editor.getBoundingClientRect();
-        const viewportHeight = window.visualViewport ? 
-            window.visualViewport.height : window.innerHeight;
+        console.log('ensureEditorVisible called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
         
-        console.log(`Editor visibility: top=${rect.top}, viewportHeight=${viewportHeight}`);
+        if (AppState.isFocusLocked || this.isHandlingFocus) {
+            console.log('Focus locked or already handling, skipping');
+            return;
+        }
         
-        if (rect.top < 50 || rect.top > viewportHeight - 150) {
-            const targetScroll = editor.offsetTop - (viewportHeight / 3);
-            console.log(`Scrolling editor into view: targetScroll=${targetScroll}`);
+        if (!AutoScrollSettings.isEnabled()) {
+            console.log('❌ Auto-scroll DISABLED - Blocking editor visibility');
+            return;
+        }
+        
+        console.log('✅ Auto-scroll ENABLED - Ensuring editor visible');
+        
+        this.isHandlingFocus = true;
+        
+        try {
+            const rect = editor.getBoundingClientRect();
+            const viewportHeight = window.visualViewport ? 
+                window.visualViewport.height : window.innerHeight;
             
-            window.scrollTo({
-                top: Math.max(0, targetScroll),
-                behavior: 'smooth'
-            });
+            if (rect.top < 80 || rect.top > viewportHeight - 200) {
+                const targetScroll = editor.offsetTop - (viewportHeight * 0.25);
+                
+                window.scrollTo({
+                    top: Math.max(0, targetScroll),
+                    behavior: 'smooth'
+                });
+            }
+        } finally {
+            setTimeout(() => {
+                this.isHandlingFocus = false;
+            }, 300);
         }
     },
 
     ensureElementVisible(element) {
+        console.log('ensureElementVisible called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
+        
+        if (!AutoScrollSettings.isEnabled()) {
+            console.log('❌ Auto-scroll DISABLED - Blocking element visibility');
+            return;
+        }
+        
+        console.log('✅ Auto-scroll ENABLED - Ensuring element visible');
+        
         const rect = element.getBoundingClientRect();
         const viewportHeight = window.visualViewport ? 
             window.visualViewport.height : window.innerHeight;
         
-        console.log(`Element visibility: top=${rect.top}, bottom=${rect.bottom}, viewportHeight=${viewportHeight}`);
-        
         if (rect.top < 50 || rect.bottom > viewportHeight - 100) {
-            console.log('Scrolling element into view');
             element.scrollIntoView({
                 behavior: 'smooth',
-                block: 'center'
+                block: 'center',
+                inline: 'nearest'
             });
         }
+    },
+
+    isMobile() {
+        return window.innerWidth <= 768;
     }
 };
 
@@ -5602,159 +6058,9 @@ const SidebarManager = {
 };
 
 
-// ===== COMPLETE AUTO-SCROLL OVERRIDE =====
-// HOÀN TOÀN thay thế methods gốc thay vì wrap
-MobileCursorManager.scrollToKeepCursorCentered = function() {
-    console.log('=== CURSOR CENTERING CALLED ===');
-    console.log('Auto-scroll enabled:', AutoScrollSettings.isEnabled());
-    
-    if (!AutoScrollSettings.isEnabled()) {
-        console.log('❌ Auto-scroll DISABLED - Completely blocking scroll');
-        return; // HOÀN TOÀN CHẶN - không gọi logic gốc
-    }
-    
-    console.log('✅ Auto-scroll ENABLED - Executing scroll');
-    
-    // Logic scroll được điều khiển hoàn toàn bởi toggle
-    if (!this.currentSelection) {
-        console.log('No current selection, skipping scroll');
-        return;
-    }
 
-    try {
-        const cursorRect = this.getCursorPosition();
-        if (!cursorRect) {
-            console.log('Could not get cursor position');
-            return;
-        }
 
-        const viewportHeight = window.visualViewport ? 
-            window.visualViewport.height : 
-            (window.innerHeight - this.keyboardHeight);
-        
-        const targetY = viewportHeight * 0.65; 
-        
-        const currentCursorY = cursorRect.top;
-        const scrollNeeded = currentCursorY - targetY;
 
-        console.log(`Controlled scroll: cursorY=${currentCursorY}, targetY=${targetY}, scrollNeeded=${scrollNeeded}`);
-
-        if (Math.abs(scrollNeeded) > 30) {
-            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
-            const newScrollPosition = currentScroll + scrollNeeded;
-            
-            console.log(`Scrolling from ${currentScroll} to ${newScrollPosition}`);
-            
-            window.scrollTo({
-                top: Math.max(0, newScrollPosition),
-                behavior: 'smooth'
-            });
-        }
-    } catch (error) {
-        console.error('Error in controlled scroll:', error);
-    }
-};
-
-// HOÀN TOÀN override onCursorMove
-MobileCursorManager.onCursorMove = function() {
-    console.log('onCursorMove called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
-    
-    if (!AutoScrollSettings.isEnabled()) {
-        console.log('❌ Auto-scroll DISABLED - Blocking cursor move handling');
-        return; // HOÀN TOÀN CHẶN
-    }
-    
-    console.log('✅ Auto-scroll ENABLED - Handling cursor move');
-    
-    if (this.isKeyboardOpen) {
-        clearTimeout(this.scrollTimeout);
-        this.scrollTimeout = setTimeout(() => {
-            this.scrollToKeepCursorCentered();
-        }, 150);
-    }
-};
-
-// HOÀN TOÀN override handleKeyboardOpen
-MobileCursorManager.handleKeyboardOpen = function() {
-    console.log('handleKeyboardOpen called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
-    
-    document.body.classList.add('keyboard-open');
-    
-    if (!AutoScrollSettings.isEnabled()) {
-        console.log('❌ Auto-scroll DISABLED - Blocking keyboard open handling');
-        return; // HOÀN TOÀN CHẶN
-    }
-    
-    console.log('✅ Auto-scroll ENABLED - Handling keyboard open');
-    
-    if (this.currentSelection) {
-        setTimeout(() => {
-            this.scrollToKeepCursorCentered();
-        }, 300);
-    }
-};
-
-// HOÀN TOÀN override EditorFocusManager methods
-EditorFocusManager.ensureEditorVisible = function(editor) {
-    console.log('ensureEditorVisible called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
-    
-    if (AppState.isFocusLocked || EditorFocusManager.isHandlingFocus) {
-        console.log('Focus locked or already handling, skipping');
-        return;
-    }
-    
-    if (!AutoScrollSettings.isEnabled()) {
-        console.log('❌ Auto-scroll DISABLED - Blocking editor visibility');
-        return; // HOÀN TOÀN CHẶN
-    }
-    
-    console.log('✅ Auto-scroll ENABLED - Ensuring editor visible');
-    
-    EditorFocusManager.isHandlingFocus = true;
-    
-    try {
-        const rect = editor.getBoundingClientRect();
-        const viewportHeight = window.visualViewport ? 
-            window.visualViewport.height : window.innerHeight;
-        
-        if (rect.top < 50 || rect.top > viewportHeight - 150) {
-            const targetScroll = editor.offsetTop - (viewportHeight / 3);
-            console.log(`Scrolling editor into view: targetScroll=${targetScroll}`);
-            
-            window.scrollTo({
-                top: Math.max(0, targetScroll),
-                behavior: 'smooth'
-            });
-        }
-    } finally {
-        setTimeout(() => {
-            EditorFocusManager.isHandlingFocus = false;
-        }, 0);
-    }
-};
-
-EditorFocusManager.ensureElementVisible = function(element) {
-    console.log('ensureElementVisible called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
-    
-    if (!AutoScrollSettings.isEnabled()) {
-        console.log('❌ Auto-scroll DISABLED - Blocking element visibility');
-        return; // HOÀN TOÀN CHẶN
-    }
-    
-    console.log('✅ Auto-scroll ENABLED - Ensuring element visible');
-    
-    const rect = element.getBoundingClientRect();
-    const viewportHeight = window.visualViewport ? 
-        window.visualViewport.height : window.innerHeight;
-    
-    if (rect.top < 50 || rect.bottom > viewportHeight - 100) {
-        console.log('Scrolling element into view');
-        element.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-        });
-    }
-};
 
 // Initialize focus handling flag
 EditorFocusManager.isHandlingFocus = false;
