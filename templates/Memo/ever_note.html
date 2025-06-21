@@ -2730,6 +2730,99 @@ html.auto-scroll-smooth {
         font-size: 1.1rem;
     }
 }
+/* ===== SEARCH MATCH BADGES ===== */
+.match-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.7rem;
+    line-height: 1;
+    border-radius: 10px;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.match-badge-single {
+    background: linear-gradient(135deg, #28a745, #20c997);
+}
+
+.match-badge-low {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+}
+
+.match-badge-medium {
+    background: linear-gradient(135deg, #fd7e14, #dc3545);
+}
+
+.match-badge-high {
+    background: linear-gradient(135deg, #dc3545, #6f42c1);
+    animation: highlightPulse 2s ease-in-out infinite;
+}
+
+@keyframes highlightPulse {
+    0%, 100% { 
+        transform: scale(1); 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    50% { 
+        transform: scale(1.1); 
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+    }
+}
+
+/* Search result item improvements */
+.search-result-item {
+    position: relative;
+}
+
+.search-result-item:hover .match-badge {
+    transform: scale(1.1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.search-result-item.active .match-badge {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .match-badge {
+        font-size: 0.65rem;
+        min-width: 18px;
+        height: 16px;
+        padding: 0.15rem 0.3rem;
+    }
+}
+
+/* Tooltip for match details */
+.match-badge[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    top: -35px;
+    right: 0;
+    background: rgba(0,0,0,0.9);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0;
+    animation: tooltipFade 0.3s ease forwards;
+}
+
+@keyframes tooltipFade {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 </style>
 
 <script>
@@ -4609,23 +4702,62 @@ const SearchManager = {
         // Search trong notes
         if (Array.isArray(AppState.notes)) {
             AppState.notes.forEach(note => {
-                if (note.title && note.title.toLowerCase().includes(searchTerm)) {
+                const titleMatches = this.countMatches(note.title || '', searchTerm);
+                const contentMatches = this.countMatches(note.content || '', searchTerm);
+                
+                if (titleMatches > 0) {
                     this.searchResults.push({
                         type: 'note',
                         note: note,
-                        matchType: 'title'
+                        matchType: 'title',
+                        matchCount: titleMatches,
+                        totalMatches: titleMatches + contentMatches
                     });
-                } else if (note.content && note.content.toLowerCase().includes(searchTerm)) {
+                } else if (contentMatches > 0) {
                     this.searchResults.push({
                         type: 'note',
                         note: note,
-                        matchType: 'content'
+                        matchType: 'content',
+                        matchCount: contentMatches,
+                        totalMatches: titleMatches + contentMatches
                     });
                 }
             });
         }
 
         this.displaySearchResults();
+    },
+
+    // Thêm method đếm số lượng matches
+    countMatches(text, searchTerm) {
+        if (!text || !searchTerm) return 0;
+        
+        // Strip HTML tags để đếm chính xác trong content
+        const cleanText = this.stripHtml(text).toLowerCase();
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        
+        // Đếm số lần xuất hiện không overlap
+        let count = 0;
+        let index = 0;
+        
+        while ((index = cleanText.indexOf(lowerSearchTerm, index)) !== -1) {
+            count++;
+            index += lowerSearchTerm.length;
+        }
+        
+        return count;
+    },
+
+    // Thêm method strip HTML
+    stripHtml(html) {
+        if (!html) return '';
+        
+        // Tạo temporary div để strip HTML
+        const temp = document.createElement('div');
+        temp.innerHTML = html;
+        
+        // Get text content và clean up whitespace
+        return temp.textContent || temp.innerText || '';
     },
 
     displaySearchResults() {
@@ -4638,6 +4770,23 @@ const SearchManager = {
             return;
         }
 
+        // Sort results by relevance (total matches descending, then title matches first)
+        this.searchResults.sort((a, b) => {
+            // Prioritize title matches
+            if (a.matchType === 'title' && b.matchType !== 'title') return -1;
+            if (b.matchType === 'title' && a.matchType !== 'title') return 1;
+            
+            // Then by total match count
+            if (b.totalMatches !== a.totalMatches) {
+                return b.totalMatches - a.totalMatches;
+            }
+            
+            // Finally by note title alphabetically
+            const titleA = (a.note.title || 'Untitled').toLowerCase();
+            const titleB = (b.note.title || 'Untitled').toLowerCase();
+            return titleA.localeCompare(titleB);
+        });
+
         const searchModal = document.querySelector('#searchModal .modal-body');
         const resultsContainer = document.createElement('div');
         resultsContainer.className = 'search-results';
@@ -4649,6 +4798,23 @@ const SearchManager = {
             border-radius: 6px;
             background: white;
         `;
+
+        // Add results summary
+        const summaryDiv = document.createElement('div');
+        summaryDiv.className = 'search-summary';
+        summaryDiv.style.cssText = `
+            padding: 0.5rem 0.75rem;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 500;
+        `;
+        
+        const totalMatches = this.searchResults.reduce((sum, result) => sum + result.totalMatches, 0);
+        summaryDiv.textContent = `Found ${this.searchResults.length} notes with ${totalMatches} total matches`;
+        
+        resultsContainer.appendChild(summaryDiv);
 
         this.searchResults.forEach((result, index) => {
             const resultItem = this.createResultItem(result, index);
@@ -4668,9 +4834,13 @@ const SearchManager = {
             transition: background 0.2s ease;
         `;
         
+        // Tạo match count badge
+        const matchBadge = this.createMatchBadge(result);
+        
         resultItem.innerHTML = `
-            <div style="font-weight: 500; color: #333;">
-                ${result.note.title || 'Untitled'}
+            <div style="font-weight: 500; color: #333; display: flex; align-items: center; justify-content: space-between;">
+                <span>${result.note.title || 'Untitled'}</span>
+                ${matchBadge}
             </div>
             <div style="font-size: 0.85rem; color: #666; margin-top: 4px;">
                 <i class="bi bi-folder me-1 text-warning"></i>Match in ${result.matchType} • ${result.note.folder_name || 'Root'}
@@ -4687,6 +4857,51 @@ const SearchManager = {
         });
 
         return resultItem;
+    },
+
+    // Thêm method tạo match badge
+    createMatchBadge(result) {
+        const count = result.matchCount;
+        const total = result.totalMatches;
+        
+        let badgeClass = 'match-badge';
+        let badgeColor = '#6c757d'; // Default gray
+        
+        // Thay đổi màu dựa trên số lượng matches
+        if (total >= 10) {
+            badgeClass += ' match-badge-high';
+            badgeColor = '#dc3545'; // Red for high matches
+        } else if (total >= 5) {
+            badgeClass += ' match-badge-medium';
+            badgeColor = '#fd7e14'; // Orange for medium matches
+        } else if (total >= 2) {
+            badgeClass += ' match-badge-low';
+            badgeColor = '#ffc107'; // Yellow for low matches
+        } else {
+            badgeClass += ' match-badge-single';
+            badgeColor = '#28a745'; // Green for single match
+        }
+        
+        // Hiển thị format khác nhau tùy context
+        let displayText;
+        if (result.matchType === 'title' && total > count) {
+            // Title match nhưng có thêm content matches
+            displayText = `${count}+${total - count}`;
+        } else if (result.matchType === 'content' && total > count) {
+            // Content match, có thể có title matches
+            displayText = `${total}`;
+        } else {
+            // Chỉ có matches trong 1 loại
+            displayText = `${count}`;
+        }
+        
+        return `
+            <span class="${badgeClass}" 
+                style="background: ${badgeColor}; color: white; font-size: 0.7rem; padding: 0.2rem 0.4rem; border-radius: 10px; font-weight: 600;"
+                title="${total} total matches (${result.matchType}: ${count})">
+                ${displayText}
+            </span>
+        `;
     },
 
     selectResult(result) {
