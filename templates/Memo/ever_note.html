@@ -11,14 +11,6 @@
     <div class="note-sidebar" id="note-sidebar">
         <!-- Sidebar Header với Action Buttons -->
         <div class="sidebar-header">
-            <div class="sidebar-title">
-                <!-- Chuyển save indicator lên đây -->
-                <span id="save-status" class="save-indicator">
-                    <i class="bi bi-cloud-check-fill"></i>
-                    <span class="save-text">Saved</span>
-                </span>
-            </div>
-            
             <!-- Action Buttons ở sidebar -->
             <div class="sidebar-actions">
                 <button id="add-folder-btn" class="sidebar-action-btn folder-btn" title="Add Folder">
@@ -55,10 +47,16 @@
         <!-- Title -->
         <div class="title-group">
             <input type="text" 
-                   id="note-title" 
-                   placeholder="Note title..." 
-                   class="title-input"
-                   tabindex="1">
+                id="note-title" 
+                placeholder="Note title..." 
+                class="title-input"
+                tabindex="1">
+            
+            <!-- Real save indicator element -->
+            <div class="save-dot-indicator" id="save-dot-indicator">
+                <div class="save-dot"></div>
+            </div>
+            
             <button type="button" id="clear-title-btn" class="clear-btn" title="Clear title">
                 <i class="bi bi-x"></i>
             </button>
@@ -302,6 +300,16 @@
 </div>
 
 <style>
+    :root {
+    --alert-success-color: #28a745;
+    --alert-success-color-rgb: 40, 167, 69;
+    --alert-danger-color: #dc3545;
+    --alert-danger-color-rgb: 220, 53, 69;
+    --alert-warning-color: #ffc107;
+    --alert-warning-color-rgb: 255, 193, 7;
+    --primary-color-rgb: 52, 152, 219;
+    --secondary-color-rgb: 108, 117, 125;
+}
 /* ===== BASE STYLES ===== */
 /* Modern Note Container */
 .container{
@@ -365,42 +373,7 @@
     gap: 0.5rem;
 }
 
-/* ===== SAVE INDICATOR ===== */
-.save-indicator {
-    display: none;
-    align-items: center;
-    gap: 0.25rem;
-    color: var(--alert-success-color);
-    font-size: 0.8rem;
-    font-weight: 500;
-    background: rgba(var(--alert-success-color-rgb), 0.1);
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    border: 1px solid rgba(var(--alert-success-color-rgb), 0.3);
-}
 
-.save-indicator i {
-    font-size: 0.7rem;
-}
-
-.save-indicator.show {
-    display: flex !important;
-    animation: fadeInScale 0.3s ease;
-}
-
-.save-indicator.hide {
-    animation: fadeOutScale 0.3s ease forwards;
-}
-
-@keyframes fadeInScale {
-    from { opacity: 0; transform: scale(0.8); }
-    to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes fadeOutScale {
-    from { opacity: 1; transform: scale(1); }
-    to { opacity: 0; transform: scale(0.8); }
-}
 
 /* ===== SIDEBAR STYLES ===== */
 .note-sidebar {
@@ -413,7 +386,7 @@
     flex-direction: column;
     backdrop-filter: blur(10px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
+    position: relative; /* Để sticky header hoạt động */        
     overflow: hidden;
 }
 
@@ -2321,6 +2294,229 @@
         box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
 }
+/* ===== TITLE INPUT WITH SAVE STATE ===== */
+.title-input {
+    width: 100%;
+    font-size: 1.4rem;
+    font-weight: 600;
+    padding: 1rem 3rem 1rem 1rem;
+    border: none;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.02);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+    position: relative;
+}
+
+/* Save states for title input */
+.title-input.saving {
+    border-left-color: #ffc107;
+    background: rgba(255, 193, 7, 0.05);
+}
+
+.title-input.saved {
+    border-left-color: var(--alert-success-color);
+    background: rgba(var(--alert-success-color-rgb), 0.05);
+}
+
+.title-input.error {
+    border-left-color: var(--alert-danger-color);
+    background: rgba(var(--alert-danger-color-rgb), 0.05);
+}
+
+/* Real element save indicator */
+.save-dot-indicator {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.save-dot {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: transparent;
+    transition: all 0.3s ease;
+}
+
+/* Show indicator when title has save state */
+.title-input.saving ~ .save-dot-indicator,
+.title-input.saved ~ .save-dot-indicator,
+.title-input.error ~ .save-dot-indicator {
+    opacity: 1;
+}
+
+/* Dot colors and animations for each state */
+.title-input.saving ~ .save-dot-indicator .save-dot {
+    background: #ffc107;
+    animation: pulseAnimation 1s ease-in-out infinite;
+}
+
+.title-input.saved ~ .save-dot-indicator .save-dot {
+    background: var(--alert-success-color);
+    animation: popAnimation 0.5s ease;
+}
+
+.title-input.error ~ .save-dot-indicator .save-dot {
+    background: var(--alert-danger-color);
+    animation: shakeAnimation 0.5s ease;
+}
+
+/* Enhanced animations */
+@keyframes pulseAnimation {
+    0%, 100% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+    50% { 
+        transform: scale(1.3); 
+        opacity: 0.7; 
+    }
+}
+
+@keyframes popAnimation {
+    0% { 
+        transform: scale(0.5); 
+        opacity: 0.5;
+    }
+    50% { 
+        transform: scale(1.4); 
+        opacity: 1;
+    }
+    100% { 
+        transform: scale(1); 
+        opacity: 1;
+    }
+}
+
+@keyframes shakeAnimation {
+    0%, 20%, 40%, 60%, 80% { 
+        transform: translateX(0); 
+    }
+    10%, 30%, 50%, 70% { 
+        transform: translateX(-2px); 
+    }
+    15%, 35%, 55%, 75% { 
+        transform: translateX(2px); 
+    }
+}
+
+.title-input:focus {
+    outline: none;
+    background: rgba(0,0,0,0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.15);
+}
+
+.title-input::placeholder {
+    color: var(--secondary-color);
+    font-weight: 400;
+}
+
+/* Clear button positioning */
+.clear-btn {
+    position: absolute;
+    right: 2.5rem; /* Move further left to avoid save dot */
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    z-index: 5;
+}
+
+.clear-btn:hover {
+    background: rgba(0,0,0,0.05);
+    color: var(--alert-danger-color);
+}
+
+/* Hide the old save-status in sidebar */
+.save-indicator {
+    display: none !important;
+}
+
+/* Mobile enhancements */
+@media (max-width: 768px) {
+    .title-input {
+        font-size: 16px !important;
+        padding: 1rem;
+        transform: scale(1);
+        border-radius: 8px;
+    }
+    
+    .save-dot-indicator {
+        right: 0.75rem;
+        width: 10px;
+        height: 10px;
+    }
+    
+    .title-input:focus {
+        background: rgba(var(--primary-color-rgb), 0.08);
+        border: 2px solid var(--primary-color);
+        transform: scale(1.02);
+    }
+    
+    .clear-btn {
+        right: 2rem;
+        padding: 0.4rem;
+        font-size: 1rem;
+    }
+    
+    /* Ensure title group is visible when focused */
+    .title-group {
+        margin: 0.5rem;
+        margin-bottom: 0;
+        position: relative;
+        z-index: 90;
+        transition: all 0.3s ease;
+    }
+    
+    .title-group:focus-within {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+}
+.clear-btn {
+    position: absolute;
+    right: 2.5rem; /* Dịch sang trái để tránh save dot */
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--secondary-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    z-index: 5;
+}
+
+.clear-btn:hover {
+    background: rgba(0,0,0,0.05);
+    color: var(--alert-danger-color);
+}
+
+@media (max-width: 768px) {
+    .clear-btn {
+        right: 2rem; /* Điều chỉnh cho mobile */
+        padding: 0.4rem;
+        font-size: 1rem;
+    }
+}
 </style>
 
 <script>
@@ -2476,20 +2672,44 @@ const AutoScrollSettings = {
 
 // ===== SAVE FUNCTIONALITY =====
 const SaveManager = {
-    showSaveStatus() {
-        const indicator = document.getElementById('save-status');
-        indicator.classList.remove('hide');
-        indicator.classList.add('show');
+    showSaveStatus(type = 'saved') {
+        const titleInput = document.getElementById('note-title');
+        const saveIndicator = document.getElementById('save-dot-indicator');
         
-        clearTimeout(this.saveTimeout);
-        this.saveTimeout = setTimeout(() => {
-            indicator.classList.remove('show');
-            indicator.classList.add('hide');
+        if (!titleInput || !saveIndicator) {
+            console.warn('Title input or save indicator not found!');
+            return;
+        }
+        
+        console.log('SaveManager.showSaveStatus called with:', type);
+        
+        // Remove existing classes from title input
+        titleInput.classList.remove('saving', 'saved', 'error');
+        
+        if (type === 'saving') {
+            titleInput.classList.add('saving');
+            console.log('Applied saving class to title input');
+            
+        } else if (type === 'saved') {
+            titleInput.classList.add('saved');
+            console.log('Applied saved class to title input');
+            
+            // Reset sau 2 giây
+            clearTimeout(this.saveTimeout);
+            this.saveTimeout = setTimeout(() => {
+                titleInput.classList.remove('saved');
+                console.log('Removed saved class from title input');
+            }, 2000);
+            
+        } else if (type === 'error') {
+            titleInput.classList.add('error');
+            console.log('Applied error class to title input');
+            
             setTimeout(() => {
-                indicator.style.display = 'none';
-                indicator.classList.remove('hide');
-            }, 300);
-        }, 2000);
+                titleInput.classList.remove('error');
+                console.log('Removed error class from title input');
+            }, 3000);
+        }
     },
 
     debounce(func, wait) {
@@ -2521,31 +2741,25 @@ const SaveManager = {
         }
 
         try {
+            // Hiện trạng thái đang lưu
+            this.showSaveStatus('saving');
+            
             let shouldReloadNotes = false;
             
             if (!AppState.currentId) {
-                // QUAN TRỌNG: Khi tạo note mới từ auto-save, cần truyền folder_id
                 if (title !== "" || content !== "") {
                     console.log('Auto-save creating new note with folder_id:', FolderManager.currentFolderId);
                     
-                    // Sử dụng folder hiện tại đang được chọn
                     const currentFolderId = FolderManager.currentFolderId;
-                    
                     const data = await API.createNote(title, content, currentFolderId);
                     
-                    // Cập nhật AppState.currentId để lần save tiếp theo sẽ update thay vì tạo mới
                     AppState.currentId = data.id;
-                    
-                    // QUAN TRỌNG: Update folder tree để refresh notes_count
                     await FolderManager.loadFolders();
-                    
-                    // Reload notes để cập nhật UI và sort
                     shouldReloadNotes = true;
                     
                     console.log(`Auto-save created note ${data.id} in folder ${currentFolderId || 'root'}`);
                 }
             } else {
-                // Update existing note - không cần folder_id
                 const note = AppState.notes.find(n => n.id === AppState.currentId);
                 if (note) {
                     const oldTitle = note.title;
@@ -2553,7 +2767,6 @@ const SaveManager = {
                     note.content = content;
                     await API.updateNote(AppState.currentId, title, content);
                     
-                    // Nếu title thay đổi, cần re-sort
                     if (oldTitle !== title) {
                         shouldReloadNotes = true;
                     }
@@ -2562,10 +2775,8 @@ const SaveManager = {
                 }
             }
             
-            // Reload notes nếu cần để maintain sort order
             if (shouldReloadNotes) {
                 await NoteManager.loadNotes(FolderManager.currentFolderId);
-                // Re-select current note
                 if (AppState.currentId) {
                     NoteManager.selectNote(AppState.currentId);
                 }
@@ -2573,9 +2784,13 @@ const SaveManager = {
 
             AppState.lastSavedTitle = title;
             AppState.lastSavedContent = content;
-            this.showSaveStatus();
+            
+            // Hiện trạng thái đã lưu
+            this.showSaveStatus('saved');
+            
         } catch (error) {
             console.error('Save failed:', error);
+            this.showSaveStatus('error');
         }
     },
 
