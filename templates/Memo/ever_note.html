@@ -3156,6 +3156,29 @@ const ImageDragDropManager = {
     }
 };
 
+const IOSUtils = {
+    isIOS() {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent);
+    },
+    
+    isInStandaloneMode() {
+        return window.navigator.standalone === true;
+    },
+    
+    isSafari() {
+        return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    },
+    
+    getIOSVersion() {
+        const match = navigator.userAgent.match(/OS (\d+)_(\d+)_?(\d+)?/);
+        return match ? [parseInt(match[1]), parseInt(match[2]), parseInt(match[3] || 0)] : [0, 0, 0];
+    },
+    
+    supportsClipboard() {
+        return navigator.clipboard && window.isSecureContext;
+    }
+};
+
 // ===== SHARE LINK MANAGER =====
 const ShareLinkManager = {
     currentNoteId: null,
@@ -3178,7 +3201,6 @@ const ShareLinkManager = {
             return;
         }
 
-        // Get current note info
         const currentNote = AppState.notes.find(n => n.id === AppState.currentId);
         if (!currentNote) {
             this.showToast('Note not found', 'error');
@@ -3186,8 +3208,6 @@ const ShareLinkManager = {
         }
 
         this.currentNoteId = AppState.currentId;
-
-        // Show loading toast
         this.showToast('Generating share link...', 'info');
 
         try {
@@ -3200,8 +3220,6 @@ const ShareLinkManager = {
                 },
             });
 
-            console.log('Response status:', response.status);
-
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Server error response:', errorText);
@@ -3212,16 +3230,35 @@ const ShareLinkManager = {
             console.log('Share link response:', data);
 
             if (data.status === 'success') {
-                // Auto-copy to clipboard
-                await this.copyToClipboard(data.share_url);
-                this.showToast('Share link generated and copied to clipboard!', 'success');
+                // ✅ iOS-specific handling
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                
+                if (isIOS) {
+                    // On iOS, show success first, then attempt copy
+                    this.showToast('Share link generated!', 'success');
+                    
+                    // Delay copy attempt to ensure user gesture context
+                    setTimeout(async () => {
+                        try {
+                            await this.copyToClipboard(data.share_url);
+                            this.showToast('Link copied to clipboard!', 'success');
+                        } catch (error) {
+                            // iOS copy failed, but link is still generated
+                            console.log('iOS copy failed, but that\'s okay');
+                        }
+                    }, 500);
+                } else {
+                    // Desktop: copy immediately
+                    await this.copyToClipboard(data.share_url);
+                    this.showToast('Share link generated and copied!', 'success');
+                }
             } else {
                 throw new Error(data.message || 'Failed to generate share link');
             }
 
         } catch (error) {
             console.error('Error generating share link:', error);
-            this.showToast('Error generating share link: ' + error.message, 'error');
+            this.showToast('Error: ' + error.message, 'error');
         }
     },
 
@@ -3231,29 +3268,320 @@ const ShareLinkManager = {
         }
 
         try {
-            // Modern clipboard API
-            if (navigator.clipboard && window.isSecureContext) {
+            // ✅ iOS SUPPORT: Kiểm tra user gesture và iOS
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isInStandaloneMode = window.navigator.standalone;
+            
+            console.log('Attempting to copy on iOS:', isIOS, 'Standalone:', isInStandaloneMode);
+
+            // Method 1: Modern Clipboard API (works on HTTPS and with user gesture)
+            if (navigator.clipboard && window.isSecureContext && !isIOS) {
                 await navigator.clipboard.writeText(shareUrl);
-            } else {
-                // Fallback for older browsers or non-HTTPS
-                const textArea = document.createElement('textarea');
-                textArea.value = shareUrl;
-                textArea.style.position = 'fixed';
-                textArea.style.left = '-999999px';
-                textArea.style.top = '-999999px';
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
+                console.log('✅ Copied using Clipboard API');
+                return;
             }
 
-            console.log('Successfully copied to clipboard:', shareUrl);
+            // Method 2: iOS-specific approach
+            if (isIOS || !navigator.clipboard) {
+                console.log('Using iOS/fallback method for copy');
+                
+                // Create text area for iOS copy
+                const textArea = document.createElement('textarea');
+                textArea.value = shareUrl;
+                
+                // iOS-specific styling to make it work
+                textArea.style.position = 'fixed';
+                textArea.style.left = '50%';
+                textArea.style.top = '50%';
+                textArea.style.transform = 'translate(-50%, -50%)';
+                textArea.style.width = '300px';
+                textArea.style.height = '100px';
+                textArea.style.padding = '10px';
+                textArea.style.fontSize = '16px'; // ⭐ Important for iOS
+                textArea.style.border = '1px solid #ccc';
+                textArea.style.borderRadius = '4px';
+                textArea.style.background = 'white';
+                textArea.style.zIndex = '10000';
+                textArea.style.opacity = '1'; // Make visible on iOS
+                textArea.readonly = true;
+                
+                document.body.appendChild(textArea);
+                
+                // iOS needs focus before select
+                textArea.focus();
+                textArea.select();
+                textArea.setSelectionRange(0, shareUrl.length);
+                
+                // Try execCommand
+                const successful = document.execCommand('copy');
+                
+                if (successful) {
+                    console.log('✅ Copied using execCommand (iOS)');
+                    
+                    // Show iOS-style feedback
+                    this.showIOSCopyFeedback(textArea);
+                    
+                    // Remove after a delay
+                    setTimeout(() => {
+                        document.body.removeChild(textArea);
+                    }, 1000);
+                    
+                    return;
+                } else {
+                    // If execCommand fails, show manual copy instruction
+                    this.showIOSManualCopyInstruction(textArea, shareUrl);
+                    return;
+                }
+            }
+
+            // Method 3: Final fallback
+            throw new Error('Clipboard not supported');
 
         } catch (error) {
-            console.error('Error copying to clipboard:', error);
-            throw new Error('Failed to copy URL to clipboard');
+            console.error('Copy failed:', error);
+            
+            // ✅ iOS FALLBACK: Show manual copy modal
+            this.showIOSManualCopyModal(shareUrl);
         }
+    },
+
+    // ✅ Thêm method hiển thị manual copy cho iOS
+    showIOSManualCopyModal(shareUrl) {
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.className = 'ios-copy-modal';
+        modal.innerHTML = `
+            <div class="ios-copy-content">
+                <div class="ios-copy-header">
+                    <h3><i class="bi bi-share"></i> Share Link</h3>
+                    <button class="ios-copy-close" onclick="this.closest('.ios-copy-modal').remove()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <div class="ios-copy-body">
+                    <p><strong>Copy the link below:</strong></p>
+                    <div class="ios-copy-url-container">
+                        <input type="text" class="ios-copy-url" value="${shareUrl}" readonly>
+                        <button class="ios-copy-btn" onclick="this.previousElementSibling.select(); document.execCommand('copy'); this.textContent='Copied!';">
+                            Copy
+                        </button>
+                    </div>
+                    <div class="ios-copy-instructions">
+                        <p><strong>Manual Copy Instructions:</strong></p>
+                        <ol>
+                            <li>Tap and hold the URL above</li>
+                            <li>Select "Copy" from the menu</li>
+                            <li>Share the link wherever you want</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="ios-copy-footer">
+                    <button class="ios-copy-done" onclick="this.closest('.ios-copy-modal').remove()">
+                        Done
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Add CSS for modal
+        const style = document.createElement('style');
+        style.textContent = `
+            .ios-copy-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+                padding: 20px;
+            }
+            
+            .ios-copy-content {
+                background: white;
+                border-radius: 12px;
+                max-width: 400px;
+                width: 100%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            }
+            
+            .ios-copy-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 20px 20px 10px;
+                border-bottom: 1px solid #eee;
+            }
+            
+            .ios-copy-header h3 {
+                margin: 0;
+                font-size: 1.2rem;
+                color: #333;
+            }
+            
+            .ios-copy-close {
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                color: #666;
+                cursor: pointer;
+                padding: 5px;
+                border-radius: 50%;
+            }
+            
+            .ios-copy-close:hover {
+                background: #f0f0f0;
+            }
+            
+            .ios-copy-body {
+                padding: 20px;
+            }
+            
+            .ios-copy-url-container {
+                display: flex;
+                gap: 10px;
+                margin: 15px 0;
+            }
+            
+            .ios-copy-url {
+                flex: 1;
+                padding: 12px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                font-size: 14px;
+                background: #f9f9f9;
+            }
+            
+            .ios-copy-btn {
+                padding: 12px 20px;
+                background: #007AFF;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 500;
+                white-space: nowrap;
+            }
+            
+            .ios-copy-btn:hover {
+                background: #0056CC;
+            }
+            
+            .ios-copy-instructions {
+                background: #f0f8ff;
+                padding: 15px;
+                border-radius: 8px;
+                margin-top: 15px;
+            }
+            
+            .ios-copy-instructions ol {
+                margin: 10px 0 0 0;
+                padding-left: 20px;
+            }
+            
+            .ios-copy-instructions li {
+                margin-bottom: 5px;
+            }
+            
+            .ios-copy-footer {
+                padding: 10px 20px 20px;
+                text-align: center;
+            }
+            
+            .ios-copy-done {
+                background: #34C759;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px 30px;
+                font-weight: 500;
+                cursor: pointer;
+                min-width: 100px;
+            }
+            
+            .ios-copy-done:hover {
+                background: #28A745;
+            }
+            
+            @media (max-width: 480px) {
+                .ios-copy-modal {
+                    padding: 10px;
+                }
+                
+                .ios-copy-url-container {
+                    flex-direction: column;
+                }
+                
+                .ios-copy-btn {
+                    width: 100%;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        document.body.appendChild(modal);
+        
+        // Focus on URL input for easy selection
+        setTimeout(() => {
+            const urlInput = modal.querySelector('.ios-copy-url');
+            urlInput.focus();
+            urlInput.select();
+        }, 100);
+    },
+
+    // ✅ Show copy feedback for iOS
+    showIOSCopyFeedback(textArea) {
+        const feedback = document.createElement('div');
+        feedback.className = 'ios-copy-feedback';
+        feedback.innerHTML = '✅ Copied!';
+        feedback.style.cssText = `
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #34C759;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10001;
+        `;
+        
+        textArea.parentNode.appendChild(feedback);
+        
+        setTimeout(() => {
+            if (feedback.parentNode) {
+                feedback.parentNode.removeChild(feedback);
+            }
+        }, 800);
+    },
+
+    // ✅ Show manual copy instruction
+    showIOSManualCopyInstruction(textArea, shareUrl) {
+        // Update the textarea to show instructions
+        textArea.style.height = '120px';
+        textArea.style.fontSize = '14px';
+        textArea.style.background = '#f0f8ff';
+        textArea.style.border = '2px solid #007AFF';
+        textArea.value = `${shareUrl}\n\n📋 Tap and hold above, then select "Copy"`;
+        textArea.select();
+        
+        // Show instruction toast
+        this.showToast('Tap and hold the URL to copy manually', 'info');
+        
+        // Auto-remove after delay
+        setTimeout(() => {
+            if (textArea.parentNode) {
+                textArea.parentNode.removeChild(textArea);
+            }
+        }, 5000);
     },
 
     showToast(message, type = 'info') {
