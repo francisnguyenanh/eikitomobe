@@ -2267,6 +2267,60 @@
         display: none;
     }
 }
+
+.title-input {
+    width: 100%;
+    font-size: 1.4rem;
+    font-weight: 600;
+    padding: 1rem 3rem 1rem 1rem;
+    border: none;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.02);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.title-input:focus {
+    outline: none;
+    background: rgba(0,0,0,0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.15);
+}
+
+.title-input::placeholder {
+    color: var(--secondary-color);
+    font-weight: 400;
+}
+
+/* Mobile specific enhancements */
+@media (max-width: 768px) {
+    .title-input {
+        font-size: 16px !important;
+        padding: 1rem;
+        transform: scale(1);
+        border-radius: 8px;
+    }
+    
+    .title-input:focus {
+        background: rgba(var(--primary-color-rgb), 0.08);
+        border: 2px solid var(--primary-color);
+        transform: scale(1.02);
+    }
+    
+    /* Ensure title group is visible when focused */
+    .title-group {
+        margin: 0.5rem;
+        margin-bottom: 0;
+        position: relative;
+        z-index: 90;
+        transition: all 0.3s ease;
+    }
+    
+    .title-group:focus-within {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+}
 </style>
 
 <script>
@@ -2285,6 +2339,21 @@ const AppState = {
     searchModalInstance: null,
     currentImages: [],
     isFocusLocked: false
+};
+
+const DeviceUtils = {
+    isMobile() {
+        return window.innerWidth <= 768;
+    },
+    
+    isMobileDevice() {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    },
+    
+    hasTouch() {
+        return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    }
 };
 
 // ===== MOBILE TOOLBAR MANAGER =====
@@ -3260,9 +3329,22 @@ const NoteManager = {
                 // Chọn note vừa tạo
                 this.selectNote(data.id);
                 
-                // Focus vào title input để user có thể edit ngay
-                document.getElementById('note-title').focus();
-                document.getElementById('note-title').select();
+                // === MOBILE BEHAVIOR ===
+                // Trên mobile: collapse sidebar và focus vào title input
+                if (window.innerWidth <= 768) {
+                    console.log('Mobile detected - collapsing sidebar and focusing title');
+                    
+                    // Collapse sidebar
+                    SidebarManager.closeMobileSidebar();
+                    
+                    // Focus vào title input sau khi sidebar animation hoàn tất
+                    setTimeout(() => {
+                        this.focusNoteTitle();
+                    }, 450); // Đợi animation sidebar (400ms) + thêm 50ms buffer
+                } else {
+                    // Desktop: focus ngay vào title input
+                    this.focusNoteTitle();
+                }
                 
                 console.log(`Created note ${data.id} in folder ${currentFolderId || 'root'}`);
             } else {
@@ -3272,6 +3354,25 @@ const NoteManager = {
         } catch (error) {
             console.error('Error creating note:', error);
             alert('Error creating note: ' + error.message);
+        }
+    },
+
+    // Thêm method riêng để focus title với retry logic
+    focusNoteTitle() {
+        const titleInput = document.getElementById('note-title');
+        if (titleInput) {
+            // Scroll title input vào view trước
+            titleInput.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+            
+            // Focus và select text
+            setTimeout(() => {
+                titleInput.focus();
+                titleInput.select();
+                console.log('Title input focused and selected');
+            }, 100);
         }
     },
 
@@ -3640,6 +3741,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('note-title').focus();
     };
 
+    document.getElementById('add-note-btn').onclick = async () => {
+        console.log('Add note button clicked on mobile:', DeviceUtils.isMobile());
+        await NoteManager.addNote();
+    };
     // Setup sidebar toggle
     document.getElementById('toggle-sidebar-btn').onclick = () => {
         const sidebar = document.getElementById('note-sidebar');
@@ -4828,6 +4933,8 @@ const SidebarManager = {
     },
 
     closeMobileSidebar() {
+        if (!this.isMobileOpen) return; // Tránh call khi đã closed
+        
         this.isAnimating = true;
         
         const sidebar = document.getElementById('note-sidebar');
@@ -4841,7 +4948,16 @@ const SidebarManager = {
         this.isMobileOpen = false;
         document.body.style.overflow = '';
         
-        setTimeout(() => { this.isAnimating = false; }, 400);
+        console.log('Mobile sidebar closed');
+        
+        setTimeout(() => { 
+            this.isAnimating = false; 
+        }, 400);
+    },
+
+    // Thêm method để check mobile state
+    isMobile() {
+        return window.innerWidth <= 768;
     },
 
     toggleDesktopSidebar() {
