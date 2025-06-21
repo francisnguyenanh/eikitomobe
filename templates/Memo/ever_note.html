@@ -2486,33 +2486,51 @@
 /* ===== SMOOTH SCROLL ENHANCEMENTS ===== */
 html {
     scroll-behavior: smooth;
+    scroll-padding-top: 20px; /* Offset for sticky elements */
 }
 
-/* Override scroll behavior khi cần thiết */
-.instant-scroll {
+/* Better scroll behavior control */
+html.instant-scroll {
     scroll-behavior: auto !important;
 }
 
-/* Better momentum scrolling on iOS */
-@supports (-webkit-overflow-scrolling: touch) {
-    .note-editor,
-    .note-list,
-    .folder-tree-container {
+html.auto-scroll-smooth {
+    scroll-behavior: smooth !important;
+}
+
+/* Reduce scroll jump on mobile */
+@media (max-width: 768px) {
+    html {
         -webkit-overflow-scrolling: touch;
         overflow-scrolling: touch;
     }
+    
+    body {
+        overscroll-behavior: contain;
+    }
 }
 
-/* Reduce motion cho users có preference */
+/* Improve scroll performance */
+.note-editor,
+.note-list,
+.folder-tree-container {
+    contain: layout style;
+    will-change: scroll-position;
+}
+
+/* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
     html {
-        scroll-behavior: auto;
+        scroll-behavior: auto !important;
     }
     
     * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+    
+    .smooth-scroll-override {
+        scroll-behavior: auto !important;
     }
 }
 </style>
@@ -2864,24 +2882,20 @@ const MobileToolbarManager = {
 const AutoScrollSettings = {
     enabled: true,
     debounceTimeout: null,
+    activeScrolls: new Set(), // Track active scrolls
     
     init() {
         console.log('AutoScrollSettings.init() called');
-        // Load from localStorage
         const saved = localStorage.getItem('autoScroll');
-        this.enabled = saved !== 'false'; // Default to true
+        this.enabled = saved !== 'false';
         
-        // Setup checkbox
         const checkbox = document.getElementById('autoScrollToggle');
         if (checkbox) {
             checkbox.checked = this.enabled;
-            console.log('Checkbox state set to:', this.enabled);
             
-            // Add event listener with debouncing
             checkbox.addEventListener('change', (e) => {
                 clearTimeout(this.debounceTimeout);
                 this.debounceTimeout = setTimeout(() => {
-                    console.log('Checkbox changed to:', e.target.checked);
                     this.toggle(e.target.checked);
                 }, 100);
             });
@@ -2889,12 +2903,9 @@ const AutoScrollSettings = {
     },
     
     toggle(enabled) {
-        console.log('AutoScrollSettings.toggle() called with:', enabled);
         this.enabled = enabled;
         localStorage.setItem('autoScroll', enabled ? 'true' : 'false');
-        console.log('AutoScroll setting saved:', enabled);
         
-        // Immediate feedback - stop any ongoing scrolls nếu disabled
         if (!enabled) {
             this.stopAllScrolling();
         }
@@ -2904,18 +2915,31 @@ const AutoScrollSettings = {
         return this.enabled;
     },
     
+    // Improved stop all scrolling
     stopAllScrolling() {
-        // Stop all ongoing scroll timeouts
+        // Stop all timeouts
         clearTimeout(MobileCursorManager.scrollTimeout);
         clearTimeout(DesktopCursorManager.scrollTimeout);
         
-        // Stop any smooth scrolling
-        if (window.scrollTo) {
-            window.scrollTo({
-                top: window.pageYOffset,
-                behavior: 'auto' // Stop smooth scrolling immediately
-            });
-        }
+        // Cancel any ongoing animations
+        this.activeScrolls.forEach(animationId => {
+            cancelAnimationFrame(animationId);
+        });
+        this.activeScrolls.clear();
+        
+        // Reset scrolling flags
+        MobileCursorManager.isScrolling = false;
+        DesktopCursorManager.isScrolling = false;
+    },
+    
+    // Register active scroll animation
+    registerAnimation(animationId) {
+        this.activeScrolls.add(animationId);
+    },
+    
+    // Unregister completed animation
+    unregisterAnimation(animationId) {
+        this.activeScrolls.delete(animationId);
     }
 };
 
@@ -4342,6 +4366,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 3000);
 
+    const preventScrollConflicts = () => {
+        // Disable CSS scroll-behavior when auto-scroll is handling
+        const style = document.createElement('style');
+        style.id = 'scroll-conflict-prevention';
+        style.textContent = `
+            html.auto-scroll-active {
+                scroll-behavior: auto !important;
+            }
+            
+            html.auto-scroll-smooth {
+                scroll-behavior: smooth !important;
+            }
+        `;
+        document.head.appendChild(style);
+    };
+    
+    preventScrollConflicts();
+
     // Setup button events
     document.getElementById('add-note-btn').onclick = () => NoteManager.addNote();
     document.getElementById('clear-title-btn').onclick = () => {
@@ -4772,25 +4814,21 @@ const MobileCursorManager = {
 
     // UNIFIED onCursorMove with auto-scroll control
     onCursorMove() {
-        console.log('onCursorMove called, auto-scroll enabled:', AutoScrollSettings.isEnabled());
-        
         if (!AutoScrollSettings.isEnabled()) {
-            console.log('❌ Auto-scroll DISABLED - Blocking cursor move handling');
             return;
         }
         
-        console.log('✅ Auto-scroll ENABLED - Handling cursor move');
-        
         if (this.isScrolling) {
-            return; // Prevent multiple concurrent scrolls
+            return;
         }
         
-        if (this.isKeyboardOpen) {
-            clearTimeout(this.scrollTimeout);
-            this.scrollTimeout = setTimeout(() => {
-                this.scrollToKeepCursorCentered();
-            }, 100);
-        }
+        // Improved debouncing
+        clearTimeout(this.scrollTimeout);
+        this.scrollTimeout = setTimeout(() => {
+            if (!this.isScrolling) { // Double check
+                this.scrollToKeepCursorCentered(); // or scrollToKeepCursorVisible for desktop
+            }
+        }, 80); // Faster response time
     },
 
     // UNIFIED handleKeyboardOpen with auto-scroll control
@@ -4820,15 +4858,9 @@ const MobileCursorManager = {
 
     // UNIFIED scrollToKeepCursorCentered with auto-scroll control
     scrollToKeepCursorCentered() {
-        console.log('=== CURSOR CENTERING CALLED ===');
-        console.log('Auto-scroll enabled:', AutoScrollSettings.isEnabled());
-        
         if (!AutoScrollSettings.isEnabled()) {
-            console.log('❌ Auto-scroll DISABLED - Completely blocking scroll');
             return;
         }
-        
-        console.log('✅ Auto-scroll ENABLED - Executing scroll');
         
         if (this.isScrolling || !this.currentSelection) {
             return;
@@ -4847,22 +4879,18 @@ const MobileCursorManager = {
                 window.visualViewport.height : 
                 (window.innerHeight - this.keyboardHeight);
             
-            // More responsive target positioning
-            const targetY = viewportHeight * 0.65;
+            // Calculate target position more precisely
+            const targetY = viewportHeight * 0.4; // Target 40% from top
             const currentCursorY = cursorRect.top;
             const scrollNeeded = currentCursorY - targetY;
 
-            console.log(`Controlled scroll: cursorY=${currentCursorY}, targetY=${targetY}, scrollNeeded=${scrollNeeded}`);
-
-            // Only scroll if significant difference
-            if (Math.abs(scrollNeeded) > 20) {
+            // Use smaller threshold for smoother experience
+            if (Math.abs(scrollNeeded) > 15) {
                 const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
                 const newScrollPosition = Math.max(0, currentScroll + scrollNeeded);
                 
-                console.log(`Scrolling from ${currentScroll} to ${newScrollPosition}`);
-                
-                // Use requestAnimationFrame for smoother animation
-                this.smoothScrollTo(newScrollPosition);
+                // Use CSS scroll-behavior for native smoothness
+                this.smoothScrollToPosition(newScrollPosition);
             } else {
                 this.isScrolling = false;
             }
@@ -4872,38 +4900,66 @@ const MobileCursorManager = {
         }
     },
 
+    // New method using CSS scroll-behavior
+    smoothScrollToPosition(targetPosition) {
+        // Enable smooth scrolling temporarily
+        document.documentElement.style.scrollBehavior = 'smooth';
+        
+        window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+        });
+        
+        // Reset scrolling flag after animation completes
+        setTimeout(() => {
+            this.isScrolling = false;
+            // Restore original scroll behavior
+            document.documentElement.style.scrollBehavior = '';
+        }, 300); // Estimated animation duration
+    },
+
+    // Alternative RAF-based smooth scroll (backup method)
     smoothScrollTo(targetPosition) {
         const startPosition = window.pageYOffset || document.documentElement.scrollTop;
         const distance = targetPosition - startPosition;
-        const duration = 300;
+        const duration = 250; // Reduced duration for responsiveness
         const startTime = performance.now();
+        
+        let animationId;
 
         const animateScroll = (currentTime) => {
             if (!AutoScrollSettings.isEnabled()) {
                 this.isScrolling = false;
+                AutoScrollSettings.unregisterAnimation(animationId);
                 return;
             }
 
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
             
-            const easeProgress = this.easeInOutQuad(progress);
+            // Use different easing for mobile - more natural
+            const easeProgress = this.easeOutCubic(progress);
             const currentPosition = startPosition + (distance * easeProgress);
             
+            // Use direct scrollTo for immediate effect
             window.scrollTo(0, currentPosition);
             
             if (progress < 1) {
-                requestAnimationFrame(animateScroll);
+                animationId = requestAnimationFrame(animateScroll);
+                AutoScrollSettings.registerAnimation(animationId);
             } else {
                 this.isScrolling = false;
+                AutoScrollSettings.unregisterAnimation(animationId);
             }
         };
 
-        requestAnimationFrame(animateScroll);
+        animationId = requestAnimationFrame(animateScroll);
+        AutoScrollSettings.registerAnimation(animationId);
     },
 
-    easeInOutQuad(t) {
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    // Better easing function
+    easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
     },
 
     getCursorPosition() {
@@ -5105,27 +5161,24 @@ const DesktopCursorManager = {
             const viewportHeight = window.innerHeight;
             const viewportTop = window.pageYOffset || document.documentElement.scrollTop;
 
-            // Cursor position relative to viewport
             const cursorTop = cursorRect.top + viewportTop;
             const cursorBottom = cursorRect.bottom + viewportTop;
 
-            // More responsive zones
-            const topZone = viewportTop + (viewportHeight * 0.2); // 20% from top
-            const bottomZone = viewportTop + (viewportHeight * 0.8); // 20% from bottom
+            // Tighter zones for more responsive scrolling
+            const topZone = viewportTop + (viewportHeight * 0.25); // 25% from top
+            const bottomZone = viewportTop + (viewportHeight * 0.75); // 25% from bottom
 
             let scrollNeeded = 0;
 
             if (cursorTop < topZone) {
-                // Cursor too high, scroll up
-                scrollNeeded = cursorTop - (viewportTop + (viewportHeight * 0.35));
+                scrollNeeded = cursorTop - (viewportTop + (viewportHeight * 0.3));
             } else if (cursorBottom > bottomZone) {
-                // Cursor too low, scroll down
-                scrollNeeded = cursorBottom - (viewportTop + (viewportHeight * 0.65));
+                scrollNeeded = cursorBottom - (viewportTop + (viewportHeight * 0.7));
             }
 
             if (Math.abs(scrollNeeded) > 10) {
                 const newScrollPosition = viewportTop + scrollNeeded;
-                this.smoothScrollTo(Math.max(0, newScrollPosition));
+                this.smoothScrollToPosition(Math.max(0, newScrollPosition));
             } else {
                 this.isScrolling = false;
             }
@@ -5135,39 +5188,59 @@ const DesktopCursorManager = {
         }
     },
 
+    // Same smooth scroll methods as mobile
+    smoothScrollToPosition(targetPosition) {
+        document.documentElement.style.scrollBehavior = 'smooth';
+        
+        window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+        });
+        
+        setTimeout(() => {
+            this.isScrolling = false;
+            document.documentElement.style.scrollBehavior = '';
+        }, 250);
+    },
+
     smoothScrollTo(targetPosition) {
         const startPosition = window.pageYOffset || document.documentElement.scrollTop;
         const distance = targetPosition - startPosition;
-        const duration = 250; // Slightly faster for desktop
+        const duration = 200; // Faster for desktop
         const startTime = performance.now();
+        
+        let animationId;
 
         const animateScroll = (currentTime) => {
             if (!AutoScrollSettings.isEnabled()) {
                 this.isScrolling = false;
+                AutoScrollSettings.unregisterAnimation(animationId);
                 return;
             }
 
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
             
-            // Smoother easing for desktop
-            const easeProgress = this.easeOutCubic(progress);
+            const easeProgress = this.easeOutQuart(progress);
             const currentPosition = startPosition + (distance * easeProgress);
             
             window.scrollTo(0, currentPosition);
             
             if (progress < 1) {
-                requestAnimationFrame(animateScroll);
+                animationId = requestAnimationFrame(animateScroll);
+                AutoScrollSettings.registerAnimation(animationId);
             } else {
                 this.isScrolling = false;
+                AutoScrollSettings.unregisterAnimation(animationId);
             }
         };
 
-        requestAnimationFrame(animateScroll);
+        animationId = requestAnimationFrame(animateScroll);
+        AutoScrollSettings.registerAnimation(animationId);
     },
 
-    easeOutCubic(t) {
-        return 1 - Math.pow(1 - t, 3);
+    easeOutQuart(t) {
+        return 1 - Math.pow(1 - t, 4);
     },
 
     getCursorPosition() {
