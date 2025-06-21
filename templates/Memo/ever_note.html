@@ -3,65 +3,66 @@
 {% block content %}
 
 <div class="modern-note-container">
-    <!-- Header -->
-    <div class="note-header">
-        <div class="header-left">
-            <span id="save-status" class="save-indicator">
-                <i class="bi bi-cloud-check-fill"></i>
-                <span class="save-text">Saved</span>
-            </span>
-        </div>
-        <div class="header-actions">
-            <button id="add-folder-btn" class="action-btn folder-btn" title="Add Folder">
-                <i class="bi bi-folder-plus"></i>
-            </button>
-            <button class="action-btn success-btn" id="add-note-btn" title="Add new note">
-                <i class="bi bi-plus"></i>
-            </button>
-            <button class="action-btn primary-btn" id="share-link-btn" title="Share note">
-                <i class="bi bi-share"></i>
-            </button>
-        </div>
-    </div>
+
 
     <!-- Main Content -->
     <div class="note-layout">
-        <!-- Sidebar -->
-        <div class="note-sidebar" id="note-sidebar">
-            <div class="sidebar-header">
-                <div class="sidebar-actions">
-                    <button class="sidebar-toggle" id="toggle-sidebar-btn">
-                        <i class="bi bi-chevron-left"></i>
-                    </button>
-                </div>
+    <!-- Sidebar với buttons ở trên -->
+    <div class="note-sidebar" id="note-sidebar">
+        <!-- Sidebar Header với Action Buttons -->
+        <div class="sidebar-header">
+            <div class="sidebar-title">
+                <!-- Chuyển save indicator lên đây -->
+                <span id="save-status" class="save-indicator">
+                    <i class="bi bi-cloud-check-fill"></i>
+                    <span class="save-text">Saved</span>
+                </span>
             </div>
             
-            <!-- Folder Tree với Apple-style expand/collapse -->
-            <div id="folder-tree" class="folder-tree-container"></div>
-            
-            <!-- Notes List for selected folder -->
-            <div class="notes-section">
-                <div class="notes-header">
-                    <span id="current-folder-name">All Notes</span>
-                    <span id="notes-count" class="badge bg-secondary">0</span>
-                </div>
-                <ul class="note-list" id="note-list"></ul>
-            </div>
-        </div>
-
-        <!-- Editor -->
-        <div class="note-editor-wrapper">
-            <!-- Title -->
-            <div class="title-group">
-                <input type="text" 
-                       id="note-title" 
-                       placeholder="Note title..." 
-                       class="title-input"
-                       tabindex="1">
-                <button type="button" id="clear-title-btn" class="clear-btn" title="Clear title">
-                    <i class="bi bi-x"></i>
+            <!-- Action Buttons ở sidebar -->
+            <div class="sidebar-actions">
+                <button id="add-folder-btn" class="sidebar-action-btn folder-btn" title="Add Folder">
+                    <i class="bi bi-folder-plus"></i>
+                </button>
+                <button class="sidebar-action-btn success-btn" id="add-note-btn" title="Add new note">
+                    <i class="bi bi-plus"></i>
+                </button>
+                <button class="sidebar-action-btn primary-btn" id="share-link-btn" title="Share note">
+                    <i class="bi bi-share"></i>
+                </button>
+                
+                <!-- Toggle button -->
+                <button class="sidebar-toggle" id="toggle-sidebar-btn">
+                    <i class="bi bi-chevron-left"></i>
                 </button>
             </div>
+        </div>
+        
+        <!-- Rest of sidebar content -->
+        <div id="folder-tree" class="folder-tree-container"></div>
+        
+        <div class="notes-section">
+            <div class="notes-header">
+                <span id="current-folder-name">All Notes</span>
+                <span id="notes-count" class="badge bg-secondary">0</span>
+            </div>
+            <ul class="note-list" id="note-list"></ul>
+        </div>
+    </div>
+
+    <!-- Editor - giờ sẽ có chiều cao lớn hơn -->
+    <div class="note-editor-wrapper">
+        <!-- Title -->
+        <div class="title-group">
+            <input type="text" 
+                   id="note-title" 
+                   placeholder="Note title..." 
+                   class="title-input"
+                   tabindex="1">
+            <button type="button" id="clear-title-btn" class="clear-btn" title="Clear title">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
 
             <!-- Toolbar -->
             <div class="editor-toolbar">
@@ -149,12 +150,15 @@
                 </div>
             </div>
 
-            <!-- Editor Content -->
-            <div id="evernote-editor" class="note-editor" contenteditable="true" tabindex="2"></div>
-            
-            <!-- Meta Info -->
-            <div id="note-meta" class="note-meta"></div>
+            <div class="editor-toolbar">
+            <!-- Existing toolbar content -->
         </div>
+
+        <!-- Editor Content -->
+        <div id="evernote-editor" class="note-editor" contenteditable="true" tabindex="2"></div>
+        
+        <!-- Meta Info -->
+        <div id="note-meta" class="note-meta"></div>
     </div>
 </div>
 
@@ -309,17 +313,6 @@
     font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
 }
 
-/* Header Styles */
-.note-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid rgba(255,255,255,0.3);
-    position: relative;
-    z-index: 50;
-}
 
 .header-left {
     display: flex;
@@ -1374,7 +1367,7 @@
     }
 
     .sidebar-toggle {
-        top: 100px;
+        top: 50px;
         background: var(--primary-color);
         border: 2px solid rgba(0,0,0,0.1);
         color: var(--primary-color);
@@ -1417,15 +1410,6 @@
         min-height: 100vh;
     }
 
-    .note-header {
-        flex-direction: column;
-        gap: 1rem;
-        position: sticky;
-        top: 0;
-        background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(10px);
-        z-index: 100;
-    }
 
     .note-layout {
         flex-direction: column;
@@ -2037,6 +2021,700 @@
     margin-right: 0.5rem;
     display: flex;
     align-items: center;
+}
+.modern-note-container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 1.5rem;
+    min-height: calc(100vh - 80px); /* Giảm padding do bỏ header */
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* XÓA CSS của note-header cũ */
+/* .note-header { ... } */
+
+/* Layout Styles - Tăng chiều cao */
+.note-layout {
+    display: flex;
+    flex: 1;
+    gap: 1.5rem;
+    min-height: calc(100vh - 160px); /* Tăng chiều cao do bỏ header */
+}
+
+/* Enhanced Sidebar Header */
+.sidebar-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.05);
+    position: relative;
+}
+
+.sidebar-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-title h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* Save Indicator trong sidebar */
+.save-indicator {
+    display: none;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--alert-success-color);
+    font-size: 0.8rem;
+    font-weight: 500;
+    background: rgba(var(--alert-success-color-rgb), 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(var(--alert-success-color-rgb), 0.3);
+}
+
+.save-indicator i {
+    font-size: 0.7rem;
+}
+
+/* Sidebar Actions */
+.sidebar-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Sidebar Action Buttons */
+.sidebar-action-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.sidebar-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.sidebar-action-btn.success-btn {
+    background: linear-gradient(135deg, var(--alert-success-color), #27ae60);
+    color: white;
+}
+
+.sidebar-action-btn.primary-btn {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+}
+
+.sidebar-action-btn.folder-btn {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+}
+
+/* Enhanced Sidebar Toggle */
+.sidebar-toggle {
+    background: rgba(var(--primary-color-rgb), 0.1);
+    border: 1px solid rgba(0,0,0,0.1);
+    color: var(--secondary-color);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto; /* Push to right */
+}
+
+.sidebar-toggle:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: scale(1.05);
+}
+
+/* Collapsed Sidebar State */
+.note-sidebar.collapsed .sidebar-header {
+    padding: 1rem 0.5rem;
+    flex-direction: column;
+    align-items: center;
+}
+
+.note-sidebar.collapsed .sidebar-title {
+    display: none;
+}
+
+.note-sidebar.collapsed .sidebar-actions {
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.note-sidebar.collapsed .sidebar-toggle {
+    margin: 0;
+}
+
+.note-sidebar.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
+}
+
+/* Editor Wrapper - Tăng chiều cao */
+.note-editor-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: rgba(255,255,255,0.9);
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    min-height: calc(100vh - 200px); /* Tăng chiều cao do bỏ header */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Note Editor - Tăng chiều cao */
+.note-editor {
+    flex: 1;
+    padding: 1.5rem;
+    border: none;
+    outline: none;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--text-color);
+    min-height: calc(100vh - 350px); /* Tăng đáng kể chiều cao */
+    overflow-y: auto;
+    font-family: 'Merriweather', 'Times New Roman', 'Noto Serif', serif;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    
+    .modern-note-container {
+        padding: 1rem;
+        min-height: 100vh;
+    }
+    
+    .note-layout {
+        min-height: calc(100vh - 120px);
+    }
+    
+    .sidebar-header {
+        padding: 1rem;
+    }
+    
+    .sidebar-actions {
+        justify-content: center;
+    }
+    
+    .sidebar-action-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+    }
+    
+    .note-editor-wrapper {
+        min-height: calc(100vh - 160px);
+    }
+    
+    .note-editor {
+        min-height: calc(100vh - 280px);
+        padding: 1rem;
+    }
+    
+    /* Mobile sidebar */
+    .note-sidebar.mobile-open .sidebar-header {
+        display: flex !important;
+        flex-direction: column;
+    }
+    
+    .note-sidebar.mobile-open .sidebar-title {
+        display: flex !important;
+    }
+    
+    .note-sidebar.mobile-open .sidebar-actions {
+        display: flex !important;
+        justify-content: center;
+    }
+
+    .toggle-sidebar-btn{
+        display: none;
+    }
+}
+
+/* Animation cho buttons */
+@keyframes buttonPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.sidebar-action-btn.success-btn:active {
+    animation: buttonPulse 0.3s ease;
+}
+
+/* Hover effects */
+.sidebar-action-btn.folder-btn:hover {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+}
+
+.sidebar-action-btn.success-btn:hover {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.sidebar-action-btn.primary-btn:hover {
+    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+}
+
+@media (max-width: 768px) {
+    .mobile-toggle-container {
+        position: fixed;
+        top: 20px;
+        left: 10px;
+        transform: none;
+        z-index: 1100;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        will-change: transform;
+    }
+
+    .mobile-toggle-container.sidebar-open {
+        left: calc(320px + 10px);
+        display: none;
+    }
+
+    .sidebar-toggle {
+        top: 50px;
+        background: var(--primary-color);
+        border: 2px solid rgba(0,0,0,0.1);
+        color: var(--primary-color);
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0.5rem 0.75rem;
+        border-radius: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        backdrop-filter: blur(10px);
+        width: auto;
+        min-width: 20px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        will-change: transform, box-shadow;
+        opacity: 0.3;
+    }
+
+    .sidebar-toggle:hover {
+        background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
+        color: var(--primary-color);
+        transform: scale(1.05);
+        box-shadow: 0 6px 25px rgba(0,0,0,0.4);
+        opacity: 1;
+    }
+
+    .mobile-toggle-container .sidebar-toggle:hover {
+        opacity: 1;
+    }
+
+    .mobile-toggle-container.sidebar-open .sidebar-toggle i {
+        transform: rotate(180deg);
+    }
+
+    .modern-note-container {
+        padding: 1rem;
+        border-radius: 0;
+        min-height: 100vh;
+    }
+
+    .note-layout {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .note-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 320px;
+        max-width: 80vw;
+        z-index: 1050;
+        background: rgba(255,255,255,0.98);
+        backdrop-filter: blur(20px);
+        border-radius: 0 15px 15px 0;
+        box-shadow: 0 0 50px rgba(0,0,0,0.3);
+        transform: translateX(-100%);
+        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-right: 3px solid var(--primary-color);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .note-sidebar.mobile-open {
+        transform: translateX(0);
+    }
+
+    .all-notes-item {
+        flex-shrink: 0;
+    }
+
+    /* QUAN TRỌNG: Bỏ display: none cho sidebar header trên mobile */
+    /* .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .sidebar-header {
+        display: none !important;
+    } */
+
+    /* THAY VÀO ĐÓ: Luôn hiển thị sidebar header trên mobile */
+    .note-sidebar .sidebar-header {
+        display: flex !important;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        background: rgba(255,255,255,0.05);
+    }
+
+    /* Cập nhật sidebar-actions để buttons nằm trên 1 hàng */
+    .sidebar-actions {
+        display: flex !important;
+        flex-direction: row !important; /* Chuyển thành hàng ngang */
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap; /* Cho phép wrap nếu cần */
+    }
+
+    /* Sidebar title luôn hiển thị */
+    .sidebar-title {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .folder-tree-container {
+        padding-top: 1rem;
+        margin-top: 0;
+    }
+
+    .note-sidebar.collapsed {
+        width: 320px;
+        min-width: 320px;
+        background: rgba(255,255,255,0.98);
+        box-shadow: 0 0 50px rgba(0,0,0,0.3);
+        border-radius: 0 15px 15px 0;
+        height: 100vh;
+    }
+
+    #folder-tree {
+        flex: 1;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* QUAN TRỌNG: Luôn hiển thị tất cả phần tử trong sidebar khi mobile */
+    .note-sidebar.collapsed .sidebar-header,
+    .note-sidebar.collapsed .sidebar-header h3,
+    .note-sidebar.collapsed .folder-tree-container,
+    .note-sidebar.collapsed .notes-section {
+        display: block !important;
+    }
+
+    .notes-section {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: visible;
+    }
+
+    .notes-header {
+        flex-shrink: 0;
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.98);
+    }
+
+    .note-list {
+        flex: 1;
+        overflow-y: scroll !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1040;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(2px);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .sidebar-overlay.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .note-editor-wrapper {
+        order: 1;
+        min-height: calc(100vh - 300px);
+        padding-top: 10px;
+    }
+
+    .editor-toolbar {
+        gap: 0.25rem;
+        padding: 0.75rem;
+        position: sticky;
+        top: 10px;
+        background: rgba(255,255,255,0.95);
+        backdrop-filter: blur(10px);
+        z-index: 90;
+    }
+
+    .toolbar-btn {
+        width: 40px;
+        height: 40px;
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .toolbar-select {
+        min-width: 80px;
+        font-size: 0.8rem;
+        height: 40px;
+    }
+
+    .title-input {
+        font-size: 16px !important;
+        padding: 1rem;
+        transform: scale(1);
+    }
+
+    .note-editor {
+        padding: 1rem;
+        font-size: 16px !important;
+        line-height: 1.6;
+        min-height: calc(100vh - 400px);
+        margin-bottom: 50vh;
+    }
+
+    .folder-tree-container {
+        overflow-y: scroll;
+        -webkit-overflow-scrolling: touch;
+        flex-shrink: 0;
+        max-height: 30vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .folder-tree-container::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .folder-tree-container::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 3px;
+    }
+
+    .folder-tree-container::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 3px;
+    }
+
+    .folder-tree-container::-webkit-scrollbar-thumb:hover {
+        background: #64748b;
+    }
+
+    .folder-item-content,
+    .all-notes-content {
+        padding: 0.5rem;
+        min-height: 44px;
+    }
+
+    .folder-children {
+        margin-left: 1rem;
+    }
+
+    .folder-actions {
+        opacity: 1;
+    }
+
+    .folder-toggle {
+        width: 20px;
+        height: 20px;
+    }
+
+    .note-item {
+        padding: 1rem 0.75rem 1rem 2rem !important;
+        font-size: 0.85rem;
+    }
+
+    .note-item::before {
+        opacity: 0.3;
+        left: 0.5rem;
+    }
+
+    .lightbox-content {
+        width: 95%;
+        max-height: 70%;
+        margin-top: 10px;
+    }
+
+    .lightbox-close {
+        top: 10px;
+        right: 20px;
+        background: rgba(0,0,0,0.7);
+        font-size: 30px;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .note-list {
+        max-height: 55vh;
+    }
+
+    .note-list::-webkit-scrollbar {
+        width: 6px !important;
+        height: 6px !important;
+    }
+
+    .header-actions {
+        gap: 0.25rem;
+    }
+
+    .action-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .folder-btn {
+        order: -1;
+    }
+
+    .auto-scroll-toggle {
+        padding: 0.4rem;
+        font-size: 0.8rem;
+    }
+
+    .toggle-slider {
+        width: 28px;
+        height: 16px;
+    }
+
+    .toggle-slider::before {
+        width: 12px;
+        height: 12px;
+    }
+
+    .auto-scroll-toggle input:checked + .toggle-slider::before {
+        transform: translateX(12px);
+    }
+
+    .toggle-label {
+        display: none;
+    }
+
+    /* QUAN TRỌNG: Buttons trong sidebar action trên mobile */
+    .sidebar-action-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+        border-radius: 10px;
+        margin: 0; /* Bỏ margin để buttons nằm sát nhau */
+    }
+
+    /* Toggle button ẩn đi trên mobile vì không cần thiết */
+    .toggle-sidebar-btn,
+    .sidebar-toggle:not(.mobile-toggle-container .sidebar-toggle) {
+        display: none !important;
+    }
+
+    @media (max-width: 480px) {
+        .sidebar-toggle {
+            width: 20px;
+            height: 100px;
+        }
+    }
+}
+.sidebar-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: nowrap; /* Không cho wrap để luôn 1 hàng */
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .sidebar-actions {
+        gap: 0.4rem; /* Giảm gap trên mobile */
+        justify-content: space-evenly; /* Phân bố đều trên mobile */
+        padding: 0 0.5rem; /* Thêm padding */
+    }
+    
+    .sidebar-action-btn {
+        flex-shrink: 0; /* Không cho buttons bị thu nhỏ */
+        min-width: 40px;
+        width: 40px;
+        height: 40px;
+    }
+}
+
+/* Sidebar Header Mobile */
+@media (max-width: 768px) {
+    .sidebar-header {
+        padding: 1rem !important;
+        gap: 0.75rem !important;
+        border-bottom: 1px solid rgba(0,0,0,0.1) !important;
+        background: rgba(255,255,255,0.05) !important;
+    }
+    
+    .sidebar-title {
+        margin-bottom: 0.5rem;
+    }
+    
+    .sidebar-title h3 {
+        font-size: 1.1rem;
+        margin: 0;
+    }
 }
 </style>
 
@@ -4559,7 +5237,16 @@ const SidebarManager = {
     restoreState() {
         // Kiểm tra nếu là mobile thì set collapsed mặc định
         if (window.innerWidth <= 768) {
-            this.setMobileDefault();
+            // Trên mobile: KHÔNG set collapsed, để sidebar header hiển thị bình thường
+            const sidebar = document.getElementById('note-sidebar');
+            const layout = document.querySelector('.note-layout');
+            
+            if (sidebar && layout) {
+                // Bỏ collapsed state để sidebar header hiển thị
+                sidebar.classList.remove('collapsed');
+                layout.classList.remove('sidebar-collapsed');
+                this.isCollapsed = false;
+            }
         } else {
             // Desktop: restore từ localStorage
             const savedState = localStorage.getItem('sidebarCollapsed');
@@ -4573,18 +5260,16 @@ const SidebarManager = {
 
     handleResize() {
         const isMobile = window.innerWidth <= 768;
-        
+    
         if (isMobile) {
-            // Khi chuyển sang mobile, set collapsed mặc định
-            if (!this.isCollapsed) {
-                const sidebar = document.getElementById('note-sidebar');
-                const layout = document.querySelector('.note-layout');
-                
-                if (sidebar && layout) {
-                    sidebar.classList.add('collapsed');
-                    layout.classList.add('sidebar-collapsed');
-                    this.isCollapsed = true;
-                }
+            // Khi chuyển sang mobile: đảm bảo sidebar header hiển thị
+            const sidebar = document.getElementById('note-sidebar');
+            const layout = document.querySelector('.note-layout');
+            
+            if (sidebar && layout) {
+                sidebar.classList.remove('collapsed');
+                layout.classList.remove('sidebar-collapsed');
+                this.isCollapsed = false;
             }
             
             // Close mobile sidebar if open
@@ -4592,10 +5277,9 @@ const SidebarManager = {
                 this.closeMobileSidebar();
             }
         } else {
-            // Desktop: restore từ localStorage nếu cần
+            // Desktop logic giữ nguyên
             const savedState = localStorage.getItem('sidebarCollapsed');
             if (savedState !== 'true' && this.isCollapsed) {
-                // Nếu desktop và không nên collapsed, thì expand
                 const sidebar = document.getElementById('note-sidebar');
                 const layout = document.querySelector('.note-layout');
                 
@@ -4606,7 +5290,6 @@ const SidebarManager = {
                 }
             }
             
-            // Clean up mobile state
             const overlay = document.querySelector('.sidebar-overlay');
             if (overlay) overlay.classList.remove('visible');
             
