@@ -936,17 +936,19 @@ def view_shared_evernote(share_id):
     try:
         note = EvernoteNote.query.filter_by(share_id=share_id).first_or_404()
         
-        # Get images if any
+        # ✅ SỬA: Get images từ image_files field (không phải images field)
         image_files = note.get_image_files() if hasattr(note, 'get_image_files') else []
         images = []
+        
         for filename in image_files:
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             if os.path.exists(file_path):
                 images.append({
-                    'id': filename,  # Use filename as id for compatibility
                     'filename': filename,
-                    'url': url_for('get_evernote_image_file', filename=filename)
+                    'url': url_for('get_shared_evernote_image_file', share_id=share_id, filename=filename)
                 })
+        
+        app.logger.info(f"Shared note {share_id} has {len(images)} images")
         
         return render_template('Memo/shared_evernote.html', 
                              note=note, 
@@ -957,27 +959,33 @@ def view_shared_evernote(share_id):
         return render_template('error.html', 
                              error_message="Note not found or has been deleted"), 404
 
-# API lấy ảnh từ shared note (không cần login)
-@app.route('/shared/evernote/<share_id>/image/<string:image_id>')
-def get_shared_evernote_image(share_id, image_id):
+@app.route('/shared/evernote/<share_id>/image/<filename>')
+def get_shared_evernote_image_file(share_id, filename):
+    """Serve image files for shared notes (không cần login)"""
     try:
+        # Verify share_id exists
         note = EvernoteNote.query.filter_by(share_id=share_id).first_or_404()
-        images = json.loads(note.images) if note.images else []
         
-        image = next((img for img in images if img.get('id') == image_id), None)
-        if not image:
-            return jsonify({'status': 'error', 'message': 'Image not found'}), 404
+        # Verify image belongs to this note
+        image_files = note.get_image_files() if hasattr(note, 'get_image_files') else []
+        
+        if filename not in image_files:
+            app.logger.warning(f"Image {filename} not found in note {share_id}")
+            return "Image not found", 404
+        
+        # Serve the image file
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        if not os.path.exists(file_path):
+            app.logger.warning(f"Image file {filename} not found on disk")
+            return "Image file not found", 404
             
-        image_data = base64.b64decode(image['data'])
-        return send_file(
-            BytesIO(image_data), 
-            mimetype='image/jpeg',
-            as_attachment=False,
-            download_name=image['filename']
-        )
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
         
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        app.logger.error(f"Error serving shared image {filename}: {e}")
+        return "Error serving image", 500
+    
+
     
 @app.route('/get_image/<int:note_id>/<string:filename>')
 @login_required

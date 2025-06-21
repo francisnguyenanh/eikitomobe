@@ -141,6 +141,35 @@
                 padding: 0 1.5rem 1.5rem;
             }
         }
+        .image-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    color: white;
+    padding: 1rem 0.75rem 0.5rem;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.image-container {
+    position: relative;
+    display: inline-block;
+}
+
+.image-container:hover .image-info {
+    opacity: 1;
+}
+
+.image-filename {
+    display: block;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
     </style>
 </head>
 <body>
@@ -165,9 +194,13 @@
             <h5><i class="bi bi-images"></i> Attached Images</h5>
             {% for image in images %}
             <div class="image-container">
-                <img src="{{ url_for('get_shared_evernote_image', share_id=note.share_id, image_id=image.id) }}" 
-                     alt="{{ image.filename }}"
-                     onclick="openLightbox('{{ url_for('get_shared_evernote_image', share_id=note.share_id, image_id=image.id) }}', '{{ image.filename }}')">
+                <!-- ✅ SỬA: Dùng image.url thay vì url_for với image_id -->
+                <img src="{{ image.url }}" 
+                    alt="{{ image.filename }}"
+                    onclick="openLightbox('{{ image.url }}', '{{ image.filename }}')">
+                <div class="image-info">
+                    <span class="image-filename">{{ image.filename }}</span>
+                </div>
             </div>
             {% endfor %}
         </div>
