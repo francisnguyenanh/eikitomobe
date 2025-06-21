@@ -2001,6 +2001,43 @@
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
+/* Note Icons */
+.note-icon {
+    margin-right: 0.5rem;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+.note-icon.in-folder {
+    color: #f39c12; /* Orange - giống folder color */
+}
+
+.note-icon.root-level {
+    color: var(--info-color, #17a2b8); /* Blue - giống All Notes color */
+}
+
+.note-item.active .note-icon {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.note-title-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Cập nhật note-item-content để flex layout */
+.note-item-content {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+    overflow: hidden;
+    margin-right: 0.5rem;
+    display: flex;
+    align-items: center;
+}
 </style>
 
 <script>
@@ -3900,12 +3937,8 @@ const DragDropManager = {
         noteItems.forEach(item => {
             item.draggable = true;
             
-            // Add drag listeners to the note content area, not the whole item
-            const noteContent = item.querySelector('.note-item-content');
-            if (noteContent) {
-                noteContent.addEventListener('dragstart', this.handleDragStart.bind(this));
-            }
-            
+            // FIX: Add dragstart listener to the item, not just content
+            item.addEventListener('dragstart', this.handleDragStart.bind(this));
             item.addEventListener('dragend', this.handleDragEnd.bind(this));
         });
         
@@ -3961,7 +3994,6 @@ const DragDropManager = {
     createDragFeedback(title) {
         this.dragFeedback = document.createElement('div');
         this.dragFeedback.className = 'drag-feedback';
-        this.dragFeedback.textContent = `Moving: ${title}`;
         document.body.appendChild(this.dragFeedback);
         
         // Position feedback at cursor
@@ -4153,7 +4185,25 @@ NoteManager.renderNoteList = function() {
         // Create note content
         const noteContent = document.createElement('div');
         noteContent.className = 'note-item-content';
-        noteContent.textContent = note.title || 'Untitled';
+        
+        // Thêm icon để phân biệt note thuộc folder hay không
+        const noteIcon = document.createElement('i');
+        if (note.folder_id) {
+            // Note thuộc folder
+            noteIcon.className = 'bi bi-file-earmark-text note-icon in-folder';
+            noteIcon.title = 'Note in folder';
+        } else {
+            // Note không thuộc folder (root level)
+            noteIcon.className = 'bi bi-file-earmark note-icon root-level';
+            noteIcon.title = 'Root level note';
+        }
+        
+        const noteTitle = document.createElement('span');
+        noteTitle.className = 'note-title-text';
+        noteTitle.textContent = note.title || 'Untitled';
+        
+        noteContent.appendChild(noteIcon);
+        noteContent.appendChild(noteTitle);
         noteContent.onclick = () => this.selectNote(note.id);
         
         // Create actions container
