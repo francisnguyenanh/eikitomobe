@@ -1228,7 +1228,7 @@
     border: none;
     outline: none;
     font-size: 1.1rem;
-    line-height: 1.6;
+    line-height: 1.4;
     color: var(--text-color);
     min-height: calc(100vh - 350px);
     overflow-y: auto;
@@ -1236,11 +1236,13 @@
 }
 
 .note-editor p {
-    margin: 0 0 1rem 0;
+    margin: 0 0 0.5rem 0; /* Giảm từ 1rem xuống 0.5rem */
+    line-height: 1.4; /* Thêm line-height riêng cho p */
 }
 
 .note-editor h1, .note-editor h2, .note-editor h3 {
-    margin: 1.5rem 0 1rem 0;
+    margin: 1rem 0 0.5rem 0; /* Giảm margin bottom từ 1rem xuống 0.5rem */
+    line-height: 1.3; /* Thêm line-height cho headings */
     color: var(--text-color);
 }
 
@@ -1256,9 +1258,31 @@
     text-align: left;
 }
 
+.note-editor ul, .note-editor ol {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+    line-height: 1.4;
+}
+
+.note-editor li {
+    margin-bottom: 0.25rem; /* Khoảng cách nhỏ giữa các list items */
+}
+
 .note-editor th {
     background: rgba(var(--primary-color-rgb), 0.1);
     font-weight: 600;
+}
+
+.note-editor div {
+    line-height: 1.4; /* Đảm bảo div cũng có line-height nhất quán */
+}
+
+.note-editor blockquote {
+    margin: 0.5rem 0;
+    padding: 0.5rem 1rem;
+    border-left: 4px solid var(--primary-color);
+    background: rgba(var(--primary-color-rgb), 0.05);
+    line-height: 1.4;
 }
 
 .note-meta {
@@ -2356,6 +2380,15 @@
     .drop-indicator-content {
         max-width: 300px;
         padding: 1.5rem;
+    }
+    
+    .note-editor p {
+        margin: 0 0 0.4rem 0; /* Giảm margin trên mobile */
+    }
+    
+    .note-editor h1, .note-editor h2, .note-editor h3 {
+        margin: 0.8rem 0 0.4rem 0;
+        line-height: 1.25;
     }
     
     .drop-indicator-content i {
