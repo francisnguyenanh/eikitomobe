@@ -3352,12 +3352,6 @@ const ShareLinkManager = {
         modal.className = 'ios-copy-modal';
         modal.innerHTML = `
             <div class="ios-copy-content">
-                <div class="ios-copy-header">
-                    <h3><i class="bi bi-share"></i> Share Link</h3>
-                    <button class="ios-copy-close" onclick="this.closest('.ios-copy-modal').remove()">
-                        <i class="bi bi-x"></i>
-                    </button>
-                </div>
                 <div class="ios-copy-body">
                     <p><strong>Copy the link below:</strong></p>
                     <div class="ios-copy-url-container">
@@ -3366,19 +3360,6 @@ const ShareLinkManager = {
                             Copy
                         </button>
                     </div>
-                    <div class="ios-copy-instructions">
-                        <p><strong>Manual Copy Instructions:</strong></p>
-                        <ol>
-                            <li>Tap and hold the URL above</li>
-                            <li>Select "Copy" from the menu</li>
-                            <li>Share the link wherever you want</li>
-                        </ol>
-                    </div>
-                </div>
-                <div class="ios-copy-footer">
-                    <button class="ios-copy-done" onclick="this.closest('.ios-copy-modal').remove()">
-                        Done
-                    </button>
                 </div>
             </div>
         `;
@@ -3408,34 +3389,6 @@ const ShareLinkManager = {
                 max-height: 80vh;
                 overflow-y: auto;
                 box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            }
-            
-            .ios-copy-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 20px 20px 10px;
-                border-bottom: 1px solid #eee;
-            }
-            
-            .ios-copy-header h3 {
-                margin: 0;
-                font-size: 1.2rem;
-                color: #333;
-            }
-            
-            .ios-copy-close {
-                background: none;
-                border: none;
-                font-size: 1.5rem;
-                color: #666;
-                cursor: pointer;
-                padding: 5px;
-                border-radius: 50%;
-            }
-            
-            .ios-copy-close:hover {
-                background: #f0f0f0;
             }
             
             .ios-copy-body {
@@ -3470,42 +3423,6 @@ const ShareLinkManager = {
             
             .ios-copy-btn:hover {
                 background: #0056CC;
-            }
-            
-            .ios-copy-instructions {
-                background: #f0f8ff;
-                padding: 15px;
-                border-radius: 8px;
-                margin-top: 15px;
-            }
-            
-            .ios-copy-instructions ol {
-                margin: 10px 0 0 0;
-                padding-left: 20px;
-            }
-            
-            .ios-copy-instructions li {
-                margin-bottom: 5px;
-            }
-            
-            .ios-copy-footer {
-                padding: 10px 20px 20px;
-                text-align: center;
-            }
-            
-            .ios-copy-done {
-                background: #34C759;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px 30px;
-                font-weight: 500;
-                cursor: pointer;
-                min-width: 100px;
-            }
-            
-            .ios-copy-done:hover {
-                background: #28A745;
             }
             
             @media (max-width: 480px) {
