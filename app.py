@@ -36,7 +36,11 @@ import json
 import time
 import urllib.parse
 import hashlib
-
+import os
+from werkzeug.utils import secure_filename
+from PIL import Image as PILImage
+import shutil
+from flask import send_from_directory
 try:
     from PIL import Image as PILImage
 except ImportError:
@@ -51,6 +55,10 @@ app.config['SECRET_KEY'] = 'your-secret-key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///memo.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads', 'evernote')
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Diary app setup
 diary_app = Flask(__name__)
@@ -164,11 +172,41 @@ class EvernoteNote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    folder_id = db.Column(db.Integer, db.ForeignKey('evernote_folder.id'), nullable=True)  # Thêm dòng này
+    folder_id = db.Column(db.Integer, db.ForeignKey('evernote_folder.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    images = db.Column(db.Text, nullable=True)
     share_id = db.Column(db.String(36), nullable=True, unique=True)
+    
+    # Thay đổi: lưu danh sách tên file thay vì base64
+    image_files = db.Column(db.Text, nullable=True)  # JSON array of filenames
+    
+    def get_image_files(self):
+        if self.image_files:
+            return json.loads(self.image_files)
+        return []
+    
+    def set_image_files(self, filenames):
+        self.image_files = json.dumps(filenames) if filenames else None
+    
+    def add_image_file(self, filename):
+        files = self.get_image_files()
+        if filename not in files:
+            files.append(filename)
+            self.set_image_files(files)
+    
+    def remove_image_file(self, filename):
+        files = self.get_image_files()
+        if filename in files:
+            files.remove(filename)
+            self.set_image_files(files)
+            # Xóa file khỏi disk
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    app.logger.info(f"Deleted file: {filename}")
+                except Exception as e:
+                    app.logger.error(f"Error deleting file {filename}: {e}")
 
     
 class Todo(db.Model):
@@ -892,31 +930,6 @@ def edit_note(id):
     categories = Category.query.filter_by(user_id=current_user.id).all()
     return redirect(url_for('task'))
 
-# API tạo share link
-@app.route('/api/evernote_notes/<int:note_id>/share', methods=['POST'])
-@login_required
-def create_evernote_share_link(note_id):
-    try:
-        note = EvernoteNote.query.get_or_404(note_id)
-        
-        # Tạo share_id nếu chưa có
-        if not note.share_id:
-            note.share_id = str(uuid4())
-            db.session.commit()
-        
-        # Tạo URL chia sẻ
-        share_url = url_for('view_shared_evernote', share_id=note.share_id, _external=True)
-        
-        return jsonify({
-            'status': 'success',
-            'share_url': share_url,
-            'share_id': note.share_id
-        })
-        
-    except Exception as e:
-        app.logger.error(f"Error creating share link: {str(e)}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
 # Route hiển thị note được chia sẻ (không cần login)
 @app.route('/shared/evernote/<share_id>')
 def view_shared_evernote(share_id):
@@ -1547,11 +1560,44 @@ def delete_quote_category(category_id):
         return redirect(url_for('manage_quotes'))
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'photo')
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def compress_and_resize_image(file_path, max_size_kb=500, max_dimension=1920, quality=85):
+    """Compress and resize image to reduce file size"""
+    try:
+        with PILImage.open(file_path) as img:
+            # Convert to RGB if necessary
+            if img.mode in ('RGBA', 'LA', 'P'):
+                img = img.convert('RGB')
+            
+            # Resize if too large
+            if img.width > max_dimension or img.height > max_dimension:
+                img.thumbnail((max_dimension, max_dimension), PILImage.Resampling.LANCZOS)
+            
+            # Save with compression
+            temp_path = file_path + '.tmp'
+            img.save(temp_path, format='JPEG', quality=quality, optimize=True)
+            
+            # Check file size and reduce quality if needed
+            while os.path.getsize(temp_path) > max_size_kb * 1024 and quality > 20:
+                quality -= 10
+                img.save(temp_path, format='JPEG', quality=quality, optimize=True)
+            
+            # Replace original file
+            shutil.move(temp_path, file_path)
+            return True
+            
+    except Exception as e:
+        app.logger.error(f"Error compressing image {file_path}: {e}")
+        # Clean up temp file if exists
+        temp_path = file_path + '.tmp'
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        return False
+    
 @app.route('/upload_bg', methods=['POST'])
 @login_required
 def upload_bg():
@@ -1946,22 +1992,50 @@ def update_evernote_folder(folder_id):
         app.logger.error(f"Error updating folder: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+def delete_note_images(note):
+    """Helper function to delete all image files for a note"""
+    try:
+        image_files = note.get_image_files()
+        deleted_count = 0
+        
+        for filename in image_files:
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    deleted_count += 1
+                    app.logger.info(f"Deleted image file: {filename}")
+                except Exception as e:
+                    app.logger.error(f"Error deleting image file {filename}: {e}")
+        
+        app.logger.info(f"Deleted {deleted_count} image files for note {note.id}")
+        return deleted_count
+        
+    except Exception as e:
+        app.logger.error(f"Error deleting images for note {note.id}: {e}")
+        return 0
+    
 @app.route('/api/evernote_folders/<int:folder_id>', methods=['DELETE'])
 @login_required  
 def delete_evernote_folder(folder_id):
     try:
         folder = EvernoteFolder.query.get_or_404(folder_id)
-        data = request.json or {}  # Add fallback for empty request body
+        data = request.json or {}
         action = data.get('action', 'move_to_parent')
         
         app.logger.info(f"Deleting folder {folder_id} with action: {action}")
         
         if action == 'delete_all':
-            # Delete all notes and subfolders recursively
+            # Delete all notes and subfolders recursively WITH IMAGE CLEANUP
             def delete_folder_recursive(f):
                 app.logger.info(f"Recursively deleting folder: {f.id}")
                 
-                # Delete all notes in this folder
+                # Delete all image files from notes in this folder FIRST
+                notes_in_folder = EvernoteNote.query.filter_by(folder_id=f.id).all()
+                for note in notes_in_folder:
+                    delete_note_images(note)
+                
+                # Then delete all notes in this folder from database
                 notes_deleted = EvernoteNote.query.filter_by(folder_id=f.id).delete()
                 app.logger.info(f"Deleted {notes_deleted} notes from folder {f.id}")
                 
@@ -1978,7 +2052,7 @@ def delete_evernote_folder(folder_id):
         else:  # move_to_parent (default)
             app.logger.info(f"Moving contents of folder {folder_id} to parent")
             
-            # Move all notes to parent folder
+            # Move all notes to parent folder (no image deletion needed)
             notes = EvernoteNote.query.filter_by(folder_id=folder.id).all()
             for note in notes:
                 note.folder_id = folder.parent_id
@@ -1990,18 +2064,12 @@ def delete_evernote_folder(folder_id):
                 subfolder.parent_id = folder.parent_id
                 app.logger.info(f"Moved subfolder {subfolder.id} to parent folder {folder.parent_id}")
             
-            # Delete the folder
+            # Delete the folder (but keep notes and their images)
             db.session.delete(folder)
         
         db.session.commit()
         app.logger.info(f"Successfully deleted folder {folder_id}")
-        result = jsonify({
-            'status': 'success', 
-            'message': 'Folder deleted successfully',
-            'action': action
-        })
         
-        app.logger.info(f"Folder {folder_id} deletion result: {result}")
         return jsonify({
             'status': 'success', 
             'message': 'Folder deleted successfully',
@@ -2062,8 +2130,8 @@ def add_evernote_note():
         note = EvernoteNote(
             title=data.get('title', ''),
             content=data.get('content', ''),
-            folder_id=folder_id,
-            images=data.get('images')
+            folder_id=folder_id
+            # Bỏ dòng images=data.get('images') vì model mới không có field này
         )
         db.session.add(note)
         db.session.commit()
@@ -2077,9 +2145,33 @@ def add_evernote_note():
         })
     except Exception as e:
         app.logger.error(f"Error creating note: {str(e)}")
+        db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 500
     
-
+@app.route('/api/evernote_notes/<int:note_id>/share', methods=['POST'])
+@login_required
+def create_evernote_share_link(note_id):
+    try:
+        note = EvernoteNote.query.get_or_404(note_id)
+        
+        # Tạo share_id nếu chưa có
+        if not note.share_id:
+            note.share_id = str(uuid4())
+            db.session.commit()
+        
+        # Tạo URL chia sẻ
+        share_url = url_for('view_shared_evernote', share_id=note.share_id, _external=True)
+        
+        return jsonify({
+            'status': 'success',
+            'share_url': share_url,
+            'share_id': note.share_id
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error creating share link: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    
 # Cập nhật API update note để hỗ trợ folder_id
 @app.route('/api/evernote_notes/<int:note_id>', methods=['PUT'])
 @login_required
@@ -2113,14 +2205,79 @@ def update_evernote_note(note_id):
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
-# Xóa ghi chú Evernote
 @app.route('/api/evernote_notes/<int:note_id>', methods=['DELETE'])
+@login_required
 def delete_evernote_note(note_id):
-    note = EvernoteNote.query.get_or_404(note_id)
-    db.session.delete(note)
-    db.session.commit()
-    return jsonify({'status': 'success'})
+    try:
+        note = EvernoteNote.query.get_or_404(note_id)
+        
+        # Delete all image files using helper function
+        deleted_images_count = delete_note_images(note)
+        
+        # Delete note from database
+        db.session.delete(note)
+        db.session.commit()
+        
+        app.logger.info(f"Deleted note {note_id} and {deleted_images_count} image files")
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Note and {deleted_images_count} image files deleted successfully'
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error deleting note {note_id}: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/api/cleanup_orphaned_images', methods=['POST'])
+@login_required
+def cleanup_orphaned_images():
+    """Clean up image files that are no longer referenced by any note"""
+    try:
+        # Get all image files in upload folder
+        upload_folder = app.config['UPLOAD_FOLDER']
+        if not os.path.exists(upload_folder):
+            return jsonify({
+                'status': 'success',
+                'message': 'Upload folder does not exist',
+                'deleted_count': 0
+            })
+        
+        all_files = set(os.listdir(upload_folder))
+        
+        # Get all image files referenced by notes
+        referenced_files = set()
+        notes = EvernoteNote.query.all()
+        
+        for note in notes:
+            image_files = note.get_image_files()
+            referenced_files.update(image_files)
+        
+        # Find orphaned files
+        orphaned_files = all_files - referenced_files
+        deleted_count = 0
+        
+        for filename in orphaned_files:
+            file_path = os.path.join(upload_folder, filename)
+            try:
+                if os.path.isfile(file_path):  # Only delete files, not directories
+                    os.remove(file_path)
+                    deleted_count += 1
+                    app.logger.info(f"Deleted orphaned file: {filename}")
+            except Exception as e:
+                app.logger.error(f"Error deleting orphaned file {filename}: {e}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Cleaned up {deleted_count} orphaned image files',
+            'deleted_count': deleted_count,
+            'orphaned_files': list(orphaned_files)
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error cleaning up orphaned images: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    
 # Cập nhật API get notes để include folder info
 @app.route('/api/evernote_notes', methods=['GET'])
 @login_required
@@ -2129,26 +2286,98 @@ def get_evernote_notes():
         folder_id = request.args.get('folder_id', type=int)
         
         if folder_id:
-            # Get notes for specific folder
             notes = EvernoteNote.query.filter_by(folder_id=folder_id).order_by(EvernoteNote.updated_at.desc()).all()
         else:
-            # Get all notes
             notes = EvernoteNote.query.order_by(EvernoteNote.updated_at.desc()).all()
         
-        return jsonify([
-            {
-                'id': n.id,
-                'title': n.title,
-                'content': n.content,
-                'folder_id': n.folder_id,
-                'folder_name': n.folder.name if n.folder else None,
-                'created_at': n.created_at.isoformat() if n.created_at else None,
-                'updated_at': n.updated_at.isoformat() if n.updated_at else None,
-                'images': json.loads(n.images) if n.images else []
-            } for n in notes
-        ])
+        notes_data = []
+        for note in notes:
+            # Get image URLs instead of base64 data
+            image_files = note.get_image_files()
+            images = []
+            for filename in image_files:
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                if os.path.exists(file_path):
+                    images.append({
+                        'filename': filename,
+                        'url': url_for('get_evernote_image_file', filename=filename),
+                        'size': os.path.getsize(file_path)
+                    })
+            
+            notes_data.append({
+                'id': note.id,
+                'title': note.title,
+                'content': note.content,
+                'folder_id': note.folder_id,
+                'folder_name': note.folder.name if note.folder else None,
+                'created_at': note.created_at.isoformat() if note.created_at else None,
+                'updated_at': note.updated_at.isoformat() if note.updated_at else None,
+                'images': images
+            })
+        
+        return jsonify(notes_data)
+        
     except Exception as e:
         app.logger.error(f"Error getting notes: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/uploads/evernote/<filename>')
+def get_evernote_image_file(filename):
+    """Serve image files"""
+    try:
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    except Exception as e:
+        app.logger.error(f"Error serving image {filename}: {e}")
+        return jsonify({'status': 'error', 'message': 'Image not found'}), 404
+
+@app.route('/api/evernote_notes/<int:note_id>/delete_image/<string:filename>', methods=['DELETE'])
+@login_required
+def delete_evernote_image_file(note_id, filename):
+    """Delete image file"""
+    try:
+        note = EvernoteNote.query.get_or_404(note_id)
+        
+        # Remove from database
+        note.remove_image_file(filename)
+        db.session.commit()
+        
+        return jsonify({'status': 'success', 'message': 'Image deleted successfully'})
+        
+    except Exception as e:
+        app.logger.error(f"Error deleting image {filename}: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/evernote_notes/<int:note_id>/images', methods=['GET'])
+@login_required
+def get_evernote_note_images(note_id):
+    """Get all images for a note"""
+    try:
+        note = EvernoteNote.query.get_or_404(note_id)
+        image_files = note.get_image_files()
+        
+        images = []
+        for filename in image_files:
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            if os.path.exists(file_path):
+                images.append({
+                    'filename': filename,
+                    'url': url_for('get_evernote_image_file', filename=filename),
+                    'size': os.path.getsize(file_path)
+                })
+            else:
+                # Remove non-existent file from database
+                note.remove_image_file(filename)
+        
+        # Commit any cleanup changes
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'images': images
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error getting images for note {note_id}: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/evernote_notes/<int:note_id>/upload_images', methods=['POST'])
@@ -2161,73 +2390,69 @@ def upload_evernote_images(note_id):
         if not files or not any(file.filename for file in files):
             return jsonify({'status': 'error', 'message': 'No files uploaded'}), 400
         
-        # Lấy ảnh hiện có
-        existing_images = json.loads(note.images) if note.images else []
-        new_images = existing_images[:] if existing_images else []
+        uploaded_files = []
         processed_count = 0
         
         for file in files:
-            if file and file.filename:
-                allowed_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.heic', '.webp'}
-                normalized_filename = normalize_filename(file.filename)
-                ext = os.path.splitext(normalized_filename.lower())[1]
-                
-                if ext in allowed_extensions:
-                    try:
-                        if ext == '.heic':
-                            # Xử lý HEIC với Wand - giảm còn 30% size
-                            with Image(file=file) as img:
+            if file and file.filename and allowed_file(file.filename):
+                try:
+                    # Tạo unique filename
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]  # milliseconds
+                    filename = f"{note_id}_{timestamp}_{secure_filename(file.filename)}"
+                    
+                    # Ensure .jpg extension for consistency
+                    name, ext = os.path.splitext(filename)
+                    if ext.lower() in ['.heic', '.png', '.gif', '.webp']:
+                        filename = name + '.jpg'
+                    
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    
+                    # Handle HEIC files
+                    if file.filename.lower().endswith('.heic'):
+                        try:
+                            from wand.image import Image as WandImage
+                            with WandImage(file=file) as img:
                                 img.format = 'jpeg'
-                                img.compression_quality = 30  # Giảm quality cho HEIC
-                                img.resize(int(img.width * 0.3), int(img.height * 0.3))  # Giảm size 30%
-                                output = io.BytesIO()
-                                img.save(file=output)
-                                image_data = output.getvalue()
-                            filename = normalized_filename.replace('.heic', '.jpg')
-                        else:
-                            # Xử lý ảnh thường với PIL - giảm còn 70% size
-                            from PIL import Image as PILImage
-                            image = PILImage.open(file)
-                            
-                            # Resize xuống 70%
-                            new_size = (int(image.width * 0.7), int(image.height * 0.7))
-                            image = image.resize(new_size, PILImage.Resampling.LANCZOS)
-                            
-                            # Compress và save với quality 70
-                            output = io.BytesIO()
-                            if image.mode in ("RGBA", "P"):
-                                image = image.convert("RGB")
-                            image.save(output, format='JPEG', quality=70, optimize=True)
-                            image_data = output.getvalue()
-                            filename = normalized_filename
-                        
-                        image_base64 = b64encode(image_data).decode('utf-8')
-                        new_images.append({
-                            'id': str(uuid4()),
+                                img.save(filename=file_path)
+                        except ImportError:
+                            app.logger.error("Wand not available for HEIC conversion")
+                            continue
+                    else:
+                        # Save file normally
+                        file.save(file_path)
+                    
+                    # Compress and resize
+                    if compress_and_resize_image(file_path):
+                        note.add_image_file(filename)
+                        uploaded_files.append({
                             'filename': filename,
-                            'data': image_base64
+                            'url': url_for('get_evernote_image_file', filename=filename),
+                            'size': os.path.getsize(file_path)
                         })
                         processed_count += 1
+                    else:
+                        # Remove file if compression failed
+                        if os.path.exists(file_path):
+                            os.remove(file_path)
+                        app.logger.error(f"Failed to process image: {filename}")
                         
-                    except Exception as e:
-                        app.logger.error(f"Error processing image {normalized_filename}: {str(e)}")
-                else:
-                    app.logger.warning(f"Invalid file type: {normalized_filename}")
+                except Exception as e:
+                    app.logger.error(f"Error processing file {file.filename}: {str(e)}")
         
-        # Cập nhật DB ngay lập tức
-        note.images = json.dumps(new_images) if new_images else None
+        # Commit changes to database
         db.session.commit()
         
         return jsonify({
             'status': 'success',
-            'message': f'Processed {processed_count} images',
-            'processed_count': processed_count,
-            'images': new_images
+            'message': f'Uploaded {processed_count} images successfully',
+            'uploaded_files': uploaded_files,
+            'processed_count': processed_count
         })
         
     except Exception as e:
         app.logger.error(f"Error in upload_evernote_images: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 # API để lấy ảnh từ Evernote note
 @app.route('/api/evernote_notes/<int:note_id>/image/<string:image_id>')

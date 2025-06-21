@@ -1782,6 +1782,183 @@
         font-size: 0.9rem;
     }
 }
+
+.image-container {
+    margin: 1rem 0;
+    position: relative;
+    display: inline-block;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    background: var(--card-bg);
+}
+
+.image-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.image-container img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.image-container:hover img {
+    transform: scale(1.02);
+}
+
+.delete-image-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.image-container:hover .delete-image-btn {
+    opacity: 1;
+}
+
+.delete-image-btn:hover {
+    background: rgba(220, 53, 69, 1);
+    transform: scale(1.1);
+}
+
+.image-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    color: white;
+    padding: 1rem 0.75rem 0.5rem;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.image-container:hover .image-info {
+    opacity: 1;
+}
+
+.image-filename {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.image-size {
+    display: block;
+    opacity: 0.8;
+    font-size: 0.7rem;
+}
+
+/* Upload Progress */
+#upload-progress {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--primary-color);
+    color: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 9999;
+}
+
+/* Toast Notifications */
+.image-toast {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+
+.image-toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.image-toast-success {
+    background: var(--alert-success-color);
+    color: white;
+}
+
+.image-toast-error {
+    background: var(--alert-danger-color);
+    color: white;
+}
+
+/* Lightbox Improvements */
+.lightbox-content {
+    max-width: 90vw;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+    .image-container {
+        width: 100%;
+        margin: 0.5rem 0;
+    }
+    
+    .delete-image-btn {
+        opacity: 1;
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+    
+    .image-info {
+        opacity: 1;
+        position: static;
+        background: rgba(0,0,0,0.05);
+        color: var(--text-color);
+        padding: 0.5rem;
+    }
+    
+    .image-toast {
+        right: 10px;
+        left: 10px;
+        width: auto;
+    }
+}
 </style>
 
 <script>
@@ -2689,15 +2866,19 @@ const NoteManager = {
 
 // ===== IMAGE MANAGER =====
 const ImageManager = {
+    // Upload images with better progress tracking
     async uploadImages(files, noteId) {
         if (!files || files.length === 0) return;
         
         const formData = new FormData();
-        Array.from(files).forEach(file => {
+        Array.from(files).forEach((file, index) => {
             formData.append('images', file);
         });
         
         try {
+            // Show upload progress
+            this.showUploadProgress(true);
+            
             const response = await fetch(`/api/evernote_notes/${noteId}/upload_images`, {
                 method: 'POST',
                 body: formData
@@ -2705,15 +2886,47 @@ const ImageManager = {
             
             if (response.ok) {
                 const result = await response.json();
-                AppState.currentImages = result.images || [];
-                this.updateImagesInEditor(AppState.currentImages);
-                await NoteManager.loadNotes();
+                
+                if (result.status === 'success') {
+                    // Update images in editor with new URLs
+                    await this.loadNoteImages(noteId);
+                    
+                    // Show success message
+                    this.showUploadSuccess(result.processed_count);
+                    
+                    return result;
+                } else {
+                    throw new Error(result.message || 'Upload failed');
+                }
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
             console.error('Upload failed:', error);
+            this.showUploadError(error.message);
+            throw error;
+        } finally {
+            this.showUploadProgress(false);
         }
     },
-
+    
+    // Load images for a note
+    async loadNoteImages(noteId) {
+        try {
+            const response = await fetch(`/api/evernote_notes/${noteId}/images`);
+            if (response.ok) {
+                const result = await response.json();
+                if (result.status === 'success') {
+                    AppState.currentImages = result.images;
+                    this.updateImagesInEditor(result.images);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading note images:', error);
+        }
+    },
+    
+    // Update images display in editor
     updateImagesInEditor(images) {
         const editor = document.getElementById('evernote-editor');
         const existingSections = editor.querySelectorAll('.images-section');
@@ -2724,22 +2937,127 @@ const ImageManager = {
             editor.insertAdjacentHTML('beforeend', imagesHTML);
         }
     },
-
+    
+    // Display images with optimized HTML
     displayImages(images) {
         if (!images || images.length === 0) return '';
         
         return images.map(img => {
-            return `<div class="image-container">
-                <img src="data:image/jpeg;base64,${img.data}" 
-                     alt="${img.filename}"
-                     onclick="ImageManager.showLightbox('data:image/jpeg;base64,${img.data}', '${img.filename}')">
-                <button type="button" class="delete-image-btn" 
-                        onclick="ImageManager.deleteImage('${img.id}', ${AppState.currentId})"
-                        title="Delete image">×</button>
-            </div>`;
+            const sizeStr = img.size ? `(${this.formatFileSize(img.size)})` : '';
+            return `
+                <div class="image-container" data-filename="${img.filename}">
+                    <img src="${img.url}" 
+                         alt="${img.filename}"
+                         loading="lazy"
+                         onclick="ImageManager.showLightbox('${img.url}', '${img.filename}')">
+                    <button type="button" class="delete-image-btn" 
+                            onclick="ImageManager.deleteImage('${img.filename}', ${AppState.currentId})"
+                            title="Delete image">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    <div class="image-info">
+                        <span class="image-filename">${img.filename}</span>
+                        <span class="image-size">${sizeStr}</span>
+                    </div>
+                </div>
+            `;
         }).join('');
     },
-
+    
+    // Delete image with better UX
+    async deleteImage(filename, noteId) {
+        try {
+            const response = await fetch(`/api/evernote_notes/${noteId}/delete_image/${encodeURIComponent(filename)}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.status === 'success') {
+                    // Remove from current state
+                    AppState.currentImages = AppState.currentImages.filter(img => img.filename !== filename);
+                    
+                    // Remove from DOM with animation
+                    const imageContainer = document.querySelector(`[data-filename="${filename}"]`);
+                    if (imageContainer) {
+                        imageContainer.style.transition = 'opacity 0.3s ease';
+                        imageContainer.style.opacity = '0';
+                        setTimeout(() => {
+                            imageContainer.remove();
+                        }, 300);
+                    }
+                    
+                    this.showDeleteSuccess(filename);
+                } else {
+                    throw new Error(result.message || 'Delete failed');
+                }
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error('Delete failed:', error);
+            alert('Failed to delete image: ' + error.message);
+        }
+    },
+    
+    // Utility functions
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+    
+    showUploadProgress(show) {
+        const progressEl = document.getElementById('upload-progress');
+        if (progressEl) {
+            progressEl.style.display = show ? 'block' : 'none';
+        }
+        
+        // Disable upload button during upload
+        const uploadBtn = document.getElementById('upload-btn');
+        if (uploadBtn) {
+            uploadBtn.disabled = show;
+            uploadBtn.innerHTML = show ? 
+                '<i class="bi bi-hourglass-split"></i>' : 
+                '<i class="bi bi-image"></i>';
+        }
+    },
+    
+    showUploadSuccess(count) {
+        this.showToast(`Successfully uploaded ${count} image(s)`, 'success');
+    },
+    
+    showUploadError(message) {
+        this.showToast(`Upload failed: ${message}`, 'error');
+    },
+    
+    showDeleteSuccess(filename) {
+        this.showToast(`Deleted "${filename}"`, 'success');
+    },
+    
+    showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `image-toast image-toast-${type}`;
+        toast.innerHTML = `
+            <i class="bi bi-${type === 'success' ? 'check-circle-fill' : 'exclamation-triangle-fill'}"></i>
+            <span>${message}</span>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Animate in
+        setTimeout(() => toast.classList.add('show'), 100);
+        
+        // Animate out and remove
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    },
+    
+    // Optimized lightbox
     showLightbox(imageSrc, filename) {
         AppState.isFocusLocked = true;
         const lightbox = document.getElementById('imageLightbox');
@@ -2748,33 +3066,27 @@ const ImageManager = {
         
         lightbox.style.display = 'block';
         lightboxImg.src = imageSrc;
+        lightboxImg.alt = filename;
         lightboxCaption.textContent = filename || 'Image';
         document.body.style.overflow = 'hidden';
+        
+        // Preload image for smooth display
+        const preloadImg = new Image();
+        preloadImg.onload = () => {
+            lightboxImg.style.opacity = '1';
+        };
+        preloadImg.src = imageSrc;
     },
-
+    
     closeLightbox() {
         const lightbox = document.getElementById('imageLightbox');
+        const lightboxImg = document.getElementById('lightboxImg');
+        
         lightbox.style.display = 'none';
+        lightboxImg.style.opacity = '0';
+        lightboxImg.src = '';
         document.body.style.overflow = '';
         AppState.isFocusLocked = false;
-    },
-
-    async deleteImage(imageId, noteId) {
-        if (!confirm('Delete this image?')) return;
-        
-        try {
-            const response = await fetch(`/api/evernote_notes/${noteId}/delete_image/${imageId}`, {
-                method: 'DELETE'
-            });
-            
-            if (response.ok) {
-                AppState.currentImages = AppState.currentImages.filter(img => img.id !== imageId);
-                this.updateImagesInEditor(AppState.currentImages);
-                await NoteManager.loadNotes();
-            }
-        } catch (error) {
-            console.error('Delete failed:', error);
-        }
     }
 };
 
@@ -3784,7 +4096,7 @@ NoteManager.renderNoteList = function() {
 // Thêm method này vào NoteManager object
 NoteManager.deleteNoteFromList = async function(noteId, noteTitle) {
     try {
-        // Gọi API xóa note trực tiếp không cần confirm
+        // Xóa note
         await API.deleteNote(noteId);
         
         // Nếu note đang được chọn, clear editor
@@ -3793,13 +4105,13 @@ NoteManager.deleteNoteFromList = async function(noteId, noteTitle) {
             this.clearEditor();
         }
         
-        // QUAN TRỌNG: Reload folder tree trước để cập nhật notes_count
+        // Reload folder tree và notes
         await FolderManager.loadFolders();
-        
-        // Sau đó reload notes cho folder hiện tại
         await this.loadNotes(FolderManager.currentFolderId);
         
-        // Hiển thị thông báo thành công
+        // Auto cleanup orphaned images (optional)
+        this.performCleanupIfNeeded();
+        
         this.showDeleteSuccess(noteTitle);
         
     } catch (error) {
@@ -3807,6 +4119,20 @@ NoteManager.deleteNoteFromList = async function(noteId, noteTitle) {
         alert('Error deleting note: ' + error.message);
     }
 },
+
+// Thêm method cleanup có throttle
+NoteManager.performCleanupIfNeeded = function() {
+    // Only run cleanup every 10 operations to avoid too frequent calls
+    if (!this.cleanupCounter) this.cleanupCounter = 0;
+    this.cleanupCounter++;
+    
+    if (this.cleanupCounter >= 10) {
+        this.cleanupCounter = 0;
+        setTimeout(() => {
+            ImageManager.cleanupOrphanedImages(true); // silent mode
+        }, 1000);
+    }
+};
 
 // Thêm method hiển thị thông báo thành công
 NoteManager.showDeleteSuccess = function(noteTitle) {
@@ -3858,6 +4184,36 @@ NoteManager.showDeleteSuccess = function(noteTitle) {
         toast.remove();
         toastStyle.remove();
     }, 3000);
+};
+
+NoteManager.selectNote = function(id) {
+    AppState.currentId = id;
+    
+    if (!Array.isArray(AppState.notes)) {
+        console.error('AppState.notes is not an array in selectNote:', AppState.notes);
+        return;
+    }
+    
+    const note = AppState.notes.find(n => n.id === id);
+    if (!note) {
+        console.warn('Note not found:', id);
+        return;
+    }
+    
+    document.getElementById('note-title').value = note.title || '';
+    document.getElementById('evernote-editor').innerHTML = note.content || '';
+    
+    // Load images with new system
+    if (note.images && note.images.length > 0) {
+        AppState.currentImages = note.images;
+        ImageManager.updateImagesInEditor(note.images);
+    } else {
+        AppState.currentImages = [];
+        ImageManager.updateImagesInEditor([]);
+    }
+    
+    this.renderNoteList();
+    this.updateMeta(note);
 };
 
 // ===== UPDATE FOLDER MANAGER =====
