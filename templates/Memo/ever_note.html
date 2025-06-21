@@ -150,10 +150,6 @@
                 </div>
             </div>
 
-            <div class="editor-toolbar">
-            <!-- Existing toolbar content -->
-        </div>
-
         <!-- Editor Content -->
         <div id="evernote-editor" class="note-editor" contenteditable="true" tabindex="2"></div>
         
@@ -299,12 +295,13 @@
 </div>
 
 <style>
+/* ===== BASE STYLES ===== */
 /* Modern Note Container */
 .modern-note-container {
     max-width: 100%;
     margin: 0 auto;
     padding: 1.5rem;
-    min-height: calc(100vh - 120px);
+    min-height: calc(100vh - 80px);
     display: flex;
     flex-direction: column;
     background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
@@ -313,7 +310,25 @@
     font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
 }
 
+/* Layout Styles */
+.note-layout {
+    display: flex;
+    flex: 1;
+    gap: 1.5rem;
+    min-height: calc(100vh - 160px);
+}
 
+.note-layout.sidebar-collapsed {
+    gap: 1rem;
+}
+
+.note-layout.sidebar-collapsed .note-editor-wrapper {
+    margin-left: 0;
+    width: 100%;
+    flex: 1;
+}
+
+/* ===== HEADER STYLES ===== */
 .header-left {
     display: flex;
     align-items: center;
@@ -335,17 +350,27 @@
     font-size: 1.8rem;
 }
 
+.header-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* ===== SAVE INDICATOR ===== */
 .save-indicator {
     display: none;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.25rem;
     color: var(--alert-success-color);
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     font-weight: 500;
-    background: var(--alert-success-bg);
-    padding: 0.5rem 1rem;
-    border-radius: 50px;
-    border: 1px solid var(--alert-success-color);
+    background: rgba(var(--alert-success-color-rgb), 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(var(--alert-success-color-rgb), 0.3);
+}
+
+.save-indicator i {
+    font-size: 0.7rem;
 }
 
 .save-indicator.show {
@@ -367,75 +392,7 @@
     to { opacity: 0; transform: scale(0.8); }
 }
 
-.header-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.action-btn {
-    width: 45px;
-    height: 45px;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.action-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-}
-
-.success-btn {
-    background: linear-gradient(135deg, var(--alert-success-color), #27ae60);
-    color: white;
-}
-
-.primary-btn {
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-    color: white;
-}
-
-.danger-btn {
-    background: linear-gradient(135deg, var(--alert-danger-color), #c0392b);
-    color: white;
-}
-
-.folder-btn {
-    background: linear-gradient(135deg, #f39c12, #e67e22);
-    color: white;
-}
-
-.folder-btn:hover {
-    background: linear-gradient(135deg, #e67e22, #d35400);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(243, 156, 18, 0.3);
-}
-
-/* Layout Styles */
-.note-layout {
-    display: flex;
-    flex: 1;
-    gap: 1.5rem;
-    min-height: 0;
-}
-
-.note-layout.sidebar-collapsed {
-    gap: 1rem;
-}
-
-.note-layout.sidebar-collapsed .note-editor-wrapper {
-    margin-left: 0;
-    width: 100%;
-    flex: 1;
-}
-
-/* Sidebar Styles */
+/* ===== SIDEBAR STYLES ===== */
 .note-sidebar {
     width: 280px;
     min-width: 280px;
@@ -458,28 +415,39 @@
     border-radius: 0;
 }
 
+/* Sidebar Header */
 .sidebar-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
     border-bottom: 1px solid rgba(0,0,0,0.1);
+    background: rgba(255,255,255,0.05);
     position: relative;
 }
 
 .note-sidebar.collapsed .sidebar-header {
     padding: 1rem 0.5rem;
-    justify-content: center;
-    border-bottom: none;
-    background: transparent;
+    flex-direction: column;
+    align-items: center;
 }
 
-.sidebar-header h3 {
+.sidebar-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidebar-title h3 {
     margin: 0;
     font-size: 1.2rem;
     font-weight: 600;
     color: var(--text-color);
     transition: all 0.3s ease;
+}
+
+.note-sidebar.collapsed .sidebar-title {
+    display: none;
 }
 
 .note-sidebar.collapsed .sidebar-header h3,
@@ -488,42 +456,96 @@
     display: none;
 }
 
+/* Sidebar Actions */
 .sidebar-actions {
     display: flex;
     gap: 0.5rem;
     align-items: center;
+    flex-wrap: nowrap;
+    justify-content: center;
 }
 
 .note-sidebar.collapsed .sidebar-actions {
     flex-direction: column;
+    gap: 0.25rem;
 }
 
+/* Sidebar Action Buttons */
+.sidebar-action-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.sidebar-action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.sidebar-action-btn.success-btn {
+    background: linear-gradient(135deg, var(--alert-success-color), #27ae60);
+    color: white;
+}
+
+.sidebar-action-btn.primary-btn {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+}
+
+.sidebar-action-btn.folder-btn {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+}
+
+.sidebar-action-btn.success-btn:hover {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+}
+
+.sidebar-action-btn.primary-btn:hover {
+    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
+}
+
+.sidebar-action-btn.folder-btn:hover {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+}
+
+/* Sidebar Toggle */
 .sidebar-toggle {
-    background: rgba(255,255,255,0.95);
+    background: rgba(var(--primary-color-rgb), 0.1);
     border: 1px solid rgba(0,0,0,0.1);
     color: var(--secondary-color);
-    font-size: 1.2rem;
+    font-size: 1rem;
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 8px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px);
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-left: auto;
     position: relative;
     z-index: 100;
     flex-shrink: 0;
 }
 
 .sidebar-toggle:hover {
-    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
-    color: var(--primary-color);
+    background: var(--primary-color);
+    color: white;
     transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 .sidebar-toggle i {
@@ -531,6 +553,7 @@
 }
 
 .note-sidebar.collapsed .sidebar-toggle {
+    margin: 0;
     background: rgba(255,255,255,0.95);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     border-radius: 12px;
@@ -540,7 +563,7 @@
     transform: rotate(180deg);
 }
 
-/* Folder Tree Styles */
+/* ===== FOLDER TREE STYLES ===== */
 .folder-tree-container {
     max-height: 40vh;
     overflow-y: auto;
@@ -728,7 +751,44 @@
     margin: 0.25rem 0;
 }
 
-/* Notes Section */
+/* All Notes Content */
+.all-notes-content {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(var(--info-color-rgb, 23, 162, 184), 0.05);
+    border: 1px solid rgba(var(--info-color-rgb, 23, 162, 184), 0.2);
+}
+
+.all-notes-content:hover {
+    background: rgba(var(--info-color-rgb, 23, 162, 184), 0.1);
+}
+
+.all-notes-content.selected {
+    background: var(--info-color, #17a2b8);
+    color: white;
+}
+
+.all-notes-icon {
+    margin-right: 0.5rem;
+    color: var(--info-color, #17a2b8);
+    font-size: 0.9rem;
+}
+
+.all-notes-content.selected .all-notes-icon {
+    color: white;
+}
+
+.all-notes-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* ===== NOTES SECTION ===== */
 .notes-section {
     flex: 1;
     display: flex;
@@ -792,6 +852,7 @@
     background: #a0aec0 !important;
 }
 
+/* Note Items */
 .note-item {
     padding: 0.75rem 1rem;
     cursor: move;
@@ -803,6 +864,9 @@
     border-radius: 6px;
     margin: 0 0.5rem;
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .note-item:hover {
@@ -844,7 +908,129 @@
     color: rgba(255,255,255,0.7);
 }
 
-/* Editor Styles */
+.note-item-content {
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+    overflow: hidden;
+    margin-right: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.note-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    flex-shrink: 0;
+}
+
+.note-item:hover .note-item-actions,
+.note-item.active .note-item-actions {
+    opacity: 1;
+}
+
+.note-delete-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--alert-danger-color);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+}
+
+.note-delete-btn:hover {
+    background: var(--alert-danger-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+.note-delete-btn:active {
+    transform: scale(0.95);
+}
+
+/* Note Icons */
+.note-icon {
+    margin-right: 0.5rem;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    transition: color 0.2s ease;
+}
+
+.note-icon.in-folder {
+    color: #f39c12;
+}
+
+.note-icon.root-level {
+    color: var(--info-color, #17a2b8);
+}
+
+.note-item.active .note-icon {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.note-title-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ===== ACTION BUTTONS ===== */
+.action-btn {
+    width: 45px;
+    height: 45px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.success-btn {
+    background: linear-gradient(135deg, var(--alert-success-color), #27ae60);
+    color: white;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+    color: white;
+}
+
+.danger-btn {
+    background: linear-gradient(135deg, var(--alert-danger-color), #c0392b);
+    color: white;
+}
+
+.folder-btn {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+}
+
+.folder-btn:hover {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(243, 156, 18, 0.3);
+}
+
+/* ===== EDITOR STYLES ===== */
 .note-editor-wrapper {
     flex: 1;
     display: flex;
@@ -853,8 +1039,33 @@
     border-radius: 15px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     backdrop-filter: blur(10px);
-    min-height: 0;
+    min-height: calc(100vh - 200px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative; /* Thêm để làm container cho sticky */
+}
+
+.editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    
+    /* STICKY POSITIONING - Cố định khi scroll trên cả desktop và mobile */
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(255,255,255,0.98);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+/* Enhanced shadow effect khi scroll */
+.editor-toolbar.scrolled {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    background: rgba(255,255,255,0.99);
 }
 
 .title-group {
@@ -905,13 +1116,6 @@
     color: var(--alert-danger-color);
 }
 
-.editor-toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-}
 
 .toolbar-group {
     display: flex;
@@ -977,7 +1181,7 @@
     font-size: 1.1rem;
     line-height: 1.6;
     color: var(--text-color);
-    min-height: 300px;
+    min-height: calc(100vh - 350px);
     overflow-y: auto;
     font-family: 'Merriweather', 'Times New Roman', 'Noto Serif', serif;
 }
@@ -1017,238 +1221,7 @@
     border-radius: 0 0 15px 15px;
 }
 
-/* Image Styles */
-.image-container {
-    margin: 1rem 0;
-    position: relative;
-    display: inline-block;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.image-container img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-}
-
-.image-container:hover img {
-    transform: scale(1.02);
-}
-
-.delete-image-btn {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(220, 53, 69, 0.9);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 28px;
-    height: 28px;
-    cursor: pointer;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.image-container:hover .delete-image-btn {
-    opacity: 1;
-}
-
-.images-section {
-    border-top: 1px solid rgba(0,0,0,0.1);
-    padding-top: 1rem;
-    margin-top: 1rem;
-}
-
-/* Lightbox Styles */
-.image-lightbox {
-    display: none;
-    position: fixed;
-    z-index: 10000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.9);
-    backdrop-filter: blur(5px);
-}
-
-.lightbox-content {
-    margin: auto;
-    display: block;
-    width: 90%;
-    max-width: 1200px;
-    max-height: 80%;
-    object-fit: contain;
-    border-radius: 8px;
-    margin-top: 5%;
-}
-
-.lightbox-close {
-    position: absolute;
-    top: 20px;
-    right: 35px;
-    color: white;
-    font-size: 40px;
-    font-weight: bold;
-    cursor: pointer;
-    z-index: 10001;
-}
-
-.lightbox-caption {
-    margin: auto;
-    display: block;
-    width: 80%;
-    max-width: 700px;
-    text-align: center;
-    color: #ccc;
-    padding: 10px 0;
-}
-
-/* Drag and Drop Styles */
-.folder-item-content.drag-over {
-    background: rgba(var(--success-color-rgb, 40, 167, 69), 0.2) !important;
-    border: 2px dashed var(--success-color, #28a745);
-    transform: scale(1.02);
-}
-
-.folder-item-content.drag-over::after {
-    content: 'Drop note here';
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.7rem;
-    color: var(--success-color, #28a745);
-    font-weight: 600;
-    pointer-events: none;
-}
-
-.all-notes-content {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: rgba(var(--info-color-rgb, 23, 162, 184), 0.05);
-    border: 1px solid rgba(var(--info-color-rgb, 23, 162, 184), 0.2);
-}
-
-.all-notes-content:hover {
-    background: rgba(var(--info-color-rgb, 23, 162, 184), 0.1);
-}
-
-.all-notes-content.selected {
-    background: var(--info-color, #17a2b8);
-    color: white;
-}
-
-.all-notes-content.drag-over {
-    background: rgba(var(--info-color-rgb, 23, 162, 184), 0.3) !important;
-    border: 2px dashed var(--info-color, #17a2b8);
-    transform: scale(1.02);
-}
-
-.all-notes-content.drag-over::after {
-    content: 'Drop to move to root';
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.7rem;
-    color: var(--info-color, #17a2b8);
-    font-weight: 600;
-    pointer-events: none;
-}
-
-.all-notes-icon {
-    margin-right: 0.5rem;
-    color: var(--info-color, #17a2b8);
-    font-size: 0.9rem;
-}
-
-.all-notes-content.selected .all-notes-icon {
-    color: white;
-}
-
-.all-notes-title {
-    flex: 1;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.drag-feedback {
-    position: fixed;
-    top: 0;
-    left: 0;
-    background: var(--primary-color);
-    color: white;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    z-index: 10000;
-    pointer-events: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    opacity: 0.9;
-    transform: translate(-50%, -50%);
-}
-
-@keyframes moveSuccess {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); background: var(--success-color); }
-    100% { transform: scale(1); }
-}
-
-.move-success {
-    animation: moveSuccess 0.5s ease;
-}
-
-/* Form and Modal Styles */
-.form-control,
-.form-select {
-    border: 1px solid #212529;
-}
-
-.modal-backdrop {
-    z-index: 1040;
-}
-
-.modal {
-    z-index: 1050;
-}
-
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.btn:disabled .bi-hourglass-split {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Search Highlight */
-.search-highlight {
-    background: #ffeb3b;
-    color: #333;
-    border-radius: 3px;
-    padding: 1px 2px;
-}
-
-/* Auto-scroll Toggle Styles */
+/* ===== AUTO-SCROLL TOGGLE ===== */
 .auto-scroll-toggle {
     display: flex;
     align-items: center;
@@ -1322,464 +1295,7 @@
     color: var(--primary-color);
 }
 
-/* iOS Specific Fixes */
-@supports (-webkit-touch-callout: none) {
-    .note-editor,
-    .title-input {
-        font-size: 16px !important;
-        transform: scale(1);
-    }
-}
-
-/* Android Specific Fixes */
-@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: 0.001dpcm) {
-    .note-editor {
-        font-size: 16px !important;
-    }
-}
-
-/* Desktop Sidebar */
-@media (min-width: 769px) {
-    .mobile-toggle-container {
-        display: none;
-    }
-    
-    .sidebar-overlay {
-        display: none;
-    }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .mobile-toggle-container {
-        position: fixed;
-        top: 20px;
-        left: 10px;
-        transform: none;
-        z-index: 1100;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        will-change: transform;
-    }
-
-    .mobile-toggle-container.sidebar-open {
-        left: calc(320px + 10px);
-        display: none;
-    }
-
-    .sidebar-toggle {
-        top: 50px;
-        background: var(--primary-color);
-        border: 2px solid rgba(0,0,0,0.1);
-        color: var(--primary-color);
-        font-size: 1.2rem;
-        cursor: pointer;
-        padding: 0.5rem 0.75rem;
-        border-radius: 25px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        backdrop-filter: blur(10px);
-        width: auto;
-        min-width: 20px;
-        height: 35px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        will-change: transform, box-shadow;
-        opacity: 0.3;
-    }
-
-    .sidebar-toggle:hover {
-        background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.1);
-        color: var(--primary-color);
-        transform: scale(1.05);
-        box-shadow: 0 6px 25px rgba(0,0,0,0.4);
-        opacity: 1;
-    }
-
-    .mobile-toggle-container .sidebar-toggle:hover {
-        opacity: 1;
-    }
-
-    .mobile-toggle-container.sidebar-open .sidebar-toggle i {
-        transform: rotate(180deg);
-    }
-
-    .modern-note-container {
-        padding: 1rem;
-        border-radius: 0;
-        min-height: 100vh;
-    }
-
-
-    .note-layout {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .note-sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        width: 320px;
-        max-width: 80vw;
-        z-index: 1050;
-        background: rgba(255,255,255,0.98);
-        backdrop-filter: blur(20px);
-        border-radius: 0 15px 15px 0;
-        box-shadow: 0 0 50px rgba(0,0,0,0.3);
-        transform: translateX(-100%);
-        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        border-right: 3px solid var(--primary-color);
-        display: flex;
-        flex-direction: column;
-        height: 100vh;
-        overflow: hidden;
-    }
-
-    .note-sidebar.mobile-open {
-        transform: translateX(0);
-    }
-
-    .all-notes-item {
-        flex-shrink: 0;
-    }
-
-    .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .sidebar-header {
-        display: none !important;
-    }
-
-    .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .folder-tree-container {
-        padding-top: 1rem;
-        margin-top: 0;
-    }
-
-    .note-sidebar.collapsed {
-        width: 320px;
-        min-width: 320px;
-        background: rgba(255,255,255,0.98);
-        box-shadow: 0 0 50px rgba(0,0,0,0.3);
-        border-radius: 0 15px 15px 0;
-        height: 99hv;
-    }
-
-    #folder-tree {
-        flex: 1;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .note-sidebar.collapsed .sidebar-header h3,
-    .note-sidebar.collapsed .folder-tree-container,
-    .note-sidebar.collapsed .notes-section {
-        display: block !important;
-    }
-
-    .notes-section {
-        flex: 1; /* Quan trọng: Lấp đầy không gian trống */
-        min-height: 0; /* Rất quan trọng: Cho phép flexbox tính toán đúng */
-        display: flex;
-        flex-direction: column;
-        overflow: visible; /* Khu vực này không scroll, chỉ có .note-list scroll */
-    }
-
-    /* 5. Header của danh sách note: Cố định khi cuộn */
-    .notes-header {
-        flex-shrink: 0;
-        position: -webkit-sticky;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: rgba(255, 255, 255, 0.98);
-    }
-
-    /* 6. Danh sách note: Co giãn và scroll */
-    .note-list {
-        flex: 1; /* Lấp đầy không gian còn lại trong .notes-section */
-        overflow-y: scroll !important;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .sidebar-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 1040;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(2px);
-        cursor: pointer;
-        -webkit-tap-highlight-color: transparent;
-    }
-
-    .sidebar-overlay.visible {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    .note-editor-wrapper {
-        order: 1;
-        min-height: calc(100vh - 300px);
-        padding-top: 10px;
-    }
-
-    .editor-toolbar {
-        gap: 0.25rem;
-        padding: 0.75rem;
-        position: sticky;
-        top: 10px;
-        background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(10px);
-        z-index: 90;
-    }
-
-    .toolbar-btn {
-        width: 40px;
-        height: 40px;
-        min-height: 44px;
-        min-width: 44px;
-    }
-
-    .toolbar-select {
-        min-width: 80px;
-        font-size: 0.8rem;
-        height: 40px;
-    }
-
-    .title-input {
-        font-size: 16px !important;
-        padding: 1rem;
-        transform: scale(1);
-    }
-
-    .note-editor {
-        padding: 1rem;
-        font-size: 16px !important;
-        line-height: 1.6;
-        min-height: calc(100vh - 400px);
-        margin-bottom: 50vh;
-    }
-
-    .folder-tree-container {
-        overflow-y: scroll;
-        -webkit-overflow-scrolling: touch;
-        flex-shrink: 0;
-        max-height: 30vh; /* Giới hạn chiều cao, ví dụ 35% màn hình */
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    .folder-tree-container::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-    }
-
-    .folder-tree-container::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 3px;
-    }
-
-    .folder-tree-container::-webkit-scrollbar-thumb {
-        background: #94a3b8;
-        border-radius: 3px;
-    }
-
-    .folder-tree-container::-webkit-scrollbar-thumb:hover {
-        background: #64748b;
-    }
-
-    .folder-item-content,
-    .all-notes-content {
-        padding: 0.5rem;
-        min-height: 44px;
-    }
-
-    .folder-children {
-        margin-left: 1rem;
-    }
-
-    .folder-actions {
-        opacity: 1;
-    }
-
-    .folder-toggle {
-        width: 20px;
-        height: 20px;
-    }
-
-    .note-item {
-        padding: 1rem 0.75rem 1rem 2rem !important;
-        font-size: 0.85rem;
-    }
-
- .note-item::before {
-        opacity: 0.3;
-        left: 0.5rem;
-    }
-
-    .lightbox-content {
-        width: 95%;
-        max-height: 70%;
-        margin-top: 10px;
-    }
-
- .lightbox-close {
-        top: 10px;
-        right: 20px;
-        background: rgba(0,0,0,0.7);
-        font-size: 30px;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-     .note-list {
-        max-height: 55vh;
-    }
-
-     .note-list::-webkit-scrollbar {
-        width: 6px !important;
-        height: 6px !important;
-    }
-
-     .header-actions {
-        gap: 0.25rem;
-    }
-
-     .action-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1rem;
-    }
-
-     .folder-btn {
-        order: -1;
-    }
-
-     .auto-scroll-toggle {
-        padding: 0.4rem;
-        font-size: 0.8rem;
-    }
-
-     .tile-scroll-bar {
-        width: 28px;
-        height: 16px;
-    }
-
-     .toggle-slider::before {
-         width: 12px;
-         height: 12px;
-     }
-
-     .auto-scroll-toggle input:checked + .tile-scroll-bar::before {
-         transform: translateX(12px);
-     }
-
-     .toggle-label {
-         display: none;
-     }
-
-     .note-sidebar .sidebar-header {
-        display: none !important;
-    }
-
-     @media (max-width: 480px) {
-         .sidebar-toggle {
-             width: 20px;
-             height: 100px;
-         }
-     }
-
-     
-}
-
-/* Note Item với Delete Icon */
-.note-item {
-    padding: 0.75rem 1rem;
-    cursor: move;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
-    transition: all 0.2s ease;
-    color: var(--text-color);
-    font-size: 0.9rem;
-    line-height: 1.3;
-    border-radius: 6px;
-    margin: 0 0.5rem;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.note-item-content {
-    flex: 1;
-    min-width: 0;
-    cursor: pointer;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    margin-right: 0.5rem;
-}
-
-.note-item-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    flex-shrink: 0;
-}
-
-.note-item:hover .note-item-actions,
-.note-item.active .note-item-actions {
-    opacity: 1;
-}
-
-.note-delete-btn {
-    width: 24px;
-    height: 24px;
-    border: none;
-    background: rgba(220, 53, 69, 0.1);
-    color: var(--alert-danger-color);
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    font-size: 0.8rem;
-}
-
-.note-delete-btn:hover {
-    background: var(--alert-danger-color);
-    color: white;
-    transform: scale(1.1);
-}
-
-.note-delete-btn:active {
-    transform: scale(0.95);
-}
-
-/* Mobile: Always show delete buttons */
-@media (max-width: 768px) {
-    .note-item-actions {
-        opacity: 1;
-    }
-    
-    .note-delete-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 0.9rem;
-    }
-}
-
+/* ===== IMAGE STYLES ===== */
 .image-container {
     margin: 1rem 0;
     position: relative;
@@ -1869,6 +1385,12 @@
     font-size: 0.7rem;
 }
 
+.images-section {
+    border-top: 1px solid rgba(0,0,0,0.1);
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
 /* Upload Progress */
 #upload-progress {
     display: none;
@@ -1917,53 +1439,153 @@
     color: white;
 }
 
-/* Lightbox Improvements */
+/* ===== LIGHTBOX STYLES ===== */
+.image-lightbox {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    backdrop-filter: blur(5px);
+}
+
 .lightbox-content {
-    max-width: 90vw;
+    margin: auto;
+    display: block;
+    width: 90%;
+    max-width: 1200px;
     max-height: 80vh;
     object-fit: contain;
     border-radius: 8px;
+    margin-top: 5%;
     box-shadow: 0 20px 40px rgba(0,0,0,0.3);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
 
-/* Mobile Optimizations */
-@media (max-width: 768px) {
-    .image-container {
-        width: 100%;
-        margin: 0.5rem 0;
-    }
-    
-    .delete-image-btn {
-        opacity: 1;
-        width: 36px;
-        height: 36px;
-        font-size: 16px;
-    }
-    
-    .image-info {
-        opacity: 1;
-        position: static;
-        background: rgba(0,0,0,0.05);
-        color: var(--text-color);
-        padding: 0.5rem;
-    }
-    
-    .image-toast {
-        right: 10px;
-        left: 10px;
-        width: auto;
-    }
+.lightbox-close {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10001;
 }
-/* Focus styles cho modal */
+
+.lightbox-caption {
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 700px;
+    text-align: center;
+    color: #ccc;
+    padding: 10px 0;
+}
+
+/* ===== DRAG AND DROP STYLES ===== */
+.folder-item-content.drag-over {
+    background: rgba(var(--success-color-rgb, 40, 167, 69), 0.2) !important;
+    border: 2px dashed var(--success-color, #28a745);
+    transform: scale(1.02);
+}
+
+.folder-item-content.drag-over::after {
+    content: 'Drop note here';
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: var(--success-color, #28a745);
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.all-notes-content.drag-over {
+    background: rgba(var(--info-color-rgb, 23, 162, 184), 0.3) !important;
+    border: 2px dashed var(--info-color, #17a2b8);
+    transform: scale(1.02);
+}
+
+.all-notes-content.drag-over::after {
+    content: 'Drop to move to root';
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7rem;
+    color: var(--info-color, #17a2b8);
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.drag-feedback {
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: var(--primary-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    z-index: 10000;
+    pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    opacity: 0.9;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes moveSuccess {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); background: var(--success-color); }
+    100% { transform: scale(1); }
+}
+
+.move-success {
+    animation: moveSuccess 0.5s ease;
+}
+
+/* ===== MODAL STYLES ===== */
+.form-control,
+.form-select {
+    border: 1px solid #212529;
+}
+
+.modal-backdrop {
+    z-index: 1040;
+}
+
+.modal {
+    z-index: 1050;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn:disabled .bi-hourglass-split {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Modal focus styles */
 .modal .form-control:focus,
 .modal .form-select:focus {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.25);
 }
 
-/* Invalid feedback */
 .form-control.is-invalid {
     border-color: var(--alert-danger-color);
     animation: shake 0.5s ease-in-out;
@@ -1975,295 +1597,39 @@
     15%, 35%, 55%, 75% { transform: translateX(5px); }
 }
 
-/* Button focus styles */
 .modal .btn:focus {
     box-shadow: 0 0 0 0.2rem rgba(var(--primary-color-rgb), 0.25);
 }
 
-/* Highlighted tabindex order for accessibility */
 .modal [tabindex]:focus {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
-/* Note Icons */
-.note-icon {
-    margin-right: 0.5rem;
-    font-size: 0.85rem;
-    flex-shrink: 0;
-    transition: color 0.2s ease;
+
+/* ===== UTILITY STYLES ===== */
+.search-highlight {
+    background: #ffeb3b;
+    color: #333;
+    border-radius: 3px;
+    padding: 1px 2px;
 }
 
-.note-icon.in-folder {
-    color: #f39c12; /* Orange - giống folder color */
-}
-
-.note-icon.root-level {
-    color: var(--info-color, #17a2b8); /* Blue - giống All Notes color */
-}
-
-.note-item.active .note-icon {
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.note-title-text {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* Cập nhật note-item-content để flex layout */
-.note-item-content {
-    flex: 1;
-    min-width: 0;
-    cursor: pointer;
-    overflow: hidden;
-    margin-right: 0.5rem;
-    display: flex;
-    align-items: center;
-}
-.modern-note-container {
-    max-width: 100%;
-    margin: 0 auto;
-    padding: 1.5rem;
-    min-height: calc(100vh - 80px); /* Giảm padding do bỏ header */
-    display: flex;
-    flex-direction: column;
-    background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
-}
-
-/* XÓA CSS của note-header cũ */
-/* .note-header { ... } */
-
-/* Layout Styles - Tăng chiều cao */
-.note-layout {
-    display: flex;
-    flex: 1;
-    gap: 1.5rem;
-    min-height: calc(100vh - 160px); /* Tăng chiều cao do bỏ header */
-}
-
-/* Enhanced Sidebar Header */
-.sidebar-header {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1.5rem;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    background: rgba(255,255,255,0.05);
-    position: relative;
-}
-
-.sidebar-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.sidebar-title h3 {
-    margin: 0;
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-/* Save Indicator trong sidebar */
-.save-indicator {
-    display: none;
-    align-items: center;
-    gap: 0.25rem;
-    color: var(--alert-success-color);
-    font-size: 0.8rem;
-    font-weight: 500;
-    background: rgba(var(--alert-success-color-rgb), 0.1);
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    border: 1px solid rgba(var(--alert-success-color-rgb), 0.3);
-}
-
-.save-indicator i {
-    font-size: 0.7rem;
-}
-
-/* Sidebar Actions */
-.sidebar-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-/* Sidebar Action Buttons */
-.sidebar-action-btn {
-    width: 36px;
-    height: 36px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    flex-shrink: 0;
-}
-
-.sidebar-action-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-
-.sidebar-action-btn.success-btn {
-    background: linear-gradient(135deg, var(--alert-success-color), #27ae60);
-    color: white;
-}
-
-.sidebar-action-btn.primary-btn {
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-    color: white;
-}
-
-.sidebar-action-btn.folder-btn {
-    background: linear-gradient(135deg, #f39c12, #e67e22);
-    color: white;
-}
-
-/* Enhanced Sidebar Toggle */
-.sidebar-toggle {
-    background: rgba(var(--primary-color-rgb), 0.1);
-    border: 1px solid rgba(0,0,0,0.1);
-    color: var(--secondary-color);
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: auto; /* Push to right */
-}
-
-.sidebar-toggle:hover {
-    background: var(--primary-color);
-    color: white;
-    transform: scale(1.05);
-}
-
-/* Collapsed Sidebar State */
-.note-sidebar.collapsed .sidebar-header {
-    padding: 1rem 0.5rem;
-    flex-direction: column;
-    align-items: center;
-}
-
-.note-sidebar.collapsed .sidebar-title {
-    display: none;
-}
-
-.note-sidebar.collapsed .sidebar-actions {
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.note-sidebar.collapsed .sidebar-toggle {
-    margin: 0;
-}
-
-.note-sidebar.collapsed .sidebar-toggle i {
-    transform: rotate(180deg);
-}
-
-/* Editor Wrapper - Tăng chiều cao */
-.note-editor-wrapper {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    background: rgba(255,255,255,0.9);
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    backdrop-filter: blur(10px);
-    min-height: calc(100vh - 200px); /* Tăng chiều cao do bỏ header */
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Note Editor - Tăng chiều cao */
-.note-editor {
-    flex: 1;
-    padding: 1.5rem;
-    border: none;
-    outline: none;
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: var(--text-color);
-    min-height: calc(100vh - 350px); /* Tăng đáng kể chiều cao */
-    overflow-y: auto;
-    font-family: 'Merriweather', 'Times New Roman', 'Noto Serif', serif;
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-    
-    .modern-note-container {
-        padding: 1rem;
-        min-height: 100vh;
+/* iOS and Android Specific Fixes */
+@supports (-webkit-touch-callout: none) {
+    .note-editor,
+    .title-input {
+        font-size: 16px !important;
+        transform: scale(1);
     }
-    
-    .note-layout {
-        min-height: calc(100vh - 120px);
-    }
-    
-    .sidebar-header {
-        padding: 1rem;
-    }
-    
-    .sidebar-actions {
-        justify-content: center;
-    }
-    
-    .sidebar-action-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1.1rem;
-    }
-    
-    .note-editor-wrapper {
-        min-height: calc(100vh - 160px);
-    }
-    
+}
+
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: 0.001dpcm) {
     .note-editor {
-        min-height: calc(100vh - 280px);
-        padding: 1rem;
-    }
-    
-    /* Mobile sidebar */
-    .note-sidebar.mobile-open .sidebar-header {
-        display: flex !important;
-        flex-direction: column;
-    }
-    
-    .note-sidebar.mobile-open .sidebar-title {
-        display: flex !important;
-    }
-    
-    .note-sidebar.mobile-open .sidebar-actions {
-        display: flex !important;
-        justify-content: center;
-    }
-
-    .toggle-sidebar-btn{
-        display: none;
+        font-size: 16px !important;
     }
 }
 
-/* Animation cho buttons */
+/* ===== ANIMATION STYLES ===== */
 @keyframes buttonPulse {
     0% { transform: scale(1); }
     50% { transform: scale(1.05); }
@@ -2274,21 +1640,19 @@
     animation: buttonPulse 0.3s ease;
 }
 
-/* Hover effects */
-.sidebar-action-btn.folder-btn:hover {
-    background: linear-gradient(135deg, #e67e22, #d35400);
-    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+/* ===== RESPONSIVE STYLES ===== */
+/* Desktop Sidebar */
+@media (min-width: 769px) {
+    .mobile-toggle-container {
+        display: none;
+    }
+    
+    .sidebar-overlay {
+        display: none;
+    }
 }
 
-.sidebar-action-btn.success-btn:hover {
-    background: linear-gradient(135deg, #27ae60, #2ecc71);
-    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
-}
-
-.sidebar-action-btn.primary-btn:hover {
-    box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.3);
-}
-
+/* Mobile Responsive */
 @media (max-width: 768px) {
     .mobile-toggle-container {
         position: fixed;
@@ -2352,6 +1716,7 @@
     .note-layout {
         flex-direction: column;
         gap: 1rem;
+        min-height: calc(100vh - 120px);
     }
 
     .note-sidebar {
@@ -2379,47 +1744,6 @@
         transform: translateX(0);
     }
 
-    .all-notes-item {
-        flex-shrink: 0;
-    }
-
-    /* QUAN TRỌNG: Bỏ display: none cho sidebar header trên mobile */
-    /* .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .sidebar-header {
-        display: none !important;
-    } */
-
-    /* THAY VÀO ĐÓ: Luôn hiển thị sidebar header trên mobile */
-    .note-sidebar .sidebar-header {
-        display: flex !important;
-        flex-direction: column;
-        gap: 1rem;
-        padding: 1rem;
-        border-bottom: 1px solid rgba(0,0,0,0.1);
-        background: rgba(255,255,255,0.05);
-    }
-
-    /* Cập nhật sidebar-actions để buttons nằm trên 1 hàng */
-    .sidebar-actions {
-        display: flex !important;
-        flex-direction: row !important; /* Chuyển thành hàng ngang */
-        gap: 0.5rem;
-        align-items: center;
-        justify-content: center;
-        flex-wrap: wrap; /* Cho phép wrap nếu cần */
-    }
-
-    /* Sidebar title luôn hiển thị */
-    .sidebar-title {
-        display: flex !important;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .note-sidebar.mobile-open.note-sidebar:not(.collapsed) .folder-tree-container {
-        padding-top: 1rem;
-        margin-top: 0;
-    }
-
     .note-sidebar.collapsed {
         width: 320px;
         min-width: 320px;
@@ -2429,18 +1753,63 @@
         height: 100vh;
     }
 
-    #folder-tree {
-        flex: 1;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
+    .note-sidebar .sidebar-header {
+        display: flex !important;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem !important;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+        background: rgba(255,255,255,0.05);
+        gap: 0.75rem !important;
     }
 
-    /* QUAN TRỌNG: Luôn hiển thị tất cả phần tử trong sidebar khi mobile */
+    .sidebar-actions {
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 0.4rem;
+        align-items: center;
+        justify-content: space-evenly;
+        flex-wrap: wrap;
+        padding: 0 0.5rem;
+    }
+
+    .sidebar-title {
+        display: flex !important;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .sidebar-title h3 {
+        font-size: 1.1rem;
+        margin: 0;
+    }
+
+    .sidebar-action-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+        border-radius: 10px;
+        margin: 0;
+        flex-shrink: 0;
+        min-width: 40px;
+    }
+
     .note-sidebar.collapsed .sidebar-header,
     .note-sidebar.collapsed .sidebar-header h3,
     .note-sidebar.collapsed .folder-tree-container,
     .note-sidebar.collapsed .notes-section {
         display: block !important;
+    }
+
+    .all-notes-item {
+        flex-shrink: 0;
+    }
+
+    #folder-tree {
+        flex: 1;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
     }
 
     .notes-section {
@@ -2464,6 +1833,12 @@
         flex: 1;
         overflow-y: scroll !important;
         -webkit-overflow-scrolling: touch;
+        max-height: 55vh;
+    }
+
+    .note-list::-webkit-scrollbar {
+        width: 6px !important;
+        height: 6px !important;
     }
 
     .sidebar-overlay {
@@ -2489,18 +1864,33 @@
 
     .note-editor-wrapper {
         order: 1;
-        min-height: calc(100vh - 300px);
+        min-height: calc(100vh - 160px);
         padding-top: 10px;
     }
 
     .editor-toolbar {
+        /* QUAN TRỌNG: Giữ sticky positioning trên mobile */
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 10px !important;
+        z-index: 100 !important;
+        
+        /* Mobile specific styling */
         gap: 0.25rem;
         padding: 0.75rem;
-        position: sticky;
-        top: 10px;
-        background: rgba(255,255,255,0.95);
-        backdrop-filter: blur(10px);
-        z-index: 90;
+        background: rgba(255,255,255,0.98) !important;
+        backdrop-filter: blur(15px) !important;
+        border-radius: 12px;
+        margin: 0.5rem;
+        border: 1px solid rgba(0,0,0,0.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+        
+        /* Ensure it stays on top */
+        will-change: transform;
+    }
+    .editor-toolbar.scrolled {
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2) !important;
+        background: rgba(255,255,255,1) !important;
     }
 
     .toolbar-btn {
@@ -2526,7 +1916,7 @@
         padding: 1rem;
         font-size: 16px !important;
         line-height: 1.6;
-        min-height: calc(100vh - 400px);
+        min-height: calc(100vh - 280px);
         margin-bottom: 50vh;
     }
 
@@ -2588,6 +1978,16 @@
         left: 0.5rem;
     }
 
+    .note-item-actions {
+        opacity: 1;
+    }
+
+    .note-delete-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+
     .lightbox-content {
         width: 95%;
         max-height: 70%;
@@ -2605,15 +2005,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-
-    .note-list {
-        max-height: 55vh;
-    }
-
-    .note-list::-webkit-scrollbar {
-        width: 6px !important;
-        height: 6px !important;
     }
 
     .header-actions {
@@ -2653,19 +2044,35 @@
         display: none;
     }
 
-    /* QUAN TRỌNG: Buttons trong sidebar action trên mobile */
-    .sidebar-action-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1.1rem;
-        border-radius: 10px;
-        margin: 0; /* Bỏ margin để buttons nằm sát nhau */
-    }
-
-    /* Toggle button ẩn đi trên mobile vì không cần thiết */
     .toggle-sidebar-btn,
     .sidebar-toggle:not(.mobile-toggle-container .sidebar-toggle) {
         display: none !important;
+    }
+
+    .image-container {
+        width: 100%;
+        margin: 0.5rem 0;
+    }
+
+    .delete-image-btn {
+        opacity: 1;
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+
+    .image-info {
+        opacity: 1;
+        position: static;
+        background: rgba(0,0,0,0.05);
+        color: var(--text-color);
+        padding: 0.5rem;
+    }
+
+    .image-toast {
+        right: 10px;
+        left: 10px;
+        width: auto;
     }
 
     @media (max-width: 480px) {
@@ -2675,47 +2082,7 @@
         }
     }
 }
-.sidebar-actions {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-wrap: nowrap; /* Không cho wrap để luôn 1 hàng */
-    justify-content: center;
-}
 
-@media (max-width: 768px) {
-    .sidebar-actions {
-        gap: 0.4rem; /* Giảm gap trên mobile */
-        justify-content: space-evenly; /* Phân bố đều trên mobile */
-        padding: 0 0.5rem; /* Thêm padding */
-    }
-    
-    .sidebar-action-btn {
-        flex-shrink: 0; /* Không cho buttons bị thu nhỏ */
-        min-width: 40px;
-        width: 40px;
-        height: 40px;
-    }
-}
-
-/* Sidebar Header Mobile */
-@media (max-width: 768px) {
-    .sidebar-header {
-        padding: 1rem !important;
-        gap: 0.75rem !important;
-        border-bottom: 1px solid rgba(0,0,0,0.1) !important;
-        background: rgba(255,255,255,0.05) !important;
-    }
-    
-    .sidebar-title {
-        margin-bottom: 0.5rem;
-    }
-    
-    .sidebar-title h3 {
-        font-size: 1.1rem;
-        margin: 0;
-    }
-}
 </style>
 
 <script>
@@ -4171,6 +3538,39 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load initial data
     NoteManager.loadNotes();
 });
+
+function setupStickyToolbar() {
+    const toolbar = document.querySelector('.editor-toolbar');
+    if (!toolbar) return;
+    
+    let scrollTimeout;
+    
+    // Detect scroll trên window
+    window.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (scrollTop > 50) {
+                toolbar.classList.add('scrolled');
+            } else {
+                toolbar.classList.remove('scrolled');
+            }
+        }, 10);
+    });
+    
+    // Detect scroll trong editor container (backup)
+    const editorWrapper = document.querySelector('.note-editor-wrapper');
+    if (editorWrapper) {
+        editorWrapper.addEventListener('scroll', () => {
+            if (editorWrapper.scrollTop > 10) {
+                toolbar.classList.add('scrolled');
+            } else {
+                toolbar.classList.remove('scrolled');
+            }
+        });
+    }
+}
 
 // ===== MOBILE CURSOR MANAGER =====
 const MobileCursorManager = {
