@@ -363,6 +363,22 @@ class PasswordCategory(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
+
+class UserSettings(db.Model):
+    __tablename__ = 'user_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(80), nullable=False, unique=True)
+    master_password_hint = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'master_password_hint': self.master_password_hint
+        }
+        
 # Khởi tạo DB Diary và slogan mặc định nếu chưa có
 with diary_app.app_context():
     db_diary.create_all()
@@ -4658,7 +4674,168 @@ def authenticate_master_password():
         app.logger.error(f"Error in master password auth: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/api/auth/change_master_password', methods=['POST'])
+@login_required
+def change_master_password():
+    """Thay đổi master password"""
+    try:
+        data = request.get_json()
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        new_hint = data.get('new_hint', '').strip()
+        
+        if not current_password or not new_password:
+            return jsonify({'status': 'error', 'message': 'Both passwords are required'}), 400
+        
+        # Verify current master password
+        try:
+            password_encryption.initialize(current_password)
+            
+            # Test with existing password
+            test_password = "test123"
+            encrypted = password_encryption.encrypt_password(test_password)
+            decrypted = password_encryption.decrypt_password(encrypted)
+            
+            if decrypted != test_password:
+                return jsonify({'status': 'error', 'message': 'Current master password is incorrect'}), 401
+                
+        except Exception as e:
+            app.logger.error(f"Current master password verification failed: {e}")
+            return jsonify({'status': 'error', 'message': 'Current master password is incorrect'}), 401
+        
+        # Get all passwords for re-encryption
+        passwords = Password.query.filter_by(user_id=current_user.id).all()
+        
+        # Decrypt all passwords with current master password
+        decrypted_passwords = []
+        for pwd in passwords:
+            try:
+                decrypted_pwd = password_encryption.decrypt_password(pwd.password_encrypted)
+                decrypted_passwords.append({
+                    'id': pwd.id,
+                    'password': decrypted_pwd
+                })
+            except Exception as e:
+                app.logger.error(f"Failed to decrypt password {pwd.id}: {e}")
+                return jsonify({'status': 'error', 'message': f'Failed to decrypt existing passwords'}), 500
+        
+        # Initialize encryption with new master password
+        try:
+            password_encryption.initialize(new_password)
+        except Exception as e:
+            app.logger.error(f"Failed to initialize new encryption: {e}")
+            return jsonify({'status': 'error', 'message': 'Failed to initialize new encryption'}), 500
+        
+        # Re-encrypt all passwords with new master password
+        try:
+            for pwd_data in decrypted_passwords:
+                password_obj = Password.query.get(pwd_data['id'])
+                if password_obj:
+                    new_encrypted = password_encryption.encrypt_password(pwd_data['password'])
+                    password_obj.password_encrypted = new_encrypted
+            
+            # Update hint if provided
+            if new_hint or new_hint == '':  # Allow clearing hint
+                settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+                if not settings:
+                    settings = UserSettings(user_id=current_user.id)
+                    db.session.add(settings)
+                
+                settings.master_password_hint = new_hint if new_hint else None
+                settings.updated_at = datetime.now()
+            
+            db.session.commit()
+            
+            # Update session
+            session['master_password_verified'] = True
+            session['master_password_time'] = time.time()
+            
+            return jsonify({
+                'status': 'success',
+                'message': f'Master password changed successfully. Re-encrypted {len(decrypted_passwords)} passwords.'
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Failed to re-encrypt passwords: {e}")
+            return jsonify({'status': 'error', 'message': 'Failed to re-encrypt passwords'}), 500
+            
+    except Exception as e:
+        app.logger.error(f"Error changing master password: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/api/auth/master_password_hint', methods=['GET'])
+@login_required
+def get_master_password_hint():
+    """Lấy hint cho master password"""
+    try:
+        settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+        hint = settings.master_password_hint if settings else None
+        
+        return jsonify({
+            'status': 'success',
+            'hint': hint
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting master password hint: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/api/auth/master_password_hint', methods=['POST'])
+@login_required
+def set_master_password_hint():
+    """Set hint cho master password"""
+    try:
+        data = request.get_json()
+        hint = data.get('hint', '').strip()
+        
+        if len(hint) > 200:
+            return jsonify({'status': 'error', 'message': 'Hint must be 200 characters or less'}), 400
+        
+        settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+        if not settings:
+            settings = UserSettings(user_id=current_user.id)
+            db.session.add(settings)
+        
+        settings.master_password_hint = hint if hint else None
+        settings.updated_at = datetime.now()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Hint saved successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error setting master password hint: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    
+@app.route('/api/auth/lock_master_password', methods=['POST'])
+@login_required
+def lock_master_password():
+    """Khóa master password session ngay lập tức"""
+    try:
+        # Xóa session master password
+        session.pop('master_password_verified', None)
+        session.pop('master_password_time', None)
+        
+        # Reset password encryption instance
+        global password_encryption
+        password_encryption.fernet = None
+        
+        app.logger.info(f"Master password session locked for user {current_user.id}")
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Password manager locked successfully'
+        })
+        
+    except Exception as e:
+        app.logger.error(f"Error locking master password: {str(e)}")
+        return jsonify({
+            'status': 'error', 
+            'message': str(e)
+        }), 500
+        
 if __name__ == '__main__':
     app.run(debug=True)

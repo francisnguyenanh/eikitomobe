@@ -569,6 +569,60 @@
         * {
             transition: color 0.3s ease, background-color 0.3s ease;
         }
+
+        /* ===== MASTER PASSWORD TAB STYLES ===== */
+        .password-strength {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .strength-weak { 
+            color: #dc3545; 
+        }
+
+        .strength-medium { 
+            color: #ffc107; 
+        }
+
+        .strength-strong { 
+            color: #28a745; 
+        }
+
+        #change-master-pass-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #masterPassMsg.text-success {
+            color: #28a745 !important;
+        }
+
+        #masterPassMsg.text-danger {
+            color: #dc3545 !important;
+        }
+
+        #masterPassMsg.text-info {
+            color: #17a2b8 !important;
+        }
+
+        /* Master Password tab responsive */
+        @media (max-width: 991.98px) {
+            #settingsModal .nav-tabs .nav-item {
+                min-width: calc(33.33% - 0.25rem);
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            #settingsModal .nav-tabs .nav-item {
+                min-width: calc(50% - 0.25rem);
+                margin-bottom: 0.25rem;
+            }
+            
+            #settingsModal .nav-tabs .nav-link {
+                font-size: 0.85rem;
+                padding: 0.5rem 0.25rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -601,7 +655,7 @@
                             <i class="bi bi-calendar-heart"></i> Diary
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="diaryDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('new_diary') }}">
+                            <li><a class="dropdown-item" href="{{ url_for('diary_grid') }}?action=new">
                                 <i class="bi bi-plus-circle"></i> New Diary
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('diary_list') }}">
@@ -775,6 +829,10 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="password-tab" data-bs-toggle="tab" data-bs-target="#passwordTab" type="button">Password</button>
                         </li>
+                        <!-- ✅ THÊM: Master Password tab -->
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="master-password-tab" data-bs-toggle="tab" data-bs-target="#masterPasswordTab" type="button">Master Pass</button>
+                        </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#uploadTab" type="button">Background</button>
                         </li>
@@ -823,6 +881,58 @@
                                     Save Password
                                 </button>
                             </form>
+                        </div>
+                        <div class="tab-pane fade" id="masterPasswordTab">
+                            <form id="masterPasswordForm">
+                                <div class="mb-3">
+                                    <label for="current-master-pass" class="form-label">
+                                        <i class="bi bi-shield-lock me-1"></i>
+                                        Current Master Password
+                                    </label>
+                                    <input type="password" class="form-control" id="current-master-pass" 
+                                        placeholder="Enter current master password" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="new-master-pass" class="form-label">
+                                        <i class="bi bi-key me-1"></i>
+                                        New Master Password
+                                    </label>
+                                    <input type="password" class="form-control" id="new-master-pass" 
+                                        placeholder="Enter new master password" required>
+                                    <div id="master-pass-strength" class="password-strength mt-2"></div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="confirm-master-pass" class="form-label">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Confirm New Master Password
+                                    </label>
+                                    <input type="password" class="form-control" id="confirm-master-pass" 
+                                        placeholder="Confirm new master password" required>
+                                    <div id="master-pass-match-feedback" class="mt-1"></div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="master-pass-hint" class="form-label">
+                                        <i class="bi bi-lightbulb me-1"></i>
+                                        Password Hint (Optional)
+                                    </label>
+                                    <input type="text" class="form-control" id="master-pass-hint" 
+                                        placeholder="Create a hint for your master password" maxlength="200">
+                                </div>
+                                
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-primary" id="change-master-pass-btn" disabled>
+                                        <i class="bi bi-shield-check me-1"></i>
+                                        Change Master Password
+                                    </button>
+                                </div>
+                            </form>
+                            
+                            <div class="mt-3">
+                                <div id="masterPassMsg" class="text-center"></div>
+                            </div>
                         </div>
                         <div class="tab-pane fade" id="uploadTab">
                             <form action="{{ url_for('upload_bg') }}" method="post" enctype="multipart/form-data" class="mb-3">
@@ -1294,6 +1404,318 @@
                 });
             }
         };
+
+        // ===== MASTER PASSWORD MANAGER =====
+        const MasterPasswordManager = {
+            init() {
+                document.getElementById('master-password-tab').addEventListener('shown.bs.tab', () => this.loadMasterPasswordTab());
+                
+                // Setup event listeners
+                document.getElementById('new-master-pass').addEventListener('input', () => this.checkMasterPasswordStrength());
+                document.getElementById('confirm-master-pass').addEventListener('input', () => this.checkMasterPasswordMatch());
+                document.getElementById('current-master-pass').addEventListener('input', () => this.checkMasterPasswordMatch());
+                
+                document.getElementById('change-master-pass-btn').addEventListener('click', () => this.changeMasterPassword());
+                
+            },
+
+            async loadMasterPasswordTab() {
+                // Load current hint if exists
+                try {
+                    const response = await fetch('/api/auth/master_password_hint');
+                    const data = await response.json();
+                    
+                    if (data.status === 'success' && data.hint) {
+                        document.getElementById('master-pass-hint').value = data.hint;
+                    } else {
+                        document.getElementById('master-pass-hint').value = '';
+                    }
+                } catch (error) {
+                    console.error('Error loading master password hint:', error);
+                }
+                
+                // Reset form
+                document.getElementById('current-master-pass').value = '';
+                document.getElementById('new-master-pass').value = '';
+                document.getElementById('confirm-master-pass').value = '';
+                document.getElementById('change-master-pass-btn').disabled = true;
+                this.showMessage('', '');
+            },
+
+            checkMasterPasswordStrength() {
+                const password = document.getElementById('new-master-pass').value;
+                const strengthDiv = document.getElementById('master-pass-strength');
+                
+                if (!password) {
+                    strengthDiv.innerHTML = '';
+                    this.checkMasterPasswordMatch();
+                    return;
+                }
+                
+                let score = 0;
+                let feedback = [];
+                
+                // Length check
+                if (password.length >= 12) score += 2;
+                else if (password.length >= 8) score++;
+                else feedback.push('at least 8 characters (12+ recommended)');
+                
+                // Character variety checks
+                if (/[a-z]/.test(password)) score++;
+                else feedback.push('lowercase letters');
+                
+                if (/[A-Z]/.test(password)) score++;
+                else feedback.push('uppercase letters');
+                
+                if (/[0-9]/.test(password)) score++;
+                else feedback.push('numbers');
+                
+                if (/[^a-zA-Z0-9]/.test(password)) score++;
+                else feedback.push('symbols');
+                
+                let strength = '';
+                let className = '';
+                
+                if (score < 3) {
+                    strength = 'Weak';
+                    className = 'strength-weak';
+                } else if (score < 5) {
+                    strength = 'Medium';
+                    className = 'strength-medium';
+                } else {
+                    strength = 'Strong';
+                    className = 'strength-strong';
+                }
+                
+                strengthDiv.innerHTML = `<span class="${className}">Strength: ${strength}</span>`;
+                if (feedback.length > 0 && score < 5) {
+                    strengthDiv.innerHTML += `<br><small>Add: ${feedback.join(', ')}</small>`;
+                }
+                
+                this.checkMasterPasswordMatch();
+            },
+
+            checkMasterPasswordMatch() {
+                const newPassword = document.getElementById('new-master-pass').value;
+                const confirmPassword = document.getElementById('confirm-master-pass').value;
+                const currentPassword = document.getElementById('current-master-pass').value;
+                const feedbackDiv = document.getElementById('master-pass-match-feedback');
+                const changeBtn = document.getElementById('change-master-pass-btn');
+                
+                if (!confirmPassword) {
+                    feedbackDiv.innerHTML = '';
+                    changeBtn.disabled = true;
+                    return;
+                }
+                
+                if (newPassword === confirmPassword) {
+                    feedbackDiv.innerHTML = '<small class="text-success"><i class="bi bi-check-circle me-1"></i>Passwords match</small>';
+                    
+                    // Enable button only if all fields are filled and passwords match
+                    changeBtn.disabled = !(currentPassword && newPassword && confirmPassword && newPassword === confirmPassword);
+                } else {
+                    feedbackDiv.innerHTML = '<small class="text-danger"><i class="bi bi-x-circle me-1"></i>Passwords do not match</small>';
+                    changeBtn.disabled = true;
+                }
+            },
+
+            async changeMasterPassword() {
+                const currentPassword = document.getElementById('current-master-pass').value;
+                const newPassword = document.getElementById('new-master-pass').value;
+                const confirmPassword = document.getElementById('confirm-master-pass').value;
+                const newHint = document.getElementById('master-pass-hint').value.trim();
+                
+                // Validation
+                if (!currentPassword) {
+                    this.showMessage('Please enter your current master password', 'danger');
+                    document.getElementById('current-master-pass').focus();
+                    return;
+                }
+                
+                if (!newPassword) {
+                    this.showMessage('Please enter a new master password', 'danger');
+                    document.getElementById('new-master-pass').focus();
+                    return;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    this.showMessage('New passwords do not match', 'danger');
+                    document.getElementById('confirm-master-pass').focus();
+                    return;
+                }
+                
+                if (newPassword === currentPassword) {
+                    this.showMessage('New password must be different from current password', 'danger');
+                    document.getElementById('new-master-pass').focus();
+                    return;
+                }
+                
+                if (newPassword.length < 8) {
+                    this.showMessage('New password must be at least 8 characters long', 'danger');
+                    document.getElementById('new-master-pass').focus();
+                    return;
+                }
+                
+                // Confirm action
+                const confirmed = confirm(
+                    'Are you sure you want to change your master password?\n\n' +
+                    'This will re-encrypt all your passwords with the new master password.\n' +
+                    'Make sure you remember the new password as it cannot be recovered!'
+                );
+                
+                if (!confirmed) return;
+                
+                // Disable button and show loading
+                const changeBtn = document.getElementById('change-master-pass-btn');
+                const originalText = changeBtn.innerHTML;
+                changeBtn.disabled = true;
+                changeBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Changing...';
+                
+                try {
+                    const response = await fetch('/api/auth/change_master_password', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            current_password: currentPassword,
+                            new_password: newPassword,
+                            new_hint: newHint
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        this.showMessage(data.message, 'success');
+                        
+                        // Reset form
+                        document.getElementById('current-master-pass').value = '';
+                        document.getElementById('new-master-pass').value = '';
+                        document.getElementById('confirm-master-pass').value = '';
+                        document.getElementById('master-pass-strength').innerHTML = '';
+                        document.getElementById('master-pass-match-feedback').innerHTML = '';
+                    } else {
+                        this.showMessage('Error: ' + data.message, 'danger');
+                    }
+                } catch (error) {
+                    console.error('Error changing master password:', error);
+                    this.showMessage('Error changing master password', 'danger');
+                } finally {
+                    // Restore button
+                    changeBtn.disabled = false;
+                    changeBtn.innerHTML = originalText;
+                }
+            },
+
+            openHintSetupModal() {
+                // Load current hint
+                this.loadCurrentMasterHint();
+                
+                const modal = new bootstrap.Modal(document.getElementById('masterHintSetupModal'));
+                modal.show();
+            },
+
+            async loadCurrentMasterHint() {
+                try {
+                    const response = await fetch('/api/auth/master_password_hint');
+                    const data = await response.json();
+                    
+                    if (data.status === 'success' && data.hint) {
+                        document.getElementById('master-hint-input').value = data.hint;
+                        document.getElementById('clear-master-hint-btn').style.display = 'inline-block';
+                    } else {
+                        document.getElementById('master-hint-input').value = '';
+                        document.getElementById('clear-master-hint-btn').style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error loading current master hint:', error);
+                    document.getElementById('master-hint-input').value = '';
+                    document.getElementById('clear-master-hint-btn').style.display = 'none';
+                }
+            },
+
+            async saveMasterHint() {
+                const hint = document.getElementById('master-hint-input').value.trim();
+                
+                if (hint.length > 200) {
+                    Utils.showFlashMessage('Hint must be 200 characters or less', 'warning');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/auth/master_password_hint', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            hint: hint
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        Utils.showFlashMessage(hint ? 'Hint saved successfully' : 'Hint cleared successfully', 'success');
+                        bootstrap.Modal.getInstance(document.getElementById('masterHintSetupModal')).hide();
+                        
+                        // Update hint in main form
+                        document.getElementById('master-pass-hint').value = hint;
+                    } else {
+                        Utils.showFlashMessage('Error: ' + data.message, 'danger');
+                    }
+                } catch (error) {
+                    console.error('Error saving master hint:', error);
+                    Utils.showFlashMessage('Error saving hint', 'danger');
+                }
+            },
+
+            async clearMasterHint() {
+                if (!confirm('Are you sure you want to clear your master password hint?')) {
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/auth/master_password_hint', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            hint: ''
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.status === 'success') {
+                        Utils.showFlashMessage('Hint cleared successfully', 'success');
+                        bootstrap.Modal.getInstance(document.getElementById('masterHintSetupModal')).hide();
+                        
+                        // Update hint in main form
+                        document.getElementById('master-pass-hint').value = '';
+                    } else {
+                        Utils.showFlashMessage('Error: ' + data.message, 'danger');
+                    }
+                } catch (error) {
+                    console.error('Error clearing master hint:', error);
+                    Utils.showFlashMessage('Error clearing hint', 'danger');
+                }
+            },
+
+            showMessage(message, type) {
+                const msgElement = document.getElementById('masterPassMsg');
+                if (message) {
+                    msgElement.className = `text-${type}`;
+                    msgElement.textContent = message;
+                    setTimeout(() => { msgElement.textContent = ''; }, 5000);
+                } else {
+                    msgElement.textContent = '';
+                }
+            }
+        };
+
         // ===== MINDFULNESS TIMER =====
         const MindfulnessTimer = {
             init() {
@@ -2145,6 +2567,7 @@
             ProfileManager.init();
             AuthManager.init();
             AISettingsManager.init(); // Add this line
+            MasterPasswordManager.init();
 
             // Quote click to open mindfulness modal
             document.querySelectorAll('.quote-content').forEach(el => {
