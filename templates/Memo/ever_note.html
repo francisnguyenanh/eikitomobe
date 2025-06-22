@@ -277,6 +277,11 @@
     --alert-warning-color-rgb: 255, 193, 7;
     --primary-color-rgb: 52, 152, 219;
     --secondary-color-rgb: 108, 117, 125;
+    --folder-color-level-0: #ff6b35; /* Cam đậm hơn */
+    --folder-color-level-1: #2ecc71; /* Xanh lá sáng */
+    --folder-color-level-2: #3498db; /* Xanh dương */
+    --folder-color-level-3: #9b59b6; /* Tím */
+    --folder-color-level-4: #e91e63; /* Hồng */
 }
 
 /* ===== BASE STYLES ===== */
@@ -2896,6 +2901,84 @@ html.auto-scroll-smooth {
 .btn.copying {
     animation: copySuccess 0.3s ease;
 }
+
+/* Root level folders - Màu cam (mặc định) */
+.folder-tree-item.root-level .folder-icon {
+    color: #f39c12; /* Cam */
+}
+
+/* Level 1 folders (con của root) - Màu xanh lá */
+.folder-tree-item .folder-tree-item .folder-icon {
+    color: #27ae60 !important; /* Xanh lá */
+}
+
+/* Level 2 folders (cháu của root) - Màu xanh dương */
+.folder-tree-item .folder-tree-item .folder-tree-item .folder-icon {
+    color: #3498db !important; /* Xanh dương */
+}
+
+/* Level 3 folders (chắt của root) - Màu tím */
+.folder-tree-item .folder-tree-item .folder-tree-item .folder-tree-item .folder-icon {
+    color: #9b59b6 !important; /* Tím */
+}
+
+/* Level 4+ folders - Màu đỏ */
+.folder-tree-item .folder-tree-item .folder-tree-item .folder-tree-item .folder-tree-item .folder-icon {
+    color: #e74c3c !important; /* Đỏ */
+}
+
+/* Đảm bảo màu icon không thay đổi khi folder được select */
+.folder-item-content.selected .folder-icon {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* ✅ THÊM HOVER EFFECTS CHO FOLDER ICONS */
+.folder-item-content:hover .folder-icon {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+
+/* ✅ THÊM ANIMATION KHI EXPAND/COLLAPSE */
+.folder-toggle.expanded {
+    animation: rotateExpand 0.3s ease;
+}
+
+@keyframes rotateExpand {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(90deg); }
+}
+
+/* ✅ ALTERNATIVE: Sử dụng CSS variables để dễ customize */
+:root {
+    --folder-color-level-0: #f39c12; /* Root - Cam */
+    --folder-color-level-1: #27ae60; /* Level 1 - Xanh lá */
+    --folder-color-level-2: #3498db; /* Level 2 - Xanh dương */
+    --folder-color-level-3: #9b59b6; /* Level 3 - Tím */
+    --folder-color-level-4: #e74c3c; /* Level 4+ - Đỏ */
+}
+
+/* Alternative approach using data attributes (nếu muốn dùng) */
+.folder-item-content[data-level="0"] .folder-icon {
+    color: var(--folder-color-level-0);
+}
+
+.folder-item-content[data-level="1"] .folder-icon {
+    color: var(--folder-color-level-1);
+}
+
+.folder-item-content[data-level="2"] .folder-icon {
+    color: var(--folder-color-level-2);
+}
+
+.folder-item-content[data-level="3"] .folder-icon {
+    color: var(--folder-color-level-3);
+}
+
+.folder-item-content[data-level="4"] .folder-icon,
+.folder-item-content[data-level="5"] .folder-icon,
+.folder-item-content[data-level="6"] .folder-icon {
+    color: var(--folder-color-level-4);
+}
 </style>
 
 <script>
@@ -4106,7 +4189,8 @@ const FolderManager = {
             html += `
                 <div class="folder-tree-item ${level === 0 ? 'root-level' : ''}">
                     <div class="folder-item-content ${isSelected ? 'selected' : ''}" 
-                        data-folder-id="${folder.id}">
+                        data-folder-id="${folder.id}"
+                        data-level="${level}">
                         
                         <!-- Expand/Collapse Toggle -->
                         <button class="folder-toggle ${hasChildren ? (isExpanded ? 'expanded' : '') : 'no-children'}" 
