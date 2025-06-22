@@ -226,6 +226,33 @@ class Todo(db.Model):
     # Relationship cho parent-child todos
     children = db.relationship('Todo', backref=db.backref('parent', remote_side=[id]))
 
+class Password(db.Model):
+    __tablename__ = 'passwords'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    website_url = db.Column(db.String(500), nullable=False)
+    username = db.Column(db.String(200), nullable=False)
+    password = db.Column(db.Text, nullable=False)  # Sẽ được encrypt
+    note = db.Column(db.Text, nullable=True)
+    category = db.Column(db.String(100), nullable=True, default='General')
+    favorite = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    user_id = db.Column(db.String(80), nullable=False, default='default')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'website_url': self.website_url,
+            'username': self.username,
+            'password': self.password,
+            'note': self.note,
+            'category': self.category,
+            'favorite': self.favorite,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
     
 # Khởi tạo DB Diary và slogan mặc định nếu chưa có
 with diary_app.app_context():
@@ -441,7 +468,8 @@ with app.app_context():
     load_knowledge_categories()
     load_criteria_methods()
     db.create_all()
-    
+
+        
     if not EvernoteFolder.query.first():
         default_folder = EvernoteFolder(name="General Notes")
         db.session.add(default_folder)
@@ -4072,6 +4100,211 @@ def move_evernote_note(note_id):
         
     except Exception as e:
         app.logger.error(f"Error moving note: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    
+# Password Manager Routes
+@app.route('/password_manager')
+@login_required
+def password_manager():
+    return render_template('Password/password_manager.html')
+
+@app.route('/api/passwords', methods=['GET'])
+@login_required
+def get_passwords():
+    try:
+        search = request.args.get('search', '').strip()
+        category = request.args.get('category', '').strip()
+        
+        query = Password.query.filter_by(user_id=current_user.id)
+        
+        if search:
+            query = query.filter(
+                db.or_(
+                    Password.title.contains(search),
+                    Password.website_url.contains(search),
+                    Password.username.contains(search),
+                    Password.note.contains(search)
+                )
+            )
+        
+        if category and category != 'all':
+            query = query.filter_by(category=category)
+        
+        passwords = query.order_by(Password.favorite.desc(), Password.title.asc()).all()
+        
+        # ✅ Đảm bảo luôn trả về array, ngay cả khi empty
+        return jsonify({
+            'status': 'success',
+            'passwords': [p.to_dict() for p in passwords] if passwords else []
+        })
+    except Exception as e:
+        app.logger.error(f"Error in get_passwords: {str(e)}")
+        # ✅ Trả về empty array khi có lỗi
+        return jsonify({
+            'status': 'success', 
+            'passwords': []
+        })
+
+@app.route('/api/passwords', methods=['POST'])
+@login_required
+def add_password():
+    try:
+        data = request.json
+        
+        password = Password(
+            title=data['title'],
+            website_url=data['website_url'],
+            username=data['username'],
+            password=data['password'],
+            note=data.get('note', ''),
+            category=data.get('category', 'General'),
+            favorite=data.get('favorite', False),
+            user_id=current_user.id
+        )
+        
+        db.session.add(password)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'password': password.to_dict()
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/passwords/<int:password_id>', methods=['PUT'])
+@login_required
+def update_password(password_id):
+    try:
+        password = Password.query.get_or_404(password_id)
+        
+        if password.user_id != current_user.id:
+            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+        
+        data = request.json
+        
+        password.title = data['title']
+        password.website_url = data['website_url']
+        password.username = data['username']
+        password.password = data['password']
+        password.note = data.get('note', '')
+        password.category = data.get('category', 'General')
+        password.favorite = data.get('favorite', False)
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'password': password.to_dict()
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/passwords/<int:password_id>', methods=['DELETE'])
+@login_required
+def delete_password(password_id):
+    try:
+        password = Password.query.get_or_404(password_id)
+        
+        if password.user_id != current_user.id:
+            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
+        
+        db.session.delete(password)
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/passwords/import', methods=['POST'])
+@login_required
+def import_passwords():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'status': 'error', 'message': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'status': 'error', 'message': 'No file selected'}), 400
+        
+        # Read CSV file
+        import csv
+        import io
+        
+        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+        csv_input = csv.DictReader(stream)
+        
+        imported_count = 0
+        for row in csv_input:
+            password = Password(
+                title=row.get('Title', row.get('title', '')),
+                website_url=row.get('Website', row.get('URL', row.get('url', ''))),
+                username=row.get('Username', row.get('username', '')),
+                password=row.get('Password', row.get('password', '')),
+                note=row.get('Notes', row.get('note', '')),
+                category=row.get('Category', 'Imported'),
+                user_id=current_user.id
+            )
+            db.session.add(password)
+            imported_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Imported {imported_count} passwords successfully'
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/passwords/categories', methods=['GET'])
+@login_required
+def get_password_categories():
+    try:
+        categories = db.session.query(Password.category).filter_by(user_id=current_user.id).distinct().all()
+        category_list = [cat[0] for cat in categories if cat[0]]
+        
+        return jsonify({
+            'status': 'success',
+            'categories': category_list
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/passwords/generate', methods=['POST'])
+@login_required
+def generate_password():
+    try:
+        data = request.json
+        length = data.get('length', 12)
+        include_upper = data.get('include_upper', True)
+        include_lower = data.get('include_lower', True)
+        include_numbers = data.get('include_numbers', True)
+        include_symbols = data.get('include_symbols', True)
+        
+        import string
+        import secrets
+        
+        chars = ''
+        if include_lower:
+            chars += string.ascii_lowercase
+        if include_upper:
+            chars += string.ascii_uppercase
+        if include_numbers:
+            chars += string.digits
+        if include_symbols:
+            chars += '!@#$%^&*()_+-=[]{}|;:,.<>?'
+        
+        if not chars:
+            return jsonify({'status': 'error', 'message': 'At least one character type must be selected'}), 400
+        
+        password = ''.join(secrets.choice(chars) for _ in range(length))
+        
+        return jsonify({
+            'status': 'success',
+            'password': password
+        })
+    except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
     
 if __name__ == '__main__':
