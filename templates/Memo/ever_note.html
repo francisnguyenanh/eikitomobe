@@ -5942,6 +5942,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('folder-name').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
+            e.stopPropagation(); 
             
             // Validate tên folder
             const folderName = this.value.trim();
