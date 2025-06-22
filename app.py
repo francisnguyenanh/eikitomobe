@@ -1,6 +1,6 @@
 import base64
 
-from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file, Response, jsonify
+from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file, Response, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import bcrypt
@@ -230,11 +230,15 @@ class Password(db.Model):
     __tablename__ = 'passwords'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
-    website_url = db.Column(db.String(500), nullable=False)
-    username = db.Column(db.String(200), nullable=False)
-    password = db.Column(db.Text, nullable=False)  # Sẽ được encrypt
+    website_url = db.Column(db.String(500), nullable=True)  # ✅ SỬA: nullable=True
+    username = db.Column(db.String(200), nullable=True)     # ✅ SỬA: nullable=True
+    password = db.Column(db.Text, nullable=False)
     note = db.Column(db.Text, nullable=True)
-    category = db.Column(db.String(100), nullable=True, default='General')
+    
+    # ✅ SỬA: Sử dụng foreign key cho category
+    category_id = db.Column(db.Integer, db.ForeignKey('password_categories.id'), nullable=True)
+    category = db.relationship('PasswordCategory', backref='passwords')
+    
     favorite = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
@@ -244,16 +248,38 @@ class Password(db.Model):
         return {
             'id': self.id,
             'title': self.title,
-            'website_url': self.website_url,
-            'username': self.username,
+            'website_url': self.website_url or '',
+            'username': self.username or '',
             'password': self.password,
-            'note': self.note,
-            'category': self.category,
+            'note': self.note or '',
+            'category_id': self.category_id,
+            'category_name': self.category.name if self.category else 'General',
+            'category_color': self.category.color if self.category else '#6c757d',
             'favorite': self.favorite,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
     
+class PasswordCategory(db.Model):
+    __tablename__ = 'password_categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    user_id = db.Column(db.String(80), nullable=False)
+    color = db.Column(db.String(7), nullable=True, default='#007bff')  # HEX color
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # Unique constraint để tránh duplicate categories cho cùng user
+    __table_args__ = (db.UniqueConstraint('name', 'user_id', name='unique_password_category_per_user'),)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'color': self.color,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
 # Khởi tạo DB Diary và slogan mặc định nếu chưa có
 with diary_app.app_context():
     db_diary.create_all()
@@ -469,17 +495,33 @@ with app.app_context():
     load_criteria_methods()
     db.create_all()
 
-        
+    # ✅ SỬA: Tạo default password categories thay vì categories chung
+    default_password_categories = [
+        ('General', '#6c757d'),
+        ('SNS', '#007bff'),
+        ('Banking', '#28a745'),
+        ('Work', '#ffc107'),
+        ('Shopping', '#fd7e14'),
+        ('Email', '#6f42c1')
+    ]
+    
+    for name, color in default_password_categories:
+        if not PasswordCategory.query.filter_by(name=name, user_id='default').first():
+            category = PasswordCategory(name=name, user_id='default', color=color)
+            db.session.add(category)
+    
+    # Tạo default folder cho Evernote
     if not EvernoteFolder.query.first():
         default_folder = EvernoteFolder(name="General Notes")
         db.session.add(default_folder)
         db.session.commit()
         app.logger.info("Created default folder: General Notes")
     
-    # Add default categories if not exist
+    # Tạo default categories cho Notes/Tasks (giữ nguyên)
     for name, color in [('Work', '#FF9999'), ('Personal', '#99FF99'), ('Ideas', '#9999FF')]:
         if not Category.query.filter_by(name=name, user_id='default').first():
             db.session.add(Category(name=name, user_id='default', color=color))
+    
     db.session.commit()
             
 def get_user_info():
@@ -4113,7 +4155,7 @@ def password_manager():
 def get_passwords():
     try:
         search = request.args.get('search', '').strip()
-        category = request.args.get('category', '').strip()
+        category_id = request.args.get('category_id', type=int)
         
         query = Password.query.filter_by(user_id=current_user.id)
         
@@ -4127,19 +4169,17 @@ def get_passwords():
                 )
             )
         
-        if category and category != 'all':
-            query = query.filter_by(category=category)
+        if category_id:
+            query = query.filter_by(category_id=category_id)
         
         passwords = query.order_by(Password.favorite.desc(), Password.title.asc()).all()
         
-        # ✅ Đảm bảo luôn trả về array, ngay cả khi empty
         return jsonify({
             'status': 'success',
             'passwords': [p.to_dict() for p in passwords] if passwords else []
         })
     except Exception as e:
         app.logger.error(f"Error in get_passwords: {str(e)}")
-        # ✅ Trả về empty array khi có lỗi
         return jsonify({
             'status': 'success', 
             'passwords': []
@@ -4151,13 +4191,20 @@ def add_password():
     try:
         data = request.json
         
+        # Validate category if provided
+        category_id = data.get('category_id')
+        if category_id:
+            category = PasswordCategory.query.filter_by(id=category_id, user_id=current_user.id).first()
+            if not category:
+                return jsonify({'status': 'error', 'message': 'Invalid category'}), 400
+        
         password = Password(
             title=data['title'],
-            website_url=data['website_url'],
-            username=data['username'],
+            website_url=data.get('website_url', ''),
+            username=data.get('username', ''),
             password=data['password'],
             note=data.get('note', ''),
-            category=data.get('category', 'General'),
+            category_id=category_id,
             favorite=data.get('favorite', False),
             user_id=current_user.id
         )
@@ -4170,6 +4217,8 @@ def add_password():
             'password': password.to_dict()
         })
     except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error adding password: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/passwords/<int:password_id>', methods=['PUT'])
@@ -4183,13 +4232,21 @@ def update_password(password_id):
         
         data = request.json
         
+        # Validate category if provided
+        category_id = data.get('category_id')
+        if category_id:
+            category = PasswordCategory.query.filter_by(id=category_id, user_id=current_user.id).first()
+            if not category:
+                return jsonify({'status': 'error', 'message': 'Invalid category'}), 400
+        
         password.title = data['title']
-        password.website_url = data['website_url']
-        password.username = data['username']
+        password.website_url = data.get('website_url', '')
+        password.username = data.get('username', '')
         password.password = data['password']
         password.note = data.get('note', '')
-        password.category = data.get('category', 'General')
+        password.category_id = category_id
         password.favorite = data.get('favorite', False)
+        password.updated_at = datetime.now()
         
         db.session.commit()
         
@@ -4198,6 +4255,8 @@ def update_password(password_id):
             'password': password.to_dict()
         })
     except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating password: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/passwords/<int:password_id>', methods=['DELETE'])
@@ -4261,15 +4320,15 @@ def import_passwords():
 @login_required
 def get_password_categories():
     try:
-        categories = db.session.query(Password.category).filter_by(user_id=current_user.id).distinct().all()
-        category_list = [cat[0] for cat in categories if cat[0]]
+        categories = PasswordCategory.query.filter_by(user_id=current_user.id).order_by(PasswordCategory.name.asc()).all()
         
         return jsonify({
             'status': 'success',
-            'categories': category_list
+            'categories': [cat.to_dict() for cat in categories]
         })
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 @app.route('/api/passwords/generate', methods=['POST'])
 @login_required
@@ -4305,6 +4364,129 @@ def generate_password():
             'password': password
         })
     except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    
+@app.route('/api/categories', methods=['GET'])
+@login_required
+def get_categories():
+    try:
+        # Get password categories with password counts
+        categories = db.session.query(
+            PasswordCategory.id,
+            PasswordCategory.name,
+            PasswordCategory.color,
+            db.func.count(Password.id).label('password_count')
+        ).outerjoin(
+            Password, db.and_(Password.category_id == PasswordCategory.id, Password.user_id == current_user.id)
+        ).filter(
+            PasswordCategory.user_id == current_user.id
+        ).group_by(PasswordCategory.id).order_by(PasswordCategory.name.asc()).all()
+        
+        return jsonify({
+            'status': 'success',
+            'categories': [{
+                'id': cat.id,
+                'name': cat.name,
+                'color': cat.color,
+                'password_count': cat.password_count
+            } for cat in categories]
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting password categories: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/categories', methods=['POST'])
+@login_required
+def create_category():
+    try:
+        data = request.get_json()
+        name = data.get('name', '').strip()
+        color = data.get('color', '#007bff')
+        
+        if not name:
+            return jsonify({'status': 'error', 'message': 'Category name is required'}), 400
+        
+        if len(name) > 50:
+            return jsonify({'status': 'error', 'message': 'Category name must be 50 characters or less'}), 400
+        
+        # Check if category already exists
+        existing = PasswordCategory.query.filter_by(name=name, user_id=current_user.id).first()
+        if existing:
+            return jsonify({'status': 'error', 'message': 'Category already exists'}), 400
+        
+        category = PasswordCategory(name=name, color=color, user_id=current_user.id)
+        db.session.add(category)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'category': {
+                'id': category.id,
+                'name': category.name,
+                'color': category.color,
+                'password_count': 0
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error creating password category: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/categories/<int:category_id>', methods=['PUT'])
+@login_required
+def update_category(category_id):
+    try:
+        category = PasswordCategory.query.filter_by(id=category_id, user_id=current_user.id).first()
+        if not category:
+            return jsonify({'status': 'error', 'message': 'Category not found'}), 404
+        
+        data = request.get_json()
+        new_name = data.get('name', '').strip()
+        new_color = data.get('color', category.color)
+        
+        if not new_name:
+            return jsonify({'status': 'error', 'message': 'Category name is required'}), 400
+        
+        if len(new_name) > 50:
+            return jsonify({'status': 'error', 'message': 'Category name must be 50 characters or less'}), 400
+        
+        # Check if new name conflicts with existing categories
+        existing = PasswordCategory.query.filter_by(name=new_name, user_id=current_user.id).filter(PasswordCategory.id != category_id).first()
+        if existing:
+            return jsonify({'status': 'error', 'message': 'Category name already exists'}), 400
+        
+        category.name = new_name
+        category.color = new_color
+        category.updated_at = datetime.now()
+        
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error updating password category: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/categories/<int:category_id>', methods=['DELETE'])
+@login_required
+def delete_password_category(category_id): 
+    try:
+        category = PasswordCategory.query.filter_by(id=category_id, user_id=current_user.id).first()
+        if not category:
+            return jsonify({'status': 'error', 'message': 'Category not found'}), 404
+        
+        # Move all passwords in this category to null (General)
+        Password.query.filter_by(category_id=category_id, user_id=current_user.id).update({'category_id': None})
+        
+        db.session.delete(category)
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error deleting password category: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
     
 if __name__ == '__main__':
