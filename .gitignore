@@ -9,3 +9,4 @@ config.txt
 AI.txt
 keywords.txt
 static/uploads
+password_salt.key

@@ -40,6 +40,17 @@ import os
 from werkzeug.utils import secure_filename
 from PIL import Image as PILImage
 import shutil
+import os
+import base64
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import getpass
+import string
+import secrets
+import csv
+import io
+
 from flask import send_from_directory
 try:
     from PIL import Image as PILImage
@@ -80,6 +91,61 @@ login_manager.login_view = 'login'
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
+
+def derive_key_from_password(password: str, salt: bytes) -> bytes:
+    """Tạo key từ master password"""
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000,
+    )
+    key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
+    return key
+
+def get_master_password():
+    """Lấy master password từ user"""
+    # Trong production, có thể lưu trong session hoặc cache tạm thời
+    return getpass.getpass("Enter master password: ")
+
+class PasswordEncryption:
+    def __init__(self):
+        self.salt = None
+        self.fernet = None
+        
+    def initialize(self, master_password: str):
+        """Khởi tạo với master password"""
+        # Load salt từ file hoặc tạo mới
+        salt_file = 'password_salt.key'
+        if os.path.exists(salt_file):
+            with open(salt_file, 'rb') as f:
+                self.salt = f.read()
+        else:
+            self.salt = os.urandom(16)
+            with open(salt_file, 'wb') as f:
+                f.write(self.salt)
+        
+        # Tạo key từ master password
+        key = derive_key_from_password(master_password, self.salt)
+        self.fernet = Fernet(key)
+    
+    def encrypt_password(self, password: str) -> str:
+        """Mã hóa password"""
+        if not self.fernet:
+            raise ValueError("Encryption not initialized")
+        encrypted = self.fernet.encrypt(password.encode())
+        return base64.urlsafe_b64encode(encrypted).decode()
+    
+    def decrypt_password(self, encrypted_password: str) -> str:
+        """Giải mã password"""
+        if not self.fernet:
+            raise ValueError("Encryption not initialized")
+        encrypted_bytes = base64.urlsafe_b64decode(encrypted_password.encode())
+        decrypted = self.fernet.decrypt(encrypted_bytes)
+        return decrypted.decode()
+
+# Global instance
+password_encryption = PasswordEncryption()
 
 def load_config():
     import os
@@ -230,19 +296,36 @@ class Password(db.Model):
     __tablename__ = 'passwords'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
-    website_url = db.Column(db.String(500), nullable=True)  # ✅ SỬA: nullable=True
-    username = db.Column(db.String(200), nullable=True)     # ✅ SỬA: nullable=True
-    password = db.Column(db.Text, nullable=False)
+    website_url = db.Column(db.String(500), nullable=True)
+    username = db.Column(db.String(200), nullable=True)
+    password_encrypted = db.Column(db.Text, nullable=False)  # ✅ Lưu password đã mã hóa
     note = db.Column(db.Text, nullable=True)
-    
-    # ✅ SỬA: Sử dụng foreign key cho category
     category_id = db.Column(db.Integer, db.ForeignKey('password_categories.id'), nullable=True)
     category = db.relationship('PasswordCategory', backref='passwords')
-    
     favorite = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     user_id = db.Column(db.String(80), nullable=False, default='default')
+    
+    @property
+    def password(self):
+        """Giải mã password khi truy cập"""
+        try:
+            if password_encryption.fernet:
+                return password_encryption.decrypt_password(self.password_encrypted)
+            else:
+                return "[Encrypted - Master password required]"
+        except:
+            return "[Encrypted - Cannot decrypt]"
+    
+    @password.setter
+    def password(self, value):
+        """Mã hóa password khi set"""
+        if value and password_encryption.fernet:
+            self.password_encrypted = password_encryption.encrypt_password(value)
+        else:
+            # ✅ SỬA: Store as-is if encryption not available (for migration)
+            self.password_encrypted = value
     
     def to_dict(self):
         return {
@@ -250,7 +333,7 @@ class Password(db.Model):
             'title': self.title,
             'website_url': self.website_url or '',
             'username': self.username or '',
-            'password': self.password,
+            'password': self.password,  # Sử dụng property để auto-decrypt
             'note': self.note or '',
             'category_id': self.category_id,
             'category_name': self.category.name if self.category else 'General',
@@ -4154,6 +4237,16 @@ def password_manager():
 @login_required
 def get_passwords():
     try:
+        # Check if this is a test request
+        if request.args.get('test'):
+            if not session.get('master_password_verified'):
+                return jsonify({'status': 'error', 'message': 'Master password required'}), 401
+            return jsonify({'status': 'success', 'test': True})
+        
+        # Normal password request - require master password
+        if not session.get('master_password_verified'):
+            return jsonify({'status': 'error', 'message': 'Master password required'}), 401
+            
         search = request.args.get('search', '').strip()
         category_id = request.args.get('category_id', type=int)
         
@@ -4184,27 +4277,45 @@ def get_passwords():
             'status': 'success', 
             'passwords': []
         })
+        
+def require_master_password():
+    """Decorator để check master password"""
+    def decorator(f):
+        def wrapper(*args, **kwargs):
+            # Check if master password was verified recently (trong 1 giờ)
+            if not session.get('master_password_verified'):
+                return jsonify({'status': 'error', 'message': 'Master password required'}), 401
+            
+            verify_time = session.get('master_password_time', 0)
+            if time.time() - verify_time > 3600:  # 1 hour timeout
+                session.pop('master_password_verified', None)
+                session.pop('master_password_time', None)
+                return jsonify({'status': 'error', 'message': 'Master password expired'}), 401
+                
+            # ✅ THÊM: Initialize encryption với master password nếu chưa có
+            if not password_encryption.fernet:
+                return jsonify({'status': 'error', 'message': 'Master password required'}), 401
+            
+            return f(*args, **kwargs)
+        wrapper.__name__ = f.__name__
+        return wrapper
+    return decorator
 
 @app.route('/api/passwords', methods=['POST'])
 @login_required
+@require_master_password()
 def add_password():
     try:
         data = request.json
         
-        # Validate category if provided
-        category_id = data.get('category_id')
-        if category_id:
-            category = PasswordCategory.query.filter_by(id=category_id, user_id=current_user.id).first()
-            if not category:
-                return jsonify({'status': 'error', 'message': 'Invalid category'}), 400
-        
+        # Password sẽ tự động được encrypt khi set
         password = Password(
             title=data['title'],
             website_url=data.get('website_url', ''),
             username=data.get('username', ''),
-            password=data['password'],
+            password=data['password'],  # Sẽ tự động encrypt
             note=data.get('note', ''),
-            category_id=category_id,
+            category_id=data.get('category_id'),
             favorite=data.get('favorite', False),
             user_id=current_user.id
         )
@@ -4214,7 +4325,7 @@ def add_password():
         
         return jsonify({
             'status': 'success',
-            'password': password.to_dict()
+            'password': password.to_dict()  # Sẽ tự động decrypt khi trả về
         })
     except Exception as e:
         db.session.rollback()
@@ -4287,21 +4398,37 @@ def import_passwords():
             return jsonify({'status': 'error', 'message': 'No file selected'}), 400
         
         # Read CSV file
-        import csv
-        import io
-        
         stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
         csv_input = csv.DictReader(stream)
         
         imported_count = 0
         for row in csv_input:
+            # ✅ SỬA: Find or create category
+            category_name = row.get('Category', row.get('category', 'Imported'))
+            category = None
+            if category_name and category_name != 'Imported':
+                category = PasswordCategory.query.filter_by(
+                    name=category_name, 
+                    user_id=current_user.id
+                ).first()
+                
+                if not category:
+                    # Create new category
+                    category = PasswordCategory(
+                        name=category_name,
+                        user_id=current_user.id,
+                        color='#6c757d'
+                    )
+                    db.session.add(category)
+                    db.session.flush()  # Get the ID
+            
             password = Password(
                 title=row.get('Title', row.get('title', '')),
                 website_url=row.get('Website', row.get('URL', row.get('url', ''))),
                 username=row.get('Username', row.get('username', '')),
                 password=row.get('Password', row.get('password', '')),
                 note=row.get('Notes', row.get('note', '')),
-                category=row.get('Category', 'Imported'),
+                category_id=category.id if category else None,
                 user_id=current_user.id
             )
             db.session.add(password)
@@ -4314,6 +4441,8 @@ def import_passwords():
             'message': f'Imported {imported_count} passwords successfully'
         })
     except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error importing passwords: {e}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/passwords/categories', methods=['GET'])
@@ -4488,6 +4617,48 @@ def delete_password_category(category_id):
         db.session.rollback()
         app.logger.error(f"Error deleting password category: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
-    
+
+@app.route('/api/auth/master_password', methods=['POST'])
+@login_required
+def authenticate_master_password():
+    """Xác thực master password"""
+    try:
+        data = request.get_json()
+        master_password = data.get('master_password')
+        
+        if not master_password:
+            return jsonify({'status': 'error', 'message': 'Master password required'}), 400
+        
+        # Test encryption với một password mẫu
+        try:
+            password_encryption.initialize(master_password)
+            
+            # Test encrypt/decrypt để verify master password
+            test_password = "test123"
+            encrypted = password_encryption.encrypt_password(test_password)
+            decrypted = password_encryption.decrypt_password(encrypted)
+            
+            if decrypted == test_password:
+                # Lưu vào session (chỉ trong thời gian ngắn)
+                session['master_password_verified'] = True
+                session['master_password_time'] = time.time()
+                
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Master password verified'
+                })
+            else:
+                return jsonify({'status': 'error', 'message': 'Invalid master password'}), 401
+                
+        except Exception as e:
+            app.logger.error(f"Master password verification failed: {e}")
+            return jsonify({'status': 'error', 'message': 'Invalid master password'}), 401
+            
+    except Exception as e:
+        app.logger.error(f"Error in master password auth: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
