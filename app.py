@@ -1516,11 +1516,6 @@ def ui_settings():
     else:
         return jsonify(config.get('ui_settings', {'show_bg_image': True, 'show_quote': True}))
     
-# Quote app routes
-@quote_app.context_processor
-def inject_theme_quote():
-    theme = session.get('theme', 'light')
-    return dict(theme=theme)
 
 @app.route('/quotes', methods=['GET', 'POST'])
 def quotes():
