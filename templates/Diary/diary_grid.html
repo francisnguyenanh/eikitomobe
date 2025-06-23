@@ -1,7 +1,7 @@
 {% extends "Diary/layout.html" %}
 {% block content %}
 <div class="modern-grid-container">
-    <!-- Header -->
+    <!-- Header với Lock Button -->
     <div class="grid-header">
         <h1 class="grid-title">
             <i class="bi bi-grid"></i>
@@ -9,39 +9,46 @@
         </h1>
         <div class="grid-stats">
             <span class="entry-count">{{ diaries|length }} entries</span>
+            <!-- ✅ SỬA: Lock Button với tooltip -->
+            <button class="btn btn-outline-danger btn-sm ms-2" id="lock-diary-btn"
+                    title="Lock diary and password manager">
+                <i class="bi bi-lock me-1"></i>Lock
+            </button>
         </div>
     </div>
 
-    <!-- Grid Content -->
-    <div class="diary-grid-wrapper">
-        {% if diaries %}
-            <div class="diary-grid" id="diary-grid">
-                {% for diary in diaries %}
-                    <a href="{{ url_for('edit_diary', id=diary.id) }}" 
-                       class="diary-tile" 
-                       style="background-color: {{ diary.color }}"
-                       data-title="{{ diary.title }}"
-                       data-date="{{ diary.date.strftime('%Y-%m-%d') }}">
-                        <div class="tile-overlay">
-                            <div class="tile-info">
-                                <h3 class="tile-title">{{ diary.title[:20] }}{% if diary.title|length > 20 %}...{% endif %}</h3>
-                                <p class="tile-date">{{ diary.date.strftime('%b %d, %Y') }}</p>
-                            </div>
-                        </div>
+    <!-- Grid content -->
+    <div class="diary-grid" id="diaryGrid">
+        {% for diary in diaries %}
+        <div class="diary-tile" style="background-color: {{ diary.color or '#3498db' }};">
+            <div class="tile-overlay">
+                <div class="tile-header">
+                    <h3 class="tile-title">{{ diary.title or 'Untitled' }}</h3>
+                    <span class="tile-date">{{ diary.date.strftime('%m/%d') }}</span>
+                </div>
+                <div class="tile-content">
+                    {{ (diary.content[:100] + '...' if diary.content and diary.content|length > 100 else diary.content) or 'No content' }}
+                </div>
+                <div class="tile-actions">
+                    <a href="{{ url_for('edit_diary', id=diary.id) }}" class="btn btn-light btn-sm">
+                        <i class="bi bi-eye"></i>
                     </a>
-                {% endfor %}
+                    <a href="{{ url_for('edit_diary', id=diary.id) }}" class="btn btn-light btn-sm">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                </div>
             </div>
+        </div>
         {% else %}
-            <div class="empty-state">
-                <i class="bi bi-journal-plus"></i>
-                <h3>No diary entries yet</h3>
-                <p>Start writing your first diary entry!</p>
-                <a href="{{ url_for('new_diary') }}" class="new-entry-btn">
-                    <i class="bi bi-plus-circle"></i>
-                    Create First Entry
-                </a>
-            </div>
-        {% endif %}
+        <div class="empty-state-grid">
+            <i class="bi bi-journal-text"></i>
+            <h3>No diary entries yet</h3>
+            <p>Start writing your first diary entry</p>
+            <a href="{{ url_for('new_diary') }}" class="btn btn-primary">
+                <i class="bi bi-plus"></i> Create Entry
+            </a>
+        </div>
+        {% endfor %}
     </div>
 </div>
 
@@ -293,8 +300,52 @@
             justify-content: center;
         }
     }
-</style>
 
+    /* Password strength styles */
+.password-strength {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.strength-weak { color: #dc3545; }
+.strength-medium { color: #ffc107; }
+.strength-strong { color: #28a745; }
+
+/* Lock button styles */
+#lock-diary-btn {
+    border-color: #dc3545;
+    color: #dc3545;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+#lock-diary-btn:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+#lock-diary-btn:active {
+    transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .grid-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    #lock-diary-btn {
+        width: auto;
+        min-width: 90px;
+    }
+}
+</style>
+<script src="{{ url_for('static', filename='js/diary_auth.js') }}"></script>
 <script>
     function adjustGrid() {
         const grid = document.getElementById('diary-grid');
@@ -358,17 +409,49 @@
     });
 
     // Add smooth entrance animation
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+    // Check authentication status
+    const isAuthenticated = await diaryAuth.checkAuthStatus();
+    
+    if (isAuthenticated) {
+        // Setup lock button
+        document.getElementById('lock-diary-btn').onclick = () => {
+            const confirmed = confirm('Are you sure you want to lock?\n\nThis will lock both your diary and password manager. You will need to enter your master password again to access them.');
+            if (confirmed) {
+                diaryAuth.lockDiary();
+            }
+        };
+
+        // Add keyboard shortcut Ctrl+L to lock
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+                e.preventDefault();
+                const confirmed = confirm('Lock diary and password manager?\n\nPress OK to confirm.');
+                if (confirmed) {
+                    diaryAuth.lockDiary();
+                }
+            }
+        });
+
+        // Grid adjustment
+        setTimeout(adjustGrid, 100);
+        
+        window.addEventListener('resize', () => {
+            setTimeout(adjustGrid, 100);
+        });
+
+        // Add smooth entrance animation
         const tiles = document.querySelectorAll('.diary-tile');
         tiles.forEach((tile, index) => {
             tile.style.opacity = '0';
-            tile.style.transform = 'translateY(20px)';
+            tile.style.transform = 'scale(0.8) translateY(20px)';
             setTimeout(() => {
                 tile.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
                 tile.style.opacity = '1';
-                tile.style.transform = 'translateY(0)';
-            }, index * 50); // Stagger animation
+                tile.style.transform = 'scale(1) translateY(0)';
+            }, index * 50);
         });
-    });
+    }
+});
 </script>
 {% endblock %}

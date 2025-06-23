@@ -52,7 +52,7 @@ except ImportError:
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///memo.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///eiki_tomobe.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads', 'evernote')
@@ -62,20 +62,6 @@ app.config['TASK_UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(
 os.makedirs(app.config['TASK_UPLOAD_FOLDER'], exist_ok=True)
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
-# Diary app setup
-diary_app = Flask(__name__)
-diary_app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///diary.db'
-diary_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db_diary = SQLAlchemy()
-db_diary.init_app(diary_app)
-
-# Quote app setup
-quote_app = Flask(__name__)
-quote_app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///quotes.db'
-quote_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db_quote = SQLAlchemy()
-db_quote.init_app(quote_app)
 
 
 login_manager = LoginManager(app)
@@ -167,7 +153,8 @@ class User(UserMixin):
         self.id = 'default'
 
 # Category model
-class Category(db.Model):
+class TaskCategory(db.Model):
+    __tablename__ = 'task_category' 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False, unique=True)
     user_id = db.Column(db.String(80), nullable=False)
@@ -175,40 +162,41 @@ class Category(db.Model):
 
 # Note model
 # Trong class Note
-class Note(db.Model):
+class Task(db.Model):
+    __tablename__ = 'task'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.String(80), nullable=False)
-    category_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('task_category.id'), nullable=True)
     due_date = db.Column(db.DateTime, nullable=True)
     share_id = db.Column(db.String(36), nullable=True)
     is_completed = db.Column(db.Boolean, default=False)
     images = db.Column(db.Text, nullable=True)  # Lưu JSON chứa danh sách ảnh (base64)
-    category = db.relationship('Category', backref='notes')
+    category = db.relationship('TaskCategory', backref='Task')
 
 
-class Diary(db_diary.Model):
-    id = db_diary.Column(db_diary.Integer, primary_key=True)
-    title = db_diary.Column(db_diary.String(100), nullable=False)
-    content = db_diary.Column(db_diary.Text, nullable=False)
-    date = db_diary.Column(db_diary.DateTime, nullable=False, default=datetime.utcnow)
-    color = db_diary.Column(db_diary.String(7), nullable=False)
+class Diary(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    color = db.Column(db.String(7), nullable=False)
 
-class Slogan(db_diary.Model):
-    id = db_diary.Column(db_diary.Integer, primary_key=True)
-    text = db_diary.Column(db_diary.String(200), nullable=False)
+class Slogan(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.String(200), nullable=False)
 
 # Quote Category model
-class QuoteCategory(db_quote.Model):
-    id = db_quote.Column(db_quote.Integer, primary_key=True)
-    name = db_quote.Column(db_quote.String(100), nullable=False, unique=True)
-    quotes = db_quote.relationship('Quote', backref='category', lazy=True)
+class QuoteCategory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    quotes = db.relationship('Quote', backref='category', lazy=True)
 
-class Quote(db_quote.Model):
-    id = db_quote.Column(db_quote.Integer, primary_key=True)
-    content = db_quote.Column(db_quote.Text, nullable=False)
-    category_id = db_quote.Column(db_quote.Integer, db_quote.ForeignKey('quote_category.id'), nullable=False)
+class Quote(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text, nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('quote_category.id'), nullable=False)
 
 
 # Thêm model mới cho Folder
@@ -370,21 +358,7 @@ class UserSettings(db.Model):
             'user_id': self.user_id,
             'master_password_hint': self.master_password_hint
         }
-        
-# Khởi tạo DB Diary và slogan mặc định nếu chưa có
-with diary_app.app_context():
-    db_diary.create_all()
-    if not Slogan.query.first():
-        default_slogan = Slogan(text="Write your story, live your journey.")
-        db_diary.session.add(default_slogan)
-        db_diary.session.commit()
-
-with quote_app.app_context():
-    db_quote.create_all()
-    # Thêm category mẫu nếu chưa có
-    if not QuoteCategory.query.first():
-        db_quote.session.add(QuoteCategory(name="General"))
-        db_quote.session.commit()
+    
 
 def get_keywords_file_path():
     """Get path to keywords progress file"""
@@ -610,9 +584,18 @@ with app.app_context():
     
     # Tạo default categories cho Notes/Tasks (giữ nguyên)
     for name, color in [('Work', '#FF9999'), ('Personal', '#99FF99'), ('Ideas', '#9999FF')]:
-        if not Category.query.filter_by(name=name, user_id='default').first():
-            db.session.add(Category(name=name, user_id='default', color=color))
+        if not TaskCategory.query.filter_by(name=name, user_id='default').first():
+            db.session.add(TaskCategory(name=name, user_id='default', color=color))
     
+    if not Slogan.query.filter_by().first():
+        default_slogan = Slogan(text="Write your story, live your journey.")
+        db.session.add(default_slogan)
+        db.session.commit()
+    
+    if not QuoteCategory.query.first():
+        db.session.add(QuoteCategory(name="General"))
+        db.session.commit()
+        
     db.session.commit()
             
 def get_user_info():
@@ -625,7 +608,6 @@ def nl2br(value):
     return Markup(value.replace('\n', '<br>'))
 
 app.jinja_env.filters['nl2br'] = nl2br
-quote_app.jinja_env.filters['nl2br'] = nl2br
 
     
 @app.route('/set_theme', methods=['POST'])
@@ -675,10 +657,10 @@ def task():
     show_incomplete = request.args.get('show_incomplete', default=1, type=int)
 
     # Lấy danh sách category
-    categories = Category.query.order_by(Category.id).all()
+    categories = TaskCategory.query.order_by(TaskCategory.id).all()
 
     # Query notes theo user
-    notes_query = Note.query.filter_by(user_id=current_user.id)
+    notes_query = Task.query.filter_by(user_id=current_user.id)
 
     # Lọc theo category nếu có
     if category_id:
@@ -694,12 +676,12 @@ def task():
     # Lọc theo search
     if search_query:
         notes_query = notes_query.filter(
-            (Note.title.ilike(f'%{search_query}%')) |
-            (Note.content.ilike(f'%{search_query}%'))
+            (Task.title.ilike(f'%{search_query}%')) |
+            (Task.content.ilike(f'%{search_query}%'))
         )
 
     # Sắp xếp theo due_date tăng dần, nulls_last để note không có due_date xuống cuối
-    notes_query = notes_query.order_by(Note.due_date.asc().nulls_last())
+    notes_query = notes_query.order_by(Task.due_date.asc().nulls_last())
 
     notes = notes_query.all()
 
@@ -839,7 +821,7 @@ def add_note():
                     continue
         
         # Create note
-        note = Note(
+        note = Task(
             title=title,
             content=content,
             category_id=int(category_id) if category_id and category_id.isdigit() else None,
@@ -870,7 +852,7 @@ def add_note():
 @app.route('/edit_note/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_note(id):
-    note = Note.query.get_or_404(id)
+    note = Task.query.get_or_404(id)
     
     # Check ownership
     if note.user_id != current_user.id:
@@ -1073,7 +1055,7 @@ def get_shared_evernote_image_file(share_id, filename):
 @app.route('/toggle_complete/<int:note_id>', methods=['POST'])
 def toggle_complete(note_id):
     try:
-        note = Note.query.get_or_404(note_id)
+        note = Task.query.get_or_404(note_id)
         note.is_completed = not note.is_completed
         db.session.commit()
         
@@ -1091,7 +1073,7 @@ def toggle_complete(note_id):
 @app.route('/delete_note/<int:id>', methods=['POST'])
 @login_required
 def delete_note(id):
-    note = Note.query.get_or_404(id)
+    note = Task.query.get_or_404(id)
     try:
         db.session.delete(note)
         db.session.commit()
@@ -1111,7 +1093,7 @@ def delete_note(id):
 @app.route('/export/<int:id>')
 @login_required
 def export_note(id):
-    note = Note.query.get_or_404(id)
+    note = Task.query.get_or_404(id)
     if note.user_id != current_user.id:
         flash('Unauthorized access!', 'danger')
         return redirect(url_for('task'))
@@ -1122,7 +1104,7 @@ def export_note(id):
 @app.route('/export_pdf/<int:id>')
 @login_required
 def export_pdf(id):
-    note = Note.query.get_or_404(id)
+    note = Task.query.get_or_404(id)
     if note.user_id != current_user.id:
         flash('Unauthorized access!', 'danger')
         return redirect(url_for('home'))
@@ -1211,7 +1193,7 @@ def card_view(filename):
 @app.route('/calendar')
 @login_required
 def calendar():
-    categories = Category.query.filter_by(user_id=current_user.id).all()
+    categories = TaskCategory.query.filter_by(user_id=current_user.id).all()
     # Serialize categories for JavaScript
     categories_data = [{'id': c.id, 'name': c.name, 'color': c.color or '#ffffff'} for c in categories]
     return render_template('Memo/calendar.html', categories=categories, categories_data=categories_data)
@@ -1219,7 +1201,7 @@ def calendar():
 @app.route('/notes')
 @login_required
 def get_notes():
-    notes = Note.query.filter_by(user_id=current_user.id).all()
+    notes = Task.query.filter_by(user_id=current_user.id).all()
     events = [
         {
             'id': note.id,
@@ -1235,7 +1217,7 @@ def get_notes():
 @app.route('/manage_categories')
 @login_required
 def manage_categories():
-    categories = Category.query.filter_by(user_id=current_user.id).all()
+    categories = TaskCategory.query.filter_by(user_id=current_user.id).all()
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return jsonify({
             'status': 'success',
@@ -1249,12 +1231,12 @@ def add_category():
     if request.method == 'POST':
         name = request.form['name']
         color = request.form['color']
-        if Category.query.filter_by(name=name, user_id=current_user.id).first():
+        if TaskCategory.query.filter_by(name=name, user_id=current_user.id).first():
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'status': 'error', 'message': 'Category already exists!'}), 400
             flash('Category already exists!', 'danger')
         else:
-            category = Category(name=name, user_id=current_user.id, color=color)
+            category = TaskCategory(name=name, user_id=current_user.id, color=color)
             db.session.add(category)
             db.session.commit()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -1270,7 +1252,7 @@ def add_category():
 @app.route('/edit_category/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_category(id):
-    category = Category.query.get_or_404(id)
+    category = TaskCategory.query.get_or_404(id)
     if category.user_id != current_user.id:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return jsonify({'status': 'error', 'message': 'Unauthorized access!'}), 403
@@ -1279,7 +1261,7 @@ def edit_category(id):
     if request.method == 'POST':
         name = request.form['name']
         color = request.form['color']
-        if Category.query.filter_by(name=name, user_id=current_user.id).first() and name != category.name:
+        if TaskCategory.query.filter_by(name=name, user_id=current_user.id).first() and name != category.name:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'status': 'error', 'message': 'Category name already exists!'}), 400
             flash('Category name already exists!', 'danger')
@@ -1300,9 +1282,9 @@ def edit_category(id):
 @app.route('/delete_category/<int:id>', methods=['POST'])
 @login_required
 def delete_category(id):
-    category = Category.query.get_or_404(id)
+    category = TaskCategory.query.get_or_404(id)
     if category.user_id == current_user.id:
-        Note.query.filter_by(category_id=id).update({'category_id': None})
+        Task.query.filter_by(category_id=id).update({'category_id': None})
         db.session.delete(category)
         db.session.commit()
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -1356,7 +1338,7 @@ def sync_notes():
         data = request.get_json()
         #app.logger.debug(f"Received sync data: {data}")
         for note in data.get('notes', []):
-            existing_note = Note.query.get(note.get('id'))
+            existing_note = Task.query.get(note.get('id'))
             if existing_note and existing_note.user_id == current_user.id:
                 existing_note.title = note['title']
                 existing_note.content = note['content']
@@ -1365,8 +1347,8 @@ def sync_notes():
                 existing_note.due_date = datetime.fromisoformat(due_date) if due_date else None
                 existing_note.is_completed = note.get('is_completed', False)
             else:
-                category = Category.query.filter_by(id=note.get('category_id'), user_id=current_user.id).first()
-                new_note = Note(
+                category = TaskCategory.query.filter_by(id=note.get('category_id'), user_id=current_user.id).first()
+                new_note = Task(
                     title=note['title'],
                     content=note['content'],
                     user_id=current_user.id,
@@ -1376,7 +1358,7 @@ def sync_notes():
                 )
                 db.session.add(new_note)
         db.session.commit()
-        notes = Note.query.filter_by(user_id=current_user.id).all()
+        notes = Task.query.filter_by(user_id=current_user.id).all()
         response = {
             'notes': [
                 {
@@ -1420,51 +1402,55 @@ def links():
     return jsonify({'links_tree': config.get('links_tree', [])})
 
 
-# Diary app routes
-
-@diary_app.context_processor
-def inject_theme_quote():
-    theme = session.get('theme', 'light')
-    return dict(theme=theme)
-
-
 @app.route('/Diary/new', methods=['GET', 'POST'])
 def new_diary():
     if request.method == 'POST':
         title = request.form['title']
         content = request.form['content']
         color = request.form['color']
-        with diary_app.app_context():
-            diary = Diary(title=title, content=content, color=color)
-            db_diary.session.add(diary)
-            db_diary.session.commit()
+        
+        diary = Diary(title=title, content=content, color=color, user_id='default')
+        db.session.add(diary)
+        db.session.commit()
+        
         flash('Diary entry saved!', 'success')
         return redirect(url_for('diary_list'))
     return render_template('Diary/new_diary.html')
 
 @app.route('/Diary/edit/<int:id>', methods=['GET', 'POST'])
 def edit_diary(id):
-    with diary_app.app_context():
-        diary = Diary.query.get_or_404(id)
-        if request.method == 'POST':
-            diary.title = request.form['title']
-            diary.content = request.form['content']
-            diary.color = request.form['color']
-            db_diary.session.commit()
-            flash('Diary entry updated!', 'success')
-            return redirect(url_for('diary_grid'))
+    diary = Diary.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        diary.title = request.form['title']
+        diary.content = request.form['content']
+        diary.color = request.form['color']
+        db.session.commit()  # ✅ SỬA: db thay vì db_diary
+        flash('Diary entry updated!', 'success')
+        return redirect(url_for('diary_grid'))
     return render_template('Diary/edit_diary.html', diary=diary)
+
+def require_diary_master_password():
+    """Decorator để check master password - sử dụng password manager auth"""
+    def decorator(f):
+        def wrapper(*args, **kwargs):
+            # ✅ SỬA: Sử dụng session password manager thay vì diary riêng
+            if not session.get('master_password_verified'):
+                return jsonify({'status': 'error', 'message': 'Master password required'}), 401
+            return f(*args, **kwargs)
+        wrapper.__name__ = f.__name__
+        return wrapper
+    return decorator
+
 
 @app.route('/Diary/grid')
 def diary_grid():
-    with diary_app.app_context():
-        diaries = Diary.query.all()
+    diaries = Diary.query.all()
     return render_template('Diary/diary_grid.html', diaries=diaries)
 
 @app.route('/Diary/list')
 def diary_list():
-    with diary_app.app_context():
-        diaries = Diary.query.order_by(Diary.date.desc()).all()
+    diaries = Diary.query.order_by(Diary.date.desc()).all()
     return render_template('Diary/diary_list.html', diaries=diaries)
 
 @app.route('/change_slogan', methods=['POST'])
@@ -1473,14 +1459,14 @@ def change_slogan():
     if not new_slogan_text or len(new_slogan_text) > 200:
         flash('Slogan must be between 1 and 200 characters.', 'danger')
         return redirect(request.referrer or url_for('Diary/diary_grid'))
-    with diary_app.app_context():
-        slogan = Slogan.query.first()
-        if slogan:
-            slogan.text = new_slogan_text
-        else:
-            slogan = Slogan(text=new_slogan_text)
-            db_diary.session.add(slogan)
-        db_diary.session.commit()
+
+    slogan = Slogan.query.first()
+    if slogan:
+        slogan.text = new_slogan_text
+    else:
+        slogan = Slogan(text=new_slogan_text)
+        db.session.add(slogan)
+    db.session.commit()
     flash('Slogan updated successfully!', 'success')
     return redirect(request.referrer or url_for('Diary/diary_grid'))
 
@@ -1497,9 +1483,9 @@ def inject_theme():
         except Exception:
             pass
     # Lấy slogan từ DB diary
-    with diary_app.app_context():
-        slogan = Slogan.query.first()
-        slogan_text = slogan.text if slogan else "Write your story, live your journey."
+
+    slogan = Slogan.query.first()
+    slogan_text = slogan.text if slogan else "Write your story, live your journey."
     return dict(
         theme=theme,
         username=username,
@@ -1538,108 +1524,103 @@ def inject_theme_quote():
 
 @app.route('/quotes', methods=['GET', 'POST'])
 def quotes():
-    with quote_app.app_context():
-        categories = QuoteCategory.query.order_by(QuoteCategory.name).all()
-        quote = None
-        selected_category = None
+    categories = QuoteCategory.query.order_by(QuoteCategory.name).all()
+    quote = None
+    selected_category = None
 
-        all_quotes = Quote.query.all()
+    all_quotes = Quote.query.all()
 
-        if request.method == 'POST':
-            if 'category' in request.form and request.form['category']:
-                selected_category = request.form['category']
-                category = QuoteCategory.query.filter_by(name=selected_category).first()
-                quotes_list = Quote.query.filter_by(category=category).all() if category else []
-                if quotes_list:
-                    quote = random.choice(quotes_list)
-            else:
-                if all_quotes:
-                    quote = random.choice(all_quotes)
+    if request.method == 'POST':
+        if 'category' in request.form and request.form['category']:
+            selected_category = request.form['category']
+            category = QuoteCategory.query.filter_by(name=selected_category).first()
+            quotes_list = Quote.query.filter_by(category=category).all() if category else []
+            if quotes_list:
+                quote = random.choice(quotes_list)
+        else:
+            if all_quotes:
+                quote = random.choice(all_quotes)
 
-        if not quote and all_quotes:
-            quote = random.choice(all_quotes)
+    if not quote and all_quotes:
+        quote = random.choice(all_quotes)
 
-        return render_template('Quote/quotes.html', quote=quote, categories=categories,
-                               selected_category=selected_category)
+    return render_template('Quote/quotes.html', quote=quote, categories=categories,
+                            selected_category=selected_category)
         
 
 @app.route('/quotes/manage', methods=['GET', 'POST'])
 def manage_quotes():
-    with quote_app.app_context():
-        if request.method == 'POST':
-            content = request.form.get('content', '').strip()
-            category_name = request.form.get('category', '').strip()
-            # Kiểm tra trùng lặp
-            existing_quotes = [q.content for q in Quote.query.all()]
-            for existing_content in existing_quotes:
-                similarity = difflib.SequenceMatcher(None, content.lower(), existing_content.lower()).ratio()
-                if similarity >= 0.8:
-                    flash("Trích dẫn này quá giống (≥80%) với một trích dẫn đã tồn tại! Vui lòng nhập trích dẫn khác.", "error")
-                    break
-            else:
-                if content:
-                    if category_name:
-                        category = QuoteCategory.query.filter_by(name=category_name).first()
-                        if not category:
-                            category = QuoteCategory(name=category_name)
-                            db_quote.session.add(category)
-                            db_quote.session.commit()
-                    else:
-                        # Nếu không nhập nguồn, tìm nguồn "St"
-                        category = QuoteCategory.query.filter_by(name="St").first()
-                        if not category:
-                            category = QuoteCategory(name="St")
-                            db_quote.session.add(category)
-                            db_quote.session.commit()
-                    db_quote.session.add(Quote(content=content, category=category))
-                    db_quote.session.commit()
-                    flash("Trích dẫn đã được thêm thành công!", "success")
-        quotes = Quote.query.order_by(Quote.content).all()
-        categories = QuoteCategory.query.order_by(QuoteCategory.name).all()
-        category_counts = db_quote.session.query(QuoteCategory, db_quote.func.count(Quote.id)).outerjoin(Quote).group_by(QuoteCategory.id).all()
-        return render_template('Quote/manage_quotes.html', quotes=quotes, categories=categories, category_counts=category_counts)
+    if request.method == 'POST':
+        content = request.form.get('content', '').strip()
+        category_name = request.form.get('category', '').strip()
+        # Kiểm tra trùng lặp
+        existing_quotes = [q.content for q in Quote.query.all()]
+        for existing_content in existing_quotes:
+            similarity = difflib.SequenceMatcher(None, content.lower(), existing_content.lower()).ratio()
+            if similarity >= 0.8:
+                flash("Trích dẫn này quá giống (≥80%) với một trích dẫn đã tồn tại! Vui lòng nhập trích dẫn khác.", "error")
+                break
+        else:
+            if content:
+                if category_name:
+                    category = QuoteCategory.query.filter_by(name=category_name).first()
+                    if not category:
+                        category = QuoteCategory(name=category_name)
+                        db.session.add(category)
+                        db.session.commit()
+                else:
+                    # Nếu không nhập nguồn, tìm nguồn "St"
+                    category = QuoteCategory.query.filter_by(name="St").first()
+                    if not category:
+                        category = QuoteCategory(name="St")
+                        db.session.add(category)
+                        db.session.commit()
+                db.session.add(Quote(content=content, category=category))
+                db.session.commit()
+                flash("Trích dẫn đã được thêm thành công!", "success")
+    quotes = Quote.query.order_by(Quote.content).all()
+    categories = QuoteCategory.query.order_by(QuoteCategory.name).all()
+    category_counts = db.session.query(QuoteCategory, db.func.count(Quote.id)).outerjoin(Quote).group_by(QuoteCategory.id).all()
+    return render_template('Quote/manage_quotes.html', quotes=quotes, categories=categories, category_counts=category_counts)
     
 @app.route('/quotes/edit/<int:id>', methods=['POST'])
 def edit_quote(id):
-    with quote_app.app_context():
-        content = request.form['content']
-        category_name = request.form['category']
-        quote = Quote.query.get_or_404(id)
-        category = QuoteCategory.query.filter_by(name=category_name).first()
-        if not category:
-            category = QuoteCategory(name=category_name)
-            db_quote.session.add(category)
-            db_quote.session.commit()
-        quote.content = content
-        quote.category = category
-        db_quote.session.commit()
-        flash("Trích dẫn đã được sửa thành công!", "success")
-        return redirect(url_for('manage_quotes'))
+    content = request.form['content']
+    category_name = request.form['category']
+    quote = Quote.query.get_or_404(id)
+    category = QuoteCategory.query.filter_by(name=category_name).first()
+    if not category:
+        category = QuoteCategory(name=category_name)
+        db.session.add(category)
+        db.session.commit()
+    quote.content = content
+    quote.category = category
+    db.session.commit()
+    flash("Trích dẫn đã được sửa thành công!", "success")
+    return redirect(url_for('manage_quotes'))
 
 
 @app.route('/quotes/delete/<int:id>')
 def delete_quote(id):
-    with quote_app.app_context():
-        quote = Quote.query.get_or_404(id)
-        db_quote.session.delete(quote)
-        db_quote.session.commit()
-        flash("Trích dẫn đã được xóa thành công!", "success")
-        return redirect(url_for('manage_quotes'))
+    quote = Quote.query.get_or_404(id)
+    db.session.delete(quote)
+    db.session.commit()
+    flash("Trích dẫn đã được xóa thành công!", "success")
+    return redirect(url_for('manage_quotes'))
 
 @app.route('/quotes/delete_category/<int:category_id>')
 def delete_quote_category(category_id):
-    with quote_app.app_context():
-        category = QuoteCategory.query.get_or_404(category_id)
-        quote_count = Quote.query.filter_by(category=category).count()
-        if quote_count > 0:
-            flash(
-                f"Không thể xóa nguồn '{category.name}' vì đang chứa {quote_count} trích dẫn. Vui lòng xóa hết trích dẫn trong nguồn này trước.",
-                "error")
-        else:
-            db_quote.session.delete(category)
-            db_quote.session.commit()
-            flash(f"Nguồn '{category.name}' đã được xóa thành công.", "success")
-        return redirect(url_for('manage_quotes'))
+    category = QuoteCategory.query.get_or_404(category_id)
+    quote_count = Quote.query.filter_by(category=category).count()
+    if quote_count > 0:
+        flash(
+            f"Không thể xóa nguồn '{category.name}' vì đang chứa {quote_count} trích dẫn. Vui lòng xóa hết trích dẫn trong nguồn này trước.",
+            "error")
+    else:
+        db.session.delete(category)
+        db.session.commit()
+        flash(f"Nguồn '{category.name}' đã được xóa thành công.", "success")
+    return redirect(url_for('manage_quotes'))
 
 UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'photo')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'heic'}
@@ -1706,14 +1687,14 @@ def upload_bg():
 
 def get_random_quote_from_db():
     """Lấy 1 quote ngẫu nhiên từ bảng quote trong quotes.db"""
-    with quote_app.app_context():
-        quote = Quote.query.order_by(db_quote.func.random()).first()
-        if quote:
-            quote_text = quote.content
-            quote_author = quote.category.name if quote.category else ""
-        else:
-            quote_text = "Chưa có trích dẫn nào."
-            quote_author = ""
+
+    quote = Quote.query.order_by(db.func.random()).first()
+    if quote:
+        quote_text = quote.content
+        quote_author = quote.category.name if quote.category else ""
+    else:
+        quote_text = "Chưa có trích dẫn nào."
+        quote_author = ""
     return quote_text, quote_author
     
 @app.route('/home')
@@ -2984,40 +2965,39 @@ def auto_save_diary():
         # Kiểm tra xem đã có draft chưa bằng cách tìm diary có title giống nhau và được tạo trong 24h qua
         recent_time = datetime.now() - timedelta(hours=24)
         
-        with diary_app.app_context():
-            existing_draft = Diary.query.filter(
-                Diary.title == title,
-                Diary.date >= recent_time
-            ).first()
+        existing_draft = Diary.query.filter(
+            Diary.title == title,
+            Diary.date >= recent_time
+        ).first()
+        
+        if existing_draft:
+            # Cập nhật draft hiện có
+            existing_draft.content = content
+            existing_draft.color = color
+            existing_draft.date = datetime.now()  # Cập nhật thời gian
+            db.session.commit()
             
-            if existing_draft:
-                # Cập nhật draft hiện có
-                existing_draft.content = content
-                existing_draft.color = color
-                existing_draft.date = datetime.now()  # Cập nhật thời gian
-                db_diary.session.commit()
-                
-                return jsonify({
-                    'status': 'updated',
-                    'message': 'Draft updated successfully',
-                    'diary_id': existing_draft.id
-                })
-            else:
-                # Tạo draft mới
-                new_diary = Diary(
-                    title=title,
-                    content=content,
-                    color=color,
-                    date=datetime.now()
-                )
-                db_diary.session.add(new_diary)
-                db_diary.session.commit()
-                
-                return jsonify({
-                    'status': 'created',
-                    'message': 'Draft created successfully',
-                    'diary_id': new_diary.id
-                })
+            return jsonify({
+                'status': 'updated',
+                'message': 'Draft updated successfully',
+                'diary_id': existing_draft.id
+            })
+        else:
+            # Tạo draft mới
+            new_diary = Diary(
+                title=title,
+                content=content,
+                color=color,
+                date=datetime.now()
+            )
+            db.session.add(new_diary)
+            db.session.commit()
+            
+            return jsonify({
+                'status': 'created',
+                'message': 'Draft created successfully',
+                'diary_id': new_diary.id
+            })
                 
     except Exception as e:
         app.logger.error(f"Error in auto_save_diary: {str(e)}")
@@ -3042,21 +3022,20 @@ def auto_save_edit_diary(diary_id):
                 'message': 'Both title and content are required for auto-save'
             })
         
-        with diary_app.app_context():
-            diary = Diary.query.get_or_404(diary_id)
-            
-            # Cập nhật diary
-            diary.title = title
-            diary.content = content
-            diary.color = color
-            diary.date = datetime.now()  # Cập nhật thời gian chỉnh sửa
-            db_diary.session.commit()
-            
-            return jsonify({
-                'status': 'updated',
-                'message': 'Diary auto-saved successfully',
-                'diary_id': diary.id
-            })
+        diary = Diary.query.get_or_404(diary_id)
+        
+        # Cập nhật diary
+        diary.title = title
+        diary.content = content
+        diary.color = color
+        diary.date = datetime.now()  # Cập nhật thời gian chỉnh sửa
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'updated',
+            'message': 'Diary auto-saved successfully',
+            'diary_id': diary.id
+        })
                 
     except Exception as e:
         app.logger.error(f"Error in auto_save_edit_diary: {str(e)}")
@@ -4746,7 +4725,7 @@ def upload_task_images():
         if not note_id:
             return jsonify({'status': 'error', 'message': 'Note ID required'})
         
-        note = Note.query.get_or_404(note_id)
+        note = Task.query.get_or_404(note_id)
         images = request.files.getlist('images')
         
         if not images:
@@ -4841,7 +4820,7 @@ def delete_task_image():
         if not note_id or not image_filename:
             return jsonify({'status': 'error', 'message': 'Missing parameters'})
         
-        note = Note.query.get_or_404(note_id)
+        note = Task.query.get_or_404(note_id)
         images = json.loads(note.images) if note.images else []
         
         # Find and remove image
@@ -4883,6 +4862,43 @@ def serve_task_image(filename):
     except Exception as e:
         app.logger.error(f"Error serving task image {filename}: {e}")
         return jsonify({'status': 'error', 'message': 'Image not found'}), 404
+
+
+@app.route('/api/diary/auth/lock', methods=['POST'])
+@login_required
+def lock_diary():
+    """Lock diary - sử dụng password manager lock"""
+    try:
+        session.pop('master_password_verified', None)
+        return jsonify({'status': 'success', 'message': 'Locked successfully'})
+    except Exception as e:
+        app.logger.error(f"Error locking: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Server error'}), 500
+
+@app.route('/api/diary/auth/status', methods=['GET'])
+@login_required
+def check_diary_auth_status():
+    """Check diary authentication status - sử dụng password manager auth"""
+    try:
+        # ✅ SỬA: Kiểm tra password manager settings thay vì diary settings
+        user_settings = UserSettings.query.filter_by(user_id='default').first()
+        
+        # Check if master password is set (password manager)
+        has_master_password = bool(user_settings and user_settings.master_password_hint)
+        
+        # Check if currently authenticated
+        is_authenticated = session.get('master_password_verified', False) if has_master_password else True
+        
+        return jsonify({
+            'status': 'success',
+            'has_master_password': has_master_password,
+            'is_authenticated': is_authenticated,
+            'redirect_to_password_manager': has_master_password and not is_authenticated
+        })
+    except Exception as e:
+        app.logger.error(f"Error checking diary auth status: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Server error'}), 500
+    
     
 if __name__ == '__main__':
     app.run(debug=True)

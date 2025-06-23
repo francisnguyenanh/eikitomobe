@@ -1,7 +1,7 @@
 {% extends "Diary/layout.html" %}
 {% block content %}
 <div class="modern-list-container">
-    <!-- Header -->
+    <!-- Header với Lock Button -->
     <div class="list-header">
         <h1 class="list-title">
             <i class="bi bi-list-ul"></i>
@@ -9,41 +9,46 @@
         </h1>
         <div class="list-stats">
             <span class="entry-count">{{ diaries|length }} entries</span>
+            <!-- ✅ SỬA: Lock Button với tooltip -->
+            <button class="btn btn-outline-danger btn-sm ms-2" id="lock-diary-btn" 
+                    title="Lock diary and password manager">
+                <i class="bi bi-lock me-1"></i>Lock
+            </button>
         </div>
     </div>
 
-    <!-- List Content -->
-    <div class="diary-list-wrapper">
-        {% if diaries %}
-            <div class="diary-list">
-                {% for diary in diaries %}
-                    <a href="{{ url_for('edit_diary', id=diary.id) }}" class="diary-list-item">
-                        <div class="item-color-indicator" style="background-color: {{ diary.color }}"></div>
-                        <div class="item-content">
-                            <div class="item-header">
-                                <h3 class="item-title">{{ diary.title }}</h3>
-                                <span class="item-date">{{ diary.date.strftime('%b %d, %Y') }}</span>
-                            </div>
-                            <p class="item-preview">{{ diary.content[:100] }}{% if diary.content|length > 100 %}...{% endif %}</p>
-                        </div>
-                        <div class="item-actions">
-                            <i class="bi bi-chevron-right"></i>
-                        </div>
-                    </a>
-                {% endfor %}
+    <!-- Original content here... -->
+    {% for diary in diaries %}
+    <div class="diary-list-item" data-date="{{ diary.date.strftime('%Y-%m-%d') }}">
+        <div class="item-color-indicator" style="background-color: {{ diary.color or '#3498db' }};"></div>
+        <div class="item-content">
+            <div class="item-header">
+                <h3 class="item-title">{{ diary.title or 'Untitled' }}</h3>
+                <span class="item-date">{{ diary.date.strftime('%B %d, %Y') }}</span>
             </div>
-        {% else %}
-            <div class="empty-state">
-                <i class="bi bi-journal-plus"></i>
-                <h3>No diary entries yet</h3>
-                <p>Start writing your first diary entry!</p>
-                <a href="{{ url_for('new_diary') }}" class="new-entry-btn">
-                    <i class="bi bi-plus-circle"></i>
-                    Create First Entry
-                </a>
+            <div class="item-preview">
+                {{ (diary.content[:200] + '...' if diary.content and diary.content|length > 200 else diary.content) or 'No content' }}
             </div>
-        {% endif %}
+        </div>
+        <div class="item-actions">
+            <a href="{{ url_for('edit_diary', id=diary.id) }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-eye"></i> View
+            </a>
+            <a href="{{ url_for('edit_diary', id=diary.id) }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-pencil"></i> Edit
+            </a>
+        </div>
     </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-journal-text"></i>
+        <h3>No diary entries yet</h3>
+        <p>Start writing your first diary entry</p>
+        <a href="{{ url_for('new_diary') }}" class="btn btn-primary">
+            <i class="bi bi-plus"></i> Create Entry
+        </a>
+    </div>
+    {% endfor %}
 </div>
 
 <style>
@@ -380,22 +385,98 @@
             transform: translateY(0);
         }
     }
+
+    /* Password strength styles */
+.password-strength {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.strength-weak { color: #dc3545; }
+.strength-medium { color: #ffc107; }
+.strength-strong { color: #28a745; }
+
+/* Lock button styles */
+#lock-diary-btn {
+    border-color: #dc3545;
+    color: #dc3545;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+#lock-diary-btn:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+#lock-diary-btn:active {
+    transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .list-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    #lock-diary-btn {
+        width: auto;
+        min-width: 90px;
+    }
+}
 </style>
 
+<script src="{{ url_for('static', filename='js/diary_auth.js') }}"></script>
+
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // Add staggered entrance animation
-        const items = document.querySelectorAll('.diary-list-item');
-        items.forEach((item, index) => {
-            item.style.animationDelay = `${index * 0.1}s`;
+    document.addEventListener('DOMContentLoaded', async () => {
+    // Check authentication status
+    const isAuthenticated = await diaryAuth.checkAuthStatus();
+    
+    if (isAuthenticated) {
+        // Setup lock button
+        document.getElementById('lock-diary-btn').onclick = () => {
+            const confirmed = confirm('Are you sure you want to lock?\n\nThis will lock both your diary and password manager. You will need to enter your master password again to access them.');
+            if (confirmed) {
+                diaryAuth.lockDiary();
+            }
+        };
+
+        // Add keyboard shortcut Ctrl+L to lock
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+                e.preventDefault();
+                const confirmed = confirm('Lock diary and password manager?\n\nPress OK to confirm.');
+                if (confirmed) {
+                    diaryAuth.lockDiary();
+                }
+            }
         });
 
-        // Set CSS custom property for hover effect
+        // Add entrance animation
+        const items = document.querySelectorAll('.diary-list-item');
+        items.forEach((item, index) => {
+            item.style.opacity = '0';
+            item.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                item.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                item.style.opacity = '1';
+                item.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+
+        // Color indicator effects
         items.forEach(item => {
             const colorIndicator = item.querySelector('.item-color-indicator');
             const bgColor = colorIndicator.style.backgroundColor;
             item.style.setProperty('--item-color', bgColor);
         });
-    });
+    }
+});
 </script>
 {% endblock %}
