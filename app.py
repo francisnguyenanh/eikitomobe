@@ -58,6 +58,9 @@ db = SQLAlchemy(app)
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads', 'evernote')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
+app.config['TASK_UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads', 'task')
+os.makedirs(app.config['TASK_UPLOAD_FOLDER'], exist_ok=True)
+
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Diary app setup
@@ -759,287 +762,208 @@ def normalize_filename(filename):
     safe_name = safe_name.replace('..', '.').rstrip('.')
     return safe_name or 'image.jpg'
 
-@app.route('/add_note', methods=['GET', 'POST'])
+@app.route('/add_note', methods=['POST'])
 @login_required
 def add_note():
-    if request.method == 'POST':
-        try:
-            title = request.form.get('title')
-            content = request.form.get('content')
-            category_id = request.form.get('category_id')
-            due_date = request.form.get('due_date')
-            share = request.form.get('share') == '1'
-            is_completed = request.form.get('is_completed') == '1'
-
-            # Validate required fields
-            if not title:
-                flash('Title is required.', 'danger')
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'Title is required'}), 400
-                return redirect(url_for('task'))
-
-            if not content:
-                flash('Content is required.', 'danger')
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'Content is required'}), 400
-                return redirect(url_for('task'))
-
-            # Validate category
-            categories = Category.query.filter_by(user_id=current_user.id).all()
-            if not categories:
-                flash('No categories available. Please create a category first.', 'danger')
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'No categories available'}), 400
-                return redirect(url_for('task'))
-            if not category_id or not Category.query.filter_by(id=category_id, user_id=current_user.id).first():
-                flash('Please select a valid category.', 'danger')
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'Invalid category'}), 400
-                return redirect(url_for('task'))
-
-            # Parse due_date
-            due_date_utc = None
-            if due_date:
+    try:
+        title = request.form.get('title', '').strip()
+        content = request.form.get('content', '').strip()
+        category_id = request.form.get('category_id')
+        due_date = request.form.get('due_date')
+        
+        if not title:
+            return jsonify({'status': 'error', 'message': 'Title is required'})
+        
+        # ✅ SỬA: Parse due_date với format datetime-local
+        due_date_parsed = None
+        if due_date:
+            try:
+                # Xử lý cả 2 format: datetime-local (YYYY-MM-DDTHH:MM) và date (YYYY-MM-DD)
+                if 'T' in due_date:
+                    due_date_parsed = datetime.strptime(due_date, '%Y-%m-%dT%H:%M')
+                else:
+                    # Nếu chỉ có ngày, set time mặc định là 23:59
+                    date_part = datetime.strptime(due_date, '%Y-%m-%d')
+                    due_date_parsed = date_part.replace(hour=23, minute=59)
+            except ValueError as e:
+                logging.error(f"Invalid due date format: {due_date}, error: {str(e)}")
+                return jsonify({'status': 'error', 'message': 'Invalid due date format'})
+        
+        # Process images
+        images = request.files.getlist('images')
+        images_data = []
+        
+        for image in images:
+            if image and image.filename:
                 try:
-                    due_date_utc = datetime.strptime(due_date, '%Y-%m-%dT%H:%M')
-                except ValueError as e:
-                    flash('Invalid due date format.', 'danger')
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return jsonify({'status': 'error', 'message': 'Invalid due date format'}), 400
-                    return redirect(url_for('task'))
-
-            # Lưu memo trước
-            note = Note(
-                title=title,
-                content=content,
-                category_id=category_id,
-                user_id=current_user.id,
-                due_date=due_date_utc,
-                share_id=str(uuid4()) if share else None,
-                is_completed=is_completed,
-                images=None
-            )
-            db.session.add(note)
-            db.session.commit()
-
-            # Hàm xử lý ảnh bất đồng bộ
-            def process_images(note_id, files):
-                with app.app_context():
-                    #app.logger.debug(f"Processing images for note_id {note_id}, files: {[f.filename for f in files]}")
-                    images = []
-                    for file in files:
-                        if file and file.filename:
-                            allowed_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.heic'}
-                            normalized_filename = normalize_filename(file.filename)
-                            ext = os.path.splitext(normalized_filename.lower())[1]
-                            if ext in allowed_extensions:
-                                try:
-                                    if ext == '.heic':
-                                        with Image(file=file) as img:
-                                            img.format = 'jpeg'
-                                            img.compression_quality = 20
-                                            output = io.BytesIO()
-                                            img.save(file=output)
-                                            image_data = output.getvalue()
-                                        filename = normalized_filename.replace('.heic', '.jpg')
-                                    else:
-                                        image_data = file.read()
-                                        filename = normalized_filename
-                                    image_base64 = b64encode(image_data).decode('utf-8')
-                                    images.append({
-                                        'filename': filename,
-                                        'data': image_base64
-                                    })
-                                except Exception as e:
-                                    app.logger.error(f"Error processing image {normalized_filename}: {str(e)}")
-                            else:
-                                app.logger.warning(f"Invalid file type: {normalized_filename}")
-                    if images:
+                    # Generate unique filename
+                    timestamp = int(time.time() * 1000)
+                    original_filename = secure_filename(image.filename)
+                    name, ext = os.path.splitext(original_filename)
+                    unique_filename = f"task_{timestamp}_{uuid4().hex[:8]}{ext}"
+                    
+                    # Save file to disk
+                    filepath = os.path.join(app.config['TASK_UPLOAD_FOLDER'], unique_filename)
+                    
+                    # Process image like in upload_task_images
+                    if image.filename.lower().endswith('.heic'):
                         try:
-                            note = Note.query.get(note_id)
-                            note.images = json.dumps(images)
-                            db.session.commit()
-                            #app.logger.debug(f"Images saved for note_id {note_id}: {len(images)} images")
-                        except Exception as e:
-                            app.logger.error(f"Error saving images to DB for note_id {note_id}: {str(e)}")
-
-            # Lấy danh sách file và xử lý bất đồng bộ
-            files = request.files.getlist('images')
-            #app.logger.debug(f"Received files: {[f.filename for f in files if f.filename]}")
-            if files and any(file.filename for file in files):
-                threading.Thread(target=process_images, args=(note.id, files)).start()
-            else:
-                app.logger.debug("No valid image files received")
-
-            flash('Note added successfully!', 'success')
-
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({
-                    'status': 'success',
-                    'note': {
-                        'id': note.id,
-                        'title': note.title,
-                        'content': note.content,
-                        'category_id': note.category_id,
-                        'category_name': note.category.name,
-                        'due_date': note.due_date.strftime('%Y-%m-%dT%H:%M') if note.due_date else '',
-                        'share_id': note.share_id,
-                        'is_completed': bool(note.is_completed),
-                        'images': []  # Trả về mảng rỗng vì ảnh đang được xử lý
-                    },
-                    'categories': [{'id': c.id, 'name': c.name} for c in Category.query.filter_by(user_id=current_user.id).all()]
-                })
-            return redirect(url_for('task'))
-
-        except Exception as e:
-            app.logger.error(f"Error in add_note: {str(e)}")
-            flash('An error occurred while adding the note.', 'danger')
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'}), 500
-            return redirect(url_for('task'))
-
-    categories = Category.query.filter_by(user_id=current_user.id).all()
-    return redirect(url_for('task'))
+                            with Image(blob=image.read()) as img:
+                                img.format = 'jpeg'
+                                img.compression_quality = 85
+                                img.save(filename=filepath.replace('.heic', '.jpg').replace('.HEIC', '.jpg'))
+                                unique_filename = unique_filename.replace('.heic', '.jpg').replace('.HEIC', '.jpg')
+                        except:
+                            image.save(filepath)
+                    else:
+                        pil_image = PILImage.open(image)
+                        max_size = (1920, 1080)
+                        if pil_image.size[0] > max_size[0] or pil_image.size[1] > max_size[1]:
+                            pil_image.thumbnail(max_size, PILImage.Resampling.LANCZOS)
+                        
+                        if pil_image.mode in ('RGBA', 'P'):
+                            pil_image = pil_image.convert('RGB')
+                        
+                        pil_image.save(filepath, 'JPEG', quality=85, optimize=True)
+                    
+                    images_data.append({
+                        'filename': unique_filename,
+                        'original_name': original_filename,
+                        'path': f'/static/uploads/task/{unique_filename}',
+                        'upload_time': datetime.now().isoformat(),
+                        'size': os.path.getsize(filepath) if os.path.exists(filepath) else 0
+                    })
+                    
+                except Exception as e:
+                    logging.error(f"Error processing image {image.filename}: {str(e)}")
+                    continue
+        
+        # Create note
+        note = Note(
+            title=title,
+            content=content,
+            category_id=int(category_id) if category_id and category_id.isdigit() else None,
+            user_id=current_user.id,
+            due_date=due_date_parsed,  # ✅ SỬA: Sử dụng due_date_parsed thay vì due_date.strptime()
+            images=json.dumps(images_data) if images_data else None
+        )
+        
+        db.session.add(note)
+        db.session.commit()
+        
+        # Return note data
+        note_data = {
+            'id': note.id,
+            'title': note.title,
+            'content': note.content,
+            'category': note.category.name if note.category else 'Uncategorized',
+            'due_date': note.due_date.strftime('%Y-%m-%d %H:%M') if note.due_date else None,  # ✅ SỬA: Format đầy đủ
+            'images': images_data,
+        }
+        
+        return jsonify({'status': 'success', 'note': note_data})
+        
+    except Exception as e:
+        logging.error(f"Add note error: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)})
 
 @app.route('/edit_note/<int:id>', methods=['GET', 'POST'])
 @login_required
 def edit_note(id):
     note = Note.query.get_or_404(id)
+    
+    # Check ownership
     if note.user_id != current_user.id:
-        app.logger.warning(f"Unauthorized access to note {id} by user {current_user.id}")
+        flash('Unauthorized access!', 'danger')
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'status': 'error', 'message': 'Unauthorized access.'}), 403
-        flash('Unauthorized access.', 'danger')
+            return jsonify({'status': 'error', 'message': 'Unauthorized access'}), 403
         return redirect(url_for('task'))
 
     if request.method == 'POST':
         try:
-            title = request.form.get('title')
-            content = request.form.get('content')
+            title = request.form.get('title', '').strip()
+            content = request.form.get('content', '').strip()
             category_id = request.form.get('category_id')
             due_date = request.form.get('due_date')
-            share = request.form.get('share') == '1'
-            is_completed = request.form.get('is_completed') == '1'
-
+            
             # Validate required fields
             if not title:
-                app.logger.warning("Title is required.")
-                flash('Title is required.', 'danger')
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'Title is required.'}), 400
-                return redirect(url_for('task'))
+                return jsonify({'status': 'error', 'message': 'Title is required'}), 400
 
             if not content:
-                app.logger.warning("Content is required.")
-                flash('Content is required.', 'danger')
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'Content is required.'}), 400
-                return redirect(url_for('task'))
-
-            # Validate category
-            categories = Category.query.filter_by(user_id=current_user.id).all()
-            if not categories:
-                app.logger.warning("No categories available.")
-                flash('No categories available. Please create a category first.', 'danger')
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'No categories available.'}), 400
-                return redirect(url_for('task'))
-            if not category_id or not Category.query.filter_by(id=category_id, user_id=current_user.id).first():
-                app.logger.warning("Invalid category selected.")
-                flash('Please select a valid category.', 'danger')
-                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                    return jsonify({'status': 'error', 'message': 'Invalid category.'}), 400
-                return redirect(url_for('task'))
+                return jsonify({'status': 'error', 'message': 'Content is required'}), 400
 
             # Parse due_date
-            due_date_utc = None
+            due_date_parsed = None
             if due_date:
                 try:
-                    due_date_utc = datetime.strptime(due_date, '%Y-%m-%dT%H:%M')
+                    if 'T' in due_date:
+                        due_date_parsed = datetime.strptime(due_date, '%Y-%m-%dT%H:%M')
+                    else:
+                        date_part = datetime.strptime(due_date, '%Y-%m-%d')
+                        due_date_parsed = date_part.replace(hour=23, minute=59)
                 except ValueError as e:
                     app.logger.error(f"Invalid due date format: {due_date}")
-                    flash('Invalid due date format.', 'danger')
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return jsonify({'status': 'error', 'message': 'Invalid due date format.'}), 400
-                    return redirect(url_for('task'))
+                    return jsonify({'status': 'error', 'message': 'Invalid due date format'}), 400
 
-            # Cập nhật thông tin memo
+            # Process new images
+            new_images = request.files.getlist('images')
+            existing_images = json.loads(note.images) if note.images else []
+            
+            for image in new_images:
+                if image and image.filename:
+                    try:
+                        # Generate unique filename
+                        timestamp = int(time.time() * 1000)
+                        original_filename = secure_filename(image.filename)
+                        name, ext = os.path.splitext(original_filename)
+                        unique_filename = f"task_{note.id}_{timestamp}_{uuid4().hex[:8]}{ext}"
+                        
+                        # Save file to disk
+                        filepath = os.path.join(app.config['TASK_UPLOAD_FOLDER'], unique_filename)
+                        
+                        # Process image
+                        if image.filename.lower().endswith('.heic'):
+                            try:
+                                with Image(blob=image.read()) as img:
+                                    img.format = 'jpeg'
+                                    img.compression_quality = 85
+                                    img.save(filename=filepath.replace('.heic', '.jpg').replace('.HEIC', '.jpg'))
+                                    unique_filename = unique_filename.replace('.heic', '.jpg').replace('.HEIC', '.jpg')
+                            except:
+                                image.save(filepath)
+                        else:
+                            pil_image = PILImage.open(image)
+                            max_size = (1920, 1080)
+                            if pil_image.size[0] > max_size[0] or pil_image.size[1] > max_size[1]:
+                                pil_image.thumbnail(max_size, PILImage.Resampling.LANCZOS)
+                            
+                            if pil_image.mode in ('RGBA', 'P'):
+                                pil_image = pil_image.convert('RGB')
+                            
+                            pil_image.save(filepath, 'JPEG', quality=85, optimize=True)
+                        
+                        # Add to existing images
+                        existing_images.append({
+                            'filename': unique_filename,
+                            'original_name': original_filename,
+                            'path': f'/static/uploads/task/{unique_filename}',
+                            'upload_time': datetime.now().isoformat(),
+                            'size': os.path.getsize(filepath) if os.path.exists(filepath) else 0
+                        })
+                        
+                    except Exception as e:
+                        app.logger.error(f"Error processing image {image.filename}: {str(e)}")
+                        continue
+
+            # Update note
             note.title = title
             note.content = content
-            note.category_id = category_id
-            note.due_date = due_date_utc
-            note.share_id = str(uuid4()) if share and not note.share_id else note.share_id if share else None
-            note.is_completed = is_completed
-
-            # Xử lý ảnh hiện có
-            images = json.loads(note.images) if note.images else []
-            keep_images = request.form.getlist('keep_images')
-            #app.logger.debug(f"keep_images received: {keep_images}")
-            if keep_images is not None:
-                # Nếu mảng rỗng, nghĩa là không giữ lại ảnh nào
-                if len(keep_images) == 0:
-                    images = []
-                else:
-                    keep_indices = [int(i) for i in keep_images if i.isdigit() and int(i) < len(images)]
-                    images = [images[i] for i in keep_indices]
-            else:
-                images = images if images else []
-            note.images = json.dumps(images) if images else None
-            
-            #app.logger.debug(f"Images after filtering: {images}")
-            #app.logger.debug(f"note.images after update: {note.images}")
+            note.category_id = int(category_id) if category_id and category_id.isdigit() else None
+            note.due_date = due_date_parsed
+            note.images = json.dumps(existing_images) if existing_images else None
 
             db.session.commit()
-
-            # Hàm xử lý ảnh mới bất đồng bộ
-            def process_new_images(note_id, files, existing_images):
-                with app.app_context():
-                    #app.logger.debug(f"Processing new images for note_id {note_id}, files: {[f.filename for f in files]}")
-                    new_images = existing_images[:] if existing_images else []
-                    for file in files:
-                        if file and file.filename:
-                            allowed_extensions = {'.png', '.jpg', '.jpeg', '.gif', '.heic'}
-                            normalized_filename = normalize_filename(file.filename)
-                            ext = os.path.splitext(normalized_filename.lower())[1]
-                            if ext in allowed_extensions:
-                                try:
-                                    if ext == '.heic':
-                                        with Image(file=file) as img:
-                                            img.format = 'jpeg'
-                                            img.compression_quality = 20
-                                            output = io.BytesIO()
-                                            img.save(file=output)
-                                            image_data = output.getvalue()
-                                        filename = normalized_filename.replace('.heic', '.jpg')
-                                    else:
-                                        image_data = file.read()
-                                        filename = normalized_filename
-                                    image_base64 = b64encode(image_data).decode('utf-8')
-                                    new_images.append({
-                                        'filename': filename,
-                                        'data': image_base64
-                                    })
-                                except Exception as e:
-                                    app.logger.error(f"Error processing image {normalized_filename}: {str(e)}")
-                            else:
-                                app.logger.warning(f"Invalid file type: {normalized_filename}")
-                    try:
-                        note = Note.query.get(note_id)
-                        note.images = json.dumps(new_images) if new_images else None
-                        db.session.commit()
-                        #app.logger.debug(f"Images saved for note_id {note_id}: {len(new_images)} images")
-                    except Exception as e:
-                        app.logger.error(f"Error saving images to DB for note_id {note_id}: {str(e)}")
-
-            # Lấy danh sách file mới và xử lý bất đồng bộ
-            files = request.files.getlist('images')
-            #app.logger.debug(f"Received files for edit: {[f.filename for f in files if f.filename]}")
-            if files and any(file.filename for file in files):
-                threading.Thread(target=process_new_images, args=(note.id, files, images)).start()
-            else:
-                app.logger.debug("No valid new image files received")
-
-            flash('Note updated successfully!', 'success')
 
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({
@@ -1050,24 +974,30 @@ def edit_note(id):
                         'title': note.title,
                         'content': note.content,
                         'category_id': note.category_id,
-                        'category_name': note.category.name,
+                        'category_name': note.category.name if note.category else 'Uncategorized',
                         'due_date': note.due_date.strftime('%Y-%m-%dT%H:%M') if note.due_date else '',
-                        'share_id': note.share_id,
                         'is_completed': bool(note.is_completed),
-                        'images': images
+                        'images': existing_images
                     }
                 })
             return redirect(url_for('task'))
 
         except Exception as e:
             app.logger.error(f"Error in edit_note: {str(e)}")
-            flash('An error occurred while updating the note.', 'danger')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'}), 500
             return redirect(url_for('task'))
 
+    # GET request - Load note data for editing
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         images = json.loads(note.images) if note.images else []
+        
+        # ✅ SỬA: Format due_date cho datetime-local input
+        due_date_formatted = ''
+        if note.due_date:
+            # Format: YYYY-MM-DDTHH:MM (không có seconds)
+            due_date_formatted = note.due_date.strftime('%Y-%m-%dT%H:%M')
+        
         return jsonify({
             'status': 'success',
             'message': 'Note loaded successfully.',
@@ -1076,16 +1006,13 @@ def edit_note(id):
                 'title': note.title,
                 'content': note.content,
                 'category_id': note.category_id,
-                'category_name': note.category.name,
-                'due_date': note.due_date.strftime('%Y-%m-%dT%H:%M') if note.due_date else '',
-                'share_id': note.share_id,
+                'category_name': note.category.name if note.category else 'Uncategorized',
+                'due_date': due_date_formatted,  # ✅ SỬA: Format đúng cho datetime-local
                 'is_completed': bool(note.is_completed),
                 'images': images
-            },
-            'categories': [{'id': c.id, 'name': c.name} for c in Category.query.filter_by(user_id=current_user.id).all()]
+            }
         })
 
-    categories = Category.query.filter_by(user_id=current_user.id).all()
     return redirect(url_for('task'))
 
 # Route hiển thị note được chia sẻ (không cần login)
@@ -1143,21 +1070,6 @@ def get_shared_evernote_image_file(share_id, filename):
         app.logger.error(f"Error serving shared image {filename}: {e}")
         return "Error serving image", 500
     
-
-    
-@app.route('/get_image/<int:note_id>/<string:filename>')
-@login_required
-def get_image(note_id, filename):
-    note = Note.query.get_or_404(note_id)
-    if note.user_id != current_user.id:
-        return jsonify({'status': 'error', 'message': 'Unauthorized access.'}), 403
-    images = json.loads(note.images) if note.images else []
-    image = next((img for img in images if img['filename'] == filename), None)
-    if not image:
-        return jsonify({'status': 'error', 'message': 'Image not found.'}), 404
-    image_data = base64.b64decode(image['data'])
-    return send_file(BytesIO(image_data), mimetype=f'image/{filename.split(".")[-1].lower()}')
-
 @app.route('/toggle_complete/<int:note_id>', methods=['POST'])
 def toggle_complete(note_id):
     try:
@@ -4826,5 +4738,151 @@ def lock_master_password():
             'message': str(e)
         }), 500
         
+@app.route('/upload_task_images', methods=['POST'])
+@login_required
+def upload_task_images():
+    try:
+        note_id = request.form.get('note_id')
+        if not note_id:
+            return jsonify({'status': 'error', 'message': 'Note ID required'})
+        
+        note = Note.query.get_or_404(note_id)
+        images = request.files.getlist('images')
+        
+        if not images:
+            return jsonify({'status': 'success', 'images': []})
+        
+        # Get existing images
+        existing_images = json.loads(note.images) if note.images else []
+        uploaded_images = []
+        
+        # Process new images
+        for image in images:
+            if image and image.filename:
+                try:
+                    # Generate unique filename
+                    timestamp = int(time.time() * 1000)
+                    original_filename = secure_filename(image.filename)
+                    name, ext = os.path.splitext(original_filename)
+                    unique_filename = f"{name}_{timestamp}_{uuid4().hex[:8]}{ext}"
+                    
+                    # Save file to disk
+                    filepath = os.path.join(app.config['TASK_UPLOAD_FOLDER'], unique_filename)
+                    
+                    # Process and save image
+                    if image.filename.lower().endswith('.heic'):
+                        # Handle HEIC files
+                        try:
+                            with Image(blob=image.read()) as img:
+                                img.format = 'jpeg'
+                                img.compression_quality = 85
+                                img.save(filename=filepath.replace('.heic', '.jpg').replace('.HEIC', '.jpg'))
+                                unique_filename = unique_filename.replace('.heic', '.jpg').replace('.HEIC', '.jpg')
+                                filepath = filepath.replace('.heic', '.jpg').replace('.HEIC', '.jpg')
+                        except:
+                            # Fallback: save as is
+                            image.save(filepath)
+                    else:
+                        # Regular image processing
+                        pil_image = PILImage.open(image)
+                        
+                        # Resize if too large
+                        max_size = (1920, 1080)
+                        if pil_image.size[0] > max_size[0] or pil_image.size[1] > max_size[1]:
+                            pil_image.thumbnail(max_size, PILImage.Resampling.LANCZOS)
+                        
+                        # Convert to RGB if necessary
+                        if pil_image.mode in ('RGBA', 'P'):
+                            pil_image = pil_image.convert('RGB')
+                        
+                        # Save with compression
+                        pil_image.save(filepath, 'JPEG', quality=85, optimize=True)
+                    
+                    # Create image info
+                    image_info = {
+                        'filename': unique_filename,
+                        'original_name': original_filename,
+                        'path': f'/static/uploads/task/{unique_filename}',
+                        'upload_time': datetime.now().isoformat(),
+                        'size': os.path.getsize(filepath) if os.path.exists(filepath) else 0
+                    }
+                    
+                    existing_images.append(image_info)
+                    uploaded_images.append(image_info)
+                    
+                except Exception as e:
+                    logging.error(f"Error processing image {image.filename}: {str(e)}")
+                    continue
+        
+        # Update note with new images
+        note.images = json.dumps(existing_images) if existing_images else None
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'images': uploaded_images,
+            'total_images': len(existing_images),
+            'message': f'{len(uploaded_images)} image(s) uploaded successfully'
+        })
+        
+    except Exception as e:
+        logging.error(f"Upload task images error: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)})
+
+# Route xóa ảnh task
+@app.route('/delete_task_image', methods=['POST'])
+@login_required
+def delete_task_image():
+    try:
+        data = request.get_json()
+        note_id = data.get('note_id')
+        image_filename = data.get('filename')
+        
+        if not note_id or not image_filename:
+            return jsonify({'status': 'error', 'message': 'Missing parameters'})
+        
+        note = Note.query.get_or_404(note_id)
+        images = json.loads(note.images) if note.images else []
+        
+        # Find and remove image
+        updated_images = []
+        deleted_file = None
+        
+        for img in images:
+            if img.get('filename') == image_filename:
+                deleted_file = img
+                # Delete physical file
+                try:
+                    filepath = os.path.join(app.config['TASK_UPLOAD_FOLDER'], image_filename)
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+                except Exception as e:
+                    logging.error(f"Error deleting file {filepath}: {str(e)}")
+            else:
+                updated_images.append(img)
+        
+        # Update database
+        note.images = json.dumps(updated_images) if updated_images else None
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Image deleted successfully',
+            'deleted_file': deleted_file
+        })
+        
+    except Exception as e:
+        logging.error(f"Delete task image error: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)})
+    
+@app.route('/static/uploads/task/<filename>')
+def serve_task_image(filename):
+    """Serve task image files"""
+    try:
+        return send_from_directory(app.config['TASK_UPLOAD_FOLDER'], filename)
+    except Exception as e:
+        app.logger.error(f"Error serving task image {filename}: {e}")
+        return jsonify({'status': 'error', 'message': 'Image not found'}), 404
+    
 if __name__ == '__main__':
     app.run(debug=True)
