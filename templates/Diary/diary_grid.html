@@ -1,51 +1,197 @@
 {% extends "Diary/layout.html" %}
 {% block content %}
-<div class="modern-grid-container">
-    <!-- Header -->
-    <div class="grid-header">
-        <h1 class="grid-title">
-            <i class="bi bi-grid"></i>
-            Grid View
-        </h1>
-        <div class="grid-stats">
-            <span class="entry-count">{{ diaries|length }} entries</span>
+<!-- ✅ SỬA: Sử dụng chung Master Password Modal structure -->
+<div class="modal fade" id="masterPasswordModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-shield-lock me-2"></i>Master Password Required
+                </h5>
+            </div>
+            <div class="modal-body">
+                <p>Enter your master password to access your diary:</p>
+                
+                <!-- Hint Display -->
+                <div id="password-hint-section" class="mb-3" style="display: none;">
+                    <div class="alert alert-info">
+                        <i class="bi bi-lightbulb me-2"></i>
+                        <strong>Hint:</strong> <span id="password-hint-text"></span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <input type="password" class="form-control" id="master-password-input" 
+                           placeholder="Enter master password" required>
+                </div>
+                
+                <!-- Show/Hide Hint Button -->
+                <div class="mb-3 text-center">
+                    <button type="button" class="btn btn-link btn-sm" id="show-hint-btn" style="display: none;">
+                        <i class="bi bi-question-circle me-1"></i>Show Hint
+                    </button>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    This is the same master password used for your Password Manager.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="setup-hint-btn">
+                    <i class="bi bi-gear me-1"></i>Setup Hint
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='/home'">
+                    <i class="bi bi-house me-1"></i>Go Home
+                </button>
+                <button type="button" class="btn btn-primary" id="verify-master-password">
+                    <i class="bi bi-unlock me-1"></i>Unlock Diary
+                </button>
+            </div>
         </div>
     </div>
+</div>
 
-    <!-- Grid Content -->
-    <div class="diary-grid-wrapper">
-        {% if diaries %}
-            <div class="diary-grid" id="diary-grid">
-                {% for diary in diaries %}
-                    <a href="{{ url_for('edit_diary', id=diary.id) }}" 
-                       class="diary-tile" 
-                       style="background-color: {{ diary.color }}"
-                       data-title="{{ diary.title }}"
-                       data-date="{{ diary.date.strftime('%Y-%m-%d') }}">
-                        <div class="tile-overlay">
-                            <div class="tile-info">
-                                <h3 class="tile-title">{{ diary.title[:20] }}{% if diary.title|length > 20 %}...{% endif %}</h3>
-                                <p class="tile-date">{{ diary.date.strftime('%b %d, %Y') }}</p>
+<!-- ✅ THÊM: Hint Setup Modal -->
+<div class="modal fade" id="hintSetupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-lightbulb me-2"></i>Setup Password Hint
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Create a hint to help you remember your master password:</p>
+                
+                <div class="mb-3">
+                    <label for="hint-input" class="form-label">Password Hint</label>
+                    <input type="text" class="form-control" id="hint-input" 
+                           placeholder="e.g., My first pet's name + birth year" maxlength="200">
+                    <div class="form-text">
+                        Make it helpful but not obvious to others. Max 200 characters.
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Important:</strong> Don't include the actual password or make it too obvious!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger btn-sm" id="clear-hint-btn" style="display: none;">
+                    <i class="bi bi-trash me-1"></i>Clear Hint
+                </button>
+                <button type="button" class="btn btn-primary" id="save-hint-btn">Save Hint</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ THÊM: Content wrapper -->
+<div id="diary-content" style="display: none;">
+    <div class="modern-grid-container">
+        <!-- Header -->
+        <div class="grid-header">
+            <h1 class="grid-title">
+                <i class="bi bi-grid"></i>
+                Grid View
+            </h1>
+            <div class="grid-stats">
+                <span class="entry-count">{{ diaries|length }} entries</span>
+                <!-- ✅ THÊM: Lock button -->
+                <button class="btn btn-outline-danger btn-sm" id="lock-diary-btn">
+                    <i class="bi bi-lock me-1"></i>Lock
+                </button>
+            </div>
+        </div>
+
+        <!-- Grid Content -->
+        <div class="diary-grid-wrapper">
+            {% if diaries %}
+                <div class="diary-grid" id="diary-grid">
+                    {% for diary in diaries %}
+                        <a href="{{ url_for('edit_diary', id=diary.id) }}" 
+                           class="diary-tile" 
+                           style="background-color: {{ diary.color }}"
+                           data-title="{{ diary.title }}"
+                           data-date="{{ diary.date.strftime('%Y-%m-%d') }}">
+                            <div class="tile-overlay">
+                                <div class="tile-info">
+                                    <h3 class="tile-title">{{ diary.title[:20] }}{% if diary.title|length > 20 %}...{% endif %}</h3>
+                                    <p class="tile-date">{{ diary.date.strftime('%b %d, %Y') }}</p>
+                                </div>
                             </div>
-                        </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-journal-plus"></i>
+                    <h3>No diary entries yet</h3>
+                    <p>Start writing your first diary entry!</p>
+                    <a href="{{ url_for('new_diary') }}" class="new-entry-btn">
+                        <i class="bi bi-plus-circle"></i>
+                        Create First Entry
                     </a>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="empty-state">
-                <i class="bi bi-journal-plus"></i>
-                <h3>No diary entries yet</h3>
-                <p>Start writing your first diary entry!</p>
-                <a href="{{ url_for('new_diary') }}" class="new-entry-btn">
-                    <i class="bi bi-plus-circle"></i>
-                    Create First Entry
-                </a>
-            </div>
-        {% endif %}
+                </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 
 <style>
+    /* ✅ THÊM: Master Password Modal styles */
+    #masterPasswordModal .modal-content {
+        background: var(--card-bg);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    #masterPasswordModal .modal-header {
+        border-bottom: 1px solid var(--navbar-border);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+    }
+
+    #masterPasswordModal .modal-body {
+        padding: 2rem;
+    }
+
+    #password-hint-section .alert {
+        margin-bottom: 0;
+        border-radius: 8px;
+    }
+
+    #show-hint-btn {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-size: 0.875rem;
+    }
+
+    #show-hint-btn:hover {
+        color: var(--primary-color);
+        text-decoration: underline;
+    }
+
+    /* ✅ THÊM: Lock button styles */
+    #lock-diary-btn {
+        border-color: #dc3545;
+        color: #dc3545;
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+
+    #lock-diary-btn:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: #fff;
+    }
+
     /* Reset và base styles */
     .modern-grid-container {
         max-width: 1200px;
@@ -295,80 +441,138 @@
     }
 </style>
 
-<script>
-    function adjustGrid() {
-        const grid = document.getElementById('diary-grid');
-        if (!grid) return;
-        
-        const tiles = document.querySelectorAll('.diary-tile');
-        const count = tiles.length;
-        if (count === 0) return;
+<!-- ✅ THÊM: Import shared auth script -->
+<script src="{{ url_for('static', filename='js/master_password_auth.js') }}"></script>
 
-        const container = document.querySelector('.diary-grid-wrapper');
-        const containerWidth = container.clientWidth - 30; // Account for padding
-        const containerHeight = container.clientHeight - 30;
-        
-        // Calculate optimal grid dimensions
-        let cols, rows;
-        const aspectRatio = containerWidth / containerHeight;
-        
-        if (aspectRatio > 1) {
-            // Landscape - prefer more columns
-            cols = Math.ceil(Math.sqrt(count * aspectRatio));
-            rows = Math.ceil(count / cols);
-        } else {
-            // Portrait - prefer more rows
-            rows = Math.ceil(Math.sqrt(count / aspectRatio));
-            cols = Math.ceil(count / rows);
-        }
-        
-        // Calculate tile size
-        const gapSize = 15;
-        const availableWidth = containerWidth - (cols - 1) * gapSize;
-        const availableHeight = containerHeight - (rows - 1) * gapSize;
-        
-        const tileWidth = availableWidth / cols;
-        const tileHeight = availableHeight / rows;
-        
-        // Use square tiles (minimum dimension)
-        const tileSize = Math.min(tileWidth, tileHeight);
-        
-        // Ensure minimum tile size
-        const minTileSize = window.innerWidth <= 768 ? 120 : 150;
-        const finalTileSize = Math.max(tileSize, minTileSize);
-        
-        // Apply styles
-        grid.style.gridTemplateColumns = `repeat(${cols}, ${finalTileSize}px)`;
-        grid.style.gridTemplateRows = `repeat(${rows}, ${finalTileSize}px)`;
-        
-        tiles.forEach(tile => {
-            tile.style.width = `${finalTileSize}px`;
-            tile.style.height = `${finalTileSize}px`;
-        });
+<script>
+// ✅ SỬA: Sử dụng shared auth system thay vì local variables
+// let diaryMasterPasswordVerified = false; // ❌ XÓA
+
+// ✅ SỬA: Sử dụng shared auth system
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('📖 Diary Grid - Checking master password...');
+    
+    // Setup auth callbacks
+    masterPasswordAuth.onAuthSuccess = () => {
+        showDiaryContent();
+    };
+    
+    // Check auth status
+    masterPasswordAuth.checkMasterPasswordStatus();
+});
+
+// ✅ XÓA: Tất cả các function auth duplicate
+// - checkDiaryAuthStatus()
+// - showDiaryMasterPasswordModal()
+// - verifyDiaryMasterPassword()
+// - loadDiaryMasterPasswordHint()
+// - toggleDiaryHint()
+
+function showDiaryContent() {
+    console.log('✅ Showing diary content...');
+    document.getElementById('diary-content').style.display = 'block';
+    
+    // Initialize diary functionality
+    initializeDiaryGrid();
+}
+
+function initializeDiaryGrid() {
+    console.log('📖 Initializing diary grid...');
+    
+    // ✅ SỬA: Sử dụng shared lock function
+    const lockBtn = document.getElementById('lock-diary-btn');
+    if (lockBtn) {
+        lockBtn.onclick = () => {
+            masterPasswordAuth.lockMasterPassword();
+        };
     }
 
-    // Initialize grid on page load
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(adjustGrid, 100); // Small delay to ensure proper layout calculation
-    });
+    // Initialize grid and animations
+    initializeDiaryGridLayout();
+}
 
-    // Adjust grid on window resize
-    window.addEventListener('resize', () => {
-        setTimeout(adjustGrid, 100);
+function initializeDiaryGridLayout() {
+    // Adjust grid
+    setTimeout(adjustGrid, 100);
+    
+    // Add entrance animations
+    const tiles = document.querySelectorAll('.diary-tile');
+    tiles.forEach((tile, index) => {
+        tile.style.opacity = '0';
+        tile.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            tile.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            tile.style.opacity = '1';
+            tile.style.transform = 'translateY(0)';
+        }, index * 50); // Stagger animation
     });
+}
 
-    // Add smooth entrance animation
-    document.addEventListener('DOMContentLoaded', () => {
-        const tiles = document.querySelectorAll('.diary-tile');
-        tiles.forEach((tile, index) => {
-            tile.style.opacity = '0';
-            tile.style.transform = 'translateY(20px)';
-            setTimeout(() => {
-                tile.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                tile.style.opacity = '1';
-                tile.style.transform = 'translateY(0)';
-            }, index * 50); // Stagger animation
-        });
+function adjustGrid() {
+    const grid = document.getElementById('diary-grid');
+    if (!grid) return;
+    
+    const tiles = document.querySelectorAll('.diary-tile');
+    const count = tiles.length;
+    if (count === 0) return;
+
+    const container = document.querySelector('.diary-grid-wrapper');
+    const containerWidth = container.clientWidth - 30; // Account for padding
+    const containerHeight = container.clientHeight - 30;
+    
+    // Calculate optimal grid dimensions
+    let cols, rows;
+    const aspectRatio = containerWidth / containerHeight;
+    
+    if (aspectRatio > 1) {
+        // Landscape - prefer more columns
+        cols = Math.ceil(Math.sqrt(count * aspectRatio));
+        rows = Math.ceil(count / cols);
+    } else {
+        // Portrait - prefer more rows
+        rows = Math.ceil(Math.sqrt(count / aspectRatio));
+        cols = Math.ceil(count / rows);
+    }
+    
+    // Calculate tile size
+    const gapSize = 15;
+    const availableWidth = containerWidth - (cols - 1) * gapSize;
+    const availableHeight = containerHeight - (rows - 1) * gapSize;
+    
+    const tileWidth = availableWidth / cols;
+    const tileHeight = availableHeight / rows;
+    
+    // Use square tiles (minimum dimension)
+    const tileSize = Math.min(tileWidth, tileHeight);
+    
+    // Ensure minimum tile size
+    const minTileSize = window.innerWidth <= 768 ? 120 : 150;
+    const finalTileSize = Math.max(tileSize, minTileSize);
+    
+    // Apply styles
+    grid.style.gridTemplateColumns = `repeat(${cols}, ${finalTileSize}px)`;
+    grid.style.gridTemplateRows = `repeat(${rows}, ${finalTileSize}px)`;
+    
+    tiles.forEach(tile => {
+        tile.style.width = `${finalTileSize}px`;
+        tile.style.height = `${finalTileSize}px`;
     });
+}
+
+// Adjust grid on window resize
+window.addEventListener('resize', () => {
+    setTimeout(adjustGrid, 100);
+});
+
+// ✅ XÓA: lockDiary() function (sử dụng masterPasswordAuth.lockMasterPassword())
+
+// ✅ XÓA: Tất cả duplicate auth functions:
+// - loadDiaryMasterPasswordHint()
+// - toggleDiaryHint()
+
+function showDiaryToast(message, type = 'info') {
+    // ✅ SỬA: Sử dụng shared toast function
+    masterPasswordAuth.showToast(message, type);
+}
 </script>
 {% endblock %}

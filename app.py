@@ -5025,17 +5025,6 @@ def serve_task_image(filename):
         return jsonify({'status': 'error', 'message': 'Image not found'}), 404
 
 
-@app.route('/api/diary/auth/lock', methods=['POST'])
-@login_required
-def lock_diary():
-    """Lock diary - sử dụng password manager lock"""
-    try:
-        session.pop('master_password_verified', None)
-        return jsonify({'status': 'success', 'message': 'Locked successfully'})
-    except Exception as e:
-        app.logger.error(f"Error locking: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'Server error'}), 500
-
 @app.route('/api/diary/auth/status', methods=['GET'])
 @login_required
 def check_diary_auth_status():

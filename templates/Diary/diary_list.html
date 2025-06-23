@@ -1,52 +1,198 @@
 {% extends "Diary/layout.html" %}
 {% block content %}
-<div class="modern-list-container">
-    <!-- Header -->
-    <div class="list-header">
-        <h1 class="list-title">
-            <i class="bi bi-list-ul"></i>
-            List View
-        </h1>
-        <div class="list-stats">
-            <span class="entry-count">{{ diaries|length }} entries</span>
+<!-- ✅ THÊM: Master Password Modal trước khi hiển thị content -->
+<div class="modal fade" id="masterPasswordModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-shield-lock me-2"></i>Master Password Required
+                </h5>
+            </div>
+            <div class="modal-body">
+                <p>Enter your master password to access your diary:</p>
+                
+                <!-- Hint Display -->
+                <div id="password-hint-section" class="mb-3" style="display: none;">
+                    <div class="alert alert-info">
+                        <i class="bi bi-lightbulb me-2"></i>
+                        <strong>Hint:</strong> <span id="password-hint-text"></span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <input type="password" class="form-control" id="master-password-input" 
+                           placeholder="Enter master password" required>
+                </div>
+                
+                <!-- Show/Hide Hint Button -->
+                <div class="mb-3 text-center">
+                    <button type="button" class="btn btn-link btn-sm" id="show-hint-btn" style="display: none;">
+                        <i class="bi bi-question-circle me-1"></i>Show Hint
+                    </button>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    This is the same master password used for your Password Manager.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="setup-hint-btn">
+                    <i class="bi bi-gear me-1"></i>Setup Hint
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='/home'">
+                    <i class="bi bi-house me-1"></i>Go Home
+                </button>
+                <button type="button" class="btn btn-primary" id="verify-master-password">
+                    <i class="bi bi-unlock me-1"></i>Unlock Diary
+                </button>
+            </div>
         </div>
     </div>
+</div>
 
-    <!-- List Content -->
-    <div class="diary-list-wrapper">
-        {% if diaries %}
-            <div class="diary-list">
-                {% for diary in diaries %}
-                    <a href="{{ url_for('edit_diary', id=diary.id) }}" class="diary-list-item">
-                        <div class="item-color-indicator" style="background-color: {{ diary.color }}"></div>
-                        <div class="item-content">
-                            <div class="item-header">
-                                <h3 class="item-title">{{ diary.title }}</h3>
-                                <span class="item-date">{{ diary.date.strftime('%b %d, %Y') }}</span>
+<!-- ✅ THÊM: Hint Setup Modal -->
+<div class="modal fade" id="hintSetupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-lightbulb me-2"></i>Setup Password Hint
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Create a hint to help you remember your master password:</p>
+                
+                <div class="mb-3">
+                    <label for="hint-input" class="form-label">Password Hint</label>
+                    <input type="text" class="form-control" id="hint-input" 
+                           placeholder="e.g., My first pet's name + birth year" maxlength="200">
+                    <div class="form-text">
+                        Make it helpful but not obvious to others. Max 200 characters.
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>Important:</strong> Don't include the actual password or make it too obvious!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger btn-sm" id="clear-hint-btn" style="display: none;">
+                    <i class="bi bi-trash me-1"></i>Clear Hint
+                </button>
+                <button type="button" class="btn btn-primary" id="save-hint-btn">Save Hint</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ THÊM: Content wrapper để ẩn/hiện -->
+<div id="diary-content" style="display: none;">
+    <div class="modern-list-container">
+        <!-- Header -->
+        <div class="list-header">
+            <h1 class="list-title">
+                <i class="bi bi-list-ul"></i>
+                List View
+            </h1>
+            <div class="list-stats">
+                <span class="entry-count">{{ diaries|length }} entries</span>
+                <!-- ✅ THÊM: Lock button -->
+                <button class="btn btn-outline-danger btn-sm" id="lock-diary-btn">
+                    <i class="bi bi-lock me-1"></i>Lock
+                </button>
+            </div>
+        </div>
+
+        <!-- List Content -->
+        <div class="diary-list-wrapper">
+            {% if diaries %}
+                <div class="diary-list">
+                    {% for diary in diaries %}
+                        <a href="{{ url_for('edit_diary', id=diary.id) }}" class="diary-list-item">
+                            <div class="item-color-indicator" style="background-color: {{ diary.color }}"></div>
+                            <div class="item-content">
+                                <div class="item-header">
+                                    <h3 class="item-title">{{ diary.title }}</h3>
+                                    <span class="item-date">{{ diary.date.strftime('%b %d, %Y') }}</span>
+                                </div>
+                                <p class="item-preview">{{ diary.content[:100] }}{% if diary.content|length > 100 %}...{% endif %}</p>
                             </div>
-                            <p class="item-preview">{{ diary.content[:100] }}{% if diary.content|length > 100 %}...{% endif %}</p>
-                        </div>
-                        <div class="item-actions">
-                            <i class="bi bi-chevron-right"></i>
-                        </div>
+                            <div class="item-actions">
+                                <i class="bi bi-chevron-right"></i>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-journal-plus"></i>
+                    <h3>No diary entries yet</h3>
+                    <p>Start writing your first diary entry!</p>
+                    <a href="{{ url_for('new_diary') }}" class="new-entry-btn">
+                        <i class="bi bi-plus-circle"></i>
+                        Create First Entry
                     </a>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="empty-state">
-                <i class="bi bi-journal-plus"></i>
-                <h3>No diary entries yet</h3>
-                <p>Start writing your first diary entry!</p>
-                <a href="{{ url_for('new_diary') }}" class="new-entry-btn">
-                    <i class="bi bi-plus-circle"></i>
-                    Create First Entry
-                </a>
-            </div>
-        {% endif %}
+                </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 
 <style>
+    /* ✅ THÊM: Master Password Modal styles */
+    #diaryMasterPasswordModal .modal-content {
+        background: var(--card-bg);
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    #diaryMasterPasswordModal .modal-header {
+        border-bottom: 1px solid var(--navbar-border);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0;
+    }
+
+    #diaryMasterPasswordModal .modal-body {
+        padding: 2rem;
+    }
+
+    #diary-password-hint-section .alert {
+        margin-bottom: 0;
+        border-radius: 8px;
+    }
+
+    #diary-show-hint-btn {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-size: 0.875rem;
+    }
+
+    #diary-show-hint-btn:hover {
+        color: var(--primary-color);
+        text-decoration: underline;
+    }
+
+    /* ✅ THÊM: Lock button styles */
+    #lock-diary-btn {
+        border-color: #dc3545;
+        color: #dc3545;
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+
+    #lock-diary-btn:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: #fff;
+    }
+
     /* Reset và base styles */
     .modern-list-container {
         max-width: 900px;
@@ -382,8 +528,52 @@
     }
 </style>
 
+<script src="{{ url_for('static', filename='js/master_password_auth.js') }}"></script>
+
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    let diaryMasterPasswordVerified = false;
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('📖 Diary List - Checking master password...');
+        
+        // Setup auth callbacks
+        masterPasswordAuth.onAuthSuccess = () => {
+            showDiaryContent();
+        };
+        
+        masterPasswordAuth.checkMasterPasswordStatus();
+    });
+
+    
+
+    
+
+    
+
+    function showDiaryContent() {
+    console.log('✅ Showing diary content...');
+    document.getElementById('diary-content').style.display = 'block';
+    
+    // Initialize diary functionality
+    initializeDiaryList();
+}
+
+function initializeDiaryList() {
+    console.log('📖 Initializing diary list...');
+    
+    // ✅ SỬA: Sử dụng shared lock function
+    const lockBtn = document.getElementById('lock-diary-btn');
+    if (lockBtn) {
+        lockBtn.onclick = () => {
+            masterPasswordAuth.lockMasterPassword();
+        };
+    }
+
+    // Initialize animations
+    initializeDiaryAnimations();
+}
+
+    function initializeDiaryAnimations() {
         // Add staggered entrance animation
         const items = document.querySelectorAll('.diary-list-item');
         items.forEach((item, index) => {
@@ -396,6 +586,68 @@
             const bgColor = colorIndicator.style.backgroundColor;
             item.style.setProperty('--item-color', bgColor);
         });
-    });
+    }
+
+    async function lockDiary() {
+        try {
+            console.log('🔒 Locking diary...');
+            
+            const response = await fetch('/api/auth/lock_master_password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                showDiaryToast('Diary locked successfully', 'success');
+                
+                // Reset state
+                diaryMasterPasswordVerified = false;
+                
+                // Fade out and redirect
+                document.body.style.transition = 'opacity 0.5s ease';
+                document.body.style.opacity = '0';
+                
+                setTimeout(() => {
+                    window.location.href = '/home';
+                }, 500);
+                
+            } else {
+                showDiaryToast('Error: ' + data.message, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error locking diary:', error);
+            showDiaryToast('Error locking diary', 'error');
+        }
+    }
+
+    
+
+   
+
+    function showDiaryToast(message, type = 'info') {
+        console.log(`📢 Diary Toast: ${message} (${type})`);
+        
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close ms-2" onclick="this.parentElement.remove()"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 3000);
+
+        masterPasswordAuth.showToast(message, type);
+    }
 </script>
 {% endblock %}
