@@ -1,4 +1,3 @@
-// ✅ SỬA: Đơn giản hóa DiaryAuth class
 class DiaryAuth {
     constructor() {
         this.isAuthenticated = false;
@@ -7,7 +6,8 @@ class DiaryAuth {
 
     async checkAuthStatus() {
         try {
-            // ✅ SỬA: Sử dụng diary auth endpoint nhưng backend sẽ check password manager
+            console.log('🔒 Checking diary auth status...');
+            
             const response = await fetch('/api/diary/auth/status');
             const data = await response.json();
             
@@ -15,108 +15,97 @@ class DiaryAuth {
                 this.hasMasterPassword = data.has_master_password;
                 this.isAuthenticated = data.is_authenticated;
                 
-                // ✅ SỬA: Nếu cần authentication, chuyển đến password manager
-                if (data.redirect_to_password_manager) {
-                    this.showRedirectModal();
+                console.log('🔒 Diary Auth Status:', {
+                    hasMaster: this.hasMasterPassword,
+                    isAuth: this.isAuthenticated,
+                    needsRedirect: data.redirect_to_password_manager
+                });
+                
+                // ✅ SỬA: Block page nếu cần authentication
+                if (data.redirect_to_password_manager === true) {
+                    console.log('❌ Need to redirect to password manager');
+                    this.blockPageAndRedirect();
                     return false;
-                } else if (!this.hasMasterPassword) {
-                    this.showSetupModal();
-                    return false;
+                } else {
+                    console.log('✅ Authentication OK - allow access to diary');
+                    return true;
                 }
-                return true;
+            } else {
+                throw new Error(data.message || 'Unknown error');
             }
-            return false;
         } catch (error) {
-            console.error('Error checking diary auth status:', error);
+            console.error('❌ Error checking diary auth:', error);
+            this.showToast('Error checking authentication', 'error');
             return false;
         }
     }
 
-    showSetupModal() {
-        const modalHtml = `
-            <div class="modal fade" id="diarySetupModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">
-                                <i class="bi bi-shield-plus me-2"></i>Setup Master Password
-                            </h5>
-                        </div>
-                        <div class="modal-body">
-                            <div class="text-center mb-4">
-                                <i class="bi bi-shield-lock" style="font-size: 3rem; color: var(--primary-color);"></i>
-                            </div>
-                            
-                            <p class="text-center mb-4">
-                                You need to set up a master password to protect your sensitive data including diary entries and passwords.
-                            </p>
-                            
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle me-2"></i>
-                                The master password will protect both your diary entries and saved passwords.
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='/home'">
-                                <i class="bi bi-house me-1"></i>Back to Home
-                            </button>
-                            <button type="button" class="btn btn-primary" onclick="window.location.href='/password_manager'">
-                                <i class="bi bi-shield-plus me-1"></i>Setup Master Password
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
+    blockPageAndRedirect() {
+        console.log('🚫 Blocking page access and redirecting...');
         
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        const modal = new bootstrap.Modal(document.getElementById('diarySetupModal'));
-        modal.show();
-    }
-
-    showRedirectModal() {
-        const modalHtml = `
-            <div class="modal fade" id="diaryRedirectModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">
-                                <i class="bi bi-shield-lock me-2"></i>Authentication Required
-                            </h5>
-                        </div>
-                        <div class="modal-body">
-                            <div class="text-center mb-4">
-                                <i class="bi bi-lock" style="font-size: 3rem; color: var(--primary-color);"></i>
-                            </div>
-                            
-                            <p class="text-center mb-4">
-                                You need to enter your master password to access your diary entries.
-                            </p>
-                            
-                            <div class="alert alert-warning">
-                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                Your diary is protected by the same master password used for your password manager.
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='/home'">
-                                <i class="bi bi-house me-1"></i>Back to Home
-                            </button>
-                            <button type="button" class="btn btn-primary" onclick="window.location.href='/password_manager'">
-                                <i class="bi bi-unlock me-1"></i>Enter Master Password
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
+        // ✅ SỬA: Block toàn bộ page content
+        const body = document.body;
         
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        const modal = new bootstrap.Modal(document.getElementById('diaryRedirectModal'));
-        modal.show();
+        // Create overlay to block content
+        const overlay = document.createElement('div');
+        overlay.id = 'auth-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: Arial, sans-serif;
+        `;
+        
+        overlay.innerHTML = `
+            <div style="text-align: center; background: rgba(255,255,255,0.1); padding: 2rem; border-radius: 15px; backdrop-filter: blur(10px);">
+                <i class="bi bi-shield-lock" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                <h3 style="margin-bottom: 1rem;">Authentication Required</h3>
+                <p style="margin-bottom: 2rem; opacity: 0.9;">You need to authenticate with your master password to access the diary.</p>
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    <button id="go-auth-btn" class="btn btn-primary" style="padding: 0.75rem 1.5rem;">
+                        <i class="bi bi-key me-1"></i>Authenticate
+                    </button>
+                    <button id="go-home-btn" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
+                        <i class="bi bi-house me-1"></i>Go Home
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        body.appendChild(overlay);
+        
+        // Add event listeners
+        document.getElementById('go-auth-btn').onclick = () => {
+            window.location.href = '/password_manager';
+        };
+        
+        document.getElementById('go-home-btn').onclick = () => {
+            window.location.href = '/home';
+        };
+        
+        // ✅ SỬA: Hide main content
+        const mainContent = document.querySelector('.modern-grid-container') || 
+                           document.querySelector('.diary-list-container') || 
+                           document.querySelector('main') ||
+                           document.querySelector('.container');
+        
+        if (mainContent) {
+            mainContent.style.display = 'none';
+        }
     }
 
     async lockDiary() {
         try {
-            // ✅ SỬA: Sử dụng diary lock endpoint (backend sẽ clear session chung)
+            console.log('🔒 Locking diary...');
+            
             const response = await fetch('/api/diary/auth/lock', {
                 method: 'POST',
                 headers: {
@@ -124,35 +113,107 @@ class DiaryAuth {
                 }
             });
             
-            if (response.ok) {
-                this.isAuthenticated = false;
-                this.showToast('Locked successfully - Both diary and password manager are now locked', 'success');
-                setTimeout(() => window.location.href = '/home', 1500);
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                this.showToast('Diary and Password Manager locked successfully', 'success');
+                
+                // ✅ SỬA: Redirect với delay
+                setTimeout(() => {
+                    window.location.href = '/home';
+                }, 1000);
+            } else {
+                this.showToast('Error: ' + data.message, 'error');
             }
         } catch (error) {
-            console.error('Error locking:', error);
-            this.showToast('Error locking', 'error');
+            console.error('❌ Error locking diary:', error);
+            this.showToast('Error locking diary', 'error');
         }
     }
 
     showToast(message, type = 'info') {
+        console.log(`📢 Toast: ${message} (${type})`);
+        
+        // Create toast element
         const toast = document.createElement('div');
-        toast.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
-        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px;';
+        toast.className = `alert alert-${type === 'error' ? 'danger' : type} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 10000; min-width: 300px;';
         toast.innerHTML = `
             ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="btn-close ms-2" onclick="this.parentElement.remove()"></button>
         `;
         
         document.body.appendChild(toast);
         
+        // Auto-remove after 3 seconds
         setTimeout(() => {
             if (toast.parentNode) {
                 toast.remove();
             }
-        }, 4000);
+        }, 3000);
     }
 }
 
-// Global instance
+// ✅ SỬA: Export và initialize
 const diaryAuth = new DiaryAuth();
+
+// ✅ SỬA: Check auth IMMEDIATELY khi page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Chỉ check auth cho diary pages
+    const isDiaryPage = window.location.pathname.includes('/Diary/') || 
+                       window.location.pathname.includes('/diary');
+    
+    if (isDiaryPage) {
+        console.log('📄 Diary page detected - checking auth immediately...');
+        
+        // ✅ SỬA: Check auth ngay lập tức và block nếu cần
+        diaryAuth.checkAuthStatus().then(isAllowed => {
+            if (isAllowed) {
+                console.log('✅ Auth check passed - diary content accessible');
+                // Initialize page functionality here
+                initializeDiaryPage();
+            } else {
+                console.log('❌ Auth check failed - page blocked');
+                // Page is already blocked by blockPageAndRedirect()
+            }
+        }).catch(error => {
+            console.error('💥 Auth check error:', error);
+            diaryAuth.blockPageAndRedirect();
+        });
+    }
+});
+
+// ✅ SỬA: Function để initialize diary page sau khi auth thành công
+function initializeDiaryPage() {
+    console.log('🎉 Initializing diary page functionality...');
+    
+    // Setup lock button nếu có
+    const lockBtn = document.getElementById('lock-diary-btn');
+    if (lockBtn) {
+        lockBtn.onclick = () => {
+            const confirmed = confirm('Are you sure you want to lock?\n\nThis will lock both your diary and password manager. You will need to enter your master password again to access them.');
+            if (confirmed) {
+                diaryAuth.lockDiary();
+            }
+        };
+    }
+
+    // Add keyboard shortcut Ctrl+L to lock
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+            e.preventDefault();
+            const confirmed = confirm('Lock diary and password manager?\n\nPress OK to confirm.');
+            if (confirmed) {
+                diaryAuth.lockDiary();
+            }
+        }
+    });
+    
+    // Initialize other diary-specific functionality here
+    // e.g., grid adjustment, animations, etc.
+}
+
+// Export để có thể sử dụng từ templates
+if (typeof window !== 'undefined') {
+    window.diaryAuth = diaryAuth;
+}

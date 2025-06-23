@@ -125,27 +125,47 @@ class PasswordEncryption:
 # Global instance
 password_encryption = PasswordEncryption()
 
-def load_config():
-    import os
-    if not os.path.exists('config.txt'):
-        with open('config.txt', 'w', encoding='utf-8') as f:
-            json.dump({"theme": "light"}, f, ensure_ascii=False, indent=2)
-        return {"theme": "light"}
-    with open('config.txt', encoding='utf-8') as f:
-        config = json.load(f)
-    if "theme" not in config:
-        config["theme"] = "light"
-        with open('config.txt', 'w', encoding='utf-8') as f:
-            json.dump(config, f, ensure_ascii=False, indent=2)
-    return config
-
-def save_config(config):
-    with open('config.txt', 'w', encoding='utf-8') as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
-        
 def get_theme():
-    config = load_config()
-    return config.get('theme', 'light')
+    """Get theme from UserSettings"""
+    settings = get_user_settings()
+    return settings.theme_preference or 'light'
+
+def get_user_info():
+    """Get user info from UserSettings"""
+    settings = get_user_settings()
+    return settings.user_name, settings.user_birthday
+
+
+
+def verify_password(password):
+    """Verify password from UserSettings"""
+    try:
+        app.logger.info(f"🔍 DEBUG: verify_password() called with password: {'*' * len(password) if password else 'None'}")
+        
+        settings = get_user_settings()
+        app.logger.info(f"🔍 DEBUG: UserSettings loaded - ID: {settings.id if settings else 'None'}")
+        
+        hash_str = settings.user_password_hash if settings else None
+        app.logger.info(f"🔍 DEBUG: hash_str from UserSettings.user_password_hash: {'EXISTS' if hash_str else 'NULL'}")
+        
+        if not hash_str:
+            app.logger.warning(f"⚠️  DEBUG: No password hash found in UserSettings!")
+            return False
+        
+        # Debug: Show first 20 chars of hash for identification
+        hash_preview = hash_str[:20] + "..." if len(hash_str) > 20 else hash_str
+        app.logger.info(f"🔍 DEBUG: Hash preview: {hash_preview}")
+        
+        # Verify password
+        result = bcrypt.checkpw(password.encode('utf-8'), hash_str.encode('utf-8'))
+        app.logger.info(f"🔍 DEBUG: bcrypt.checkpw() result: {result}")
+        
+        return result
+        
+    except Exception as e:
+        app.logger.error(f"❌ DEBUG: Exception in verify_password(): {str(e)}")
+        app.logger.error(f"❌ DEBUG: Exception type: {type(e).__name__}")
+        return False
 
 # User model
 class User(UserMixin):
@@ -157,7 +177,6 @@ class TaskCategory(db.Model):
     __tablename__ = 'task_category' 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False, unique=True)
-    user_id = db.Column(db.String(80), nullable=False)
     color = db.Column(db.String(7), nullable=True)  # HEX color, e.g., #FF0000
 
 # Note model
@@ -167,7 +186,6 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)
-    user_id = db.Column(db.String(80), nullable=False)
     category_id = db.Column(db.Integer, db.ForeignKey('task_category.id'), nullable=True)
     due_date = db.Column(db.DateTime, nullable=True)
     share_id = db.Column(db.String(36), nullable=True)
@@ -265,7 +283,6 @@ class Todo(db.Model):
     repeat_unit = db.Column(db.String(10), nullable=True)  # days, weeks, months
     end_date = db.Column(db.Date, nullable=True)
     completed = db.Column(db.Boolean, default=False, nullable=False)
-    user_id = db.Column(db.String(80), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     parent_id = db.Column(db.Integer, db.ForeignKey('todo.id'), nullable=True)  # Cho repeat todos
     
@@ -285,7 +302,6 @@ class Password(db.Model):
     favorite = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    user_id = db.Column(db.String(80), nullable=False, default='default')
     
     @property
     def password(self):
@@ -327,13 +343,12 @@ class PasswordCategory(db.Model):
     __tablename__ = 'password_categories'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
-    user_id = db.Column(db.String(80), nullable=False)
     color = db.Column(db.String(7), nullable=True, default='#007bff')  # HEX color
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     # Unique constraint để tránh duplicate categories cho cùng user
-    __table_args__ = (db.UniqueConstraint('name', 'user_id', name='unique_password_category_per_user'),)
+    __table_args__ = (db.UniqueConstraint('name', name='unique_password_category_per_user'),)
     
     def to_dict(self):
         return {
@@ -347,18 +362,126 @@ class PasswordCategory(db.Model):
 class UserSettings(db.Model):
     __tablename__ = 'user_settings'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(80), nullable=False, unique=True)
+    
+    # Password Manager settings
     master_password_hint = db.Column(db.String(200), nullable=True)
+    
+    # Theme và UI settings
+    theme_preference = db.Column(db.String(10), default='light')
+    show_bg_image = db.Column(db.Boolean, default=True)
+    show_quote = db.Column(db.Boolean, default=True)
+    
+    # User profile info
+    user_name = db.Column(db.String(100), nullable=True)
+    user_birthday = db.Column(db.String(20), nullable=True)  # Store as string YYYY-MM-DD
+    user_password_hash = db.Column(db.Text, nullable=True)
+    
+    # JSON fields
+    card_info = db.Column(db.Text, nullable=True)  # JSON string for card data
+    links_tree = db.Column(db.Text, nullable=True)  # JSON string for links
+    breath_settings = db.Column(db.Text, nullable=True)  # JSON string
+    
+    # AI settings
+    ai_question_template = db.Column(db.Text, nullable=True)
+    vocabulary_query_template = db.Column(db.Text, nullable=True)
+    
+    # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    def get_card_info(self):
+        """Get card info as dict"""
+        if self.card_info:
+            try:
+                return json.loads(self.card_info)
+            except:
+                return {}
+        return {}
+    
+    def set_card_info(self, data):
+        """Set card info from dict"""
+        if data:
+            self.card_info = json.dumps(data, ensure_ascii=False)
+        else:
+            self.card_info = None
+    
+    def get_links_tree(self):
+        """Get links tree as list"""
+        if self.links_tree:
+            try:
+                return json.loads(self.links_tree)
+            except:
+                return []
+        return []
+    
+    def set_links_tree(self, data):
+        """Set links tree from list"""
+        if data:
+            self.links_tree = json.dumps(data, ensure_ascii=False)
+        else:
+            self.links_tree = None
+    
+    def get_breath_settings(self):
+        """Get breath settings as dict"""
+        if self.breath_settings:
+            try:
+                return json.loads(self.breath_settings)
+            except:
+                return {}
+        return {}
+    
+    def set_breath_settings(self, data):
+        """Set breath settings from dict"""
+        if data:
+            self.breath_settings = json.dumps(data, ensure_ascii=False)
+        else:
+            self.breath_settings = None
     
     def to_dict(self):
         return {
             'id': self.id,
-            'user_id': self.user_id,
-            'master_password_hint': self.master_password_hint
+            'master_password_hint': self.master_password_hint,
+            'theme_preference': self.theme_preference,
+            'show_bg_image': self.show_bg_image,
+            'show_quote': self.show_quote,
+            'user_name': self.user_name,
+            'user_birthday': self.user_birthday,
+            'card_info': self.get_card_info(),
+            'links_tree': self.get_links_tree(),
+            'breath_settings': self.get_breath_settings(),
+            'ai_question_template': self.ai_question_template,
+            'vocabulary_query_template': self.vocabulary_query_template,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
     
+def get_user_settings():
+    """Get or create user settings - always default for single user"""
+    settings = UserSettings.query.filter_by().first()
+    if not settings:
+        settings = UserSettings()
+        db.session.add(settings)
+        db.session.commit()
+    return settings
+
+def update_user_setting(**kwargs):
+    """Update specific user settings - single user system"""
+    settings = get_user_settings()
+    
+    for key, value in kwargs.items():
+        if hasattr(settings, key):
+            setattr(settings, key, value)
+    
+    settings.updated_at = datetime.now()
+    db.session.commit()
+    return settings
+
+def get_user_setting(setting_name=None, default=None):
+    """Get specific user setting"""
+    settings = get_user_settings()
+    if setting_name:
+        return getattr(settings, setting_name, default)
+    return settings
 
 def get_keywords_file_path():
     """Get path to keywords progress file"""
@@ -374,7 +497,103 @@ def get_method_file_path():
     """Get path to method.txt file"""
     return os.path.join(app.root_path, 'method.txt')
 
+def migrate_config_to_user_settings():
+    """Migrate existing config.txt to UserSettings table"""
+    try:
+        # Load existing config.txt
+        config_file = 'config.txt'
+        if not os.path.exists(config_file):
+            print("No config.txt found, skipping migration")
+            return
+        
+        with open(config_file, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        
+        print(f"Migrating config.txt with keys: {list(config.keys())}")
+        
+        # ✅ SỬA: Get or create single user settings (không cần user_id parameter)
+        settings = get_user_settings()
+        
+        # Migrate theme
+        if 'theme' in config:
+            settings.theme_preference = config['theme']
+            print(f"Migrated theme: {config['theme']}")
+        
+        # Migrate UI settings
+        if 'ui_settings' in config:
+            ui = config['ui_settings']
+            settings.show_bg_image = ui.get('show_bg_image', True)
+            settings.show_quote = ui.get('show_quote', True)
+            print(f"Migrated UI settings: {ui}")
+        
+        # Migrate user info
+        if 'user' in config:
+            user = config['user']
+            settings.user_name = user.get('name')
+            settings.user_birthday = user.get('birthday')
+            print(f"Migrated user info: {user}")
+        
+        # Migrate password hash
+        if 'user_password_hash' in config:
+            settings.user_password_hash = config['user_password_hash']
+            print("Migrated password hash")
+        
+        # ✅ SỬA: Migrate master password hint
+        if 'master_password_hint' in config:
+            settings.master_password_hint = config['master_password_hint']
+            print("Migrated master password hint")
+        
+        # Migrate card info
+        if 'card' in config:
+            settings.set_card_info(config['card'])
+            print(f"Migrated card info: {list(config['card'].keys())}")
+        
+        # Migrate links tree
+        if 'links_tree' in config:
+            settings.set_links_tree(config['links_tree'])
+            print(f"Migrated links tree with {len(config['links_tree'])} items")
+        
+        # Migrate breath settings
+        if 'breath_settings' in config:
+            settings.set_breath_settings(config['breath_settings'])
+            print(f"Migrated breath settings: {list(config['breath_settings'].keys())}")
+        
+        # Migrate AI templates
+        if 'ai_question_template' in config:
+            settings.ai_question_template = config['ai_question_template']
+            print("Migrated AI question template")
+        
+        if 'vocabulary_query_template' in config:
+            settings.vocabulary_query_template = config['vocabulary_query_template']
+            print("Migrated vocabulary query template")
+        
+        # ✅ SỬA: Set updated timestamp
+        settings.updated_at = datetime.now()
+        
+        db.session.commit()
+        print("✅ Settings migrated to UserSettings successfully")
+        
+        # Backup config.txt
+        backup_path = 'config.txt.backup'
+        os.rename(config_file, backup_path)
+        print(f"✅ config.txt backed up to {backup_path}")
+        
+    except Exception as e:
+        print(f"❌ Migration failed: {e}")
+        db.session.rollback()
+        
+        # Print detailed error for debugging
+        import traceback
+        traceback.print_exc()
 
+# ✅ THÊM: Chạy migration khi khởi động app
+with app.app_context():
+    db.create_all()
+    migrate_config_to_user_settings()
+    
+    
+    
+    
 
 def load_knowledge_categories():
     """Load knowledge categories from kw.txt"""
@@ -535,7 +754,6 @@ def initialize_keywords_file():
         knowledge_categories = load_knowledge_categories()
         
         default_data = {
-            "user_id": "default",
             "completed_keywords": [],
             "criteria_progress": {},  # New: track criteria completion
             "last_updated": datetime.now().isoformat(),
@@ -571,8 +789,8 @@ with app.app_context():
     ]
     
     for name, color in default_password_categories:
-        if not PasswordCategory.query.filter_by(name=name, user_id='default').first():
-            category = PasswordCategory(name=name, user_id='default', color=color)
+        if not PasswordCategory.query.filter_by(name=name).first():
+            category = PasswordCategory(name=name, color=color)
             db.session.add(category)
     
     # Tạo default folder cho Evernote
@@ -584,8 +802,8 @@ with app.app_context():
     
     # Tạo default categories cho Notes/Tasks (giữ nguyên)
     for name, color in [('Work', '#FF9999'), ('Personal', '#99FF99'), ('Ideas', '#9999FF')]:
-        if not TaskCategory.query.filter_by(name=name, user_id='default').first():
-            db.session.add(TaskCategory(name=name, user_id='default', color=color))
+        if not TaskCategory.query.filter_by(name=name).first():
+            db.session.add(TaskCategory(name=name, color=color))
     
     if not Slogan.query.filter_by().first():
         default_slogan = Slogan(text="Write your story, live your journey.")
@@ -598,10 +816,6 @@ with app.app_context():
         
     db.session.commit()
             
-def get_user_info():
-    config = load_config()
-    user = config.get('user', {})
-    return user.get('name', 'Unknown'), user.get('birthday', None)
 
 
 def nl2br(value):
@@ -614,25 +828,19 @@ app.jinja_env.filters['nl2br'] = nl2br
 @login_required
 def set_theme():
     theme = request.json.get('theme')
-    if theme:
+    if theme in ['light', 'dark']:
         session['theme'] = theme
-        config = load_config()
-        config['theme'] = theme
-        save_config(config)
+        
+        # ✅ SỬA: Lưu vào UserSettings thay vì config.txt
+        update_user_setting(theme_preference=theme)
+        
         return jsonify({'status': 'success'})
-    return jsonify({'status': 'error', 'message': 'No theme provided'}), 400
+    return jsonify({'status': 'error', 'message': 'Invalid theme'}), 400
 
     
 @login_manager.user_loader
 def load_user(user_id):
-    return User() if user_id == 'default' else None
-
-def verify_password(password):
-    config = load_config()
-    hash = config.get('user_password_hash', '')
-    if not hash:
-        return False
-    return bcrypt.checkpw(password.encode('utf-8'), hash.encode('utf-8'))
+    return User()
 
 
 
@@ -660,7 +868,7 @@ def task():
     categories = TaskCategory.query.order_by(TaskCategory.id).all()
 
     # Query notes theo user
-    notes_query = Task.query.filter_by(user_id=current_user.id)
+    notes_query = Task.query
 
     # Lọc theo category nếu có
     if category_id:
@@ -825,7 +1033,6 @@ def add_note():
             title=title,
             content=content,
             category_id=int(category_id) if category_id and category_id.isdigit() else None,
-            user_id=current_user.id,
             due_date=due_date_parsed,  # ✅ SỬA: Sử dụng due_date_parsed thay vì due_date.strptime()
             images=json.dumps(images_data) if images_data else None
         )
@@ -853,13 +1060,6 @@ def add_note():
 @login_required
 def edit_note(id):
     note = Task.query.get_or_404(id)
-    
-    # Check ownership
-    if note.user_id != current_user.id:
-        flash('Unauthorized access!', 'danger')
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'status': 'error', 'message': 'Unauthorized access'}), 403
-        return redirect(url_for('task'))
 
     if request.method == 'POST':
         try:
@@ -1094,9 +1294,7 @@ def delete_note(id):
 @login_required
 def export_note(id):
     note = Task.query.get_or_404(id)
-    if note.user_id != current_user.id:
-        flash('Unauthorized access!', 'danger')
-        return redirect(url_for('task'))
+
     file_content = f"Title: {note.title}\n\n{note.content}\n\nCategory: {note.category.name if note.category else 'None'}"
     file = BytesIO(file_content.encode('utf-8'))
     return send_file(file, download_name=f"{note.title}.txt", as_attachment=True)
@@ -1105,9 +1303,7 @@ def export_note(id):
 @login_required
 def export_pdf(id):
     note = Task.query.get_or_404(id)
-    if note.user_id != current_user.id:
-        flash('Unauthorized access!', 'danger')
-        return redirect(url_for('home'))
+
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     try:
@@ -1166,9 +1362,6 @@ def card_list():
             files.append(fname)
     return jsonify({'files': files})
 
-def get_card_info():
-    config = load_config()
-    return config.get('card', {})
 
 import os
 
@@ -1178,8 +1371,8 @@ def card_view(filename):
     if not filename.endswith('.html'):
         return "Invalid file", 400
     card_dir = os.path.join('Card', filename)
-    card_info = get_card_info()  # Luôn truyền context cho mọi file
-    # ... avatar_url như hướng dẫn trước ...
+    settings = get_user_settings()
+    card_info = settings.get_card_info()
     avatar_dir = os.path.join(app.static_folder, 'avatar')
     avatar_file = None
     if os.path.exists(avatar_dir):
@@ -1193,7 +1386,7 @@ def card_view(filename):
 @app.route('/calendar')
 @login_required
 def calendar():
-    categories = TaskCategory.query.filter_by(user_id=current_user.id).all()
+    categories = TaskCategory.query.all()
     # Serialize categories for JavaScript
     categories_data = [{'id': c.id, 'name': c.name, 'color': c.color or '#ffffff'} for c in categories]
     return render_template('Memo/calendar.html', categories=categories, categories_data=categories_data)
@@ -1201,7 +1394,7 @@ def calendar():
 @app.route('/notes')
 @login_required
 def get_notes():
-    notes = Task.query.filter_by(user_id=current_user.id).all()
+    notes = Task.query.all()
     events = [
         {
             'id': note.id,
@@ -1217,7 +1410,7 @@ def get_notes():
 @app.route('/manage_categories')
 @login_required
 def manage_categories():
-    categories = TaskCategory.query.filter_by(user_id=current_user.id).all()
+    categories = TaskCategory.query.all()
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return jsonify({
             'status': 'success',
@@ -1231,12 +1424,12 @@ def add_category():
     if request.method == 'POST':
         name = request.form['name']
         color = request.form['color']
-        if TaskCategory.query.filter_by(name=name, user_id=current_user.id).first():
+        if TaskCategory.query.filter_by(name=name).first():
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'status': 'error', 'message': 'Category already exists!'}), 400
             flash('Category already exists!', 'danger')
         else:
-            category = TaskCategory(name=name, user_id=current_user.id, color=color)
+            category = TaskCategory(name=name, color=color)
             db.session.add(category)
             db.session.commit()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -1253,15 +1446,11 @@ def add_category():
 @login_required
 def edit_category(id):
     category = TaskCategory.query.get_or_404(id)
-    if category.user_id != current_user.id:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'status': 'error', 'message': 'Unauthorized access!'}), 403
-        flash('Unauthorized access!', 'danger')
-        return redirect(url_for('manage_categories'))
+
     if request.method == 'POST':
         name = request.form['name']
         color = request.form['color']
-        if TaskCategory.query.filter_by(name=name, user_id=current_user.id).first() and name != category.name:
+        if TaskCategory.query.filter_by(name=name).first() and name != category.name:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'status': 'error', 'message': 'Category name already exists!'}), 400
             flash('Category name already exists!', 'danger')
@@ -1283,17 +1472,13 @@ def edit_category(id):
 @login_required
 def delete_category(id):
     category = TaskCategory.query.get_or_404(id)
-    if category.user_id == current_user.id:
-        Task.query.filter_by(category_id=id).update({'category_id': None})
-        db.session.delete(category)
-        db.session.commit()
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'status': 'success'})
-        flash('Category deleted successfully!', 'success')
-    else:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'status': 'error', 'message': 'Unauthorized access!'}), 403
-        flash('Unauthorized access!', 'danger')
+    Task.query.filter_by(category_id=id).update({'category_id': None})
+    db.session.delete(category)
+    db.session.commit()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'status': 'success'})
+    flash('Category deleted successfully!', 'success')
+
     if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
         return redirect(url_for('manage_categories'))
     return jsonify({'status': 'success'})
@@ -1317,9 +1502,10 @@ def change_password():
     new_password = request.form['new_password']
     if new_password:
         hashed = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
-        config = load_config()
-        config['user_password_hash'] = hashed.decode('utf-8')
-        save_config(config)
+        
+        # ✅ SỬA: Lưu vào UserSettings
+        update_user_setting(user_password_hash=hashed.decode('utf-8'))
+        
         flash('Password changed successfully!', 'success')
     else:
         flash('Please enter a new password', 'danger')
@@ -1339,7 +1525,7 @@ def sync_notes():
         #app.logger.debug(f"Received sync data: {data}")
         for note in data.get('notes', []):
             existing_note = Task.query.get(note.get('id'))
-            if existing_note and existing_note.user_id == current_user.id:
+            if existing_note:
                 existing_note.title = note['title']
                 existing_note.content = note['content']
                 existing_note.category_id = note.get('category_id')
@@ -1347,18 +1533,17 @@ def sync_notes():
                 existing_note.due_date = datetime.fromisoformat(due_date) if due_date else None
                 existing_note.is_completed = note.get('is_completed', False)
             else:
-                category = TaskCategory.query.filter_by(id=note.get('category_id'), user_id=current_user.id).first()
+                category = TaskCategory.query.filter_by(id=note.get('category_id')).first()
                 new_note = Task(
                     title=note['title'],
                     content=note['content'],
-                    user_id=current_user.id,
                     category_id=category.id if category else None,
                     due_date=datetime.fromisoformat(due_date) if (due_date := note.get('due_date')) else None,
                     is_completed=note.get('is_completed', False)
                 )
                 db.session.add(new_note)
         db.session.commit()
-        notes = Task.query.filter_by(user_id=current_user.id).all()
+        notes = Task.query.all()
         response = {
             'notes': [
                 {
@@ -1391,16 +1576,6 @@ def db_size():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/links', methods=['GET', 'POST'])
-def links():
-    config = load_config()
-    if request.method == 'POST':
-        data = request.get_json()
-        config['links_tree'] = data.get('links_tree', [])
-        save_config(config)
-        return jsonify({'status': 'success'})
-    return jsonify({'links_tree': config.get('links_tree', [])})
-
 
 @app.route('/Diary/new', methods=['GET', 'POST'])
 def new_diary():
@@ -1409,7 +1584,7 @@ def new_diary():
         content = request.form['content']
         color = request.form['color']
         
-        diary = Diary(title=title, content=content, color=color, user_id='default')
+        diary = Diary(title=title, content=content, color=color)
         db.session.add(diary)
         db.session.commit()
         
@@ -1472,9 +1647,26 @@ def change_slogan():
 
 @app.context_processor
 def inject_theme():
-    # Theme lấy từ session hoặc mặc định
-    theme = session.get('theme', 'light')
-    username, birthday = get_user_info()
+    # ✅ SỬA: Lấy theme từ UserSettings thay vì session/config
+    theme = 'light'  # default
+    
+    if current_user.is_authenticated:
+        try:
+            settings = get_user_settings()
+            theme = settings.theme_preference or 'light'
+        except:
+            theme = session.get('theme', 'light')
+    else:
+        theme = session.get('theme', 'light')
+    
+    # ✅ SỬA: Lấy user info từ UserSettings
+    try:
+        settings = get_user_settings()
+        username = settings.user_name or 'Unknown'
+        birthday = settings.user_birthday
+    except:
+        username, birthday = 'Unknown', None
+    
     days_alive = 0
     if birthday:
         try:
@@ -1482,10 +1674,10 @@ def inject_theme():
             days_alive = (date.today() - dob).days
         except Exception:
             pass
-    # Lấy slogan từ DB diary
 
     slogan = Slogan.query.first()
     slogan_text = slogan.text if slogan else "Write your story, live your journey."
+    
     return dict(
         theme=theme,
         username=username,
@@ -1501,21 +1693,6 @@ def format_thousands(number):
     except (ValueError, TypeError):
         return number
 
-@app.route('/ui_settings', methods=['GET', 'POST'])
-@login_required
-def ui_settings():
-    config = load_config()
-    if request.method == 'POST':
-        data = request.get_json()
-        config['ui_settings'] = {
-            'show_bg_image': bool(data.get('show_bg_image', True)),
-            'show_quote': bool(data.get('show_quote', True))
-        }
-        save_config(config)
-        return jsonify({'status': 'success'})
-    else:
-        return jsonify(config.get('ui_settings', {'show_bg_image': True, 'show_quote': True}))
-    
 
 @app.route('/quotes', methods=['GET', 'POST'])
 def quotes():
@@ -1696,22 +1873,25 @@ def get_random_quote_from_db():
 @login_required
 def home():
     quote_text, quote_author = get_random_quote_from_db()
-    theme = session.get('theme', 'light')
+    theme = get_theme()
+    
     bg_image_url = None
     photo_dir = os.path.join(app.static_folder, 'photo')
     if os.path.exists(photo_dir):
         files = [f for f in os.listdir(photo_dir) if allowed_file(f)]
         if files:
             bg_image_url = url_for('static', filename=f'photo/{files[0]}')
-    config = load_config()
-    ui_settings = config.get('ui_settings', {'show_bg_image': True, 'show_quote': True})
+    
+    # ✅ SỬA: Lấy UI settings từ UserSettings
+    settings = get_user_settings()
+    
     return render_template(
         'home.html',
         quote_content=quote_text,
         quote_author=quote_author,
         theme=theme,
-        bg_image_url=bg_image_url if ui_settings.get('show_bg_image', True) else None,
-        show_quote=ui_settings.get('show_quote', True)
+        bg_image_url=bg_image_url if settings.show_bg_image else None,
+        show_quote=settings.show_quote
     )
 
 @app.route('/upload_avatar', methods=['POST'])
@@ -1767,16 +1947,20 @@ def api_card_info():
     if request.method == 'POST':
         try:
             data = request.get_json()
-            config = load_config()
-            config['card'] = {
+            
+            # ✅ SỬA: Lưu vào UserSettings
+            settings = get_user_settings()
+            settings.set_card_info({
                 'Name': data.get('Name', ''),
                 'Job': data.get('Job', ''),
                 'Email': data.get('Email', ''),
                 'Phone': data.get('Phone', ''),
                 'SNS': data.get('SNS', ''),
                 'SubSlogan': data.get('SubSlogan', '')
-            }
-            save_config(config)
+            })
+            settings.updated_at = datetime.now()
+            db.session.commit()
+            
             app.logger.info(f"Card info saved successfully: {list(data.keys())}")
             return jsonify({'status': 'success'})
         except Exception as e:
@@ -1784,8 +1968,9 @@ def api_card_info():
             return jsonify({'status': 'error', 'message': str(e)}), 500
     else:
         try:
-            config = load_config()
-            card_info = config.get('card', {})
+            # ✅ SỬA: Lấy từ UserSettings
+            settings = get_user_settings()
+            card_info = settings.get_card_info()
             return jsonify(card_info)
         except Exception as e:
             app.logger.error(f"Error loading card info: {str(e)}")
@@ -1806,44 +1991,33 @@ def api_card_list():
     except Exception as e:
         app.logger.error(f"Error getting card list: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
-    
-@app.route('/update_card_info', methods=['POST'])
-@login_required
-def update_card_info():
-    data = request.json
-    config = load_config()
-    config['card'] = {
-        'Name': data.get('Name',''),
-        'Job': data.get('Job',''),
-        'Email': data.get('Email',''),
-        'Phone': data.get('Phone',''),
-        'SNS': data.get('SNS',''),
-        'SubSlogan': data.get('SubSlogan','')
-    }
-    save_config(config)
-    return jsonify({'status': 'success'})
 
 @app.route('/api/ui_settings', methods=['GET', 'POST'])
 @login_required
 def api_ui_settings():
-    """API endpoint for UI settings"""
-    config = load_config()
+    """API endpoint for UI settings using UserSettings"""
     if request.method == 'POST':
         try:
             data = request.get_json()
-            config['ui_settings'] = {
-                'show_bg_image': bool(data.get('show_bg_image', True)),
-                'show_quote': bool(data.get('show_quote', True))
-            }
-            save_config(config)
+            
+            # ✅ SỬA: Cập nhật vào UserSettings
+            update_user_setting(
+                show_bg_image=bool(data.get('show_bg_image', True)),
+                show_quote=bool(data.get('show_quote', True))
+            )
+            
             return jsonify({'status': 'success'})
         except Exception as e:
             app.logger.error(f"Error saving UI settings: {str(e)}")
             return jsonify({'status': 'error', 'message': str(e)}), 500
     else:
         try:
-            ui_settings = config.get('ui_settings', {'show_bg_image': True, 'show_quote': True})
-            return jsonify(ui_settings)
+            # ✅ SỬA: Lấy từ UserSettings
+            settings = get_user_settings()
+            return jsonify({
+                'show_bg_image': settings.show_bg_image,
+                'show_quote': settings.show_quote
+            })
         except Exception as e:
             app.logger.error(f"Error loading UI settings: {str(e)}")
             return jsonify({'status': 'error', 'message': str(e)}), 500
@@ -1852,19 +2026,25 @@ def api_ui_settings():
 @login_required
 def api_links_tree():
     """API endpoint for links tree"""
-    config = load_config()
     if request.method == 'POST':
         try:
             data = request.get_json()
-            config['links_tree'] = data.get('links_tree', [])
-            save_config(config)
+            
+            # ✅ SỬA: Lưu vào UserSettings
+            settings = get_user_settings()
+            settings.set_links_tree(data.get('links_tree', []))
+            settings.updated_at = datetime.now()
+            db.session.commit()
+            
             return jsonify({'status': 'success'})
         except Exception as e:
             app.logger.error(f"Error saving links tree: {str(e)}")
             return jsonify({'status': 'error', 'message': str(e)}), 500
     else:
         try:
-            links_tree = config.get('links_tree', [])
+            # ✅ SỬA: Lấy từ UserSettings
+            settings = get_user_settings()
+            links_tree = settings.get_links_tree()
             return jsonify({'links_tree': links_tree})
         except Exception as e:
             app.logger.error(f"Error loading links tree: {str(e)}")
@@ -1873,7 +2053,6 @@ def api_links_tree():
 
 
 def encode_card(filename):
-    # Có thể dùng thêm salt hoặc user_id nếu muốn bảo mật hơn
     return hashlib.sha256(filename.encode()).hexdigest()[:12]
 
 # Ví dụ ánh xạ tạm thời (nên lưu vào DB nếu dùng thực tế)
@@ -1898,7 +2077,8 @@ def public_card(card_hash):
     if not filename or not filename.endswith('.html'):
         return "Invalid or expired link", 404
     card_dir = f'Card/{filename}'  # SỬA Ở ĐÂY
-    card_info = get_card_info()
+    settings = get_user_settings()
+    card_info = settings.get_card_info()
     avatar_dir = os.path.join(app.static_folder, 'avatar')
     avatar_file = None
     if os.path.exists(avatar_dir):
@@ -1918,14 +2098,26 @@ def breath():
 @app.route('/breath_settings', methods=['GET', 'POST'])
 @login_required
 def breath_settings():
-    config = load_config()
     if request.method == 'POST':
-        data = request.json
-        config['breath_settings'] = data
-        save_config(config)
-        return jsonify({'status': 'success'})
+        try:
+            data = request.json
+            
+            # ✅ SỬA: Lưu vào UserSettings
+            settings = get_user_settings()
+            settings.set_breath_settings(data)
+            settings.updated_at = datetime.now()
+            db.session.commit()
+            
+            return jsonify({'status': 'success'})
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': str(e)}), 500
     else:
-        return jsonify(config.get('breath_settings', {}))
+        try:
+            # ✅ SỬA: Lấy từ UserSettings
+            settings = get_user_settings()
+            return jsonify(settings.get_breath_settings())
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': str(e)}), 500
     
 @app.route('/eye_exercise')
 @login_required
@@ -2479,12 +2671,7 @@ def get_evernote_note_images(note_id):
 def get_single_evernote_note(note_id):
     """Get a single note by ID"""
     try:
-        # ✅ SỬA: Bỏ user_id filter nếu model không có field này
         note = EvernoteNote.query.get_or_404(note_id)
-        
-        # ✅ Kiểm tra ownership nếu có user_id field
-        # if hasattr(note, 'user_id') and note.user_id != current_user.id:
-        #     return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
         
         # Get folder info if exists
         folder_name = note.folder.name if note.folder else None
@@ -2680,7 +2867,7 @@ def get_todos():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
-    query = Todo.query.filter_by(user_id=current_user.id)
+    query = Todo.query
     
     if start_date and end_date:
         try:
@@ -2730,8 +2917,7 @@ def add_todo():
             repeat_interval=data.get('repeat_interval'),
             repeat_unit=data.get('repeat_unit'),
             end_date=datetime.strptime(data['end_date'], '%Y-%m-%d').date() if data.get('end_date') else None,
-            completed=False,
-            user_id=current_user.id
+            completed=False
         )
         
         db.session.add(todo)
@@ -2761,9 +2947,6 @@ def update_todo(todo_id):
     try:
         todo = Todo.query.get_or_404(todo_id)
         
-        # Check ownership
-        if todo.user_id != current_user.id:
-            return jsonify({'error': 'Unauthorized'}), 403
         
         data = request.json
         update_all = data.get('update_all', False)
@@ -2826,10 +3009,6 @@ def update_todo(todo_id):
 def delete_todo(todo_id):
     try:
         todo = Todo.query.get_or_404(todo_id)
-        
-        # Check ownership
-        if todo.user_id != current_user.id:
-            return jsonify({'error': 'Unauthorized'}), 403
         
         delete_all = request.args.get('delete_all') == 'true'
         app.logger.info(f"Deleting todo {todo_id}, delete_all={delete_all}, parent_id={todo.parent_id}")
@@ -2932,7 +3111,6 @@ def generate_repeat_todos(base_todo):
             repeat_unit=base_todo.repeat_unit,
             end_date=base_todo.end_date,
             completed=False,
-            user_id=base_todo.user_id,
             parent_id=base_todo.id
         )
         
@@ -3053,25 +3231,30 @@ def api_config():
     if request.method == 'POST':
         try:
             data = request.get_json()
-            config = load_config()
+            settings = get_user_settings()
             
             # Update specific fields from request
             if 'ai_question_template' in data:
-                config['ai_question_template'] = data['ai_question_template']
+                settings.ai_question_template = data['ai_question_template']
             
-            if 'vocabulary_query_template' in data:  # Thêm dòng này
-                config['vocabulary_query_template'] = data['vocabulary_query_template']
+            if 'vocabulary_query_template' in data:
+                settings.vocabulary_query_template = data['vocabulary_query_template']
             
-            save_config(config)
-            app.logger.info(f"Config saved successfully: {list(data.keys())}")  # Log để debug
+            settings.updated_at = datetime.now()
+            db.session.commit()
+            
+            app.logger.info(f"Config saved successfully: {list(data.keys())}")
             return jsonify({'status': 'success'})
         except Exception as e:
             app.logger.error(f"Error updating config: {str(e)}")
             return jsonify({'status': 'error', 'message': str(e)}), 500
     else:
         try:
-            config = load_config()
-            return jsonify(config)
+            settings = get_user_settings()
+            return jsonify({
+                'ai_question_template': settings.ai_question_template,
+                'vocabulary_query_template': settings.vocabulary_query_template
+            })
         except Exception as e:
             app.logger.error(f"Error loading config: {str(e)}")
             return jsonify({'status': 'error', 'message': str(e)}), 500
@@ -3084,7 +3267,7 @@ def generate_knowledge_links(keyword):
     ai_settings = load_ai_settings()
     
     # Load question template from config
-    config = load_config()
+    config = get_user_settings()
     question_template = config.get('ai_question_template', 
         "1.hãy nêu tổng quan và các khía cạnh chi tiết về {keyword} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật (những từ vựng jlpt N1 thì thêm furigana). 2.sao cho sau khi đọc xong thì có đủ kiến thức để trình bày lại cho người khác. 3.hãy cho bảng từ vựn (đầy đủ phiên âm, âm hán việt) liên quan đến chủ đề này. 4.nêu 1 số link nguồn để tìm hiểu sâu hơn về chủ đề này.")
     
@@ -3155,7 +3338,6 @@ def load_keywords_progress():
     knowledge_categories = load_knowledge_categories()
     
     default_progress = {
-        'user_id': 'default',
         'completed_keywords': [],
         'criteria_progress': {},  # Format: {"category:keyword": [true, false, true]}
         'last_updated': datetime.now().isoformat(),
@@ -3646,7 +3828,6 @@ def initialize_vocabulary_progress():
         vocabulary_data = load_vocabulary_data()
         
         default_data = {
-            "user_id": "default",
             "completed_words": [],
             "last_updated": datetime.now().isoformat(),
             "stats": {
@@ -3669,7 +3850,6 @@ def load_vocabulary_progress():
     vocabulary_data = load_vocabulary_data()
     
     default_progress = {
-        'user_id': 'default',
         'completed_words': [],
         'last_updated': datetime.now().isoformat(),
         'stats': {
@@ -3783,7 +3963,7 @@ def generate_vocabulary_links(word):
     ai_settings = load_ai_settings()
     
     # Load vocabulary query template from config
-    config = load_config()
+    config = get_user_settings()
     vocabulary_template = config.get('vocabulary_query_template', 
         "Please explain the word '{word}' in detail including: 1. Definition and meaning, 2. Pronunciation guide, 3. Example sentences with context, 4. Common collocations and phrases, 5. Etymology if interesting, 6. Similar or related words")
     
@@ -4141,7 +4321,7 @@ def get_passwords():
         search = request.args.get('search', '').strip()
         category_id = request.args.get('category_id', type=int)
         
-        query = Password.query.filter_by(user_id=current_user.id)
+        query = Password.query
         
         if search:
             query = query.filter(
@@ -4207,8 +4387,7 @@ def add_password():
             password=data['password'],  # Sẽ tự động encrypt
             note=data.get('note', ''),
             category_id=data.get('category_id'),
-            favorite=data.get('favorite', False),
-            user_id=current_user.id
+            favorite=data.get('favorite', False)
         )
         
         db.session.add(password)
@@ -4229,15 +4408,12 @@ def update_password(password_id):
     try:
         password = Password.query.get_or_404(password_id)
         
-        if password.user_id != current_user.id:
-            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
-        
         data = request.json
         
         # Validate category if provided
         category_id = data.get('category_id')
         if category_id:
-            category = PasswordCategory.query.filter_by(id=category_id, user_id=current_user.id).first()
+            category = PasswordCategory.query.filter_by(id=category_id).first()
             if not category:
                 return jsonify({'status': 'error', 'message': 'Invalid category'}), 400
         
@@ -4266,9 +4442,6 @@ def update_password(password_id):
 def delete_password(password_id):
     try:
         password = Password.query.get_or_404(password_id)
-        
-        if password.user_id != current_user.id:
-            return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
         
         db.session.delete(password)
         db.session.commit()
@@ -4299,15 +4472,13 @@ def import_passwords():
             category = None
             if category_name and category_name != 'Imported':
                 category = PasswordCategory.query.filter_by(
-                    name=category_name, 
-                    user_id=current_user.id
+                    name=category_name
                 ).first()
                 
                 if not category:
                     # Create new category
                     category = PasswordCategory(
                         name=category_name,
-                        user_id=current_user.id,
                         color='#6c757d'
                     )
                     db.session.add(category)
@@ -4319,8 +4490,7 @@ def import_passwords():
                 username=row.get('Username', row.get('username', '')),
                 password=row.get('Password', row.get('password', '')),
                 note=row.get('Notes', row.get('note', '')),
-                category_id=category.id if category else None,
-                user_id=current_user.id
+                category_id=category.id if category else None
             )
             db.session.add(password)
             imported_count += 1
@@ -4340,7 +4510,7 @@ def import_passwords():
 @login_required
 def get_password_categories():
     try:
-        categories = PasswordCategory.query.filter_by(user_id=current_user.id).order_by(PasswordCategory.name.asc()).all()
+        categories = PasswordCategory.query.order_by(PasswordCategory.name.asc()).all()
         
         return jsonify({
             'status': 'success',
@@ -4392,15 +4562,11 @@ def get_categories():
     try:
         # Get password categories with password counts
         categories = db.session.query(
-            PasswordCategory.id,
-            PasswordCategory.name,
-            PasswordCategory.color,
-            db.func.count(Password.id).label('password_count')
-        ).outerjoin(
-            Password, db.and_(Password.category_id == PasswordCategory.id, Password.user_id == current_user.id)
-        ).filter(
-            PasswordCategory.user_id == current_user.id
-        ).group_by(PasswordCategory.id).order_by(PasswordCategory.name.asc()).all()
+        PasswordCategory.id,
+        PasswordCategory.name,
+        PasswordCategory.color,
+        db.func.count(Password.id).label('password_count')
+    ).outerjoin(Password).group_by(PasswordCategory.id).order_by(PasswordCategory.name.asc()).all()
         
         return jsonify({
             'status': 'success',
@@ -4430,11 +4596,11 @@ def create_category():
             return jsonify({'status': 'error', 'message': 'Category name must be 50 characters or less'}), 400
         
         # Check if category already exists
-        existing = PasswordCategory.query.filter_by(name=name, user_id=current_user.id).first()
+        existing = PasswordCategory.query.filter_by(name=name).first()
         if existing:
             return jsonify({'status': 'error', 'message': 'Category already exists'}), 400
         
-        category = PasswordCategory(name=name, color=color, user_id=current_user.id)
+        category = PasswordCategory(name=name, color=color)
         db.session.add(category)
         db.session.commit()
         
@@ -4457,7 +4623,7 @@ def create_category():
 @login_required
 def update_category(category_id):
     try:
-        category = PasswordCategory.query.filter_by(id=category_id, user_id=current_user.id).first()
+        category = PasswordCategory.query.filter_by(id=category_id).first()
         if not category:
             return jsonify({'status': 'error', 'message': 'Category not found'}), 404
         
@@ -4472,7 +4638,7 @@ def update_category(category_id):
             return jsonify({'status': 'error', 'message': 'Category name must be 50 characters or less'}), 400
         
         # Check if new name conflicts with existing categories
-        existing = PasswordCategory.query.filter_by(name=new_name, user_id=current_user.id).filter(PasswordCategory.id != category_id).first()
+        existing = PasswordCategory.query.filter_by(name=new_name).filter(PasswordCategory.id != category_id).first()
         if existing:
             return jsonify({'status': 'error', 'message': 'Category name already exists'}), 400
         
@@ -4493,12 +4659,12 @@ def update_category(category_id):
 @login_required
 def delete_password_category(category_id): 
     try:
-        category = PasswordCategory.query.filter_by(id=category_id, user_id=current_user.id).first()
+        category = PasswordCategory.query.filter_by(id=category_id).first()
         if not category:
             return jsonify({'status': 'error', 'message': 'Category not found'}), 404
         
         # Move all passwords in this category to null (General)
-        Password.query.filter_by(category_id=category_id, user_id=current_user.id).update({'category_id': None})
+        Password.query.filter_by(category_id=category_id).update({'category_id': None})
         
         db.session.delete(category)
         db.session.commit()
@@ -4579,7 +4745,7 @@ def change_master_password():
             return jsonify({'status': 'error', 'message': 'Current master password is incorrect'}), 401
         
         # Get all passwords for re-encryption
-        passwords = Password.query.filter_by(user_id=current_user.id).all()
+        passwords = Password.query.all()
         
         # Decrypt all passwords with current master password
         decrypted_passwords = []
@@ -4611,9 +4777,9 @@ def change_master_password():
             
             # Update hint if provided
             if new_hint or new_hint == '':  # Allow clearing hint
-                settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+                settings = UserSettings.query.first()
                 if not settings:
-                    settings = UserSettings(user_id=current_user.id)
+                    settings = UserSettings()
                     db.session.add(settings)
                 
                 settings.master_password_hint = new_hint if new_hint else None
@@ -4644,7 +4810,7 @@ def change_master_password():
 def get_master_password_hint():
     """Lấy hint cho master password"""
     try:
-        settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+        settings = UserSettings.query.first()
         hint = settings.master_password_hint if settings else None
         
         return jsonify({
@@ -4666,9 +4832,9 @@ def set_master_password_hint():
         if len(hint) > 200:
             return jsonify({'status': 'error', 'message': 'Hint must be 200 characters or less'}), 400
         
-        settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+        settings = UserSettings.query.first()
         if not settings:
-            settings = UserSettings(user_id=current_user.id)
+            settings = UserSettings()
             db.session.add(settings)
         
         settings.master_password_hint = hint if hint else None
@@ -4873,27 +5039,41 @@ def lock_diary():
 @app.route('/api/diary/auth/status', methods=['GET'])
 @login_required
 def check_diary_auth_status():
-    """Check diary authentication status - sử dụng password manager auth"""
+    """Check diary authentication status"""
     try:
-        # ✅ SỬA: Kiểm tra password manager settings thay vì diary settings
-        user_settings = UserSettings.query.filter_by(user_id='default').first()
+        user_settings = UserSettings.query.first()
+        password_count = Password.query.count()
         
-        # Check if master password is set (password manager)
-        has_master_password = bool(user_settings and user_settings.master_password_hint)
+        has_hint = bool(user_settings and user_settings.master_password_hint)
+        has_master_password = password_count > 0 or has_hint
         
-        # Check if currently authenticated
-        is_authenticated = session.get('master_password_verified', False) if has_master_password else True
+        # ✅ SỬA: Check session từ Password Manager
+        is_authenticated = session.get('master_password_verified', False)
+        
+        if not has_master_password:
+            # Chưa có master password → cho phép access
+            redirect_to_password_manager = False
+            is_authenticated = True
+        else:
+            # Có master password → check session
+            if is_authenticated:
+                # Đã authenticated từ Password Manager
+                redirect_to_password_manager = False
+            else:
+                # Chưa authenticated → redirect to Password Manager
+                redirect_to_password_manager = True
+        
+        app.logger.info(f"Diary auth - has_master: {has_master_password}, session_verified: {is_authenticated}, redirect: {redirect_to_password_manager}")
         
         return jsonify({
             'status': 'success',
             'has_master_password': has_master_password,
             'is_authenticated': is_authenticated,
-            'redirect_to_password_manager': has_master_password and not is_authenticated
+            'redirect_to_password_manager': redirect_to_password_manager
         })
     except Exception as e:
         app.logger.error(f"Error checking diary auth status: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Server error'}), 500
-    
     
 if __name__ == '__main__':
     app.run(debug=True)
