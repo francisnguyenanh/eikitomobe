@@ -1,10 +1,24 @@
-import base64
-
 from flask import Flask, render_template, request, redirect, session, url_for, flash, send_file, Response, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 import bcrypt
 import os
+import base64
+import json
+import time
+import hashlib
+import shutil
+import random
+import threading
+import unicodedata
+import sqlite3
+import difflib
+import requests
+import csv
+import io
+import string
+import secrets
+import urllib.parse
 from io import BytesIO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -12,46 +26,21 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import uuid
 import logging
-from datetime import date, datetime
-from datetime import datetime, timedelta  # Added timedelta
-from uuid import uuid4  # Added uuid4
-from base64 import b64encode
-import json
-from base64 import b64encode
-from wand.image import Image
-import io
-import threading
-import unicodedata
-import sqlite3
-import random
+from datetime import date, datetime, timedelta
+from uuid import uuid4
 from markupsafe import Markup
-import difflib
-from datetime import datetime
-import requests
-import random
-from werkzeug.utils import secure_filename
-import shutil
-import hashlib
-import json
-import time
-import urllib.parse
-import hashlib
-import os
 from werkzeug.utils import secure_filename
 from PIL import Image as PILImage
-import shutil
-import os
-import base64
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import getpass
-import string
-import secrets
-import csv
-import io
 
-from flask import send_from_directory
+try:
+    from wand.image import Image
+except ImportError:
+    pass  # Sẽ xử lý trong upload_avatar() nếu cần
+
 try:
     from PIL import Image as PILImage
 except ImportError:
