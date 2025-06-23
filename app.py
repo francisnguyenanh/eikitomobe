@@ -497,104 +497,7 @@ def get_method_file_path():
     """Get path to method.txt file"""
     return os.path.join(app.root_path, 'method.txt')
 
-def migrate_config_to_user_settings():
-    """Migrate existing config.txt to UserSettings table"""
-    try:
-        # Load existing config.txt
-        config_file = 'config.txt'
-        if not os.path.exists(config_file):
-            print("No config.txt found, skipping migration")
-            return
-        
-        with open(config_file, 'r', encoding='utf-8') as f:
-            config = json.load(f)
-        
-        print(f"Migrating config.txt with keys: {list(config.keys())}")
-        
-        # ✅ SỬA: Get or create single user settings (không cần user_id parameter)
-        settings = get_user_settings()
-        
-        # Migrate theme
-        if 'theme' in config:
-            settings.theme_preference = config['theme']
-            print(f"Migrated theme: {config['theme']}")
-        
-        # Migrate UI settings
-        if 'ui_settings' in config:
-            ui = config['ui_settings']
-            settings.show_bg_image = ui.get('show_bg_image', True)
-            settings.show_quote = ui.get('show_quote', True)
-            print(f"Migrated UI settings: {ui}")
-        
-        # Migrate user info
-        if 'user' in config:
-            user = config['user']
-            settings.user_name = user.get('name')
-            settings.user_birthday = user.get('birthday')
-            print(f"Migrated user info: {user}")
-        
-        # Migrate password hash
-        if 'user_password_hash' in config:
-            settings.user_password_hash = config['user_password_hash']
-            print("Migrated password hash")
-        
-        # ✅ SỬA: Migrate master password hint
-        if 'master_password_hint' in config:
-            settings.master_password_hint = config['master_password_hint']
-            print("Migrated master password hint")
-        
-        # Migrate card info
-        if 'card' in config:
-            settings.set_card_info(config['card'])
-            print(f"Migrated card info: {list(config['card'].keys())}")
-        
-        # Migrate links tree
-        if 'links_tree' in config:
-            settings.set_links_tree(config['links_tree'])
-            print(f"Migrated links tree with {len(config['links_tree'])} items")
-        
-        # Migrate breath settings
-        if 'breath_settings' in config:
-            settings.set_breath_settings(config['breath_settings'])
-            print(f"Migrated breath settings: {list(config['breath_settings'].keys())}")
-        
-        # Migrate AI templates
-        if 'ai_question_template' in config:
-            settings.ai_question_template = config['ai_question_template']
-            print("Migrated AI question template")
-        
-        if 'vocabulary_query_template' in config:
-            settings.vocabulary_query_template = config['vocabulary_query_template']
-            print("Migrated vocabulary query template")
-        
-        # ✅ SỬA: Set updated timestamp
-        settings.updated_at = datetime.now()
-        
-        db.session.commit()
-        print("✅ Settings migrated to UserSettings successfully")
-        
-        # Backup config.txt
-        backup_path = 'config.txt.backup'
-        os.rename(config_file, backup_path)
-        print(f"✅ config.txt backed up to {backup_path}")
-        
-    except Exception as e:
-        print(f"❌ Migration failed: {e}")
-        db.session.rollback()
-        
-        # Print detailed error for debugging
-        import traceback
-        traceback.print_exc()
-
-# ✅ THÊM: Chạy migration khi khởi động app
-with app.app_context():
-    db.create_all()
-    migrate_config_to_user_settings()
     
-    
-    
-    
-
 def load_knowledge_categories():
     """Load knowledge categories from kw.txt"""
     file_path = get_kw_file_path()
@@ -828,14 +731,9 @@ app.jinja_env.filters['nl2br'] = nl2br
 @login_required
 def set_theme():
     theme = request.json.get('theme')
-    if theme in ['light', 'dark']:
-        session['theme'] = theme
-        
-        # ✅ SỬA: Lưu vào UserSettings thay vì config.txt
-        update_user_setting(theme_preference=theme)
-        
-        return jsonify({'status': 'success'})
-    return jsonify({'status': 'error', 'message': 'Invalid theme'}), 400
+    update_user_setting(theme_preference=theme)
+    
+    return jsonify({'status': 'success'})
 
     
 @login_manager.user_loader
@@ -1873,7 +1771,6 @@ def get_random_quote_from_db():
 @login_required
 def home():
     quote_text, quote_author = get_random_quote_from_db()
-    theme = get_theme()
     
     bg_image_url = None
     photo_dir = os.path.join(app.static_folder, 'photo')
@@ -1889,7 +1786,6 @@ def home():
         'home.html',
         quote_content=quote_text,
         quote_author=quote_author,
-        theme=theme,
         bg_image_url=bg_image_url if settings.show_bg_image else None,
         show_quote=settings.show_quote
     )
@@ -2092,8 +1988,7 @@ def public_card(card_hash):
 @app.route('/breath')
 @login_required
 def breath():
-    theme = session.get('theme', 'light')
-    return render_template('breath.html', theme=theme)
+    return render_template('breath.html')
 
 @app.route('/breath_settings', methods=['GET', 'POST'])
 @login_required
@@ -2122,8 +2017,7 @@ def breath_settings():
 @app.route('/eye_exercise')
 @login_required
 def eye_exercise():
-    theme = session.get('theme', 'light')
-    return render_template('eye_exercise.html', theme=theme)
+    return render_template('eye_exercise.html')
 
 # app.py
 @app.route('/game_flip')
@@ -2138,8 +2032,7 @@ def game_math():
 @app.route('/ever_note')
 @login_required
 def ever_note():
-    theme = session.get('theme', 'light')
-    return render_template('Memo/ever_note.html', theme=theme)
+    return render_template('Memo/ever_note.html')
 
 @app.route('/api/evernote_folders', methods=['GET'])
 @login_required
@@ -2857,8 +2750,7 @@ app.jinja_env.filters['contrast_text_color'] = contrast_text_color
 @app.route('/todo')
 @login_required
 def todo():
-    theme = session.get('theme', 'light')
-    return render_template('Memo/todo.html', theme=theme)
+    return render_template('Memo/todo.html')
 
 # API endpoints cho TODO
 @app.route('/api/todos', methods=['GET'])
@@ -3266,10 +3158,9 @@ def generate_knowledge_links(keyword):
     # Load AI settings
     ai_settings = load_ai_settings()
     
-    # Load question template from config
-    config = get_user_settings()
-    question_template = config.get('ai_question_template', 
-        "1.hãy nêu tổng quan và các khía cạnh chi tiết về {keyword} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật (những từ vựng jlpt N1 thì thêm furigana). 2.sao cho sau khi đọc xong thì có đủ kiến thức để trình bày lại cho người khác. 3.hãy cho bảng từ vựn (đầy đủ phiên âm, âm hán việt) liên quan đến chủ đề này. 4.nêu 1 số link nguồn để tìm hiểu sâu hơn về chủ đề này.")
+    # Load question template from UserSettings - SỬA LẠI DÒNG NÀY
+    settings = get_user_settings()
+    question_template = settings.ai_question_template or "1.hãy nêu tổng quan và các khía cạnh chi tiết về {keyword} bằng các bản dịch tiếng anh, tiếng việt và tiếng nhật (những từ vựng jlpt N1 thì thêm furigana). 2.sao cho sau khi đọc xong thì có đủ kiến thức để trình bày lại cho người khác. 3.hãy cho bảng từ vựn (đầy đủ phiên âm, âm hán việt) liên quan đến chủ đề này. 4.nêu 1 số link nguồn để tìm hiểu sâu hơn về chủ đề này."
     
     # Replace {keyword} with actual keyword
     question = question_template.replace('{keyword}', keyword)
@@ -3962,10 +3853,9 @@ def generate_vocabulary_links(word):
     # Load AI settings
     ai_settings = load_ai_settings()
     
-    # Load vocabulary query template from config
-    config = get_user_settings()
-    vocabulary_template = config.get('vocabulary_query_template', 
-        "Please explain the word '{word}' in detail including: 1. Definition and meaning, 2. Pronunciation guide, 3. Example sentences with context, 4. Common collocations and phrases, 5. Etymology if interesting, 6. Similar or related words")
+    # Load vocabulary query template from UserSettings - SỬA LẠI DÒNG NÀY
+    settings = get_user_settings()
+    vocabulary_template = settings.vocabulary_query_template or "Please explain the word '{word}' in detail including: 1. Definition and meaning, 2. Pronunciation guide, 3. Example sentences with context, 4. Common collocations and phrases, 5. Etymology if interesting, 6. Similar or related words"
     
     # Replace {word} with actual word
     query = vocabulary_template.replace('{word}', word)
@@ -4715,6 +4605,44 @@ def authenticate_master_password():
         app.logger.error(f"Error in master password auth: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/api/auth/master_password_status', methods=['GET'])
+@login_required
+def master_password_status():
+    """Check master password authentication status"""
+    try:
+        if session.get('master_password_verified'):
+            # Check if session hasn't expired (1 hour timeout)
+            verify_time = session.get('master_password_time', 0)
+            if time.time() - verify_time <= 3600:  # 1 hour
+                return jsonify({
+                    'status': 'success',
+                    'authenticated': True,
+                    'message': 'Master password verified'
+                })
+            else:
+                # Session expired, clear it
+                session.pop('master_password_verified', None)
+                session.pop('master_password_time', None)
+                return jsonify({
+                    'status': 'error',
+                    'authenticated': False,
+                    'message': 'Master password session expired'
+                }), 401
+        else:
+            return jsonify({
+                'status': 'error',
+                'authenticated': False,
+                'message': 'Master password not verified'
+            }), 401
+            
+    except Exception as e:
+        app.logger.error(f"Error checking master password status: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'authenticated': False,
+            'message': 'Server error'
+        }), 500
+        
 @app.route('/api/auth/change_master_password', methods=['POST'])
 @login_required
 def change_master_password():

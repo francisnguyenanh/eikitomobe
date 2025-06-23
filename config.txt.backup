@@ -1,6 +1,6 @@
 {
   "user": {
-    "birthday": "1987-12-23",
+    "birthday": "1987/12/23",
     "name": "Tomobe Eiki"
   },
   "card": {
@@ -9,7 +9,7 @@
     "Email": "eikitomobe@gmail.com",
     "Phone": "070-9077-2099",
     "SNS": "facebook.com",
-    "SubSlogan": "\"ngày mai ăn gì ta?\" nhở"
+    "SubSlogan": "\"ngày mai ăn gì ta?\""
   },
   "ui_settings": {
     "show_bg_image": false,
@@ -21,56 +21,16 @@
       "content": "Life and death are of supreme importance. Time swiftly passes by and opportunity is lost. (Dogen)"
     }
   ],
+  "links": [
+    "https://eikitomobe.pythonanywhere.com/list_note",
+    "google.com.vn"
+  ],
   "breath_settings": {
     "pattern": "6-3-6-3",
     "level": "1",
     "cycles": "30"
   },
-  "links_tree": [
-    {
-      "children": [
-        {
-          "url": "abc"
-        },
-        {
-          "url": "dè"
-        },
-        {
-          "url": "google.com"
-        }
-      ],
-      "name": "Google"
-    },
-    {
-      "children": [
-        {
-          "url": "ư"
-        },
-        {
-          "url": "r"
-        },
-        {
-          "url": "t"
-        },
-        {
-          "url": "e"
-        },
-        {
-          "url": "e"
-        },
-        {
-          "url": "e"
-        }
-      ],
-      "name": "Social"
-    },
-    {
-      "children": [],
-      "name": ""
-    }
-  ],
-  "user_password_hash": "$2b$12$at6bWDXyTVmeYokqYmhzAOwn2H6mNWOV297UqVD7yh3kjVedWOLbe",
+  "user_password_hash": "$2b$12$q.9zfKSIQllUqTlJ14ynvuVNK3Eq8vFuaQeTWzDzxKcmUvtbqo4V.",
   "theme": "cyan",
-  "ai_question_template": "1.hãy nêu tổng quan và chi tiết nhất theo format 5W-1H về chủ đề {keyword}\ngiải thích bằng tiếng Anh, tiếng Việt và tiếng Nhật\n2.kèm bảng từ vựng liên quan tới chủ đề\n\n※đối với tiếng Nhật thì kèm furigana cho hán tự trình độ JLPT N2, N1",
-  "vocabulary_query_template": "1. hãy giải nghĩa, nêu sơ đồ word family, từ đồng nghĩa, từ trái nghĩa của {word}\ngiải thích bằng tiếng Anh, tiếng Việt và tiếng Nhật\n2. viết 1 bài luận về chủ đề{word} bằng tiếng Anh và tiếng Nhật\nkèm bảng từ vựng liên quan đến chủ bài luận\n\n※đối với tiếng Nhật thì kèm furigana cho hán tự trình độ JLPT N2, N1"
+  "ai_question_template": "1. muốn tìm hiểu sâu về chủ đề \"{keyword}\" thì cần nghiên cứu những điểm trọng yếu nào?\n2. với mỗi điểm trọng yếu hãy trình bày chi tiết, kèm link web/nguồn tham khảo\ntrong 3000 từ.\n*trả lời bằng tiếng Việt rồi tới tiếng Anh, tiếng Nhật(có furigana) riêng biệt\ncó bảng từ vựng tiếng Anh, tiếng Nhật (có furigana) và nghĩa tiếng việt liên quan đến chủ đề\n3. phác thảo sơ đồ những khái niệm liên quan, điểm trọng tâm của chủ đề này"
 }

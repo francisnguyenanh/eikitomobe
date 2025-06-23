@@ -10,7 +10,7 @@ class MasterPasswordAuth {
             console.log('🔐 Checking master password status...');
             
             // Test với một API call đơn giản
-            const response = await fetch('/api/passwords?test=1');
+            const response = await fetch('/api/auth/master_password_status');
             
             if (response.status === 401) {
                 console.log('❌ Master password not verified');
@@ -40,7 +40,6 @@ class MasterPasswordAuth {
         // Setup event listeners
         document.getElementById('verify-master-password').onclick = () => this.verifyMasterPassword();
         document.getElementById('show-hint-btn').onclick = () => this.toggleHint();
-        document.getElementById('setup-hint-btn').onclick = () => this.openHintSetupModal();
         
         document.getElementById('master-password-input').onkeypress = (e) => {
             if (e.key === 'Enter') {
