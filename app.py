@@ -1834,8 +1834,9 @@ def upload_avatar():
 @app.route('/get_card_info')
 @login_required
 def get_card_info_api():
-    info = get_card_info()
-    return jsonify(info)
+    settings = get_user_settings()
+    card_info = settings.get_card_info()
+    return jsonify(card_info)
 
 @app.route('/api/card_info', methods=['GET', 'POST'])
 @login_required
@@ -2300,7 +2301,7 @@ def add_evernote_note():
     
 @app.route('/share/<share_id>')
 def share_note(share_id):
-    note = Note.query.filter_by(share_id=share_id).first_or_404()
+    note = Task.query.filter_by(share_id=share_id).first_or_404()
     return render_template('Memo/share_note.html', note=note)
 
 
