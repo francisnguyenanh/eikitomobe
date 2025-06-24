@@ -623,6 +623,34 @@
                 padding: 0.5rem 0.25rem;
             }
         }
+        #settingsModal .nav-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap !important;
+    white-space: nowrap;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) #e0e0e0;
+    -webkit-overflow-scrolling: touch;
+    border-bottom: 2px solid var(--navbar-border);
+    margin-bottom: 0;
+}
+#settingsModal .nav-tabs .nav-item {
+    flex: 0 0 auto;
+}
+#settingsModal .nav-tabs .nav-link {
+    min-width: 110px;
+    text-align: center;
+}
+@media (max-width: 600px) {
+    #settingsModal .modal-dialog {
+        max-width: 98vw;
+        margin: 0.5rem auto;
+    }
+    #settingsModal .nav-tabs .nav-link {
+        padding: 0.5rem 0.5rem;
+        font-size: 0.95rem;
+    }
+}
     </style>
 </head>
 <body>
@@ -845,6 +873,9 @@
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="ai-search-tab" data-bs-toggle="tab" data-bs-target="#aiSearchTab" type="button">AI Search</button>
                         </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="db-tab" data-bs-toggle="tab" data-bs-target="#dbTab" type="button">Database</button>
+                        </li>
                     </ul>
                     <div class="tab-content mt-3">
                         <div class="tab-pane fade show active" id="generalTab">
@@ -1033,130 +1064,157 @@
                             </form>
                         </div>
                         <div class="tab-pane fade" id="aiSearchTab">
-                            <form id="aiSearchForm" onsubmit="return false;"> <!-- Thêm onsubmit="return false;" -->
-                                <div class="mb-3">
-                                    <label class="form-label">
-                                        <i class="bi bi-chat-text me-1"></i>
-                                        AI Question Template (Knowledge)
-                                    </label>
-                                    <textarea class="form-control" id="aiQuestionTemplate" name="ai_question_template" rows="4" placeholder="Enter your question template. Use {keyword} as placeholder for the keyword."></textarea>
-                                    <div class="form-text">
-                                        <strong>Example:</strong> "abc {keyword} xyz."
-                                        <br><strong>Note:</strong> Must contain {keyword} placeholder
-                                    </div>
-                                </div>
-                                
-                                <div class="mb-3">
-                                    <label class="form-label">
-                                        <i class="bi bi-book me-1"></i>
-                                        Vocabulary Query Template
-                                    </label>
-                                    <textarea class="form-control" id="vocabularyQueryTemplate" name="vocabulary_query_template" rows="3" placeholder="Enter your vocabulary query template. Use {word} as placeholder for the word."></textarea>
-                                    <div class="form-text">
-                                        <strong>Example:</strong> "Explain the meaning of {word} with examples and usage"
-                                        <br><strong>Note:</strong> Must contain {word} placeholder
-                                    </div>
-                                </div>
-                                
-                                <hr class="my-4">
-                                
-                                <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                <form id="aiSearchForm" onsubmit="return false;"> <!-- Thêm onsubmit="return false;" -->
+                                    <div class="mb-3">
                                         <label class="form-label">
-                                            <i class="bi bi-robot me-1"></i>
-                                            ChatGPT
+                                            <i class="bi bi-chat-text me-1"></i>
+                                            AI Question Template (Knowledge)
                                         </label>
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="chatgptEnabled" name="chatgpt_enabled" checked>
-                                            <label class="form-check-label" for="chatgptEnabled">Enabled</label>
+                                        <textarea class="form-control" id="aiQuestionTemplate" name="ai_question_template" rows="4" placeholder="Enter your question template. Use {keyword} as placeholder for the keyword."></textarea>
+                                        <div class="form-text">
+                                            <strong>Example:</strong> "abc {keyword} xyz."
+                                            <br><strong>Note:</strong> Must contain {keyword} placeholder
                                         </div>
                                     </div>
-                                    <input type="text" class="form-control" id="chatgptUrl" name="chatgpt_url" value="https://chat.openai.com/?q={query}" placeholder="URL must contain {query}">
-                                    <div class="form-text">AI assistant for comprehensive answers</div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">
+                                            <i class="bi bi-book me-1"></i>
+                                            Vocabulary Query Template
+                                        </label>
+                                        <textarea class="form-control" id="vocabularyQueryTemplate" name="vocabulary_query_template" rows="3" placeholder="Enter your vocabulary query template. Use {word} as placeholder for the word."></textarea>
+                                        <div class="form-text">
+                                            <strong>Example:</strong> "Explain the meaning of {word} with examples and usage"
+                                            <br><strong>Note:</strong> Must contain {word} placeholder
+                                        </div>
+                                    </div>
+                                    
+                                    <hr class="my-4">
+                                    
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label">
+                                                <i class="bi bi-robot me-1"></i>
+                                                ChatGPT
+                                            </label>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input" type="checkbox" id="chatgptEnabled" name="chatgpt_enabled" checked>
+                                                <label class="form-check-label" for="chatgptEnabled">Enabled</label>
+                                            </div>
+                                        </div>
+                                        <input type="text" class="form-control" id="chatgptUrl" name="chatgpt_url" value="https://chat.openai.com/?q={query}" placeholder="URL must contain {query}">
+                                        <div class="form-text">AI assistant for comprehensive answers</div>
+                                    </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label">
+                                                    <i class="bi bi-lightning me-1"></i>
+                                                    Grok AI
+                                                </label>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="grokEnabled" name="grok_enabled" checked>
+                                                    <label class="form-check-label" for="grokEnabled">Enabled</label>
+                                                </div>
+                                            </div>
+                                            <input type="text" class="form-control" id="grokUrl" name="grok_url" value="https://x.com/i/grok?q={query}" placeholder="URL must contain {query}">
+                                            <div class="form-text">X (Twitter)'s AI with real-time data</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label">
+                                                    <i class="bi bi-search me-1"></i>
+                                                    Perplexity AI
+                                                </label>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="perplexityEnabled" name="perplexity_enabled">
+                                                    <label class="form-check-label" for="perplexityEnabled">Enabled</label>
+                                                </div>
+                                            </div>
+                                            <input type="text" class="form-control" id="perplexityUrl" name="perplexity_url" value="https://www.perplexity.ai/?q={query}" placeholder="URL must contain {query}">
+                                            <div class="form-text">AI-powered search with sources</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label">
+                                                    <i class="bi bi-globe me-1"></i>
+                                                    You.com Search
+                                                </label>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="youEnabled" name="you_enabled">
+                                                    <label class="form-check-label" for="youEnabled">Enabled</label>
+                                                </div>
+                                            </div>
+                                            <input type="text" class="form-control" id="youUrl" name="you_url" value="https://you.com/search?q={query}" placeholder="URL must contain {query}">
+                                            <div class="form-text">AI-powered search engine</div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label">
+                                                    <i class="bi bi-microsoft me-1"></i>
+                                                    Copilot AI
+                                                </label>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" id="copilotEnabled" name="copilot_enabled">
+                                                    <label class="form-check-label" for="copilotEnabled">Enabled</label>
+                                                </div>
+                                            </div>
+                                            <input type="text" class="form-control" id="copilotUrl" name="copilot_url" value="https://copilot.microsoft.com/?q={query}" placeholder="URL must contain {query}">
+                                            <div class="form-text">Microsoft's AI assistant</div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <button type="button" class="btn btn-primary w-100" onclick="AISettingsManager.saveAISettings(event)"> <!-- Thay đổi type từ "submit" thành "button" và thêm onclick -->
+                                                    <i class="bi bi-check-circle me-1"></i>
+                                                    Save Settings
+                                                </button>
+                                            </div>
+                                            <div class="col-6">
+                                                <button type="button" class="btn btn-secondary w-100" id="resetAiSettings">
+                                                    <i class="bi bi-arrow-clockwise me-1"></i>
+                                                    Reset to Default
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mt-3">
+                                            <div id="aiSettingsMsg" class="text-center"></div>
+                                        </div>
+                                    </form>
                                 </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <label class="form-label">
-                                                <i class="bi bi-lightning me-1"></i>
-                                                Grok AI
-                                            </label>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="grokEnabled" name="grok_enabled" checked>
-                                                <label class="form-check-label" for="grokEnabled">Enabled</label>
-                                            </div>
-                                        </div>
-                                        <input type="text" class="form-control" id="grokUrl" name="grok_url" value="https://x.com/i/grok?q={query}" placeholder="URL must contain {query}">
-                                        <div class="form-text">X (Twitter)'s AI with real-time data</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <label class="form-label">
-                                                <i class="bi bi-search me-1"></i>
-                                                Perplexity AI
-                                            </label>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="perplexityEnabled" name="perplexity_enabled">
-                                                <label class="form-check-label" for="perplexityEnabled">Enabled</label>
-                                            </div>
-                                        </div>
-                                        <input type="text" class="form-control" id="perplexityUrl" name="perplexity_url" value="https://www.perplexity.ai/?q={query}" placeholder="URL must contain {query}">
-                                        <div class="form-text">AI-powered search with sources</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <label class="form-label">
-                                                <i class="bi bi-globe me-1"></i>
-                                                You.com Search
-                                            </label>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="youEnabled" name="you_enabled">
-                                                <label class="form-check-label" for="youEnabled">Enabled</label>
-                                            </div>
-                                        </div>
-                                        <input type="text" class="form-control" id="youUrl" name="you_url" value="https://you.com/search?q={query}" placeholder="URL must contain {query}">
-                                        <div class="form-text">AI-powered search engine</div>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <label class="form-label">
-                                                <i class="bi bi-microsoft me-1"></i>
-                                                Copilot AI
-                                            </label>
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" id="copilotEnabled" name="copilot_enabled">
-                                                <label class="form-check-label" for="copilotEnabled">Enabled</label>
-                                            </div>
-                                        </div>
-                                        <input type="text" class="form-control" id="copilotUrl" name="copilot_url" value="https://copilot.microsoft.com/?q={query}" placeholder="URL must contain {query}">
-                                        <div class="form-text">Microsoft's AI assistant</div>
-                                    </div>
-                                    
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <button type="button" class="btn btn-primary w-100" onclick="AISettingsManager.saveAISettings(event)"> <!-- Thay đổi type từ "submit" thành "button" và thêm onclick -->
-                                                <i class="bi bi-check-circle me-1"></i>
-                                                Save Settings
-                                            </button>
-                                        </div>
-                                        <div class="col-6">
-                                            <button type="button" class="btn btn-secondary w-100" id="resetAiSettings">
-                                                <i class="bi bi-arrow-clockwise me-1"></i>
-                                                Reset to Default
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="mt-3">
-                                        <div id="aiSettingsMsg" class="text-center"></div>
-                                    </div>
-                                </form>
+                            </form>
+                        </div>
+                        <div class="tab-pane fade" id="dbTab">
+                            <div class="mb-3">
+                                <label class="form-label"><i class="bi bi-hdd-network me-1"></i>Database Size</label>
+                                <div>
+                                    <span id="dbSizeText" class="fw-bold">Loading...</span>
+                                    <button class="btn btn-outline-secondary btn-sm ms-2" id="downloadDbBtn">
+                                        <i class="bi bi-download"></i> Download DB (zip)
+                                    </button>
+                                </div>
                             </div>
-                        </form>
-                    </div>
+                            <hr>
+                            <div class="mb-3">
+                                <label class="form-label"><i class="bi bi-table me-1"></i>Tables &amp; Data</label>
+                                <div id="dbTablesList" class="mb-2"></div>
+                                <button class="btn btn-danger btn-sm" id="deleteTableDataBtn" disabled>
+                                    <i class="bi bi-trash"></i> Delete Selected Table Data
+                                </button>
+                            </div>
+                            <hr>
+                            <div class="mb-3">
+                                <label class="form-label"><i class="bi bi-images me-1"></i>Uploaded Images</label>
+                                <div id="uploadsFileList" style="max-height:200px;overflow:auto;"></div>
+                                <button class="btn btn-danger btn-sm" id="deleteFilesBtn" disabled>
+                                    <i class="bi bi-trash"></i> Delete Selected Files
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2587,6 +2645,116 @@
                     }
                 }
             });
+
+            document.getElementById('db-tab').addEventListener('shown.bs.tab', async function() {
+                // Hiển thị dung lượng DB
+                fetch('/db_size').then(r=>r.json()).then(data=>{
+                    document.getElementById('dbSizeText').textContent = data.size_mb ? `${data.size_mb} MB` : `${data.size_kb} KB`;
+                });
+
+                // Hiển thị danh sách table
+                fetch('/api/db_tables').then(r=>r.json()).then(data=>{
+                    const list = document.getElementById('dbTablesList');
+                    list.innerHTML = '';
+                    if (data.tables && data.tables.length > 0) {
+                        // Hiển thị bảng dưới dạng table HTML hiện đại
+                        let tableHtml = `
+                            <div class="table-responsive">
+                            <table class="table table-bordered table-sm align-middle mb-2">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:36px"></th>
+                                        <th>Table Name</th>
+                                        <th style="width:100px">Rows</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        data.tables.forEach(t=>{
+                            tableHtml += `
+                                <tr>
+                                    <td>
+                                        <input class="form-check-input db-table-checkbox" type="checkbox" value="${t.name}" id="table_${t.name}">
+                                    </td>
+                                    <td>
+                                        <label class="form-check-label" for="table_${t.name}">${t.name}</label>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">${t.rows} rows</span>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                        tableHtml += `</tbody></table></div>`;
+                        list.innerHTML = tableHtml;
+                    } else {
+                        list.innerHTML = '<div class="text-muted">No tables found in database.</div>';
+                    }
+                    document.getElementById('deleteTableDataBtn').disabled = true;
+                    list.querySelectorAll('.db-table-checkbox').forEach(cb=>{
+                        cb.onchange = ()=>{
+                            document.getElementById('deleteTableDataBtn').disabled = !list.querySelectorAll('.db-table-checkbox:checked').length;
+                        };
+                    });
+                });
+
+                // Hiển thị danh sách file uploads
+                fetch('/api/uploads_files').then(r=>r.json()).then(data=>{
+                    const list = document.getElementById('uploadsFileList');
+                    list.innerHTML = '';
+                    data.files.forEach(f=>{
+                        const row = document.createElement('div');
+                        row.className = 'form-check';
+                        row.innerHTML = `<input class="form-check-input upload-file-checkbox" type="checkbox" value="${f.name}" id="file_${btoa(f.name)}">
+                            <label class="form-check-label" for="file_${btoa(f.name)}">${f.name} <span class="text-muted">(${(f.size/1024).toFixed(1)} KB)</span></label>`;
+                        list.appendChild(row);
+                    });
+                    document.getElementById('deleteFilesBtn').disabled = true;
+                    list.querySelectorAll('.upload-file-checkbox').forEach(cb=>{
+                        cb.onchange = ()=>{
+                            document.getElementById('deleteFilesBtn').disabled = !list.querySelectorAll('.upload-file-checkbox:checked').length;
+                        };
+                    });
+                });
+            });
+
+        // Download DB
+        document.getElementById('downloadDbBtn').onclick = function() {
+            window.open('/download_db', '_blank');
+        };
+
+        // Xoá data table
+        document.getElementById('deleteTableDataBtn').onclick = async function() {
+            const checked = Array.from(document.querySelectorAll('.db-table-checkbox:checked')).map(cb=>cb.value);
+            if (!checked.length) return;
+            if (!confirm('Delete all data in selected tables?')) return;
+            for (const t of checked) {
+                await fetch('/api/db_delete_table', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({table: t})
+                });
+            }
+            // Reload tab
+            document.getElementById('db-tab').dispatchEvent(new Event('shown.bs.tab'));
+        };
+
+        // Xoá file uploads
+        document.getElementById('deleteFilesBtn').onclick = async function() {
+            const checked = Array.from(document.querySelectorAll('.upload-file-checkbox:checked')).map(cb=>cb.value);
+            if (!checked.length) return;
+            if (!confirm('Delete selected files?')) return;
+            for (const f of checked) {
+                await fetch('/api/delete_upload_file', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify({filename: f})
+                });
+            }
+            // Reload tab
+            document.getElementById('db-tab').dispatchEvent(new Event('shown.bs.tab'));
+        };
+
         });
     </script>
 </body>

@@ -35,6 +35,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import getpass
+import zipfile
 
 try:
     from wand.image import Image
@@ -1465,7 +1466,7 @@ import os
 @app.route('/db_size')
 @login_required
 def db_size():
-    db_path = os.path.join(app.instance_path, 'memo.db')  # Sửa lại đường dẫn này
+    db_path = os.path.join(app.instance_path, 'eiki_tomobe.db')  # Sửa lại đường dẫn này
     try:
         size_bytes = os.path.getsize(db_path)
         size_kb = round(size_bytes / 1024, 2)
@@ -4991,6 +4992,92 @@ def check_diary_auth_status():
     except Exception as e:
         app.logger.error(f"Error checking diary auth status: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Server error'}), 500
+
+@app.route('/download_db')
+@login_required
+def download_db():
+    db_path = os.path.join(app.instance_path, 'eiki_tomobe.db') 
+    if not os.path.isabs(db_path):
+        db_path = os.path.join(app.root_path, db_path)
+    zip_io = BytesIO()
+    with zipfile.ZipFile(zip_io, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        zipf.write(db_path, arcname=os.path.basename(db_path))
+    zip_io.seek(0)
+    return send_file(zip_io, as_attachment=True, download_name='eiki_tomobe_db.zip')
+
+@app.route('/api/db_tables')
+@login_required
+def api_db_tables():
+    # Lấy đúng đường dẫn file DB
+    db_path = os.path.join(app.instance_path, 'eiki_tomobe.db')
+    app.logger.info(f"Database path: {db_path}")
+    if not os.path.isabs(db_path):
+        db_path = os.path.join(app.root_path, db_path)
+    # Kiểm tra file tồn tại
+    if not os.path.exists(db_path):
+        return jsonify({'tables': []})
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    # Lấy danh sách table (bỏ qua bảng hệ thống)
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+    tables = [row[0] for row in cur.fetchall()]
+    app.logger.info(f"Found tables: {tables}")
+    table_info = []
+    for t in tables:
+        try:
+            cur.execute(f"SELECT COUNT(*) FROM '{t}'")
+            count = cur.fetchone()[0]
+        except Exception:
+            count = '?'
+        table_info.append({'name': t, 'rows': count})
+    conn.close()
+    return jsonify({'tables': table_info})
+
+@app.route('/api/db_delete_table', methods=['POST'])
+@login_required
+def api_db_delete_table():
+    table = request.json.get('table')
+    if not table:
+        return jsonify({'status': 'error', 'message': 'No table specified'}), 400
+    db_path = os.path.join(app.instance_path, 'eiki_tomobe.db') 
+    if not os.path.isabs(db_path):
+        db_path = os.path.join(app.root_path, db_path)
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    try:
+        cur.execute(f'DELETE FROM {table}')
+        conn.commit()
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/uploads_files')
+@login_required
+def api_uploads_files():
+    folder = os.path.join(app.root_path, 'static', 'uploads')
+    files = []
+    for root, dirs, filenames in os.walk(folder):
+        for fname in filenames:
+            path = os.path.relpath(os.path.join(root, fname), folder)
+            size = os.path.getsize(os.path.join(root, fname))
+            files.append({'name': path.replace("\\", "/"), 'size': size})
+    return jsonify({'files': files})
+
+@app.route('/api/delete_upload_file', methods=['POST'])
+@login_required
+def api_delete_upload_file():
+    fname = request.json.get('filename')
+    folder = os.path.join(app.root_path, 'static', 'uploads')
+    abs_path = os.path.abspath(os.path.join(folder, fname))
+    if not abs_path.startswith(folder) or not os.path.isfile(abs_path):
+        return jsonify({'status': 'error', 'message': 'Invalid file'}), 400
+    try:
+        os.remove(abs_path)
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True)

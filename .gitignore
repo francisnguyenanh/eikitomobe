@@ -11,3 +11,4 @@ keywords.txt
 static/uploads
 password_salt.key
 instance/eiki_tomobe.db
+eiki_tomobe.db
