@@ -376,3 +376,9 @@ input.link-input[readonly] {
     opacity: 0.25;
     filter: blur(0.5px);
 }
+.form-control {
+    border: 1px solid #495057;
+}
+.form-select {
+    border: 1px solid #495057;
+}

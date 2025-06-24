@@ -203,7 +203,6 @@
 
         /* Form Controls */
         .form-control {
-            border: 1px solid var(--navbar-border);
             border-radius: 10px;
             padding: 0.75rem 1rem;
             transition: all 0.3s ease;
@@ -231,7 +230,6 @@
         }
 
         .form-select {
-            border: 1px solid var(--navbar-border);
             border-radius: 10px;
             padding: 0.75rem 1rem;
             background: var(--card-bg);
@@ -852,21 +850,14 @@
                 <div class="modal-body">
                     <ul class="nav nav-tabs" id="settingsTab" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#generalTab" type="button">Theme</button>
+                            <button class="nav-link active" id="personalize-tab" data-bs-toggle="tab" data-bs-target="#personalizeTab" type="button">Personalize</button>
                         </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="password-tab" data-bs-toggle="tab" data-bs-target="#passwordTab" type="button">Password</button>
-                        </li>
+                        
                         <!-- ✅ THÊM: Master Password tab -->
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="master-password-tab" data-bs-toggle="tab" data-bs-target="#masterPasswordTab" type="button">Master Pass</button>
                         </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#uploadTab" type="button">Background</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="avatar-tab" data-bs-toggle="tab" data-bs-target="#avatarTab" type="button">Avatar</button>
-                        </li>
+                        
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profileTab" type="button">Card</button>
                         </li>
@@ -878,41 +869,79 @@
                         </li>
                     </ul>
                     <div class="tab-content mt-3">
-                        <div class="tab-pane fade show active" id="generalTab">
-                            <div class="mb-3">
-                                <label for="themeSelect" class="form-label">
-                                    <i class="bi bi-palette me-1"></i>
-                                    Theme
-                                </label>
-                                <select class="form-select" id="themeSelect">
-                                    <option value="light">Light</option>
-                                    <option value="dark">Dark</option>
-                                    <option value="blue">Blue</option>
-                                    <option value="green">Green</option>
-                                    <option value="purple">Purple</option>
-                                    <option value="red">Red</option>
-                                    <option value="orange">Orange</option>
-                                    <option value="yellow">Yellow</option>
-                                    <option value="pink">Pink</option>
-                                    <option value="cyan">Cyan</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="tab-pane fade" id="passwordTab">
-                            <form method="POST" action="{{ url_for('change_password') }}">
-                                <div class="mb-3">
-                                    <label for="new_password" class="form-label">
-                                        <i class="bi bi-key me-1"></i>
-                                        Change Password
-                                    </label>
-                                    <input type="password" class="form-control" id="new_password" name="new_password" required>
-                                </div>
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="bi bi-check-circle me-1"></i>
-                                    Save Password
-                                </button>
-                            </form>
-                        </div>
+                        <div class="tab-pane fade show active" id="personalizeTab">
+        <!-- Theme -->
+        <div class="mb-4">
+            <label for="themeSelect" class="form-label">
+                <i class="bi bi-palette me-1"></i>
+                Theme
+            </label>
+            <select class="form-select" id="themeSelect">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="blue">Blue</option>
+                <option value="green">Green</option>
+                <option value="purple">Purple</option>
+                <option value="red">Red</option>
+                <option value="orange">Orange</option>
+                <option value="yellow">Yellow</option>
+                <option value="pink">Pink</option>
+                <option value="cyan">Cyan</option>
+            </select>
+        </div>
+        <!-- Background -->
+        <div class="mb-4">
+            <form action="{{ url_for('upload_bg') }}" method="post" enctype="multipart/form-data" class="mb-3">
+                <label class="form-label">
+                    <i class="bi bi-image me-1"></i>
+                    Background Image
+                </label>
+                <input type="file" name="bg_image" accept="image/*" class="form-control">
+                <button type="submit" class="btn btn-primary w-100 mt-2">
+                    <i class="bi bi-upload me-1"></i>
+                    Upload
+                </button>
+            </form>
+            <div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="toggleBgImage">
+                <label class="form-check-label" for="toggleBgImage">Hiển thị hình nền</label>
+            </div>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="toggleQuote" checked>
+                <label class="form-check-label" for="toggleQuote">Hiển thị quote</label>
+            </div>
+        </div>
+        <!-- Avatar -->
+        <div class="mb-4">
+            <form action="{{ url_for('upload_avatar') }}" method="post" enctype="multipart/form-data" class="mb-3">
+                <label class="form-label">
+                    <i class="bi bi-person-circle me-1"></i>
+                    Avatar Image
+                </label>
+                <input type="file" name="avatar_image" accept="image/*,.heic" class="form-control" required>
+                <button type="submit" class="btn btn-primary w-100 mt-2">
+                    <i class="bi bi-upload me-1"></i>
+                    Upload
+                </button>
+            </form>
+        </div>
+        <!-- Password -->
+        <div>
+            <form method="POST" action="{{ url_for('change_password') }}">
+                <label for="new_password" class="form-label">
+                    <i class="bi bi-key me-1"></i>
+                    Change Password
+                </label>
+                <input type="password" class="form-control mb-2" id="new_password" name="new_password" required>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-check-circle me-1"></i>
+                    Save Password
+                </button>
+            </form>
+        </div>
+    </div>
+                        
+                        
                         <div class="tab-pane fade" id="masterPasswordTab">
                             <form id="masterPasswordForm">
                                 <div class="mb-3">
@@ -1923,7 +1952,7 @@
             },
 
             setupEventListeners() {
-                document.getElementById('upload-tab').addEventListener('shown.bs.tab', async () => {
+                document.getElementById('personalize-tab').addEventListener('shown.bs.tab', async () => {
                     try {
                         const data = await API.getUISettings();
                         document.getElementById('toggleBgImage').checked = !!data.show_bg_image;
@@ -2524,7 +2553,7 @@
         // ===== PROFILE MANAGER =====
         const ProfileManager = {
             init() {
-                document.getElementById('profile-tab').addEventListener('shown.bs.tab', () => this.loadProfileData());
+                document.getElementById('personalize-tab').addEventListener('shown.bs.tab', () => this.loadProfileData());
                 
                 // Thêm event listener sau khi DOM đã loaded
                 const profileForm = document.getElementById('profileForm');

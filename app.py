@@ -889,7 +889,7 @@ def add_note():
                     timestamp = int(time.time() * 1000)
                     original_filename = secure_filename(image.filename)
                     name, ext = os.path.splitext(original_filename)
-                    unique_filename = f"task_{timestamp}_{uuid4().hex[:8]}{ext}"
+                    unique_filename = f"{name}_{timestamp}_{uuid4().hex[:8]}{ext}"
                     
                     # Save file to disk
                     filepath = os.path.join(app.config['TASK_UPLOAD_FOLDER'], unique_filename)
@@ -998,7 +998,7 @@ def edit_note(id):
                         timestamp = int(time.time() * 1000)
                         original_filename = secure_filename(image.filename)
                         name, ext = os.path.splitext(original_filename)
-                        unique_filename = f"task_{note.id}_{timestamp}_{uuid4().hex[:8]}{ext}"
+                        unique_filename = f"{name}_{timestamp}_{uuid4().hex[:8]}{ext}"
                         
                         # Save file to disk
                         filepath = os.path.join(app.config['TASK_UPLOAD_FOLDER'], unique_filename)
@@ -2634,9 +2634,10 @@ def upload_evernote_images(note_id):
         for file in files:
             if file and file.filename and allowed_file(file.filename):
                 try:
-                    # Tạo unique filename
+                    # Tạo unique filename: note name + timestamp + tên gốc
                     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')[:-3]  # milliseconds
-                    filename = f"{note_id}_{timestamp}_{secure_filename(file.filename)}"
+                    note_name = secure_filename(note.title) if note.title else f'note_{note_id}'
+                    filename = f"{note_name}_{timestamp}"
                     
                     # Ensure .jpg extension for consistency
                     name, ext = os.path.splitext(filename)
