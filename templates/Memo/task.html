@@ -1277,10 +1277,6 @@ footer {
         </div>
     </div>
 
-    <footer class="text-end p-2">
-        DB size: <span id="dbSize">...</span>
-    </footer>
-
 
     <script>
 // === CONSTANTS & STATE ===
@@ -1559,18 +1555,6 @@ const api = {
         }
         
         return formData;
-    },
-
-    async updateDbSize() {
-        try {
-            const data = await this.request('/db_size');
-            const dbSize = document.getElementById('dbSize');
-            if (dbSize && data) {
-                dbSize.textContent = data.size_mb > 0 ? `${data.size_mb} MB` : `${data.size_kb} KB`;
-            }
-        } catch (error) {
-            console.error('Error fetching database size:', error);
-        }
     }
 };
 
@@ -2657,7 +2641,6 @@ if (calendarModal) {
     // Initialize UI
     ui.updateCategorySelect();
     noteManager.updateEventListeners();
-    api.updateDbSize();
     ui.highlightDueDates();
     
 
