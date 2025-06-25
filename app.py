@@ -5062,6 +5062,11 @@ def api_delete_upload_file():
         return jsonify({'status': 'success'})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
-    
+
+@app.route('/english_cloze')
+@login_required
+def english_cloze():
+    return render_template('learning/english_cloze.html')
+
 if __name__ == '__main__':
     app.run(debug=True)

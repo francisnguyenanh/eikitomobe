@@ -1,0 +1,462 @@
+{% extends "learning/base.html" %}
+{% block content %}
+<div class="card p-2 p-md-4 shadow-sm main-card" style="max-width:700px;margin:auto;">
+    <div class="d-flex justify-content-end mb-2">
+        <button class="btn btn-outline-secondary btn-sm" id="toggleConfigBtn" type="button">
+            <i class="bi bi-chevron-up" id="toggleIcon"></i> <span class="d-none d-md-inline">Hide Settings</span>
+        </button>
+    </div>
+    <div id="configArea">
+        <h4 class="mb-3 text-primary"><i class="bi bi-pencil-square me-2"></i>English Cloze Practice</h4>
+        <div class="mb-3">
+            <label for="inputText" class="form-label">Paste or type your English paragraph:</label>
+            <textarea id="inputText" class="form-control" rows="4" placeholder="Enter your paragraph here..." style="resize:vertical;min-height:80px;"></textarea>
+        </div>
+        <div class="mb-3 row g-2 align-items-center flex-column flex-md-row">
+            <div class="col-12 col-md-auto">
+                <label for="exerciseType" class="form-label mb-1">Exercise type:</label>
+                <select id="exerciseType" class="form-select">
+                    <option value="cloze">Cloze (Fill in blanks)</option>
+                    <option value="shuffle">Sentence Order (Arrange sentences)</option>
+                    <option value="mc">Multiple Choice (Word)</option>
+                    <option value="rearrange">Rearrange Words</option>
+                    <option value="truefalse">True/False</option>
+                </select>
+            </div>
+            <div class="col-12 col-md-auto d-flex gap-2 mt-2 mt-md-0 justify-content-md-end align-items-center" style="flex:1;">
+                <button class="btn btn-primary w-100" id="generateBtn">Generate</button>
+                <button class="btn btn-secondary w-100" id="resetBtn" type="button">Reset</button>
+            </div>
+        </div>
+        <div id="numBlanksArea" class="mb-3" style="min-width:160px;">
+            <label for="numBlanks" class="form-label mb-1">Number of blanks:</label>
+            <input type="number" id="numBlanks" class="form-control w-100" min="1" value="3" style="max-width:100px;display:inline-block;">
+        </div>
+    </div>
+    <div id="quizArea" class="my-3"></div>
+    <div id="resultArea"></div>
+</div>
+<style>
+@media (max-width: 600px) {
+    .card { padding: 1rem !important; }
+    #quizArea input, #quizArea select { width: 100% !important; margin-bottom: 0.5rem !important; }
+    #quizArea label { display: block; margin-bottom: 0.3rem; }
+    #quizArea .form-control, #quizArea .form-select { min-width: 0 !important; }
+    #quizArea .mx-1, #quizArea .me-1 { margin-left: 0 !important; margin-right: 0 !important; }
+    .mb-3.row.g-2.align-items-center.flex-column.flex-md-row { flex-direction: column !important; }
+    .mb-3.row.g-2.align-items-center.flex-column.flex-md-row > div { width: 100% !important; }
+    #numBlanksArea { width: 100% !important; }
+}
+@media (min-width: 601px) {
+    .main-card { width: 95vw !important; max-width: none !important; }
+}
+#quizArea input[type="text"], #quizArea .form-select { min-width: 80px; max-width: 100%; }
+#quizArea .badge { font-size: 1rem; }
+#quizArea .form-control, #quizArea .form-select { display: inline-block; vertical-align: middle; }
+#quizArea .mb-2 { margin-bottom: 0.7rem !important; }
+#quizArea .mb-1 { margin-bottom: 0.3rem !important; }
+.placeholder-drop {
+    opacity: 0.7;
+    background: #e3f2fd !important;
+    border: 2px dashed #2196f3 !important;
+    min-height: 2em;
+    transition: all 0.2s;
+}
+.dragElem {
+    opacity: 0.5;
+}
+.selected-touch {
+    background: #ffe082 !important;
+    border: 2px solid #ffb300 !important;
+}
+#wordList { flex-wrap: wrap; }
+#wordList .list-group-item { margin-bottom: 0 !important; margin-right: 4px; margin-left: 0; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+let originalWords = [];
+let blankIndexes = [];
+let userAnswers = [];
+let originalSentences = [];
+let shuffledSentences = [];
+// Thêm biến cho các loại bài tập mới
+let mcQuestions = [];
+let rearrangeQuestions = [];
+let tfQuestions = [];
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+// Ẩn/hiện số blank khi đổi kiểu bài tập
+document.getElementById('exerciseType').onchange = function() {
+    // Ẩn quiz và kết quả khi đổi loại bài tập
+    document.getElementById('quizArea').innerHTML = '';
+    document.getElementById('resultArea').innerHTML = '';
+    if (this.value === 'cloze') {
+        document.getElementById('numBlanksArea').style.display = '';
+    } else {
+        document.getElementById('numBlanksArea').style.display = 'none';
+    }
+};
+document.getElementById('exerciseType').dispatchEvent(new Event('change'));
+
+document.getElementById('generateBtn').onclick = function() {
+    const text = document.getElementById('inputText').value.trim();
+    const exerciseType = document.getElementById('exerciseType').value;
+    document.getElementById('resultArea').innerHTML = '';
+    if (!text) {
+        document.getElementById('quizArea').innerHTML = '<div class="alert alert-warning">Please enter a paragraph.</div>';
+        return;
+    }
+    if (exerciseType === 'cloze') {
+        const numBlanks = parseInt(document.getElementById('numBlanks').value) || 1;
+        originalWords = text.split(/\s+/);
+        if (numBlanks >= originalWords.length) {
+            document.getElementById('quizArea').innerHTML = '<div class="alert alert-warning">Number of blanks must be less than number of words.</div>';
+            return;
+        }
+        blankIndexes = Array.from({length: originalWords.length}, (_, i) => i);
+        shuffle(blankIndexes);
+        blankIndexes = blankIndexes.slice(0, numBlanks).sort((a,b)=>a-b);
+
+        let quizHTML = '<form id="clozeForm"><div class="mb-3">';
+        let blankNum = 0;
+        for (let i = 0; i < originalWords.length; i++) {
+            if (blankIndexes.includes(i)) {
+                quizHTML += `<input type="text" class="form-control d-inline-block mx-1 mb-1 cloze-blank" style="width:100px;display:inline;" data-idx="${i}" placeholder="Blank ${++blankNum}">`;
+            } else {
+                quizHTML += `<span class="mx-1">${originalWords[i]}</span>`;
+            }
+        }
+        quizHTML += '</div><button type="submit" class="btn btn-success">Check Answers</button></form>';
+        document.getElementById('quizArea').innerHTML = quizHTML;
+        document.getElementById('clozeForm').onsubmit = function(e) {
+            e.preventDefault();
+            checkAnswers();
+        };
+    } else if (exerciseType === 'shuffle') {
+        // Cắt câu (giản đơn: chia theo dấu chấm, chấm hỏi, chấm than)
+        originalSentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+        if (originalSentences.length < 2) {
+            document.getElementById('quizArea').innerHTML = '<div class="alert alert-warning">Please enter at least two sentences.</div>';
+            return;
+        }
+        shuffledSentences = originalSentences.slice();
+        shuffle(shuffledSentences);
+        // Drag & drop cho sắp xếp câu
+        let quizHTML = '<form id="orderForm"><div class="mb-3">';
+        quizHTML += '<p>Arrange the sentences in the correct order (drag & drop):</p>';
+        quizHTML += '<ul id="sentenceList" class="list-group mb-3">';
+        shuffledSentences.forEach((sent, i) => {
+            quizHTML += `<li class="list-group-item sentence-draggable" draggable="true" data-idx="${i}">${sent.trim()}</li>`;
+        });
+        quizHTML += '</ul>';
+        quizHTML += '<button type="submit" class="btn btn-success">Check Order</button></div></form>';
+        document.getElementById('quizArea').innerHTML = quizHTML;
+        enableDragDrop('sentenceList', 'sentence-draggable');
+        document.getElementById('orderForm').onsubmit = function(e) {
+            e.preventDefault();
+            let userOrder = Array.from(document.querySelectorAll('.sentence-draggable')).map(li => li.textContent.trim());
+            let correct = 0;
+            let total = originalSentences.length;
+            let feedback = [];
+            for (let i = 0; i < total; i++) {
+                if (userOrder[i] && userOrder[i] === originalSentences[i].trim()) {
+                    feedback.push(`<span class="badge bg-success me-1">${userOrder[i]}</span>`);
+                    correct++;
+                } else {
+                    feedback.push(`<span class="badge bg-danger me-1">${userOrder[i] || '[blank]'} <i class="bi bi-x"></i> <span class="text-muted">(Correct: ${originalSentences[i]})</span></span>`);
+                }
+            }
+            document.getElementById('resultArea').innerHTML =
+                `<div class="alert alert-info">Order Score: <b>${correct} / ${total}</b></div>
+                 <div>${feedback.join('<br>')}</div>`;
+        };
+    } else if (exerciseType === 'mc') {
+        // Multiple Choice: chọn 3 từ bất kỳ làm blank, mỗi blank có 4 đáp án (1 đúng, 3 nhiễu)
+        originalWords = text.split(/\s+/);
+        if (originalWords.length < 4) {
+            document.getElementById('quizArea').innerHTML = '<div class="alert alert-warning">Paragraph must have at least 4 words.</div>';
+            return;
+        }
+        let numQuestions = Math.min(3, originalWords.length);
+        let indexes = Array.from({length: originalWords.length}, (_, i) => i);
+        shuffle(indexes);
+        let qIndexes = indexes.slice(0, numQuestions);
+        mcQuestions = qIndexes.map(idx => {
+            let correct = originalWords[idx];
+            let distractors = indexes.filter(i => i !== idx).slice(0,3).map(i => originalWords[i]);
+            let options = [correct, ...distractors];
+            shuffle(options);
+            return {idx, correct, options};
+        });
+        let quizHTML = '<form id="mcForm"><div class="mb-3">';
+        mcQuestions.forEach((q, i) => {
+            quizHTML += `<div class="mb-2">Q${i+1}: `;
+            quizHTML += originalWords.map((w, j) => j === q.idx ? '<b>_____</b>' : w).join(' ');
+            quizHTML += '<br>';
+            q.options.forEach(opt => {
+                quizHTML += `<label class="me-2"><input type="radio" name="mc${i}" value="${opt}"> ${opt}</label>`;
+            });
+            quizHTML += '</div>';
+        });
+        quizHTML += '</div><button type="submit" class="btn btn-success">Check Answers</button></form>';
+        document.getElementById('quizArea').innerHTML = quizHTML;
+        document.getElementById('mcForm').onsubmit = function(e) {
+            e.preventDefault();
+            let correct = 0;
+            let feedback = [];
+            mcQuestions.forEach((q, i) => {
+                let val = document.querySelector(`input[name=mc${i}]:checked`);
+                if (val && val.value === q.correct) {
+                    correct++;
+                    feedback.push(`<span class='badge bg-success me-1'>Q${i+1}: ${val.value}</span>`);
+                } else {
+                    feedback.push(`<span class='badge bg-danger me-1'>Q${i+1}: ${val ? val.value : '[blank]'} <i class='bi bi-x'></i> <span class='text-muted'>(Correct: ${q.correct})</span></span>`);
+                }
+            });
+            document.getElementById('resultArea').innerHTML = `<div class='alert alert-info'>Score: <b>${correct} / ${mcQuestions.length}</b></div><div>${feedback.join('<br>')}</div>`;
+        };
+    } else if (exerciseType === 'rearrange') {
+        // Rearranging Words: lấy 1 câu bất kỳ, xáo trộn từ
+        let sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+        let sentence = sentences[Math.floor(Math.random()*sentences.length)].trim();
+        let words = sentence.split(/\s+/);
+        if (words.length < 4) {
+            document.getElementById('quizArea').innerHTML = '<div class="alert alert-warning">A sentence must have at least 4 words.</div>';
+            return;
+        }
+        let shuffled = words.slice();
+        shuffle(shuffled);
+        rearrangeQuestions = {sentence, words, shuffled};
+        let quizHTML = '<form id="rearrangeForm"><div class="mb-3">';
+        quizHTML += '<p>Arrange the words to form a correct sentence (drag & drop):</p>';
+        quizHTML += '<ul id="wordList" class="list-group mb-3 flex-row flex-wrap" style="display:flex;gap:8px;">';
+        shuffled.forEach((w,i) => {
+            quizHTML += `<li class="list-group-item word-draggable d-inline-block text-center" draggable="true" data-idx="${i}" style="min-width:60px;max-width:150px;cursor:pointer;">${w}</li>`;
+        });
+        quizHTML += '</ul>';
+        quizHTML += '<button type="submit" class="btn btn-success">Check</button></div></form>';
+        document.getElementById('quizArea').innerHTML = quizHTML;
+        enableDragDrop('wordList', 'word-draggable');
+        document.getElementById('rearrangeForm').onsubmit = function(e) {
+            e.preventDefault();
+            let userWords = Array.from(document.querySelectorAll('.word-draggable')).map(li => li.textContent.trim());
+            let correct = 0;
+            let total = rearrangeQuestions.words.length;
+            for (let i = 0; i < total; i++) {
+                if (userWords[i] === rearrangeQuestions.words[i]) correct++;
+            }
+            let feedback = `<div class='alert alert-info'>Score: <b>${correct} / ${total}</b></div>`;
+            feedback += `<div>Correct sentence: <b>${rearrangeQuestions.words.join(' ')}</b></div>`;
+            document.getElementById('resultArea').innerHTML = feedback;
+        };
+    } else if (exerciseType === 'truefalse') {
+        // True/False: tạo 3 câu đúng/sai dựa trên đoạn văn
+        let sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+        tfQuestions = sentences.slice(0,3).map(sent => {
+            let isTrue = Math.random() > 0.5;
+            let fake = sent;
+            if (!isTrue) {
+                // Đảo vị trí 2 từ đầu tiên nếu có thể
+                let ws = sent.split(/\s+/);
+                if (ws.length > 2) [ws[0], ws[1]] = [ws[1], ws[0]];
+                fake = ws.join(' ');
+            }
+            return {text: fake, answer: isTrue};
+        });
+        let quizHTML = '<form id="tfForm"><div class="mb-3">';
+        tfQuestions.forEach((q, i) => {
+            quizHTML += `<div class='mb-2'>Q${i+1}: ${q.text}<br>`;
+            quizHTML += `<label class='me-2'><input type='radio' name='tf${i}' value='true'> True</label>`;
+            quizHTML += `<label><input type='radio' name='tf${i}' value='false'> False</label></div>`;
+        });
+        quizHTML += '</div><button type="submit" class="btn btn-success">Check</button></form>';
+        document.getElementById('quizArea').innerHTML = quizHTML;
+        document.getElementById('tfForm').onsubmit = function(e) {
+            e.preventDefault();
+            let correct = 0;
+            let feedback = [];
+            tfQuestions.forEach((q, i) => {
+                let val = document.querySelector(`input[name=tf${i}]:checked`);
+                if (val && (val.value === String(q.answer))) {
+                    correct++;
+                    feedback.push(`<span class='badge bg-success me-1'>Q${i+1}: ${val.value}</span>`);
+                } else {
+                    feedback.push(`<span class='badge bg-danger me-1'>Q${i+1}: ${val ? val.value : '[blank]'} <i class='bi bi-x'></i> <span class='text-muted'>(Correct: ${q.answer})</span></span>`);
+                }
+            });
+            document.getElementById('resultArea').innerHTML = `<div class='alert alert-info'>Score: <b>${correct} / ${tfQuestions.length}</b></div><div>${feedback.join('<br>')}</div>`;
+        };
+    }
+};
+document.getElementById('resetBtn').onclick = function() {
+    document.getElementById('inputText').value = '';
+    document.getElementById('numBlanks').value = 3;
+    document.getElementById('quizArea').innerHTML = '';
+    document.getElementById('resultArea').innerHTML = '';
+    originalWords = [];
+    blankIndexes = [];
+    userAnswers = [];
+    originalSentences = [];
+    shuffledSentences = [];
+};
+
+function checkAnswers() {
+    let correct = 0;
+    let total = blankIndexes.length;
+    let feedback = [];
+    document.querySelectorAll('.cloze-blank').forEach(input => {
+        const idx = parseInt(input.dataset.idx);
+        const userWord = input.value.trim();
+        const answer = originalWords[idx];
+        if (userWord.toLowerCase() === answer.toLowerCase()) {
+            input.classList.remove('is-invalid');
+            input.classList.add('is-valid');
+            feedback.push(`<span class="badge bg-success me-1">${userWord}</span>`);
+            correct++;
+        } else {
+            input.classList.remove('is-valid');
+            input.classList.add('is-invalid');
+            feedback.push(`<span class="badge bg-danger me-1">${userWord || '[blank]'} <i class="bi bi-x"></i> <span class="text-muted">(${answer})</span></span>`);
+        }
+    });
+    document.getElementById('resultArea').innerHTML =
+        `<div class="alert alert-info">Score: <b>${correct} / ${total}</b></div>
+         <div>${feedback.join(' ')}</div>`;
+}
+
+function checkOrder() {
+    let correct = 0;
+    let total = originalSentences.length;
+    let userOrder = [];
+    let used = new Set();
+    let feedback = [];
+    document.querySelectorAll('.sentence-select').forEach((select, idx) => {
+        const val = select.value;
+        if (val !== "" && !used.has(val)) {
+            userOrder.push(shuffledSentences[parseInt(val)]);
+            used.add(val);
+        } else {
+            userOrder.push(null);
+        }
+    });
+    for (let i = 0; i < total; i++) {
+        if (userOrder[i] && userOrder[i].trim() === originalSentences[i].trim()) {
+            feedback.push(`<span class="badge bg-success me-1">${userOrder[i]}</span>`);
+            correct++;
+        } else {
+            feedback.push(`<span class="badge bg-danger me-1">${userOrder[i] || '[blank]'} <i class="bi bi-x"></i> <span class="text-muted">(Correct: ${originalSentences[i]})</span></span>`);
+        }
+    }
+    document.getElementById('resultArea').innerHTML =
+        `<div class="alert alert-info">Order Score: <b>${correct} / ${total}</b></div>
+         <div>${feedback.join('<br>')}</div>`;
+}
+// Drag & drop helper
+function enableDragDrop(listId, itemClass) {
+    const list = document.getElementById(listId);
+    let dragSrcEl = null;
+    let placeholder = document.createElement('li');
+    placeholder.className = 'list-group-item placeholder-drop';
+    placeholder.style.height = '2.2em';
+    placeholder.style.background = '#e3f2fd';
+    placeholder.style.border = '2px dashed #2196f3';
+    placeholder.style.margin = '2px 0';
+    // Kiểm tra hỗ trợ drag&drop
+    let isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (!isTouch) {
+        list.querySelectorAll('.' + itemClass).forEach(item => {
+            item.addEventListener('dragstart', function(e) {
+                dragSrcEl = this;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', this.outerHTML);
+                this.classList.add('dragElem');
+            });
+            item.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                if (this !== dragSrcEl) {
+                    this.parentNode.insertBefore(placeholder, this.nextSibling);
+                }
+            });
+            item.addEventListener('dragleave', function(e) {
+                if (list.contains(placeholder)) list.removeChild(placeholder);
+            });
+            item.addEventListener('drop', function(e) {
+                e.stopPropagation();
+                if (dragSrcEl !== this) {
+                    this.parentNode.insertBefore(dragSrcEl, this.nextSibling);
+                }
+                if (list.contains(placeholder)) list.removeChild(placeholder);
+                this.classList.remove('over');
+                return false;
+            });
+            item.addEventListener('dragend', function(e) {
+                this.classList.remove('dragElem');
+                if (list.contains(placeholder)) list.removeChild(placeholder);
+                list.querySelectorAll('.' + itemClass).forEach(i => i.classList.remove('over'));
+            });
+        });
+        list.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            if (!list.contains(placeholder)) list.appendChild(placeholder);
+        });
+        list.addEventListener('dragleave', function(e) {
+            if (list.contains(placeholder)) list.removeChild(placeholder);
+        });
+        list.addEventListener('drop', function(e) {
+            e.preventDefault();
+            if (dragSrcEl && list.contains(placeholder)) {
+                list.insertBefore(dragSrcEl, placeholder);
+                list.removeChild(placeholder);
+            }
+        });
+    } else {
+        // Touch/mobile: chọn 2 item để hoán đổi
+        let selected = null;
+        list.querySelectorAll('.' + itemClass).forEach(item => {
+            item.addEventListener('click', function() {
+                if (selected === this) {
+                    this.classList.remove('selected-touch');
+                    selected = null;
+                } else if (selected) {
+                    // Hoán đổi vị trí
+                    let temp = document.createElement('li');
+                    list.insertBefore(temp, this);
+                    list.insertBefore(this, selected);
+                    list.insertBefore(selected, temp);
+                    list.removeChild(temp);
+                    selected.classList.remove('selected-touch');
+                    selected = null;
+                } else {
+                    this.classList.add('selected-touch');
+                    selected = this;
+                }
+            });
+        });
+    }
+}
+document.getElementById('toggleConfigBtn').onclick = function() {
+    const config = document.getElementById('configArea');
+    const icon = document.getElementById('toggleIcon');
+    if (config.style.display === 'none') {
+        config.style.display = '';
+        icon.classList.remove('bi-chevron-down');
+        icon.classList.add('bi-chevron-up');
+        this.innerHTML = '<i class="bi bi-chevron-up" id="toggleIcon"></i> Hide Settings';
+    } else {
+        config.style.display = 'none';
+        icon.classList.remove('bi-chevron-up');
+        icon.classList.add('bi-chevron-down');
+        this.innerHTML = '<i class="bi bi-chevron-down" id="toggleIcon"></i> Show Settings';
+    }
+};
+</script>
+{% endblock %}
