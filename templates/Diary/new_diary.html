@@ -391,35 +391,39 @@
             const title = document.getElementById('title').value.trim();
             const content = document.getElementById('content').value.trim();
             const color = document.getElementById('color').value;
-            
-            // Chỉ lưu khi cả title và content đều có dữ liệu
+
             if (!title || !content) {
                 console.log('Auto-save skipped: Both title and content are required');
                 return;
             }
-            
+
             // Check if content has changed
-            if (title === this.lastSavedTitle && 
-                content === this.lastSavedContent && 
+            if (title === this.lastSavedTitle &&
+                content === this.lastSavedContent &&
                 color === this.lastSavedColor) {
                 return; // No changes to save
             }
-            
+
             try {
+                const payload = {
+                    title: title,
+                    content: content,
+                    color: color
+                };
+                if (this.draftId) {
+                    payload.draft_id = this.draftId;
+                }
+
                 const response = await fetch('/api/diary/auto_save', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        title: title,
-                        content: content,
-                        color: color
-                    })
+                    body: JSON.stringify(payload)
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok) {
                     if (result.status === 'created' || result.status === 'updated') {
                         // Update saved state
@@ -427,12 +431,12 @@
                         this.lastSavedContent = content;
                         this.lastSavedColor = color;
                         this.draftId = result.diary_id;
-                        
+
                         // Show save status
                         this.showSaveStatus();
-                        
+
                         console.log(`Draft ${result.status}: ${result.message}`);
-                        
+
                         // Remove localStorage draft since we saved to DB
                         localStorage.removeItem('diary_draft');
                     } else if (result.status === 'skipped') {
@@ -441,7 +445,7 @@
                 } else {
                     console.error('Auto-save failed:', result.message);
                 }
-                
+
             } catch (error) {
                 console.error('Error during auto-save:', error);
                 // Fallback to localStorage if server fails

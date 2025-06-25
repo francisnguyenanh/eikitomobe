@@ -3022,57 +3022,39 @@ def auto_save_diary():
         title = data.get('title', '').strip()
         content = data.get('content', '').strip()
         color = data.get('color', '#ffffff')
-        
-        # Chỉ lưu khi cả title và content đều có dữ liệu
+        draft_id = data.get('draft_id')
+
         if not title or not content:
-            return jsonify({
-                'status': 'skipped',
-                'message': 'Both title and content are required for auto-save'
-            })
-        
-        # Kiểm tra xem đã có draft chưa bằng cách tìm diary có title giống nhau và được tạo trong 24h qua
-        recent_time = datetime.now() - timedelta(hours=24)
-        
-        existing_draft = Diary.query.filter(
-            Diary.title == title,
-            Diary.date >= recent_time
-        ).first()
-        
-        if existing_draft:
-            # Cập nhật draft hiện có
-            existing_draft.content = content
-            existing_draft.color = color
-            existing_draft.date = datetime.now()  # Cập nhật thời gian
+            return jsonify({'status': 'skipped', 'message': 'Title and content required'}), 200
+
+        diary = None
+        if draft_id:
+            diary = Diary.query.filter_by(id=draft_id).first()
+        if diary:
+            # Update existing draft regardless of title change
+            diary.title = title
+            diary.content = content
+            diary.color = color
+            diary.date = datetime.now()
             db.session.commit()
-            
             return jsonify({
                 'status': 'updated',
                 'message': 'Draft updated successfully',
-                'diary_id': existing_draft.id
+                'diary_id': diary.id
             })
         else:
-            # Tạo draft mới
-            new_diary = Diary(
-                title=title,
-                content=content,
-                color=color,
-                date=datetime.now()
-            )
-            db.session.add(new_diary)
+            # Create new draft
+            diary = Diary(title=title, content=content, color=color)
+            db.session.add(diary)
             db.session.commit()
-            
             return jsonify({
                 'status': 'created',
                 'message': 'Draft created successfully',
-                'diary_id': new_diary.id
+                'diary_id': diary.id
             })
-                
     except Exception as e:
         app.logger.error(f"Error in auto_save_diary: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': f'Failed to auto-save: {str(e)}'
-        }), 500
+        return jsonify({'status': 'error', 'message': str(e)}), 500
     
 @app.route('/api/diary/auto_save_edit/<int:diary_id>', methods=['PUT'])
 @login_required
