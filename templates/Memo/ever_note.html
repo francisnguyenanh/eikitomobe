@@ -5040,6 +5040,74 @@ const NoteManager = {
     }
 };
 
+function autoCapitalizeAfterDotOrNewline(editor) {
+    // Lưu vị trí con trỏ hiện tại
+    const selection = window.getSelection();
+    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    let cursorOffset = null;
+    if (range) {
+        const preRange = range.cloneRange();
+        preRange.selectNodeContents(editor);
+        preRange.setEnd(range.endContainer, range.endOffset);
+        cursorOffset = preRange.toString().length;
+    }
+
+    // Tạo một div tạm để thao tác DOM
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = editor.innerHTML;
+
+    // Viết hoa ký tự đầu mỗi block (div, p, li)
+    const blocks = tempDiv.querySelectorAll('div, p, li');
+    blocks.forEach(block => {
+        // Tìm text node đầu tiên
+        let node = block.firstChild;
+        while (node && node.nodeType !== 3) node = node.nextSibling;
+        if (node && node.nodeValue) {
+            // Viết hoa ký tự đầu nếu là chữ thường
+            node.nodeValue = node.nodeValue.replace(/^(\s*)([a-zà-ỹ])/, (m, space, char) => space + char.toUpperCase());
+        }
+        // Viết hoa sau dấu chấm, chấm hỏi, chấm than trong block
+        block.innerHTML = block.innerHTML.replace(/([.!?。！？]\s*)([a-zà-ỹ])/g, (m, sep, char) => sep + char.toUpperCase());
+    });
+
+    // Nếu có thay đổi thì cập nhật lại editor
+    if (editor.innerHTML !== tempDiv.innerHTML) {
+        editor.innerHTML = tempDiv.innerHTML;
+        setCursorPosition(editor, cursorOffset);
+    }
+}
+
+// Hàm đặt lại vị trí con trỏ theo offset ký tự
+function setCursorPosition(element, offset) {
+    if (offset == null) return;
+    const selection = window.getSelection();
+    let currentOffset = 0;
+    let found = false;
+
+    function traverse(node) {
+        if (found) return;
+        if (node.nodeType === 3) { // text node
+            const nextOffset = currentOffset + node.length;
+            if (offset <= nextOffset) {
+                const range = document.createRange();
+                range.setStart(node, offset - currentOffset);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+                found = true;
+            } else {
+                currentOffset = nextOffset;
+            }
+        } else {
+            for (let i = 0; i < node.childNodes.length; i++) {
+                traverse(node.childNodes[i]);
+                if (found) break;
+            }
+        }
+    }
+    traverse(element);
+}
+
 // ===== IMAGE MANAGER =====
 const ImageManager = {
     // Upload images with better progress tracking
@@ -5966,6 +6034,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editor.addEventListener('input', () => {
             // Check for duplicate images sections after any input
             ImageManager.cleanupDuplicateSections();
+            autoCapitalizeAfterDotOrNewline(editor);
         });
         
         editor.addEventListener('keydown', (e) => {

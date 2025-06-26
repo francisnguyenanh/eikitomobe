@@ -580,6 +580,7 @@
             });
             
             contentTextarea.addEventListener('input', () => {
+                autoCapitalizeTextarea(contentTextarea);
                 if (titleInput.value.trim() && contentTextarea.value.trim()) {
                     this.autoSave();
                 }
@@ -657,5 +658,18 @@
         // Initial style update
         updateContentStyle();
     });
+    
+    // Thêm hàm autoCapitalizeTextarea phía sau object AutoSave hoặc cuối file script
+    function autoCapitalizeTextarea(textarea) {
+        let value = textarea.value;
+        value = value.replace(/(^|[.!?。！？]\s*|\n)(\s*)([a-zà-ỹ])/g, function(match, sep, space, char) {
+            return sep + space + char.toUpperCase();
+        });
+        if (textarea.value !== value) {
+            const pos = textarea.selectionStart;
+            textarea.value = value;
+            textarea.setSelectionRange(pos, pos);
+        }
+    }
 </script>
 {% endblock %}

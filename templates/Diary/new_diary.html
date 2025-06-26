@@ -567,6 +567,7 @@
             });
             
             contentTextarea.addEventListener('input', () => {
+                autoCapitalizeTextarea(contentTextarea);
                 if (titleInput.value.trim() && contentTextarea.value.trim()) {
                     this.autoSave();
                 }
@@ -617,6 +618,20 @@
     // ===== COLOR FUNCTIONALITY =====
     const colorInput = document.getElementById('color');
     const contentArea = document.getElementById('content');
+
+    function autoCapitalizeTextarea(textarea) {
+        let value = textarea.value;
+        // Viết hoa sau dấu chấm, chấm hỏi, chấm than, hoặc xuống dòng
+        value = value.replace(/(^|[.!?。！？]\s*|\n)(\s*)([a-zà-ỹ])/g, function(match, sep, space, char) {
+            return sep + space + char.toUpperCase();
+        });
+        // Nếu có thay đổi thì cập nhật lại textarea
+        if (textarea.value !== value) {
+            const pos = textarea.selectionStart;
+            textarea.value = value;
+            textarea.setSelectionRange(pos, pos); // Giữ vị trí con trỏ
+        }
+    }
 
     function calculateContrastColor(hexColor) {
         hexColor = hexColor.replace('#', '');
