@@ -8,10 +8,7 @@
                 <i class="bi bi-pencil-square"></i>
                 Edit Entry
             </h1>
-            <span id="save-status" class="save-indicator">
-                <i class="bi bi-cloud-check-fill"></i>
-                <span class="save-text">Saved</span>
-            </span>
+            <!-- Đã bỏ icon save-indicator, chỉ cần hiệu ứng màu ở title -->
         </div>
         <div class="header-right">
             <input type="color" id="color" name="color" value="{{ diary.color }}" class="color-picker" list="colorList">
@@ -103,19 +100,6 @@
     .diary-title i {
         color: #e67e22; /* Orange color for edit */
         font-size: 1.8rem;
-    }
-
-    .save-indicator {
-        display: none;
-        align-items: center;
-        gap: 0.5rem;
-        color: #27ae60;
-        font-size: 0.9rem;
-        font-weight: 500;
-        background: rgba(39, 174, 96, 0.1);
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
-        border: 1px solid rgba(39, 174, 96, 0.2);
     }
 
     .color-picker {
@@ -294,36 +278,21 @@
         }
     }
 
-    /* Auto-save status animation */
-    .save-indicator.show {
-        display: flex;
-        animation: fadeInScale 0.3s ease;
+    /* Hiệu ứng đổi màu cho title khi lưu */
+    .title-input.saving {
+        background: #fffbe6 !important;
+        box-shadow: 0 0 0 2px #ffe066 !important;
+        transition: background 0.3s, box-shadow 0.3s;
     }
-
-    .save-indicator.hide {
-        animation: fadeOutScale 0.3s ease forwards;
+    .title-input.saved {
+        background: #e6ffed !important;
+        box-shadow: 0 0 0 2px #27ae60 !important;
+        transition: background 0.3s, box-shadow 0.3s;
     }
-
-    @keyframes fadeInScale {
-        from {
-            opacity: 0;
-            transform: scale(0.8);
-        }
-        to {
-            opacity: 1;
-            transform: scale(1);
-        }
-    }
-
-    @keyframes fadeOutScale {
-        from {
-            opacity: 1;
-            transform: scale(1);
-        }
-        to {
-            opacity: 0;
-            transform: scale(0.8);
-        }
+    .title-input.error {
+        background: #ffeaea !important;
+        box-shadow: 0 0 0 2px #e74c3c !important;
+        transition: background 0.3s, box-shadow 0.3s;
     }
 
     /* Color picker styles */
@@ -372,19 +341,24 @@
         diaryId: diaryData.id,
         
         // Show save status animation
-        showSaveStatus() {
-            const indicator = document.getElementById('save-status');
-            indicator.classList.remove('hide');
-            indicator.classList.add('show');
-            
+        showSaveStatus(type = 'saved') {
+            const titleInput = document.getElementById('title');
+            if (!titleInput) return;
+            // Xóa các class trạng thái cũ
+            titleInput.classList.remove('saving', 'saved', 'error');
+            if (type === 'saving') {
+                titleInput.classList.add('saving');
+            } else if (type === 'saved') {
+                titleInput.classList.add('saved');
+            } else if (type === 'error') {
+                titleInput.classList.add('error');
+            }
             clearTimeout(this.saveTimeout);
             this.saveTimeout = setTimeout(() => {
-                indicator.classList.remove('show');
-                indicator.classList.add('hide');
-                setTimeout(() => {
-                    indicator.style.display = 'none';
-                    indicator.classList.remove('hide');
-                }, 300);
+                // Sau khi ẩn, bỏ class trạng thái nếu là saved
+                if (type === 'saved') {
+                    titleInput.classList.remove('saving', 'saved', 'error');
+                }
             }, 2000);
         },
         
@@ -657,6 +631,14 @@
         
         // Initial style update
         updateContentStyle();
+        
+        // Hotkey Ctrl+S để lưu nhanh nhật ký
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                AutoSave.saveDraft();
+            }
+        });
     });
     
     // Thêm hàm autoCapitalizeTextarea phía sau object AutoSave hoặc cuối file script
