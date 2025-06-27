@@ -39,30 +39,22 @@
                             <th>Điện thoại</th>
                             <th>Email</th>
                             <th>Nhóm</th>
-                            <th>Ngày sinh</th>
-                            <th>Kỷ niệm</th>
                             <th>Phụ thuộc</th>
                             <th>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for c in contacts %}
-                        <tr>
+                        <tr class="contact-row" data-id="{{ c.id }}">
                             <td>{{ c.name }}</td>
                             <td>{{ c.relation }}</td>
                             <td>{{ c.phone }}</td>
                             <td>{{ c.email }}</td>
                             <td>{{ c.group }}</td>
-                            <td>{{ c.birthday }}</td>
-                            <td>
-                                {% if c.anniv1_text %}{{ c.anniv1_text }}: {{ c.anniv1_date }}<br>{% endif %}
-                                {% if c.anniv2_text %}{{ c.anniv2_text }}: {{ c.anniv2_date }}<br>{% endif %}
-                                {% if c.anniv3_text %}{{ c.anniv3_text }}: {{ c.anniv3_date }}{% endif %}
-                            </td>
                             <td>{{ c.dependents }}</td>
                             <td>
-                                <button class="btn btn-sm btn-primary" onclick="editContact({{ c.id }})"><i class="bi bi-pencil"></i></button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteContact({{ c.id }})"><i class="bi bi-trash"></i></button>
+                                <button class="btn btn-sm btn-primary edit-btn" onclick="editContact({{ c.id }});event.stopPropagation();"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-danger delete-btn" onclick="deleteContact({{ c.id }});event.stopPropagation();"><i class="bi bi-trash"></i></button>
                             </td>
                         </tr>
                         {% endfor %}
@@ -88,65 +80,39 @@
                 <div class="col-md-4">
                     <label class="form-label">Họ tên</label>
                     <input type="text" class="form-control" name="name" id="name" required>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Quan hệ</label>
+                    <label class="form-label mt-2">Quan hệ</label>
                     <input type="text" class="form-control" name="relation" id="relation">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Số điện thoại</label>
+                    <label class="form-label mt-2">Số điện thoại</label>
                     <input type="text" class="form-control" name="phone" id="phone">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Email</label>
+                    <label class="form-label mt-2">Email</label>
                     <input type="email" class="form-control" name="email" id="email">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Địa chỉ</label>
-                    <input type="text" class="form-control" name="address" id="address">
+                    <label class="form-label mt-2">Nhóm (phân loại)</label>
+                    <input type="text" class="form-control" name="group" id="group">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Công ty/Tổ chức</label>
                     <input type="text" class="form-control" name="company" id="company">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Chức vụ/Vai trò</label>
+                    <label class="form-label mt-2">Chức vụ/Vai trò</label>
                     <input type="text" class="form-control" name="position" id="position">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Nhóm (phân loại)</label>
-                    <input type="text" class="form-control" name="group" id="group">
+                    <label class="form-label mt-2">Website</label>
+                    <input type="text" class="form-control" name="website" id="website">
+                    <label class="form-label mt-2">Người phụ thuộc</label>
+                    <input type="text" class="form-control" name="dependents" id="dependents" placeholder="Nhập tên hoặc chọn">
+                    <small class="form-text text-muted">Có thể nhập nhiều, cách nhau dấu phẩy hoặc chọn từ danh sách.</small>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Ngày sinh</label>
                     <input type="date" class="form-control" name="birthday" id="birthday">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Website</label>
-                    <input type="text" class="form-control" name="website" id="website">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Ngày kỷ niệm 1</label>
+                    <label class="form-label mt-2">Ngày kỷ niệm 1</label>
                     <input type="text" class="form-control mb-1" name="anniv1_text" id="anniv1_text" placeholder="Tên kỷ niệm">
                     <input type="date" class="form-control" name="anniv1_date" id="anniv1_date">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Ngày kỷ niệm 2</label>
+                    <label class="form-label mt-2">Ngày kỷ niệm 2</label>
                     <input type="text" class="form-control mb-1" name="anniv2_text" id="anniv2_text" placeholder="Tên kỷ niệm">
                     <input type="date" class="form-control" name="anniv2_date" id="anniv2_date">
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label">Ngày kỷ niệm 3</label>
+                    <label class="form-label mt-2">Ngày kỷ niệm 3</label>
                     <input type="text" class="form-control mb-1" name="anniv3_text" id="anniv3_text" placeholder="Tên kỷ niệm">
                     <input type="date" class="form-control" name="anniv3_date" id="anniv3_date">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Người phụ thuộc</label>
-                    <input type="text" class="form-control" name="dependents" id="dependents" placeholder="Nhập tên hoặc chọn">
-                    <small class="form-text text-muted">Có thể nhập nhiều, cách nhau dấu phẩy hoặc chọn từ danh sách.</small>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Ghi chú</label>
+                    <label class="form-label mt-2">Ghi chú</label>
                     <textarea class="form-control" name="note" id="note" rows="2"></textarea>
                 </div>
             </div>
@@ -174,6 +140,46 @@
   </div>
 </div>
 
+<!-- Modal View Contact -->
+<div class="modal fade" id="viewContactModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-person-lines-fill me-2"></i>Xem thông tin liên hệ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <div><b>Họ tên:</b> <span id="view_name"></span></div>
+            <div><b>Quan hệ:</b> <span id="view_relation"></span></div>
+            <div><b>Số điện thoại:</b> <span id="view_phone"></span></div>
+            <div><b>Email:</b> <span id="view_email"></span></div>
+            <div><b>Nhóm:</b> <span id="view_group"></span></div>
+          </div>
+          <div class="col-md-4">
+            <div><b>Tổ chức:</b> <span id="view_company"></span></div>
+            
+            <div><b>Chức vụ/Vai trò:</b> <span id="view_position"></span></div>
+            <div><b>Website:</b> <span id="view_website"></span></div>
+            <div><b>Người phụ thuộc:</b> <span id="view_dependents"></span></div>
+          </div>
+          <div class="col-md-4">
+            <div><b>Ngày sinh:</b> <span id="view_birthday"></span></div>
+            <div><b></b> <span id="view_anniv1"></span></div>
+            <div><b></b> <span id="view_anniv2"></span></div>
+            <div><b></b> <span id="view_anniv3"></span></div>
+            <div><b>Ghi chú:</b> <span id="view_note"></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // Hiển thị modal thêm mới contact
 const contactModal = new bootstrap.Modal(document.getElementById('contactModal'));
@@ -188,7 +194,7 @@ document.getElementById('btnNewContact').onclick = function() {
 function editContact(id) {
     fetch(`/contacts/${id}/json`)
         .then(res => res.json())
-        .then(data => {
+        .then (data => {
             document.getElementById('contactModalTitle').innerHTML = '<i class="bi bi-person-lines-fill me-2"></i>Sửa liên hệ';
             document.getElementById('contactId').value = data.id || '';
             document.getElementById('name').value = data.name || '';
@@ -243,5 +249,31 @@ if (alertsBox && alertsList && toggleAlertsBtn && toggleAlertsIcon) {
     alertsList.style.display = '';
     toggleAlertsIcon.className = 'bi bi-chevron-up';
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.contact-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            if (e.target.closest('.edit-btn') || e.target.closest('.delete-btn')) return;
+            const id = this.getAttribute('data-id');
+            fetch(`/contacts/${id}/json`).then(res => res.json()).then(data => {
+                document.getElementById('view_name').textContent = data.name || '';
+                document.getElementById('view_relation').textContent = data.relation || '';
+                document.getElementById('view_phone').textContent = data.phone || '';
+                document.getElementById('view_email').textContent = data.email || '';
+                document.getElementById('view_company').textContent = data.company || '';
+                document.getElementById('view_position').textContent = data.position || '';
+                document.getElementById('view_website').textContent = data.website || '';
+                document.getElementById('view_group').textContent = data.group || '';
+                document.getElementById('view_birthday').textContent = data.birthday || '';
+                document.getElementById('view_anniv1').textContent = (data.anniv1_text ? data.anniv1_text + ': ' : '') + (data.anniv1_date || '');
+                document.getElementById('view_anniv2').textContent = (data.anniv2_text ? data.anniv2_text + ': ' : '') + (data.anniv2_date || '');
+                document.getElementById('view_anniv3').textContent = (data.anniv3_text ? data.anniv3_text + ': ' : '') + (data.anniv3_date || '');
+                document.getElementById('view_dependents').textContent = data.dependents || '';
+                document.getElementById('view_note').textContent = data.note || '';
+                new bootstrap.Modal(document.getElementById('viewContactModal')).show();
+            });
+        });
+    });
+});
 </script>
 {% endblock %}
