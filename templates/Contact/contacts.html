@@ -26,6 +26,44 @@
     </div>
     {% endif %}
 
+    <!-- Filter Bar -->
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <select class="form-select" id="filterRelation">
+                <option value="">-- Quan hệ --</option>
+                {% for v in contacts|map(attribute='relation')|unique if v %}
+                <option value="{{ v }}">{{ v }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="filterCompany">
+                <option value="">-- Tổ chức --</option>
+                {% for v in contacts|map(attribute='company')|unique if v %}
+                <option value="{{ v }}">{{ v }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" id="filterGroup">
+                <option value="">-- Nhóm --</option>
+                {% for v in contacts|map(attribute='group')|unique if v %}
+                <option value="{{ v }}">{{ v }}</option>
+                {% endfor %}
+            </select>
+            
+        </div>
+        
+        <div class="col-md-3">
+            <select class="form-select" id="filterPosition">
+                <option value="">-- Chức vụ--</option>
+                {% for v in contacts|map(attribute='position')|unique if v %}
+                <option value="{{ v }}">{{ v }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
     <!-- Contact List Table -->
     <div class="card">
         <div class="card-body">
@@ -35,23 +73,21 @@
                     <thead>
                         <tr>
                             <th>Họ tên</th>
-                            <th>Quan hệ</th>
                             <th>Điện thoại</th>
                             <th>Email</th>
+                            <th>Tổ chức</th>
                             <th>Nhóm</th>
-                            <th>Phụ thuộc</th>
                             <th>Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for c in contacts %}
-                        <tr class="contact-row" data-id="{{ c.id }}">
+                        <tr class="contact-row" data-id="{{ c.id }}" data-position="{{ c.position }}">
                             <td>{{ c.name }}</td>
-                            <td>{{ c.relation }}</td>
                             <td>{{ c.phone }}</td>
                             <td>{{ c.email }}</td>
+                            <td data-company="{{ c.company }}">{{ c.company }}</td>
                             <td>{{ c.group }}</td>
-                            <td>{{ c.dependents }}</td>
                             <td>
                                 <button class="btn btn-sm btn-primary edit-btn" onclick="editContact({{ c.id }});event.stopPropagation();"><i class="bi bi-pencil"></i></button>
                                 <button class="btn btn-sm btn-danger delete-btn" onclick="deleteContact({{ c.id }});event.stopPropagation();"><i class="bi bi-trash"></i></button>
@@ -88,6 +124,8 @@
                     <input type="email" class="form-control" name="email" id="email">
                     <label class="form-label mt-2">Nhóm (phân loại)</label>
                     <input type="text" class="form-control" name="group" id="group">
+                    <label class="form-label mt-2">Địa chỉ</label>
+                    <input type="text" class="form-control" name="address" id="address">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Công ty/Tổ chức</label>
@@ -275,5 +313,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
+// Thêm JS filter bảng contact
+['filterGroup','filterRelation','filterCompany','filterPosition'].forEach(function(id){
+    document.getElementById(id).addEventListener('change', filterContacts);
+});
+function filterContacts() {
+    const group = document.getElementById('filterGroup').value.trim();
+    const relation = document.getElementById('filterRelation').value.trim();
+    const company = document.getElementById('filterCompany').value.trim();
+    const position = document.getElementById('filterPosition').value.trim();
+    document.querySelectorAll('.contact-row').forEach(row => {
+        let show = true;
+        if (company && row.children[3] && row.children[3].getAttribute('data-company') !== company) show = false;
+        if (group && row.children[4].textContent.trim() !== group) show = false;
+        if (relation && row.getAttribute('data-relation') !== relation) show = false;
+        if (position && row.getAttribute('data-position') !== position) show = false;
+        row.style.display = show ? '' : 'none';
+    });
+}
 </script>
 {% endblock %}
