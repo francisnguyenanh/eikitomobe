@@ -1,0 +1,247 @@
+{% extends "Contact/base.html" %}
+{% block content %}
+
+<div class="container">
+    <h2 class="mb-4 d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-person-lines-fill me-2"></i>Contact Management</span>
+        <button class="btn btn-success" id="btnNewContact"><i class="bi bi-plus-lg me-1"></i>New</button>
+    </h2>
+    <!-- Alert for birthday/anniversary with toggle -->
+    {% if alerts_today or alerts_tomorrow %}
+    <div class="alert alert-info" id="alertsBox">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <span><i class="bi bi-gift me-2"></i><b>Thông báo sinh nhật/kỷ niệm</b></span>
+            <button class="btn btn-sm btn-outline-secondary" id="toggleAlertsBtn" type="button">
+                <span id="toggleAlertsIcon" class="bi bi-chevron-up"></span>
+            </button>
+        </div>
+        <div id="alertsList">
+            {% for alert in alerts_today %}
+                <div style="color:#28a745;font-weight:bold"><i class="bi bi-star-fill me-2"></i>{{ alert }}</div>
+            {% endfor %}
+            {% for alert in alerts_tomorrow %}
+                <div><i class="bi bi-gift me-2"></i>{{ alert }}</div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Contact List Table -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title mb-3"><i class="bi bi-people me-2"></i>Danh sách liên hệ</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Họ tên</th>
+                            <th>Quan hệ</th>
+                            <th>Điện thoại</th>
+                            <th>Email</th>
+                            <th>Nhóm</th>
+                            <th>Ngày sinh</th>
+                            <th>Kỷ niệm</th>
+                            <th>Phụ thuộc</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in contacts %}
+                        <tr>
+                            <td>{{ c.name }}</td>
+                            <td>{{ c.relation }}</td>
+                            <td>{{ c.phone }}</td>
+                            <td>{{ c.email }}</td>
+                            <td>{{ c.group }}</td>
+                            <td>{{ c.birthday }}</td>
+                            <td>
+                                {% if c.anniv1_text %}{{ c.anniv1_text }}: {{ c.anniv1_date }}<br>{% endif %}
+                                {% if c.anniv2_text %}{{ c.anniv2_text }}: {{ c.anniv2_date }}<br>{% endif %}
+                                {% if c.anniv3_text %}{{ c.anniv3_text }}: {{ c.anniv3_date }}{% endif %}
+                            </td>
+                            <td>{{ c.dependents }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="editContact({{ c.id }})"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteContact({{ c.id }})"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Add/Edit Contact -->
+<div class="modal fade" id="contactModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="contactModalTitle"><i class="bi bi-person-lines-fill me-2"></i>Thêm/Sửa liên hệ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="contactForm" method="POST" action="{{ url_for('save_contact') }}">
+        <div class="modal-body">
+            <input type="hidden" name="id" id="contactId" value="">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Họ tên</label>
+                    <input type="text" class="form-control" name="name" id="name" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Quan hệ</label>
+                    <input type="text" class="form-control" name="relation" id="relation">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Số điện thoại</label>
+                    <input type="text" class="form-control" name="phone" id="phone">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" name="email" id="email">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Địa chỉ</label>
+                    <input type="text" class="form-control" name="address" id="address">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Công ty/Tổ chức</label>
+                    <input type="text" class="form-control" name="company" id="company">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Chức vụ/Vai trò</label>
+                    <input type="text" class="form-control" name="position" id="position">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nhóm (phân loại)</label>
+                    <input type="text" class="form-control" name="group" id="group">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ngày sinh</label>
+                    <input type="date" class="form-control" name="birthday" id="birthday">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Website</label>
+                    <input type="text" class="form-control" name="website" id="website">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ngày kỷ niệm 1</label>
+                    <input type="text" class="form-control mb-1" name="anniv1_text" id="anniv1_text" placeholder="Tên kỷ niệm">
+                    <input type="date" class="form-control" name="anniv1_date" id="anniv1_date">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ngày kỷ niệm 2</label>
+                    <input type="text" class="form-control mb-1" name="anniv2_text" id="anniv2_text" placeholder="Tên kỷ niệm">
+                    <input type="date" class="form-control" name="anniv2_date" id="anniv2_date">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ngày kỷ niệm 3</label>
+                    <input type="text" class="form-control mb-1" name="anniv3_text" id="anniv3_text" placeholder="Tên kỷ niệm">
+                    <input type="date" class="form-control" name="anniv3_date" id="anniv3_date">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Người phụ thuộc</label>
+                    <input type="text" class="form-control" name="dependents" id="dependents" placeholder="Nhập tên hoặc chọn">
+                    <small class="form-text text-muted">Có thể nhập nhiều, cách nhau dấu phẩy hoặc chọn từ danh sách.</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Ghi chú</label>
+                    <textarea class="form-control" name="note" id="note" rows="2"></textarea>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-save me-2"></i>Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Optional: Modal confirm delete -->
+<div class="modal fade" id="deleteContactModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Xác nhận xoá liên hệ</h5></div>
+      <div class="modal-body">Bạn có chắc chắn muốn xoá liên hệ này?</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Xoá</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Hiển thị modal thêm mới contact
+const contactModal = new bootstrap.Modal(document.getElementById('contactModal'));
+document.getElementById('btnNewContact').onclick = function() {
+    document.getElementById('contactModalTitle').innerHTML = '<i class="bi bi-person-lines-fill me-2"></i>Thêm liên hệ';
+    document.getElementById('contactForm').reset();
+    document.getElementById('contactId').value = '';
+    contactModal.show();
+};
+
+// Sửa contact: lấy dữ liệu từ bảng và điền vào form modal
+function editContact(id) {
+    fetch(`/contacts/${id}/json`)
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('contactModalTitle').innerHTML = '<i class="bi bi-person-lines-fill me-2"></i>Sửa liên hệ';
+            document.getElementById('contactId').value = data.id || '';
+            document.getElementById('name').value = data.name || '';
+            document.getElementById('relation').value = data.relation || '';
+            document.getElementById('phone').value = data.phone || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('address').value = data.address || '';
+            document.getElementById('company').value = data.company || '';
+            document.getElementById('position').value = data.position || '';
+            document.getElementById('group').value = data.group || '';
+            document.getElementById('birthday').value = data.birthday || '';
+            document.getElementById('website').value = data.website || '';
+            document.getElementById('anniv1_text').value = data.anniv1_text || '';
+            document.getElementById('anniv1_date').value = data.anniv1_date || '';
+            document.getElementById('anniv2_text').value = data.anniv2_text || '';
+            document.getElementById('anniv2_date').value = data.anniv2_date || '';
+            document.getElementById('anniv3_text').value = data.anniv3_text || '';
+            document.getElementById('anniv3_date').value = data.anniv3_date || '';
+            document.getElementById('dependents').value = data.dependents || '';
+            document.getElementById('note').value = data.note || '';
+            contactModal.show();
+        });
+}
+
+function deleteContact(id) {
+    // Hiển thị modal xác nhận xoá
+    const modal = new bootstrap.Modal(document.getElementById('deleteContactModal'));
+    modal.show();
+    document.getElementById('confirmDeleteBtn').onclick = function() {
+        window.location.href = '/contacts/delete/' + id;
+    }
+}
+
+// Toggle alert-info box
+const alertsBox = document.getElementById('alertsBox');
+const alertsList = document.getElementById('alertsList');
+const toggleAlertsBtn = document.getElementById('toggleAlertsBtn');
+const toggleAlertsIcon = document.getElementById('toggleAlertsIcon');
+if (alertsBox && alertsList && toggleAlertsBtn && toggleAlertsIcon) {
+    let expanded = true;
+    toggleAlertsBtn.onclick = function() {
+        expanded = !expanded;
+        if (expanded) {
+            alertsList.style.display = '';
+            toggleAlertsIcon.className = 'bi bi-chevron-up';
+        } else {
+            alertsList.style.display = 'none';
+            toggleAlertsIcon.className = 'bi bi-chevron-down';
+        }
+    };
+    // Mặc định expand
+    alertsList.style.display = '';
+    toggleAlertsIcon.className = 'bi bi-chevron-up';
+}
+</script>
+{% endblock %}

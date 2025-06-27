@@ -360,6 +360,28 @@ class PasswordCategory(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
+class Contact(db.Model):
+    __tablename__ = 'contacts'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    relation = db.Column(db.String(100))
+    phone = db.Column(db.String(50))
+    email = db.Column(db.String(100))
+    address = db.Column(db.String(200))
+    company = db.Column(db.String(200))
+    position = db.Column(db.String(100))
+    group = db.Column(db.String(100))
+    birthday = db.Column(db.String(10))  # YYYY-MM-DD
+    website = db.Column(db.String(200))
+    anniv1_text = db.Column(db.String(100))
+    anniv1_date = db.Column(db.String(10))  # YYYY-MM-DD
+    anniv2_text = db.Column(db.String(100))
+    anniv2_date = db.Column(db.String(10))
+    anniv3_text = db.Column(db.String(100))
+    anniv3_date = db.Column(db.String(10))
+    dependents = db.Column(db.String(200))  # comma separated or text
+    note = db.Column(db.Text)
+    
 class UserSettings(db.Model):
     __tablename__ = 'user_settings'
     id = db.Column(db.Integer, primary_key=True)
@@ -5068,5 +5090,112 @@ def api_delete_upload_file():
 def english_cloze():
     return render_template('learning/english_cloze.html')
 
+@app.route('/contacts', methods=['GET', 'POST'])
+@login_required
+def contacts():
+    contacts = Contact.query.all()
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    alerts_today = []
+    alerts_tomorrow = []
+
+    def check_event(dt_str):
+        if not dt_str:
+            return None
+        try:
+            d = datetime.strptime(dt_str, "%Y-%m-%d").date()
+            return d.replace(year=today.year)
+        except Exception:
+            return None
+
+    for c in contacts:
+        # Birthday
+        bday = check_event(c.birthday)
+        if bday:
+            if bday == today:
+                alerts_today.append(f"{c.name} sinh nhật hôm nay!")
+            elif bday == tomorrow:
+                alerts_tomorrow.append(f"{c.name} sinh nhật ngày mai!")
+        # Anniversaries
+        for anniv_text, anniv_date in [
+            (c.anniv1_text, c.anniv1_date),
+            (c.anniv2_text, c.anniv2_date),
+            (c.anniv3_text, c.anniv3_date),
+        ]:
+            if anniv_text and anniv_date:
+                anniv = check_event(anniv_date)
+                if anniv:
+                    if anniv == today:
+                        alerts_today.append(f"{c.name}: {anniv_text} hôm nay!")
+                    elif anniv == tomorrow:
+                        alerts_tomorrow.append(f"{c.name}: {anniv_text} ngày mai!")
+
+    return render_template(
+        "Contact/contacts.html",
+        contacts=contacts,
+        alerts_today=alerts_today,
+        alerts_tomorrow=alerts_tomorrow
+    )
+
+@app.route('/contacts/save', methods=['POST'])
+@login_required
+def save_contact():
+    form = request.form
+    contact_id = form.get('id')
+    if contact_id:
+        contact = Contact.query.get(contact_id)
+        if not contact:
+            flash('Không tìm thấy liên hệ!', 'danger')
+            return redirect(url_for('contacts'))
+    else:
+        contact = Contact()
+        db.session.add(contact)
+    # Cập nhật các trường
+    for field in ['name', 'relation', 'phone', 'email', 'address', 'company', 'position', 'group',
+                  'birthday', 'website', 'anniv1_text', 'anniv1_date', 'anniv2_text', 'anniv2_date',
+                  'anniv3_text', 'anniv3_date', 'dependents', 'note']:
+        setattr(contact, field, form.get(field))
+    db.session.commit()
+    flash('Đã lưu liên hệ!', 'success')
+    return redirect(url_for('contacts'))
+
+@app.route('/contacts/delete/<int:id>')
+@login_required
+def delete_contact(id):
+    contact = Contact.query.get(id)
+    if contact:
+        db.session.delete(contact)
+        db.session.commit()
+        flash('Đã xoá liên hệ!', 'success')
+    else:
+        flash('Không tìm thấy liên hệ!', 'danger')
+    return redirect(url_for('contacts'))
+
+@app.route('/contacts/<int:id>/json')
+@login_required
+def get_contact_json(id):
+    contact = Contact.query.get_or_404(id)
+    return jsonify({
+        'id': contact.id,
+        'name': contact.name,
+        'relation': contact.relation,
+        'phone': contact.phone,
+        'email': contact.email,
+        'address': contact.address,
+        'company': contact.company,
+        'position': contact.position,
+        'group': contact.group,
+        'birthday': contact.birthday,
+        'website': contact.website,
+        'anniv1_text': contact.anniv1_text,
+        'anniv1_date': contact.anniv1_date,
+        'anniv2_text': contact.anniv2_text,
+        'anniv2_date': contact.anniv2_date,
+        'anniv3_text': contact.anniv3_text,
+        'anniv3_date': contact.anniv3_date,
+        'dependents': contact.dependents,
+        'note': contact.note
+    })
+    
 if __name__ == '__main__':
     app.run(debug=True)
