@@ -2,66 +2,84 @@
 {% block content %}
 
 <div class="container">
-    <h2 class="mb-4 d-flex align-items-center justify-content-between">
-        <span><i class="bi bi-person-lines-fill me-2"></i>Contact Management</span>
-        <button class="btn btn-success" id="btnNewContact"><i class="bi bi-plus-lg me-1"></i>New</button>
-    </h2>
-    <!-- Alert for birthday/anniversary with toggle -->
-    {% if alerts_today or alerts_tomorrow %}
-    <div class="alert alert-info" id="alertsBox">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-            <span><i class="bi bi-gift me-2"></i><b>Thông báo sinh nhật/kỷ niệm</b></span>
-            <button class="btn btn-sm btn-outline-secondary" id="toggleAlertsBtn" type="button">
-                <span id="toggleAlertsIcon" class="bi bi-chevron-up"></span>
-            </button>
+    <div class="d-flex align-items-center mb-2">
+        <button class="btn btn-success me-3" id="btnNewContact"><i class="bi bi-plus-lg me-1"></i>New</button>
+        <!-- Alert for birthday/anniversary with toggle -->
+        {% if alerts_today or alerts_tomorrow %}
+        <div class="alert alert-info ms-3 mb-0 flex-shrink-1 flex-grow-1" id="alertsBox" style="min-width:260px;max-width:100%;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span><i class="bi bi-gift me-2"></i><b>Thông báo</b></span>
+                <button class="btn btn-sm btn-outline-secondary" id="toggleAlertsBtn" type="button">
+                    <span id="toggleAlertsIcon" class="bi bi-chevron-up"></span>
+                </button>
+            </div>
+            <div id="alertsList">
+                {% for alert in alerts_today %}
+                    <div style="color:#28a745;font-weight:bold"><i class="bi bi-star-fill me-2"></i>{{ alert }}</div>
+                {% endfor %}
+                {% for alert in alerts_tomorrow %}
+                    <div><i class="bi bi-gift me-2"></i>{{ alert }}</div>
+                {% endfor %}
+            </div>
         </div>
-        <div id="alertsList">
-            {% for alert in alerts_today %}
-                <div style="color:#28a745;font-weight:bold"><i class="bi bi-star-fill me-2"></i>{{ alert }}</div>
-            {% endfor %}
-            {% for alert in alerts_tomorrow %}
-                <div><i class="bi bi-gift me-2"></i>{{ alert }}</div>
-            {% endfor %}
-        </div>
+        {% endif %}
     </div>
-    {% endif %}
 
-    <!-- Filter Bar -->
-    <div class="row mb-3">
-        <div class="col-md-3">
+    <!-- Filter Bar with Toggle -->
+    <div class="card mb-3">
+      <div class="card-header d-flex align-items-center justify-content-between" style="cursor:pointer;" id="filterToggleBtn">
+        <span><i class="bi bi-funnel me-2"></i>Bộ lọc tìm kiếm</span>
+        <span id="filterToggleIcon" class="bi bi-chevron-up"></span>
+      </div>
+      <div class="card-body" id="filterBar" style="display:block;">
+        <div class="row g-2">
+            <div class="col-md-3 mt-2">
+            <input type="text" class="form-control" id="filterName" placeholder="Tìm tên...">
+          </div>
+          <div class="col-md-3 mt-2">
+            <input type="text" class="form-control" id="filterAddress" placeholder="Tìm địa chỉ...">
+          </div>
+          <div class="col-md-3 mt-2">
+            <input type="text" class="form-control" id="filterDependents" placeholder="Tìm người phụ thuộc...">
+          </div>
+          <div class="col-md-3 mt-2">
+            <input type="text" class="form-control" id="filterNote" placeholder="Tìm ghi chú...">
+          </div>
+          <div class="col-md-3">
             <select class="form-select" id="filterRelation">
-                <option value="">-- Quan hệ --</option>
-                {% for v in contacts|map(attribute='relation')|unique if v %}
-                <option value="{{ v }}">{{ v }}</option>
-                {% endfor %}
+              <option value="">-- Quan hệ --</option>
+              {% for v in contacts|map(attribute='relation')|unique if v %}
+              <option value="{{ v }}">{{ v }}</option>
+              {% endfor %}
             </select>
-        </div>
-        <div class="col-md-3">
+          </div>
+          <div class="col-md-3">
             <select class="form-select" id="filterCompany">
-                <option value="">-- Tổ chức --</option>
-                {% for v in contacts|map(attribute='company')|unique if v %}
-                <option value="{{ v }}">{{ v }}</option>
-                {% endfor %}
+              <option value="">-- Tổ chức --</option>
+              {% for v in contacts|map(attribute='company')|unique if v %}
+              <option value="{{ v }}">{{ v }}</option>
+              {% endfor %}
             </select>
-        </div>
-        <div class="col-md-3">
+          </div>
+          <div class="col-md-3">
             <select class="form-select" id="filterGroup">
-                <option value="">-- Nhóm --</option>
-                {% for v in contacts|map(attribute='group')|unique if v %}
-                <option value="{{ v }}">{{ v }}</option>
-                {% endfor %}
+              <option value="">-- Nhóm --</option>
+              {% for v in contacts|map(attribute='group')|unique if v %}
+              <option value="{{ v }}">{{ v }}</option>
+              {% endfor %}
             </select>
-            
-        </div>
-        
-        <div class="col-md-3">
+          </div>
+          <div class="col-md-3">
             <select class="form-select" id="filterPosition">
-                <option value="">-- Chức vụ--</option>
-                {% for v in contacts|map(attribute='position')|unique if v %}
-                <option value="{{ v }}">{{ v }}</option>
-                {% endfor %}
+              <option value="">-- Chức vụ--</option>
+              {% for v in contacts|map(attribute='position')|unique if v %}
+              <option value="{{ v }}">{{ v }}</option>
+              {% endfor %}
             </select>
+          </div>
+          
         </div>
+      </div>
     </div>
 
     <!-- Contact List Table -->
@@ -103,12 +121,8 @@
 
 <!-- Modal Add/Edit Contact -->
 <div class="modal fade" id="contactModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-lg modal-view-contact">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="contactModalTitle"><i class="bi bi-person-lines-fill me-2"></i>Thêm/Sửa liên hệ</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
       <form id="contactForm" method="POST" action="{{ url_for('save_contact') }}">
         <div class="modal-body">
             <input type="hidden" name="id" id="contactId" value="">
@@ -122,14 +136,14 @@
                     <input type="text" class="form-control" name="phone" id="phone">
                     <label class="form-label mt-2">Email</label>
                     <input type="email" class="form-control" name="email" id="email">
-                    <label class="form-label mt-2">Nhóm (phân loại)</label>
-                    <input type="text" class="form-control" name="group" id="group">
                     <label class="form-label mt-2">Địa chỉ</label>
                     <input type="text" class="form-control" name="address" id="address">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Công ty/Tổ chức</label>
                     <input type="text" class="form-control" name="company" id="company">
+                    <label class="form-label mt-2">Nhóm</label>
+                    <input type="text" class="form-control" name="group" id="group">
                     <label class="form-label mt-2">Chức vụ/Vai trò</label>
                     <input type="text" class="form-control" name="position" id="position">
                     <label class="form-label mt-2">Website</label>
@@ -180,12 +194,8 @@
 
 <!-- Modal View Contact -->
 <div class="modal fade" id="viewContactModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-lg modal-view-contact">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-person-lines-fill me-2"></i>Xem thông tin liên hệ</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
       <div class="modal-body">
         <div class="row g-3">
           <div class="col-md-4">
@@ -193,12 +203,12 @@
             <div><b>Quan hệ:</b> <span id="view_relation"></span></div>
             <div><b>Số điện thoại:</b> <span id="view_phone"></span></div>
             <div><b>Email:</b> <span id="view_email"></span></div>
-            <div><b>Nhóm:</b> <span id="view_group"></span></div>
+            <div><b>Địa chỉ:</b> <span id="view_address"></span></div>
           </div>
           <div class="col-md-4">
             <div><b>Tổ chức:</b> <span id="view_company"></span></div>
-            
-            <div><b>Chức vụ/Vai trò:</b> <span id="view_position"></span></div>
+            <div><b>Nhóm:</b> <span id="view_group"></span></div>
+            <div><b>Chức vụ:</b> <span id="view_position"></span></div>
             <div><b>Website:</b> <span id="view_website"></span></div>
             <div><b>Người phụ thuộc:</b> <span id="view_dependents"></span></div>
           </div>
@@ -218,11 +228,18 @@
   </div>
 </div>
 
+<style>
+@media (min-width: 992px) {
+  .modal-view-contact {
+    max-width: 80vw;
+  }
+}
+</style>
+
 <script>
 // Hiển thị modal thêm mới contact
 const contactModal = new bootstrap.Modal(document.getElementById('contactModal'));
 document.getElementById('btnNewContact').onclick = function() {
-    document.getElementById('contactModalTitle').innerHTML = '<i class="bi bi-person-lines-fill me-2"></i>Thêm liên hệ';
     document.getElementById('contactForm').reset();
     document.getElementById('contactId').value = '';
     contactModal.show();
@@ -233,7 +250,6 @@ function editContact(id) {
     fetch(`/contacts/${id}/json`)
         .then(res => res.json())
         .then (data => {
-            document.getElementById('contactModalTitle').innerHTML = '<i class="bi bi-person-lines-fill me-2"></i>Sửa liên hệ';
             document.getElementById('contactId').value = data.id || '';
             document.getElementById('name').value = data.name || '';
             document.getElementById('relation').value = data.relation || '';
@@ -288,6 +304,19 @@ if (alertsBox && alertsList && toggleAlertsBtn && toggleAlertsIcon) {
     toggleAlertsIcon.className = 'bi bi-chevron-up';
 }
 
+// JS toggle filter bar
+const filterToggleBtn = document.getElementById('filterToggleBtn');
+const filterBar = document.getElementById('filterBar');
+const filterToggleIcon = document.getElementById('filterToggleIcon');
+if (filterToggleBtn && filterBar && filterToggleIcon) {
+  let filterExpanded = true;
+  filterToggleBtn.onclick = function() {
+    filterExpanded = !filterExpanded;
+    filterBar.style.display = filterExpanded ? 'block' : 'none';
+    filterToggleIcon.className = filterExpanded ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+  };
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.contact-row').forEach(row => {
         row.addEventListener('click', function(e) {
@@ -302,6 +331,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('view_position').textContent = data.position || '';
                 document.getElementById('view_website').textContent = data.website || '';
                 document.getElementById('view_group').textContent = data.group || '';
+                document.getElementById('view_address').textContent = data.address || '';
                 document.getElementById('view_birthday').textContent = data.birthday || '';
                 document.getElementById('view_anniv1').textContent = (data.anniv1_text ? data.anniv1_text + ': ' : '') + (data.anniv1_date || '');
                 document.getElementById('view_anniv2').textContent = (data.anniv2_text ? data.anniv2_text + ': ' : '') + (data.anniv2_date || '');
@@ -318,19 +348,61 @@ document.addEventListener('DOMContentLoaded', function() {
 ['filterGroup','filterRelation','filterCompany','filterPosition'].forEach(function(id){
     document.getElementById(id).addEventListener('change', filterContacts);
 });
+document.getElementById('filterAddress').addEventListener('input', filterContacts);
+document.getElementById('filterName').addEventListener('input', filterContacts);
+document.getElementById('filterDependents').addEventListener('input', filterContacts);
+document.getElementById('filterNote').addEventListener('input', filterContacts);
 function filterContacts() {
     const group = document.getElementById('filterGroup').value.trim();
     const relation = document.getElementById('filterRelation').value.trim();
     const company = document.getElementById('filterCompany').value.trim();
     const position = document.getElementById('filterPosition').value.trim();
+    const address = document.getElementById('filterAddress').value.trim().toLowerCase();
+    const name = document.getElementById('filterName').value.trim().toLowerCase();
+    const dependents = document.getElementById('filterDependents').value.trim().toLowerCase();
+    const note = document.getElementById('filterNote').value.trim().toLowerCase();
     document.querySelectorAll('.contact-row').forEach(row => {
         let show = true;
         if (company && row.children[3] && row.children[3].getAttribute('data-company') !== company) show = false;
         if (group && row.children[4].textContent.trim() !== group) show = false;
         if (relation && row.getAttribute('data-relation') !== relation) show = false;
         if (position && row.getAttribute('data-position') !== position) show = false;
+        if (address) {
+            const contactId = row.getAttribute('data-id');
+            const contact = window.contactsData && window.contactsData[contactId];
+            let addr = '';
+            if (contact && contact.address) addr = contact.address.toLowerCase();
+            else if (row.dataset.address) addr = row.dataset.address.toLowerCase();
+            if (!addr.includes(address)) show = false;
+        }
+        if (name) {
+            const nameText = row.children[0].textContent.trim().toLowerCase();
+            if (!nameText.includes(name)) show = false;
+        }
+        if (dependents || note) {
+            const contactId = row.getAttribute('data-id');
+            const contact = window.contactsData && window.contactsData[contactId];
+            if (dependents) {
+                let dep = contact && contact.dependents ? contact.dependents.toLowerCase() : '';
+                if (!dep.includes(dependents)) show = false;
+            }
+            if (note) {
+                let n = contact && contact.note ? contact.note.toLowerCase() : '';
+                if (!n.includes(note)) show = false;
+            }
+        }
         row.style.display = show ? '' : 'none';
     });
 }
+
+// Lưu dữ liệu contact vào window.contactsData để filter địa chỉ, người phụ thuộc, ghi chú
+window.contactsData = {};
+{% for c in contacts %}
+window.contactsData["{{c.id}}"] = {
+  address: `{{c.address|e}}`,
+  dependents: `{{c.dependents|e}}`,
+  note: `{{c.note|e}}`
+};
+{% endfor %}
 </script>
 {% endblock %}
