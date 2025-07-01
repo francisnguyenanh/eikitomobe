@@ -23,6 +23,7 @@
         background-image: 
             radial-gradient(circle, rgba(var(--primary-color-rgb), 0.1) 1px, transparent 1px);
         background-size: 20px 20px;
+        background-color: bisque;
     }
     
     .mindmap-canvas:active {
@@ -552,11 +553,7 @@ class MindMap {
     onCanvasContextMenu(e) {
         e.preventDefault();
         if (e.target === this.canvas) {
-            // Add new node at click position
-            const rect = this.canvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left - this.panX) / this.zoom;
-            const y = (e.clientY - rect.top - this.panY) / this.zoom;
-            this.addNodeAt(x, y);
+            
         }
     }
     
