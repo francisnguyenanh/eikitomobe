@@ -302,9 +302,10 @@
     
     <!-- Canvas -->
     <div class="mindmap-canvas" id="mindmapCanvas">
-        <svg id="connectionSvg" style="position: absolute; top: 0; left: 0; width: 10000px; height: 10000px; pointer-events: none; z-index: 1;"></svg>
-        </svg>
     </div>
+    
+    <!-- SVG for connections - placed outside canvas to avoid transform issues -->
+    <svg id="connectionSvg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: visible;"></svg>
 </div>
 
 <!-- Node Editor Modal -->
@@ -610,8 +611,8 @@ class MindMap {
     updateCanvasTransform() {
         this.canvas.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
         this.canvas.style.transformOrigin = '0 0';
-        this.svg.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
-        this.svg.style.transformOrigin = '0 0';
+        // Cập nhật connections khi transform canvas
+        this.updateConnections();
     }
     
     updateZoomDisplay() {
@@ -747,8 +748,6 @@ class MindMap {
     updateConnections() {
         requestAnimationFrame(() => {
             this.svg.innerHTML = '';
-            this.svg.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
-            this.svg.style.transformOrigin = '0 0';
 
             function getRectEdgeIntersection(rect, cx, cy, tx, ty) {
                 const dx = tx - cx;
@@ -798,28 +797,49 @@ class MindMap {
                 const toNode = this.nodes.get(conn.to);
                 if (fromNode && toNode) {
                     const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                    const fromRect = {
-                        left: fromNode.x,
-                        top: fromNode.y,
-                        right: fromNode.x + fromNode.element.offsetWidth,
-                        bottom: fromNode.y + fromNode.element.offsetHeight
+                    
+                    // Lấy vị trí thực tế của node trên màn hình
+                    const fromRect = fromNode.element.getBoundingClientRect();
+                    const toRect = toNode.element.getBoundingClientRect();
+                    const containerRect = this.container.getBoundingClientRect();
+                    
+                    // Tính toán vị trí tương đối với container
+                    const fromX = fromRect.left - containerRect.left;
+                    const fromY = fromRect.top - containerRect.top;
+                    const fromWidth = fromRect.width;
+                    const fromHeight = fromRect.height;
+                    
+                    const toX = toRect.left - containerRect.left;
+                    const toY = toRect.top - containerRect.top;
+                    const toWidth = toRect.width;
+                    const toHeight = toRect.height;
+                    
+                    const fromNodeRect = {
+                        left: fromX,
+                        top: fromY,
+                        right: fromX + fromWidth,
+                        bottom: fromY + fromHeight
                     };
-                    const toRect = {
-                        left: toNode.x,
-                        top: toNode.y,
-                        right: toNode.x + toNode.element.offsetWidth,
-                        bottom: toNode.y + toNode.element.offsetHeight
+                    const toNodeRect = {
+                        left: toX,
+                        top: toY,
+                        right: toX + toWidth,
+                        bottom: toY + toHeight
                     };
-                    const fromCenterX = (fromRect.left + fromRect.right) / 2;
-                    const fromCenterY = (fromRect.top + fromRect.bottom) / 2;
-                    const toCenterX = (toRect.left + toRect.right) / 2;
-                    const toCenterY = (toRect.top + toRect.bottom) / 2;
-                    const fromEdge = getRectEdgeIntersection(fromRect, fromCenterX, fromCenterY, toCenterX, toCenterY);
-                    const toEdge = getRectEdgeIntersection(toRect, toCenterX, toCenterY, fromCenterX, fromCenterY);
+                    
+                    const fromCenterX = (fromNodeRect.left + fromNodeRect.right) / 2;
+                    const fromCenterY = (fromNodeRect.top + fromNodeRect.bottom) / 2;
+                    const toCenterX = (toNodeRect.left + toNodeRect.right) / 2;
+                    const toCenterY = (toNodeRect.top + toNodeRect.bottom) / 2;
+                    
+                    const fromEdge = getRectEdgeIntersection(fromNodeRect, fromCenterX, fromCenterY, toCenterX, toCenterY);
+                    const toEdge = getRectEdgeIntersection(toNodeRect, toCenterX, toCenterY, fromCenterX, fromCenterY);
+                    
                     const midX = (fromEdge.x + toEdge.x) / 2;
                     const midY = (fromEdge.y + toEdge.y) / 2;
                     const controlX = midX + (fromEdge.y - toEdge.y) * 0.2;
                     const controlY = midY + (toEdge.x - fromEdge.x) * 0.2;
+                    
                     const pathData = `M ${fromEdge.x} ${fromEdge.y} Q ${controlX} ${controlY} ${toEdge.x} ${toEdge.y}`;
                     line.setAttribute('d', pathData);
                     line.setAttribute('class', 'mindmap-connection');
@@ -931,7 +951,7 @@ class MindMap {
         // Clear existing
         this.nodes.clear();
         this.connections = [];
-        this.canvas.innerHTML = '<svg id="connectionSvg" style="position: absolute; top: 0; left: 0; width: 10000px; height: 10000px; pointer-events: none; z-index: 1;"></svg>';
+        this.canvas.innerHTML = '';
         this.svg = document.getElementById('connectionSvg');
         
         // Load nodes
@@ -1113,7 +1133,7 @@ async function loadMindmap(id) {
         mindmap.nodes.clear();
         mindmap.connections = [];
         mindmap.nodeIdCounter = 1;
-        document.getElementById('mindmapCanvas').innerHTML = '<svg id="connectionSvg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></svg>';
+        document.getElementById('mindmapCanvas').innerHTML = '';
         mindmap.svg = document.getElementById('connectionSvg');
         
         // Load nodes
