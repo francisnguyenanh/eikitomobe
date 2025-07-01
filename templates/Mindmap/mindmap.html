@@ -446,13 +446,30 @@ class MindMap {
     }
     
     createRootNode() {
+        // Đặt node trung tâm ở giữa mindmap-canvas
+        const canvasWidth = 10000;
+        const canvasHeight = 10000;
+        const nodeWidth = 150; // root node min-width
+        const nodeHeight = 80; // root node min-height
+        const centerX = canvasWidth / 2 - nodeWidth / 2;
+        const centerY = canvasHeight / 2 - nodeHeight / 2;
         const node = this.createNode(
-            this.container.offsetWidth / 2 - 75,
-            this.container.offsetHeight / 2 - 40,
+            centerX,
+            centerY,
             'Central Idea',
             true
         );
         this.selectNode(node);
+
+        // Đặt vùng hiển thị (container) ở giữa mindmap-canvas
+        // Tính toán panX, panY để vùng hiển thị nằm giữa canvas
+        // Lưu ý: canvas có thể đã bị scale, nên cần reset zoom về 1 trước
+        this.zoom = 1;
+        const containerRect = this.container.getBoundingClientRect();
+        this.panX = (containerRect.width / 2) - (canvasWidth / 2);
+        this.panY = (containerRect.height / 2) - (canvasHeight / 2);
+        this.updateCanvasTransform();
+        this.updateZoomDisplay();
     }
     
     createNode(x, y, text = 'New Node', isRoot = false) {
@@ -568,8 +585,28 @@ class MindMap {
     
     onCanvasWheel(e) {
         e.preventDefault();
+        // Lấy vị trí con trỏ chuột so với container (vùng hiển thị)
+        const containerRect = this.container.getBoundingClientRect();
+        const mouseX = e.clientX - containerRect.left;
+        const mouseY = e.clientY - containerRect.top;
+
+        // Nếu muốn zoom theo trung tâm màn hình, lấy giữa container
+        const centerX = containerRect.width / 2;
+        const centerY = containerRect.height / 2;
+
+        // Tính vị trí điểm trung tâm màn hình hiện tại trên canvas (trước khi zoom)
+        const beforeZoomX = (centerX - this.panX) / this.zoom;
+        const beforeZoomY = (centerY - this.panY) / this.zoom;
+
+        // Thay đổi zoom
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        this.zoom = Math.max(0.1, Math.min(3, this.zoom * delta));
+        const newZoom = Math.max(0.1, Math.min(3, this.zoom * delta));
+
+        // Sau khi zoom, tính lại panX, panY để điểm trung tâm vẫn giữ nguyên trên canvas
+        this.panX = centerX - beforeZoomX * newZoom;
+        this.panY = centerY - beforeZoomY * newZoom;
+        this.zoom = newZoom;
+
         this.updateCanvasTransform();
         this.updateZoomDisplay();
     }
