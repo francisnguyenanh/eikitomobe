@@ -67,6 +67,13 @@
         background: rgba(var(--accent-color-rgb), 0.1);
     }
     
+    .mindmap-node.drop-target {
+        border-color: var(--alert-danger-color);
+        background: rgba(240, 25, 161, 0.2);
+        box-shadow: 0 0 20px rgba(239, 17, 17, 0.8);
+        transform: scale(1.05);
+    }
+    
     .mindmap-node.root {
         background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
         color: white;
@@ -405,6 +412,8 @@ class MindMap {
         this.dragOffset = { x: 0, y: 0 };
         this.nodeIdCounter = 1;
         this.currentMindmapId = null;
+        this.draggedNode = null;
+        this.potentialParent = null;
         
         this.canvas = document.getElementById('mindmapCanvas');
         this.svg = document.getElementById('connectionSvg');
@@ -517,6 +526,7 @@ class MindMap {
         this.selectNode(this.nodes.get(nodeElement.id));
         
         this.isDragging = true;
+        this.draggedNode = this.selectedNode;
         nodeElement.classList.add('dragging');
         const rect = this.canvas.getBoundingClientRect();
         this.dragOffset = {
@@ -550,6 +560,9 @@ class MindMap {
             this.selectedNode.element.style.left = newX + 'px';
             this.selectedNode.element.style.top = newY + 'px';
 
+            // Kiểm tra node nào đang được drag qua
+            this.checkDropTarget(newX, newY);
+
             this.updateConnections();
             this.resizeCanvasIfNeeded();
         } else if (this.isPanning) {
@@ -567,9 +580,32 @@ class MindMap {
     onCanvasMouseUp(e) {
         if (this.isDragging && this.selectedNode) {
             this.selectedNode.element.classList.remove('dragging');
+            
+            // Nếu có potential parent và khác với parent hiện tại, thay đổi parent
+            if (this.potentialParent && this.potentialParent !== this.selectedNode && 
+                this.potentialParent.id !== this.selectedNode.parent) {
+                this.changeNodeParent(this.selectedNode, this.potentialParent);
+                
+                // Force immediate update of connections after parent change
+                requestAnimationFrame(() => {
+                    this.updateConnections();
+                });
+            }
+            
+            // Clear drop target highlight
+            this.clearDropTargets();
         }
         this.isDragging = false;
         this.isPanning = false;
+        this.draggedNode = null;
+        this.potentialParent = null;
+        
+        // Update connections one final time to ensure they're correct
+        if (this.selectedNode) {
+            requestAnimationFrame(() => {
+                this.updateConnections();
+            });
+        }
     }
     
     onCanvasWheel(e) {
@@ -623,6 +659,108 @@ class MindMap {
     selectNode(node) {
         this.selectedNode = node;
         this.updateNodeSelection();
+    }
+    
+    checkDropTarget(draggedX, draggedY) {
+        // Clear previous drop target
+        this.clearDropTargets();
+        
+        const draggedNode = this.selectedNode;
+        if (!draggedNode) return;
+        
+        const draggedRect = {
+            x: draggedX,
+            y: draggedY,
+            width: draggedNode.element.offsetWidth,
+            height: draggedNode.element.offsetHeight
+        };
+        
+        // Kiểm tra tất cả các node khác
+        for (const [nodeId, node] of this.nodes) {
+            if (nodeId === draggedNode.id) continue;
+            
+            const nodeRect = {
+                x: node.x,
+                y: node.y,
+                width: node.element.offsetWidth,
+                height: node.element.offsetHeight
+            };
+            
+            // Kiểm tra overlap
+            if (this.isOverlapping(draggedRect, nodeRect)) {
+                // Không thể drop vào chính node con của nó (tránh circular reference)
+                if (!this.isDescendant(node, draggedNode)) {
+                    this.potentialParent = node;
+                    node.element.classList.add('drop-target');
+                    break;
+                }
+            }
+        }
+    }
+    
+    isOverlapping(rect1, rect2) {
+        return !(rect1.x > rect2.x + rect2.width || 
+                rect2.x > rect1.x + rect1.width || 
+                rect1.y > rect2.y + rect2.height || 
+                rect2.y > rect1.y + rect1.height);
+    }
+    
+    isDescendant(parentNode, childNode) {
+        // Kiểm tra xem parentNode có phải là con cháu của childNode không
+        const visited = new Set();
+        const checkChildren = (node) => {
+            if (visited.has(node.id)) return false;
+            visited.add(node.id);
+            
+            for (const childId of node.children) {
+                if (childId === parentNode.id) return true;
+                const child = this.nodes.get(childId);
+                if (child && checkChildren(child)) return true;
+            }
+            return false;
+        };
+        return checkChildren(childNode);
+    }
+    
+    clearDropTargets() {
+        document.querySelectorAll('.drop-target').forEach(node => {
+            node.classList.remove('drop-target');
+        });
+        this.potentialParent = null;
+    }
+    
+    changeNodeParent(node, newParent) {
+        // Xóa node khỏi parent cũ
+        if (node.parent) {
+            const oldParent = this.nodes.get(node.parent);
+            if (oldParent) {
+                oldParent.children = oldParent.children.filter(id => id !== node.id);
+            }
+            // Xóa connection cũ khỏi connections array
+            this.connections = this.connections.filter(conn => 
+                !(conn.from === node.parent && conn.to === node.id)
+            );
+        }
+        // Thêm node vào parent mới
+        node.parent = newParent.id;
+        newParent.children.push(node.id);
+        // Thêm connection mới
+        this.connections.push({
+            from: newParent.id,
+            to: node.id
+        });
+        // Di chuyển node con ra cạnh node cha để tránh chồng lên nhau
+        const offset = 5;
+        node.x = newParent.x + newParent.element.offsetWidth + offset;
+        node.y = newParent.y;
+        node.element.style.left = node.x + 'px';
+        node.element.style.top = node.y + 'px';
+        // Cập nhật lại canvas và connections
+        this.resizeCanvasIfNeeded();
+        this.updateConnections();
+        setTimeout(() => {
+            this.updateConnections();
+        }, 10);
     }
     
     updateNodeSelection() {
@@ -802,6 +940,10 @@ class MindMap {
     }
     
     updateConnections() {
+        // Clear existing connections first
+        this.svg.innerHTML = '';
+        
+        // Use requestAnimationFrame to ensure DOM has been updated
         requestAnimationFrame(() => {
             this.svg.innerHTML = '';
 
@@ -848,10 +990,15 @@ class MindMap {
                 return sides[0];
             }
 
-            this.connections.forEach(conn => {
+            // Lọc ra những connections hợp lệ (cả 2 node đều tồn tại)
+            const validConnections = this.connections.filter(conn => 
+                this.nodes.has(conn.from) && this.nodes.has(conn.to)
+            );
+
+            validConnections.forEach(conn => {
                 const fromNode = this.nodes.get(conn.from);
                 const toNode = this.nodes.get(conn.to);
-                if (fromNode && toNode) {
+                if (fromNode && toNode && fromNode.element && toNode.element) {
                     const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     
                     // Lấy vị trí thực tế của node trên màn hình
