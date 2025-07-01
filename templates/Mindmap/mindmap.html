@@ -245,7 +245,7 @@
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-diagram-3 me-2"></i>Mind Map</h2>
+            <input id="mindmapTitleHeader" type="text" class="form-control" style="font-size:2rem; font-weight:600; width:auto; min-width:200px; max-width:400px; display:inline-block; margin-right:16px; background:white; border:none; outline:none; box-shadow:none; color:var(--text-color);" value="Mind Map" oninput="if(window.mindmap){mindmap.setTitle(this.value);}else{this.value='Mind Map';}">
             <div>
                 <button class="btn btn-primary" onclick="createNewMindmap()">
                     <i class="bi bi-plus-circle me-1"></i>New Mind Map
@@ -424,6 +424,8 @@ class MindMap {
         this.canvas = document.getElementById('mindmapCanvas');
         this.svg = document.getElementById('connectionSvg');
         this.container = document.getElementById('mindmapContainer');
+        
+        this.title = 'Mind Map';
         
         this.initializeEvents();
         this.createRootNode();
@@ -1253,6 +1255,9 @@ class MindMap {
             this.updateConnections();
         }
         
+        this.title = data.title || 'Mind Map';
+        this.updateTitleHeader();
+        
         this.resizeCanvasIfNeeded(); // Gọi để mở rộng canvas sau khi load
     }
     
@@ -1323,6 +1328,20 @@ class MindMap {
         } catch (error) {
             console.error('Error saving mindmap:', error);
             alert('Error saving mind map: ' + error.message);
+        }
+    }
+    
+    setTitle(newTitle) {
+        this.title = newTitle || 'Mind Map';
+        this.updateTitleHeader();
+    }
+    
+    updateTitleHeader() {
+        const header = document.getElementById('mindmapTitleHeader');
+        if (header && header.value !== undefined) {
+            if (document.activeElement !== header) {
+                header.value = this.title || 'Mind Map';
+            }
         }
     }
 }
@@ -1423,9 +1442,8 @@ async function loadMindmap(id) {
         mindmap.connections = data.connections;
         mindmap.updateConnections();
         
-        mindmap.title = data.title;
-        mindmap.description = data.description;
-        mindmap.category = data.category;
+        mindmap.title = data.title || 'Mind Map';
+        mindmap.updateTitleHeader();
 
     } catch (error) {
         console.error('Error loading mindmap:', error);
@@ -1558,6 +1576,28 @@ function confirmSaveMindmap() {
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     createNewMindmap();
+
+    // Patch for mindmapTitleHeader input to prevent losing focus/reset on space/enter
+    const titleInput = document.getElementById('mindmapTitleHeader');
+    if (titleInput) {
+        // Prevent form submission or blur on Enter/Space
+        titleInput.addEventListener('keydown', function(e) {
+            // Allow typing space/enter, just let input work
+        });
+        // Update mindmap title on input, but do not reset value
+        titleInput.addEventListener('input', function(e) {
+            if (window.mindmap) {
+                window.mindmap.setTitle(this.value);
+            }
+        });
+        // Prevent blur from resetting value unless truly empty
+        titleInput.addEventListener('blur', function() {
+            if (!this.value.trim()) {
+                this.value = 'Mind Map';
+                if (window.mindmap) window.mindmap.setTitle('Mind Map');
+            }
+        });
+    }
 
     // Xử lý phím ESC để thoát toàn màn hình
     document.addEventListener('fullscreenchange', function() {
