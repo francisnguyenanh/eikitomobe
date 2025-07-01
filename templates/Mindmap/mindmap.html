@@ -1305,7 +1305,15 @@ function importMindmap() {
 
 function zoomIn() {
     if (mindmap) {
-        mindmap.zoom = Math.min(3, mindmap.zoom * 1.1);
+        const containerRect = mindmap.container.getBoundingClientRect();
+        const centerX = containerRect.width / 2;
+        const centerY = containerRect.height / 2;
+        const beforeZoomX = (centerX - mindmap.panX) / mindmap.zoom;
+        const beforeZoomY = (centerY - mindmap.panY) / mindmap.zoom;
+        const newZoom = Math.min(3, mindmap.zoom * 1.1);
+        mindmap.panX = centerX - beforeZoomX * newZoom;
+        mindmap.panY = centerY - beforeZoomY * newZoom;
+        mindmap.zoom = newZoom;
         mindmap.updateCanvasTransform();
         mindmap.updateZoomDisplay();
     }
@@ -1313,7 +1321,15 @@ function zoomIn() {
 
 function zoomOut() {
     if (mindmap) {
-        mindmap.zoom = Math.max(0.1, mindmap.zoom * 0.9);
+        const containerRect = mindmap.container.getBoundingClientRect();
+        const centerX = containerRect.width / 2;
+        const centerY = containerRect.height / 2;
+        const beforeZoomX = (centerX - mindmap.panX) / mindmap.zoom;
+        const beforeZoomY = (centerY - mindmap.panY) / mindmap.zoom;
+        const newZoom = Math.max(0.1, mindmap.zoom * 0.9);
+        mindmap.panX = centerX - beforeZoomX * newZoom;
+        mindmap.panY = centerY - beforeZoomY * newZoom;
+        mindmap.zoom = newZoom;
         mindmap.updateCanvasTransform();
         mindmap.updateZoomDisplay();
     }
