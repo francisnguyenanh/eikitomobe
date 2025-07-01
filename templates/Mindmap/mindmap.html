@@ -677,34 +677,61 @@ class MindMap {
         if (!this.selectedNode || this.selectedNode.isRoot) {
             return;
         }
-        
+
         const nodeToDelete = this.selectedNode;
-        
-        // Remove connections
-        this.connections = this.connections.filter(conn => 
+        const parentId = nodeToDelete.parent;
+        const childrenIds = [...nodeToDelete.children];
+
+        // Remove connections liên quan đến node bị xoá
+        this.connections = this.connections.filter(conn =>
             conn.from !== nodeToDelete.id && conn.to !== nodeToDelete.id
         );
-        
-        // Remove from parent's children
-        if (nodeToDelete.parent) {
-            const parent = this.nodes.get(nodeToDelete.parent);
+
+        // Xoá node khỏi danh sách con của parent
+        if (parentId) {
+            const parent = this.nodes.get(parentId);
             parent.children = parent.children.filter(id => id !== nodeToDelete.id);
         }
-        
-        // Remove children relationships
-        nodeToDelete.children.forEach(childId => {
-            const child = this.nodes.get(childId);
-            if (child) child.parent = null;
-        });
-        
-        // Remove from DOM and map
+
+        // Nếu node có 1 parent và có >=1 child, nối tất cả child với parent
+        if (parentId && childrenIds.length > 0) {
+            const parent = this.nodes.get(parentId);
+            childrenIds.forEach(childId => {
+                const child = this.nodes.get(childId);
+                if (child) {
+                    // Xoá parent cũ (node bị xoá)
+                    child.parent = parentId;
+                    // Thêm child vào danh sách con của parent nếu chưa có
+                    if (!parent.children.includes(childId)) {
+                        parent.children.push(childId);
+                    }
+                    // Thêm connection mới
+                    this.connections.push({
+                        from: parentId,
+                        to: childId
+                    });
+                }
+            });
+        }
+
+        // Xoá parent của các child (nếu không có parent)
+        if (!parentId && childrenIds.length > 0) {
+            childrenIds.forEach(childId => {
+                const child = this.nodes.get(childId);
+                if (child) {
+                    child.parent = null;
+                }
+            });
+        }
+
+        // Xoá node khỏi DOM và map
         nodeToDelete.element.remove();
         this.nodes.delete(nodeToDelete.id);
-        
+
         this.selectedNode = null;
         this.updateNodeSelection();
         this.updateConnections();
-        
+
         document.getElementById('contextMenu').style.display = 'none';
     }
     
@@ -880,6 +907,23 @@ class MindMap {
             });
         });
     }
+
+    resetView() {
+        const rootNode = Array.from(this.nodes.values()).find(node => node.isRoot);
+        if (!rootNode) return;
+
+        this.zoom = 1;
+        const containerRect = this.container.getBoundingClientRect();
+        const nodeWidth = rootNode.element.offsetWidth;
+        const nodeHeight = rootNode.element.offsetHeight;
+        this.panX = (containerRect.width / 2) - (rootNode.x + nodeWidth / 2);
+        this.panY = (containerRect.height / 2) - (rootNode.y + nodeHeight / 2);
+        this.updateCanvasTransform();
+        this.updateZoomDisplay();
+
+        // Đảm bảo connections luôn đúng sau khi transform
+        requestAnimationFrame(() => this.updateConnections());
+    }
     
     autoLayout() {
         const rootNode = Array.from(this.nodes.values()).find(node => node.isRoot);
@@ -900,7 +944,9 @@ class MindMap {
         this.updateConnections();
 
         // Sau khi sắp xếp, đưa node trung tâm ra giữa vùng hiển thị
-        resetView();
+        requestAnimationFrame(() => {
+            resetView();
+        });
     }
     
     layoutRadial(rootNode) {
