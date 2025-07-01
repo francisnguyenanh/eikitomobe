@@ -453,20 +453,21 @@ class MindMap {
     }
     
     createNode(x, y, text = 'New Node', isRoot = false) {
-        const nodeId = `node_${this.nodeIdCounter++}`;
+        // Tạo node id duy nhất dựa trên timestamp và random (tránh trùng khi import/export)
+        const nodeId = `node_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
         const nodeElement = document.createElement('div');
         nodeElement.className = `mindmap-node ${isRoot ? 'root' : ''}`;
         nodeElement.id = nodeId;
         nodeElement.style.left = x + 'px';
         nodeElement.style.top = y + 'px';
         nodeElement.textContent = text;
-        
+
         nodeElement.addEventListener('mousedown', (e) => this.onNodeMouseDown(e, nodeElement));
         nodeElement.addEventListener('dblclick', () => this.editNode(this.nodes.get(nodeElement.id)));
         nodeElement.addEventListener('contextmenu', (e) => this.onNodeContextMenu(e, nodeElement));
-        
+
         this.canvas.appendChild(nodeElement);
-        
+
         const nodeData = {
             id: nodeId,
             element: nodeElement,
@@ -479,7 +480,7 @@ class MindMap {
             parent: null,
             children: []
         };
-        
+
         this.nodes.set(nodeId, nodeData);
         return nodeData;
     }
@@ -720,48 +721,93 @@ class MindMap {
     
     updateConnections() {
         this.svg.innerHTML = '';
-        
+        // Helper: get intersection point between a line and a rectangle
+        function getRectEdgeIntersection(rect, cx, cy, tx, ty) {
+            // rect: {left, top, right, bottom}
+            // (cx, cy): center, (tx, ty): target center
+            const dx = tx - cx;
+            const dy = ty - cy;
+            if (dx === 0 && dy === 0) return {x: cx, y: cy};
+            // Calculate intersection with each side
+            const sides = [];
+            // Left
+            if (dx !== 0) {
+                const t = (rect.left - cx) / dx;
+                if (t > 0 && t < 1) {
+                    const y = cy + t * dy;
+                    if (y >= rect.top && y <= rect.bottom) sides.push({x: rect.left, y});
+                }
+            }
+            // Right
+            if (dx !== 0) {
+                const t = (rect.right - cx) / dx;
+                if (t > 0 && t < 1) {
+                    const y = cy + t * dy;
+                    if (y >= rect.top && y <= rect.bottom) sides.push({x: rect.right, y});
+                }
+            }
+            // Top
+            if (dy !== 0) {
+                const t = (rect.top - cy) / dy;
+                if (t > 0 && t < 1) {
+                    const x = cx + t * dx;
+                    if (x >= rect.left && x <= rect.right) sides.push({x, y: rect.top});
+                }
+            }
+            // Bottom
+            if (dy !== 0) {
+                const t = (rect.bottom - cy) / dy;
+                if (t > 0 && t < 1) {
+                    const x = cx + t * dx;
+                    if (x >= rect.left && x <= rect.right) sides.push({x, y: rect.bottom});
+                }
+            }
+            // Pick the closest intersection
+            if (sides.length === 0) return {x: cx, y: cy};
+            sides.sort((a, b) => {
+                const da = (a.x - cx) ** 2 + (a.y - cy) ** 2;
+                const db = (b.x - cx) ** 2 + (b.y - cy) ** 2;
+                return da - db;
+            });
+            return sides[0];
+        }
         this.connections.forEach(conn => {
             const fromNode = this.nodes.get(conn.from);
             const toNode = this.nodes.get(conn.to);
-            
             if (fromNode && toNode) {
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                
-                // Calculate node centers
-                const fromCenterX = fromNode.x + fromNode.element.offsetWidth / 2;
-                const fromCenterY = fromNode.y + fromNode.element.offsetHeight / 2;
-                const toCenterX = toNode.x + toNode.element.offsetWidth / 2;
-                const toCenterY = toNode.y + toNode.element.offsetHeight / 2;
-                
-                // Calculate connection points on node edges
-                const dx = toCenterX - fromCenterX;
-                const dy = toCenterY - fromCenterY;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance === 0) return;
-                
-                const fromRadius = Math.min(fromNode.element.offsetWidth, fromNode.element.offsetHeight) / 2;
-                const toRadius = Math.min(toNode.element.offsetWidth, toNode.element.offsetHeight) / 2;
-                
-                const fromX = fromCenterX + (dx / distance) * fromRadius;
-                const fromY = fromCenterY + (dy / distance) * fromRadius;
-                const toX = toCenterX - (dx / distance) * toRadius;
-                const toY = toCenterY - (dy / distance) * toRadius;
-                
-                // Create curved path
-                const midX = (fromX + toX) / 2;
-                const midY = (fromY + toY) / 2;
-                const controlX = midX + (fromY - toY) * 0.2;
-                const controlY = midY + (toX - fromX) * 0.2;
-                
-                const pathData = `M ${fromX} ${fromY} Q ${controlX} ${controlY} ${toX} ${toY}`;
+                // Get bounding rects (relative to canvas)
+                const fromRect = {
+                    left: fromNode.x,
+                    top: fromNode.y,
+                    right: fromNode.x + fromNode.element.offsetWidth,
+                    bottom: fromNode.y + fromNode.element.offsetHeight
+                };
+                const toRect = {
+                    left: toNode.x,
+                    top: toNode.y,
+                    right: toNode.x + toNode.element.offsetWidth,
+                    bottom: toNode.y + toNode.element.offsetHeight
+                };
+                // Centers
+                const fromCenterX = (fromRect.left + fromRect.right) / 2;
+                const fromCenterY = (fromRect.top + fromRect.bottom) / 2;
+                const toCenterX = (toRect.left + toRect.right) / 2;
+                const toCenterY = (toRect.top + toRect.bottom) / 2;
+                // Edge points
+                const fromEdge = getRectEdgeIntersection(fromRect, fromCenterX, fromCenterY, toCenterX, toCenterY);
+                const toEdge = getRectEdgeIntersection(toRect, toCenterX, toCenterY, fromCenterX, fromCenterY);
+                // Create curved path (optional: keep as before)
+                const midX = (fromEdge.x + toEdge.x) / 2;
+                const midY = (fromEdge.y + toEdge.y) / 2;
+                const controlX = midX + (fromEdge.y - toEdge.y) * 0.2;
+                const controlY = midY + (toEdge.x - fromEdge.x) * 0.2;
+                const pathData = `M ${fromEdge.x} ${fromEdge.y} Q ${controlX} ${controlY} ${toEdge.x} ${toEdge.y}`;
                 line.setAttribute('d', pathData);
                 line.setAttribute('class', 'mindmap-connection');
                 line.setAttribute('stroke', '#3498db');
                 line.setAttribute('stroke-width', '2');
                 line.setAttribute('fill', 'none');
-                
                 this.svg.appendChild(line);
             }
         });
@@ -913,6 +959,16 @@ class MindMap {
     }
     
     saveMindmap() {
+        // Tự động điền lại thông tin mindmap hiện tại (nếu có)
+        if (this.currentMindmapId) {
+            document.getElementById('mindmapTitle').value = this.title || '';
+            document.getElementById('mindmapDescription').value = this.description || '';
+            document.getElementById('mindmapCategory').value = this.category || 'personal';
+        } else {
+            document.getElementById('mindmapTitle').value = '';
+            document.getElementById('mindmapDescription').value = '';
+            document.getElementById('mindmapCategory').value = 'personal';
+        }
         new bootstrap.Modal(document.getElementById('saveModal')).show();
     }
     
@@ -1069,6 +1125,10 @@ async function loadMindmap(id) {
         mindmap.connections = data.connections;
         mindmap.updateConnections();
         
+        mindmap.title = data.title;
+        mindmap.description = data.description;
+        mindmap.category = data.category;
+
     } catch (error) {
         console.error('Error loading mindmap:', error);
         alert('Error loading mind map');

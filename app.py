@@ -443,10 +443,12 @@ class MindMapNode(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     
     # Self-referential relationship for parent-child
-    children = db.relationship('MindMapNode', 
-                              foreign_keys='MindMapNode.parent_id',
-                              remote_side=[id],
-                              backref='parent_node')
+    children = db.relationship(
+                                'MindMapNode',
+                                backref=db.backref('parent', remote_side=[id]),
+                                lazy=True,
+                                foreign_keys='MindMapNode.parent_id'
+                            )
 
 class MindMapConnection(db.Model):
     __tablename__ = 'mindmap_connection'
@@ -5337,7 +5339,13 @@ def create_mindmap():
     db.session.flush()  # Get the ID
     
     # Save nodes
+    # Đảm bảo node id luôn duy nhất trên toàn bảng MindMapNode
+    # Nếu id đã tồn tại, xóa node cũ trước khi insert (tránh lỗi UNIQUE constraint)
     for node_data in data['nodes']:
+        existing_node = MindMapNode.query.filter_by(id=node_data['id']).first()
+        if existing_node:
+            db.session.delete(existing_node)
+            db.session.flush()
         node = MindMapNode(
             id=node_data['id'],
             mindmap_id=mindmap.id,
@@ -5368,6 +5376,9 @@ def create_mindmap():
 @login_required
 def get_mindmap(mindmap_id):
     mindmap = MindMap.query.get_or_404(mindmap_id)
+    for node in mindmap.nodes:
+        print(f"Node ID: {node.id}, Text: {node.text}, Parent: {node.parent_id}, children: {node.children}  ")
+    
     
     nodes = [{
         'id': node.id,
@@ -5378,7 +5389,7 @@ def get_mindmap(mindmap_id):
         'fontSize': node.font_size,
         'isRoot': node.is_root,
         'parent': node.parent_id,
-        'children': [child.id for child in node.children]
+        'children': [child.id for child in (node.children or [])]
     } for node in mindmap.nodes]
     
     connections = [{
@@ -5401,6 +5412,12 @@ def update_mindmap(mindmap_id):
     mindmap = MindMap.query.get_or_404(mindmap_id)
     data = request.get_json()
     
+    # SAI: MindMap không có trường mindmap_id, chỉ MindMapNode và MindMapConnection có
+    # Đúng: chỉ cần xóa node/connections cũ của mindmap này
+    # MindMapNode.query.filter_by(mindmap_id=mindmap_id).delete()
+    # MindMapConnection.query.filter_by(mindmap_id=mindmap_id).delete()
+    # db.session.commit()  # Đã có bên dưới, không cần lặp lại
+    
     # Update mindmap info
     mindmap.title = data.get('title', mindmap.title)
     mindmap.description = data.get('description', mindmap.description)
@@ -5410,9 +5427,12 @@ def update_mindmap(mindmap_id):
     # Clear existing nodes and connections
     MindMapNode.query.filter_by(mindmap_id=mindmap_id).delete()
     MindMapConnection.query.filter_by(mindmap_id=mindmap_id).delete()
-    
-    # Add updated nodes
+    db.session.flush()  # Ensure deletions are applied before re-insert
+
+    # Add updated nodes (handle possible duplicate node id)
     for node_data in data['nodes']:
+        # Remove node with same id if exists (avoid UNIQUE constraint error)
+        MindMapNode.query.filter_by(id=node_data['id']).delete()
         node = MindMapNode(
             id=node_data['id'],
             mindmap_id=mindmap.id,
@@ -5425,7 +5445,7 @@ def update_mindmap(mindmap_id):
             parent_id=node_data.get('parent')
         )
         db.session.add(node)
-    
+
     # Add updated connections
     for conn_data in data['connections']:
         connection = MindMapConnection(
@@ -5434,9 +5454,8 @@ def update_mindmap(mindmap_id):
             to_node_id=conn_data['to']
         )
         db.session.add(connection)
-    
+
     db.session.commit()
-    
     return jsonify({'status': 'success'})
 
 @app.route('/api/mindmaps/<int:mindmap_id>', methods=['DELETE'])
