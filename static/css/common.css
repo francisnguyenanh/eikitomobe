@@ -463,6 +463,6 @@ input.link-input[readonly] {
 
 .btn-hamburger:hover {
     background-color: var(--primary-color);
-    color: white;
+    color: var(--primary-color);
     border-radius: 6px;
 }

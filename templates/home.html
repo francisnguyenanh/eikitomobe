@@ -522,6 +522,7 @@
                 background-attachment: scroll;
                 background-size: contain;
             }
+
         }
 
         @media (max-width: 576px) {
@@ -541,6 +542,19 @@
             .container-fluid {
                 padding-left: 8px !important;
                 padding-right: 8px !important;
+            }
+
+            /* Thêm margin-top cho nội dung thông báo trên mobile */
+            #alertsList {
+                margin-top: 3rem !important;
+                padding-left: 1rem;
+            }
+        }
+
+        /* Responsive cho iPad */
+        @media (max-width: 768px) and (min-width: 577px) {
+            #alertsList {
+                margin-top: 3rem !important;
             }
         }
 
@@ -708,6 +722,46 @@
     border-color: #dc3545;
     color: #fff;
 }
+#toggleAlertsBtn:hover #toggleAlertsIcon {
+    color: #0d6efd;
+    transform: scale(1.15) rotate(-10deg);
+    transition: color 0.2s, transform 0.2s;
+}
+#toggleAlertsBtn #toggleAlertsIcon {
+    transition: color 0.2s, transform 0.2s;
+}
+
+#alertsList {
+    padding-left: 3rem !important;
+    padding-top: 2rem !important;
+}
+
+.offcanvas.show ~ .btn-hamburger {
+    display: none !important;
+}
+
+.offcanvas{
+    max-width: 50%;
+}
+
+.btn-hamburger {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#sidebarMenuLabel {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--bg-color) !important;
+    font-family: 'Shippori Mincho B1', 'Kosugi Maru', 'Noto Sans JP', serif;
+    letter-spacing: 0.08em;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    line-height: 1.2;
+    transition: all 0.3s ease;
+
+
     </style>
 </head>
 <body>
@@ -718,8 +772,7 @@
     <!-- Offcanvas vertical sidebar menu (menu chính) -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
       <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="sidebarMenuLabel">Menu</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        <h5 class="offcanvas-title mx-auto" id="sidebarMenuLabel">友部　瑛稀</h5>
       </div>
       <div class="offcanvas-body">
         <ul class="nav flex-column sidebar-menu">
@@ -812,15 +865,13 @@
 
     <!-- Alert for birthday/anniversary with toggle -->
     {% if alerts_today or alerts_tomorrow %}
-    <div class="container mt-3">
-        <div class="alert alert-info" id="alertsBox" style="min-width:260px;">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <span><i class="bi bi-bell me-2"></i><b>Thông báo</b></span>
-                <button class="btn btn-sm btn-outline-secondary" id="toggleAlertsBtn" type="button">
-                    <span id="toggleAlertsIcon" class="bi bi-chevron-up"></span>
-                </button>
-            </div>
-            <div id="alertsList">
+    <div class="container mt-3 position-relative">
+        <div class="alert alert-info p-0 border-0 bg-transparent position-absolute end-0 top-0" id="alertsBox" style="min-width:48px; max-width:60px; z-index:1052;">
+            <button class="btn p-0 border-0 bg-transparent" id="toggleAlertsBtn" type="button" style="font-size:1.6rem;">
+            <span id="toggleAlertsIcon" class="bi bi-bell"></span>
+            </button>
+        </div>
+        <div id="alertsList" class="mt-2 d-none">
                 <!-- Contact alerts today -->
                 {% for alert in alerts_today %}
                     {% if 'sinh nhật' in alert %}
@@ -856,7 +907,6 @@
                 {% endfor %}
             </div>
         </div>
-    </div>
     {% endif %}
 
     <div class="container py-4 center-quote">
@@ -2816,20 +2866,20 @@
             const toggleAlertsIcon = document.getElementById('toggleAlertsIcon');
 
             if (alertsBox && alertsList && toggleAlertsBtn && toggleAlertsIcon) {
-                let expanded = true;
-                toggleAlertsBtn.onclick = function() {
-                    expanded = !expanded;
-                    if (expanded) {
-                        alertsList.style.display = '';
-                        toggleAlertsIcon.className = 'bi bi-chevron-up';
-                    } else {
-                        alertsList.style.display = 'none';
-                        toggleAlertsIcon.className = 'bi bi-chevron-down';
-                    }
-                };
-                // Mặc định expand
-                alertsList.style.display = '';
-                toggleAlertsIcon.className = 'bi bi-chevron-up';
+            let expanded = false;
+            toggleAlertsBtn.onclick = function() {
+                expanded = !expanded;
+                if (expanded) {
+                alertsList.classList.remove('d-none');
+                toggleAlertsIcon.className = 'bi bi-bell-fill';
+                } else {
+                alertsList.classList.add('d-none');
+                toggleAlertsIcon.className = 'bi bi-bell';
+                }
+            };
+            // Mặc định ẩn
+            alertsList.classList.add('d-none');
+            toggleAlertsIcon.className = 'bi bi-bell';
             }
 
             if (openSettingsBtn) {
@@ -2976,6 +3026,19 @@
             document.getElementById('db-tab').dispatchEvent(new Event('shown.bs.tab'));
         };
 
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var sidebar = document.getElementById('sidebarMenu');
+            var hamburger = document.querySelector('.btn-hamburger');
+            if (sidebar && hamburger) {
+                sidebar.addEventListener('shown.bs.offcanvas', function () {
+                    hamburger.style.display = 'none';
+                });
+                sidebar.addEventListener('hidden.bs.offcanvas', function () {
+                    hamburger.style.display = '';
+                });
+            }
         });
     </script>
 </body>
