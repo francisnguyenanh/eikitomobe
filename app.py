@@ -1804,13 +1804,16 @@ def home():
     
     # ✅ SỬA: Lấy UI settings từ UserSettings
     settings = get_user_settings()
+    alerts_today, alerts_tomorrow = get_birthday_alerts()
     
     return render_template(
         'home.html',
         quote_content=quote_text,
         quote_author=quote_author,
         bg_image_url=bg_image_url if settings.show_bg_image else None,
-        show_quote=settings.show_quote
+        show_quote=settings.show_quote,
+        alerts_today=alerts_today,
+        alerts_tomorrow=alerts_tomorrow
     )
 
 @app.route('/upload_avatar', methods=['POST'])
@@ -5197,27 +5200,49 @@ def get_contact_json(id):
         'note': contact.note
     })
     
-@app.route('/contacts/card_design')
-@login_required
-def card_design():
+def get_birthday_alerts():
+    today = date.today()
+    tomorrow = today + timedelta(days=1)
+    now = datetime.now()
+    
+    alerts_today = []
+    alerts_tomorrow = []
+    
+    # Check contact birthdays and anniversaries
     contacts = Contact.query.all()
-    return render_template('Contact/card_design.html', contacts=contacts)
-
-
-@app.route('/card/view')
-def contact_card_view():
-    data_b64 = request.args.get('data', '')
-    card_data = {}
-    if data_b64:
-        try:
-            # Add padding if missing
-            padded = data_b64 + '=' * (-len(data_b64) % 4)
-            json_str = base64.b64decode(padded).decode('utf-8')
-            card_data = json.loads(json_str)
-        except Exception:
-            card_data = {}
-    # Render card with animation effect (effect can be randomized in template)
-    return render_template('Contact/card_view.html', card=card_data)
+    for contact in contacts:
+        # Check birthday
+        if contact.birthday:
+            birthday = datetime.strptime(contact.birthday, '%Y-%m-%d').date()
+            if birthday.month == today.month and birthday.day == today.day:
+                alerts_today.append(f"Hôm nay là sinh nhật của {contact.name}")
+            elif birthday.month == tomorrow.month and birthday.day == tomorrow.day:
+                alerts_tomorrow.append(f"Ngày mai là sinh nhật của {contact.name}")
+        
+        # Check anniversaries (anniv1_date, anniv2_date, anniv3_date)
+        for i in [1, 2, 3]:
+            anniv_date = getattr(contact, f'anniv{i}_date', None)
+            anniv_text = getattr(contact, f'anniv{i}_text', None)
+            if anniv_date:
+                anniv = datetime.strptime(anniv_date, '%Y-%m-%d').date()
+                if anniv.month == today.month and anniv.day == today.day:
+                    alerts_today.append(f"Hôm nay là {anniv_text or 'kỷ niệm'} của {contact.name}")
+                elif anniv.month == tomorrow.month and anniv.day == tomorrow.day:
+                    alerts_tomorrow.append(f"Ngày mai là {anniv_text or 'kỷ niệm'} của {contact.name}")
+    
+    # Check task deadlines
+    tasks = Task.query.filter(Task.is_completed == False).all()
+    for task in tasks:
+        if task.due_date:
+            due_date = task.due_date.date()
+            if due_date == today:
+                alerts_today.append(f"Task '{task.title}' hết hạn hôm nay")
+            elif due_date == tomorrow:
+                alerts_tomorrow.append(f"Task '{task.title}' hết hạn ngày mai")
+            elif due_date < today:
+                alerts_today.append(f"Task '{task.title}' đã quá hạn từ {due_date.strftime('%d/%m/%Y')}")
+    
+    return alerts_today, alerts_tomorrow
 
 if __name__ == '__main__':
     app.run(debug=True)

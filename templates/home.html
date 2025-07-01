@@ -93,6 +93,19 @@
             border-radius: 12px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
             backdrop-filter: blur(10px);
+            z-index: 9999 !important;
+            position: absolute !important;
+        }
+        
+        /* Ensure navbar dropdown always on top */
+        .navbar .dropdown-menu {
+            z-index: 9999 !important;
+        }
+        
+        /* Lower z-index for alert box */
+        #alertsBox {
+            position: relative;
+            z-index: 100 !important;
         }
 
         .dropdown-item {
@@ -727,7 +740,7 @@
                             <i class="bi bi-calendar-heart"></i> Diary
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="diaryDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('new_diary') }}?action=new">
+                            <li><a class="dropdown-item" href="{{ url_for('diary_grid') }}?action=new">
                                 <i class="bi bi-plus-circle"></i> New Diary
                             </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('diary_list') }}">
@@ -813,6 +826,55 @@
             </div>
         </div>
     </nav>
+
+    <!-- Alert for birthday/anniversary with toggle -->
+    {% if alerts_today or alerts_tomorrow %}
+    <div class="container mt-3">
+        <div class="alert alert-info" id="alertsBox" style="min-width:260px;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <span><i class="bi bi-bell me-2"></i><b>Thông báo</b></span>
+                <button class="btn btn-sm btn-outline-secondary" id="toggleAlertsBtn" type="button">
+                    <span id="toggleAlertsIcon" class="bi bi-chevron-up"></span>
+                </button>
+            </div>
+            <div id="alertsList">
+                <!-- Contact alerts today -->
+                {% for alert in alerts_today %}
+                    {% if 'sinh nhật' in alert %}
+                        <div style="color:#28a745;font-weight:bold"><i class="bi bi-cake2 me-2"></i>{{ alert }}</div>
+                    {% elif 'kỷ niệm' in alert %}
+                        <div style="color:#28a745;font-weight:bold"><i class="bi bi-heart-fill me-2"></i>{{ alert }}</div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Contact alerts tomorrow -->
+                {% for alert in alerts_tomorrow %}
+                    {% if 'sinh nhật' in alert %}
+                        <div><i class="bi bi-cake2 me-2"></i>{{ alert }}</div>
+                    {% elif 'kỷ niệm' in alert %}
+                        <div><i class="bi bi-heart me-2"></i>{{ alert }}</div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Task alerts today -->
+                {% for alert in alerts_today %}
+                    {% if 'Task' in alert and 'quá hạn' in alert %}
+                        <div style="color:#dc3545;font-weight:bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ alert }}</div>
+                    {% elif 'Task' in alert %}
+                        <div style="color:#fd7e14;font-weight:bold"><i class="bi bi-clock-fill me-2"></i>{{ alert }}</div>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Task alerts tomorrow -->
+                {% for alert in alerts_tomorrow %}
+                    {% if 'Task' in alert %}
+                        <div><i class="bi bi-clock me-2"></i>{{ alert }}</div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="container py-4 center-quote">
         <div class="row g-3">
@@ -1679,7 +1741,7 @@
                 
                 this.checkMasterPasswordMatch();
             },
-
+                
             checkMasterPasswordMatch() {
                 const newPassword = document.getElementById('new-master-pass').value;
                 const confirmPassword = document.getElementById('confirm-master-pass').value;
@@ -2755,6 +2817,28 @@
             MasterPasswordManager.init();
 
             const openSettingsBtn = document.getElementById('openSettingsBtn');
+            const alertsBox = document.getElementById('alertsBox');
+            const alertsList = document.getElementById('alertsList');
+            const toggleAlertsBtn = document.getElementById('toggleAlertsBtn');
+            const toggleAlertsIcon = document.getElementById('toggleAlertsIcon');
+
+            if (alertsBox && alertsList && toggleAlertsBtn && toggleAlertsIcon) {
+                let expanded = true;
+                toggleAlertsBtn.onclick = function() {
+                    expanded = !expanded;
+                    if (expanded) {
+                        alertsList.style.display = '';
+                        toggleAlertsIcon.className = 'bi bi-chevron-up';
+                    } else {
+                        alertsList.style.display = 'none';
+                        toggleAlertsIcon.className = 'bi bi-chevron-down';
+                    }
+                };
+                // Mặc định expand
+                alertsList.style.display = '';
+                toggleAlertsIcon.className = 'bi bi-chevron-up';
+            }
+
             if (openSettingsBtn) {
                 openSettingsBtn.addEventListener('click', async function(e) {
                     e.preventDefault();
