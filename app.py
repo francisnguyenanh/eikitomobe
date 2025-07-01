@@ -411,72 +411,129 @@ class UserSettings(db.Model):
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+# Mindmap Models
+class MindMap(db.Model):
+    __tablename__ = 'mindmap'
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    category = db.Column(db.String(50), nullable=False, default='personal')
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    shared = db.Column(db.Boolean, default=False)
+    share_password = db.Column(db.String(100), nullable=True)
     
-    def get_card_info(self):
-        """Get card info as dict"""
-        if self.card_info:
-            try:
-                return json.loads(self.card_info)
-            except:
-                return {}
-        return {}
+    # Relationships
+    nodes = db.relationship('MindMapNode', backref='mindmap', lazy=True, cascade='all, delete-orphan')
+    connections = db.relationship('MindMapConnection', backref='mindmap', lazy=True, cascade='all, delete-orphan')
+
+class MindMapNode(db.Model):
+    __tablename__ = 'mindmap_node'
+    id = db.Column(db.String(50), primary_key=True)  # node_1, node_2, etc.
+    mindmap_id = db.Column(db.Integer, db.ForeignKey('mindmap.id'), nullable=False)
+    text = db.Column(db.String(500), nullable=False)
+    x = db.Column(db.Float, nullable=False)
+    y = db.Column(db.Float, nullable=False)
+    color = db.Column(db.String(7), nullable=False, default='#ffffff')
+    font_size = db.Column(db.String(10), nullable=False, default='14px')
+    is_root = db.Column(db.Boolean, default=False)
+    parent_id = db.Column(db.String(50), db.ForeignKey('mindmap_node.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
-    def set_card_info(self, data):
-        """Set card info from dict"""
-        if data:
-            self.card_info = json.dumps(data, ensure_ascii=False)
-        else:
-            self.card_info = None
+    # Self-referential relationship for parent-child
+    children = db.relationship('MindMapNode', 
+                              foreign_keys='MindMapNode.parent_id',
+                              remote_side=[id],
+                              backref='parent_node')
+
+class MindMapConnection(db.Model):
+    __tablename__ = 'mindmap_connection'
+    id = db.Column(db.Integer, primary_key=True)
+    mindmap_id = db.Column(db.Integer, db.ForeignKey('mindmap.id'), nullable=False)
+    from_node_id = db.Column(db.String(50), nullable=False)
+    to_node_id = db.Column(db.String(50), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+class MindMapShare(db.Model):
+    __tablename__ = 'mindmap_share'
+    id = db.Column(db.Integer, primary_key=True)
+    mindmap_id = db.Column(db.Integer, db.ForeignKey('mindmap.id'), nullable=False)
+    email = db.Column(db.String(100), nullable=False)
+    password = db.Column(db.String(100), nullable=False)  # Generated password for shared access
+    permission = db.Column(db.String(20), nullable=False, default='view')  # view, edit
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    expires_at = db.Column(db.DateTime, nullable=True)
     
-    def get_links_tree(self):
-        """Get links tree as list"""
-        if self.links_tree:
-            try:
-                return json.loads(self.links_tree)
-            except:
-                return []
-        return []
+    mindmap = db.relationship('MindMap', backref='shares')
     
-    def set_links_tree(self, data):
-        """Set links tree from list"""
-        if data:
-            self.links_tree = json.dumps(data, ensure_ascii=False)
-        else:
-            self.links_tree = None
     
-    def get_breath_settings(self):
-        """Get breath settings as dict"""
-        if self.breath_settings:
-            try:
-                return json.loads(self.breath_settings)
-            except:
-                return {}
-        return {}
-    
-    def set_breath_settings(self, data):
-        """Set breath settings from dict"""
-        if data:
-            self.breath_settings = json.dumps(data, ensure_ascii=False)
-        else:
-            self.breath_settings = None
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'master_password_hint': self.master_password_hint,
-            'theme_preference': self.theme_preference,
-            'show_bg_image': self.show_bg_image,
-            'show_quote': self.show_quote,
-            'user_name': self.user_name,
-            'user_birthday': self.user_birthday,
-            'card_info': self.get_card_info(),
-            'links_tree': self.get_links_tree(),
-            'breath_settings': self.get_breath_settings(),
-            'ai_question_template': self.ai_question_template,
-            'vocabulary_query_template': self.vocabulary_query_template,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
+def get_card_info(self):
+    """Get card info as dict"""
+    if self.card_info:
+        try:
+            return json.loads(self.card_info)
+        except:
+            return {}
+    return {}
+
+def set_card_info(self, data):
+    """Set card info from dict"""
+    if data:
+        self.card_info = json.dumps(data, ensure_ascii=False)
+    else:
+        self.card_info = None
+
+def get_links_tree(self):
+    """Get links tree as list"""
+    if self.links_tree:
+        try:
+            return json.loads(self.links_tree)
+        except:
+            return []
+    return []
+
+def set_links_tree(self, data):
+    """Set links tree from list"""
+    if data:
+        self.links_tree = json.dumps(data, ensure_ascii=False)
+    else:
+        self.links_tree = None
+
+def get_breath_settings(self):
+    """Get breath settings as dict"""
+    if self.breath_settings:
+        try:
+            return json.loads(self.breath_settings)
+        except:
+            return {}
+    return {}
+
+def set_breath_settings(self, data):
+    """Set breath settings from dict"""
+    if data:
+        self.breath_settings = json.dumps(data, ensure_ascii=False)
+    else:
+        self.breath_settings = None
+
+def to_dict(self):
+    return {
+        'id': self.id,
+        'master_password_hint': self.master_password_hint,
+        'theme_preference': self.theme_preference,
+        'show_bg_image': self.show_bg_image,
+        'show_quote': self.show_quote,
+        'user_name': self.user_name,
+        'user_birthday': self.user_birthday,
+        'card_info': self.get_card_info(),
+        'links_tree': self.get_links_tree(),
+        'breath_settings': self.get_breath_settings(),
+        'ai_question_template': self.ai_question_template,
+        'vocabulary_query_template': self.vocabulary_query_template,
+        'created_at': self.created_at.isoformat() if self.created_at else None,
+        'updated_at': self.updated_at.isoformat() if self.updated_at else None
+    }
     
 def get_user_settings():
     """Get or create user settings - always default for single user"""
@@ -5243,6 +5300,209 @@ def get_birthday_alerts():
                 alerts_today.append(f"Task '{task.title}' đã quá hạn từ {due_date.strftime('%d/%m/%Y')}")
     
     return alerts_today, alerts_tomorrow
+
+
+# Mindmap Routes
+@app.route('/mindmap')
+@login_required
+def mindmap():
+    return render_template('Mindmap/mindmap.html', theme=get_theme())
+
+@app.route('/api/mindmaps', methods=['GET'])
+@login_required
+def get_mindmaps():
+    mindmaps = MindMap.query.order_by(MindMap.updated_at.desc()).all()
+    return jsonify([{
+        'id': mm.id,
+        'title': mm.title,
+        'description': mm.description,
+        'category': mm.category,
+        'created_at': mm.created_at.isoformat(),
+        'updated_at': mm.updated_at.isoformat(),
+        'shared': mm.shared
+    } for mm in mindmaps])
+
+@app.route('/api/mindmaps', methods=['POST'])
+@login_required
+def create_mindmap():
+    data = request.get_json()
+    
+    # Create mindmap
+    mindmap = MindMap(
+        title=data['title'],
+        description=data.get('description', ''),
+        category=data.get('category', 'personal')
+    )
+    db.session.add(mindmap)
+    db.session.flush()  # Get the ID
+    
+    # Save nodes
+    for node_data in data['nodes']:
+        node = MindMapNode(
+            id=node_data['id'],
+            mindmap_id=mindmap.id,
+            text=node_data['text'],
+            x=node_data['x'],
+            y=node_data['y'],
+            color=node_data['color'],
+            font_size=node_data['fontSize'],
+            is_root=node_data['isRoot'],
+            parent_id=node_data.get('parent')
+        )
+        db.session.add(node)
+    
+    # Save connections
+    for conn_data in data['connections']:
+        connection = MindMapConnection(
+            mindmap_id=mindmap.id,
+            from_node_id=conn_data['from'],
+            to_node_id=conn_data['to']
+        )
+        db.session.add(connection)
+    
+    db.session.commit()
+    
+    return jsonify({'id': mindmap.id, 'status': 'success'})
+
+@app.route('/api/mindmaps/<int:mindmap_id>', methods=['GET'])
+@login_required
+def get_mindmap(mindmap_id):
+    mindmap = MindMap.query.get_or_404(mindmap_id)
+    
+    nodes = [{
+        'id': node.id,
+        'text': node.text,
+        'x': node.x,
+        'y': node.y,
+        'color': node.color,
+        'fontSize': node.font_size,
+        'isRoot': node.is_root,
+        'parent': node.parent_id,
+        'children': [child.id for child in node.children]
+    } for node in mindmap.nodes]
+    
+    connections = [{
+        'from': conn.from_node_id,
+        'to': conn.to_node_id
+    } for conn in mindmap.connections]
+    
+    return jsonify({
+        'id': mindmap.id,
+        'title': mindmap.title,
+        'description': mindmap.description,
+        'category': mindmap.category,
+        'nodes': nodes,
+        'connections': connections
+    })
+
+@app.route('/api/mindmaps/<int:mindmap_id>', methods=['PUT'])
+@login_required
+def update_mindmap(mindmap_id):
+    mindmap = MindMap.query.get_or_404(mindmap_id)
+    data = request.get_json()
+    
+    # Update mindmap info
+    mindmap.title = data.get('title', mindmap.title)
+    mindmap.description = data.get('description', mindmap.description)
+    mindmap.category = data.get('category', mindmap.category)
+    mindmap.updated_at = datetime.now()
+    
+    # Clear existing nodes and connections
+    MindMapNode.query.filter_by(mindmap_id=mindmap_id).delete()
+    MindMapConnection.query.filter_by(mindmap_id=mindmap_id).delete()
+    
+    # Add updated nodes
+    for node_data in data['nodes']:
+        node = MindMapNode(
+            id=node_data['id'],
+            mindmap_id=mindmap.id,
+            text=node_data['text'],
+            x=node_data['x'],
+            y=node_data['y'],
+            color=node_data['color'],
+            font_size=node_data['fontSize'],
+            is_root=node_data['isRoot'],
+            parent_id=node_data.get('parent')
+        )
+        db.session.add(node)
+    
+    # Add updated connections
+    for conn_data in data['connections']:
+        connection = MindMapConnection(
+            mindmap_id=mindmap.id,
+            from_node_id=conn_data['from'],
+            to_node_id=conn_data['to']
+        )
+        db.session.add(connection)
+    
+    db.session.commit()
+    
+    return jsonify({'status': 'success'})
+
+@app.route('/api/mindmaps/<int:mindmap_id>', methods=['DELETE'])
+@login_required
+def delete_mindmap(mindmap_id):
+    mindmap = MindMap.query.get_or_404(mindmap_id)
+    db.session.delete(mindmap)
+    db.session.commit()
+    
+    return jsonify({'status': 'success'})
+
+@app.route('/api/mindmaps/<int:mindmap_id>/share', methods=['POST'])
+@login_required
+def share_mindmap(mindmap_id):
+    mindmap = MindMap.query.get_or_404(mindmap_id)
+    data = request.get_json()
+    
+    # Generate share password
+    import secrets
+    import string
+    share_password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(8))
+    
+    # Create share entry
+    share = MindMapShare(
+        mindmap_id=mindmap_id,
+        email=data['email'],
+        password=share_password,
+        permission=data.get('permission', 'view'),
+        expires_at=datetime.now() + timedelta(days=data.get('expire_days', 30))
+    )
+    
+    db.session.add(share)
+    mindmap.shared = True
+    db.session.commit()
+    
+    return jsonify({
+        'status': 'success',
+        'share_password': share_password,
+        'share_url': f'/mindmap/shared/{mindmap_id}'
+    })
+
+@app.route('/mindmap/shared/<int:mindmap_id>')
+def shared_mindmap(mindmap_id):
+    email = request.args.get('email')
+    password = request.args.get('password')
+    
+    if not email or not password:
+        return render_template('error.html', message='Missing email or password')
+    
+    # Verify share access
+    share = MindMapShare.query.filter_by(
+        mindmap_id=mindmap_id,
+        email=email,
+        password=password
+    ).first()
+    
+    if not share or (share.expires_at and share.expires_at < datetime.now()):
+        return render_template('error.html', message='Invalid or expired share link')
+    
+    mindmap = MindMap.query.get_or_404(mindmap_id)
+    
+    return render_template('Mindmap/shared_mindmap.html', 
+                         mindmap=mindmap, 
+                         permission=share.permission,
+                         theme=get_theme())
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,381 @@
+{% extends "Mindmap/base.htm" %}
+
+{% block head %}
+<style>
+    /* Mindmap specific styles for shared view */
+    .mindmap-container {
+        position: relative;
+        width: 100%;
+        height: calc(100vh - 200px);
+        overflow: hidden;
+        background: var(--card-bg);
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .mindmap-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        cursor: grab;
+        background-image: 
+            radial-gradient(circle, rgba(var(--primary-color-rgb), 0.1) 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+    
+    .mindmap-canvas:active {
+        cursor: grabbing;
+    }
+    
+    .mindmap-node {
+        position: absolute;
+        min-width: 120px;
+        min-height: 60px;
+        background: var(--card-bg);
+        border: 2px solid var(--primary-color);
+        border-radius: 25px;
+        padding: 10px 15px;
+        user-select: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+        color: var(--text-color);
+        pointer-events: none; /* Read-only */
+    }
+    
+    .mindmap-node.root {
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 600;
+        min-width: 150px;
+        min-height: 80px;
+    }
+    
+    .mindmap-connection {
+        position: absolute;
+        stroke: var(--primary-color);
+        stroke-width: 2;
+        fill: none;
+        pointer-events: none;
+    }
+    
+    .mindmap-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        background: var(--card-bg);
+        border-radius: 10px;
+        padding: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        display: flex;
+        gap: 5px;
+    }
+    
+    .zoom-controls {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--card-bg);
+        border-radius: 20px;
+        padding: 5px;
+    }
+    
+    .btn-icon {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: none;
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-icon:hover {
+        background: var(--accent-color);
+        transform: scale(1.1);
+    }
+    
+    .shared-header {
+        background: rgba(var(--primary-color-rgb), 0.1);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .permission-badge {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+        border-radius: 12px;
+    }
+    
+    .permission-view {
+        background: var(--alert-info-bg);
+        color: var(--alert-info-color);
+    }
+    
+    .permission-edit {
+        background: var(--alert-success-bg);
+        color: var(--alert-success-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="shared-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3><i class="bi bi-diagram-3 me-2"></i>{{ mindmap.title }}</h3>
+                    {% if mindmap.description %}
+                    <p class="mb-2 text-muted">{{ mindmap.description }}</p>
+                    {% endif %}
+                    <small class="text-muted">
+                        Category: {{ mindmap.category.title() }} | 
+                        Created: {{ mindmap.created_at.strftime('%Y-%m-%d') }}
+                    </small>
+                </div>
+                <div>
+                    <span class="permission-badge permission-{{ permission }}">
+                        <i class="bi bi-{{ 'eye' if permission == 'view' else 'pencil' }}"></i>
+                        {{ permission.title() }} Access
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Mindmap Canvas -->
+<div class="mindmap-container" id="mindmapContainer">
+    <!-- Zoom Controls -->
+    <div class="mindmap-controls">
+        <div class="zoom-controls">
+            <button class="btn-icon" onclick="zoomOut()" title="Zoom Out">
+                <i class="bi bi-dash"></i>
+            </button>
+            <span id="zoomLevel">100%</span>
+            <button class="btn-icon" onclick="zoomIn()" title="Zoom In">
+                <i class="bi bi-plus"></i>
+            </button>
+        </div>
+        <button class="btn-icon" onclick="resetView()" title="Reset View">
+            <i class="bi bi-house"></i>
+        </button>
+        <button class="btn-icon" onclick="exportImage()" title="Export as Image">
+            <i class="bi bi-download"></i>
+        </button>
+    </div>
+    
+    <!-- Canvas -->
+    <div class="mindmap-canvas" id="mindmapCanvas">
+        <svg id="connectionSvg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
+        </svg>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+class SharedMindMapViewer {
+    constructor(mindmapId) {
+        this.mindmapId = mindmapId;
+        this.nodes = new Map();
+        this.connections = [];
+        this.zoom = 1;
+        this.panX = 0;
+        this.panY = 0;
+        this.isPanning = false;
+        
+        this.canvas = document.getElementById('mindmapCanvas');
+        this.svg = document.getElementById('connectionSvg');
+        this.container = document.getElementById('mindmapContainer');
+        
+        this.initializeEvents();
+        this.loadMindmap();
+    }
+    
+    initializeEvents() {
+        // Canvas panning events
+        this.canvas.addEventListener('mousedown', this.onCanvasMouseDown.bind(this));
+        this.canvas.addEventListener('mousemove', this.onCanvasMouseMove.bind(this));
+        this.canvas.addEventListener('mouseup', this.onCanvasMouseUp.bind(this));
+        this.canvas.addEventListener('wheel', this.onCanvasWheel.bind(this));
+    }
+    
+    async loadMindmap() {
+        try {
+            const response = await fetch(`/api/mindmaps/${this.mindmapId}`);
+            const data = await response.json();
+            
+            // Load nodes
+            data.nodes.forEach(nodeData => {
+                const nodeElement = document.createElement('div');
+                nodeElement.className = `mindmap-node ${nodeData.isRoot ? 'root' : ''}`;
+                nodeElement.id = nodeData.id;
+                nodeElement.style.left = nodeData.x + 'px';
+                nodeElement.style.top = nodeData.y + 'px';
+                nodeElement.style.fontSize = nodeData.fontSize;
+                nodeElement.style.borderColor = nodeData.color;
+                nodeElement.textContent = nodeData.text;
+                
+                if (!nodeData.isRoot) {
+                    nodeElement.style.backgroundColor = nodeData.color;
+                }
+                
+                this.canvas.appendChild(nodeElement);
+                this.nodes.set(nodeData.id, {
+                    ...nodeData,
+                    element: nodeElement
+                });
+            });
+            
+            // Load connections
+            this.connections = data.connections;
+            this.updateConnections();
+            
+        } catch (error) {
+            console.error('Error loading shared mindmap:', error);
+            alert('Error loading mind map');
+        }
+    }
+    
+    onCanvasMouseDown(e) {
+        if (e.target === this.canvas) {
+            // Start panning
+            this.isPanning = true;
+            this.lastPanPoint = { x: e.clientX, y: e.clientY };
+            this.canvas.style.cursor = 'grabbing';
+        }
+    }
+    
+    onCanvasMouseMove(e) {
+        if (this.isPanning) {
+            const deltaX = e.clientX - this.lastPanPoint.x;
+            const deltaY = e.clientY - this.lastPanPoint.y;
+            
+            this.panX += deltaX;
+            this.panY += deltaY;
+            
+            this.updateCanvasTransform();
+            this.lastPanPoint = { x: e.clientX, y: e.clientY };
+        }
+    }
+    
+    onCanvasMouseUp(e) {
+        this.isPanning = false;
+        this.canvas.style.cursor = 'grab';
+    }
+    
+    onCanvasWheel(e) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        this.zoom = Math.max(0.1, Math.min(3, this.zoom * delta));
+        this.updateCanvasTransform();
+        this.updateZoomDisplay();
+    }
+    
+    updateCanvasTransform() {
+        this.canvas.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
+    }
+    
+    updateZoomDisplay() {
+        document.getElementById('zoomLevel').textContent = Math.round(this.zoom * 100) + '%';
+    }
+    
+    updateConnections() {
+        this.svg.innerHTML = '';
+        
+        this.connections.forEach(conn => {
+            const fromNode = this.nodes.get(conn.from);
+            const toNode = this.nodes.get(conn.to);
+            
+            if (fromNode && toNode) {
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                const fromX = fromNode.x + fromNode.element.offsetWidth / 2;
+                const fromY = fromNode.y + fromNode.element.offsetHeight / 2;
+                const toX = toNode.x + toNode.element.offsetWidth / 2;
+                const toY = toNode.y + toNode.element.offsetHeight / 2;
+                
+                // Create curved path
+                const midX = (fromX + toX) / 2;
+                const midY = (fromY + toY) / 2;
+                const controlX = midX + (fromY - toY) * 0.2;
+                const controlY = midY + (toX - fromX) * 0.2;
+                
+                const pathData = `M ${fromX} ${fromY} Q ${controlX} ${controlY} ${toX} ${toY}`;
+                line.setAttribute('d', pathData);
+                line.className = 'mindmap-connection';
+                
+                this.svg.appendChild(line);
+            }
+        });
+    }
+    
+    exportImage() {
+        // Simple export functionality - capture canvas as image
+        html2canvas(this.canvas).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'mindmap.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }).catch(() => {
+            // Fallback: just alert user
+            alert('Export feature requires html2canvas library. Please save manually using browser screenshot.');
+        });
+    }
+}
+
+// Global functions
+let viewer;
+
+function zoomIn() {
+    if (viewer) {
+        viewer.zoom = Math.min(3, viewer.zoom * 1.1);
+        viewer.updateCanvasTransform();
+        viewer.updateZoomDisplay();
+    }
+}
+
+function zoomOut() {
+    if (viewer) {
+        viewer.zoom = Math.max(0.1, viewer.zoom * 0.9);
+        viewer.updateCanvasTransform();
+        viewer.updateZoomDisplay();
+    }
+}
+
+function resetView() {
+    if (viewer) {
+        viewer.zoom = 1;
+        viewer.panX = 0;
+        viewer.panY = 0;
+        viewer.updateCanvasTransform();
+        viewer.updateZoomDisplay();
+    }
+}
+
+function exportImage() {
+    viewer?.exportImage();
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const mindmapId = {{ mindmap.id }};
+    viewer = new SharedMindMapViewer(mindmapId);
+});
+</script>
+{% endblock %}
