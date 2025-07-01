@@ -711,121 +711,104 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#" id="showCardListModal">友部 瑛希</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="evernoteDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-journal-richtext"></i> Evernote
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="evernoteDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('ever_note') }}">
-                                <i class="bi bi-journal-text"></i> Ever Note
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('task') }}">
-                                <i class="bi bi-check2-square"></i> Task
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('todo') }}">
-                                <i class="bi bi-list-check"></i> Todo
-                            </a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="diaryDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-calendar-heart"></i> Diary
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="diaryDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('diary_grid') }}?action=new">
-                                <i class="bi bi-plus-circle"></i> New Diary
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('diary_list') }}">
-                                <i class="bi bi-list-ul"></i> Diary List
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('diary_grid') }}">
-                                <i class="bi bi-grid-3x3"></i> Diary Grid
-                            </a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-book"></i> Learning
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="learningDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('knowledge') }}">
-                                <i class="bi bi-lightbulb"></i> Knowledge
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('vocabulary') }}">
-                                <i class="bi bi-chat-quote"></i> Vocabulary
-                                </a>
-                            </li>
-                            <li><a class="dropdown-item" href="{{ url_for('english_cloze') }}">
-                                <i class="bi bi-chat-quote"></i> english cloze
-                                </a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="passwordDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-shield-lock"></i> Password
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="passwordDropdown">
-                            <li><a class="dropdown-item" href="{{ url_for('password_manager') }}">
-                                <i class="bi bi-key"></i> Password Manager
-                            </a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="wellnessDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-heart-pulse"></i> Wellness
-                        </a>
-                        <ul class="dropdown-menu" aria-labelledby="wellnessDropdown">
-                            <li class="nav-item">
-                                <a class="dropdown-item" href="{{ url_for('contacts') }}">
-                                    <i class="bi bi-person-lines-fill"></i>Contact
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="dropdown-item" href="{{ url_for('manage_quotes') }}">
-                                    <i class="bi bi-chat-quote"></i>Quotes
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="dropdown-item" href="{{ url_for('breath') }}">
-                                    <i class="bi bi-wind"></i> Breath
-                                </a>
-                            </li>
-                            <li><a class="dropdown-item" href="{{ url_for('eye_exercise') }}">
-                                <i class="bi bi-eye"></i> Eye Exercise
-                            </a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('game_flip') }}">
-                                <i class="bi bi-controller"></i> Memory Game
-                            </a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" id="openSettingsBtn">
-                            <i class="bi bi-gear"></i> Settings
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" id="linksBtn">
-                            <i class="bi bi-link-45deg"></i> Links
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" id="logoutBtn">
-                            <i class="bi bi-box-arrow-right"></i> Logout
-                        </a>
-                    </li>
-                </ul>
+    <!-- Hamburger button (top left) -->
+    <button class="btn btn-hamburger" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" style="position: fixed; top: 10px; left: 10px; z-index: 1051;">
+      <i class="bi bi-list"></i>
+    </button>
+    <!-- Offcanvas vertical sidebar menu (menu chính) -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="sidebarMenuLabel">Menu</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+        <ul class="nav flex-column sidebar-menu">
+          <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-house"></i> Trang chủ</a></li>
+          
+          <!-- Evernote Group -->
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse" href="#evernoteCollapse" role="button" aria-expanded="false" aria-controls="evernoteCollapse">
+              <i class="bi bi-journal-richtext me-2"></i> Evernote
+              <i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <div class="collapse collapse-item" id="evernoteCollapse">
+              <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('ever_note') }}"><i class="bi bi-journal-text"></i> Ever Note</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('task') }}"><i class="bi bi-check2-square"></i> Task</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('todo') }}"><i class="bi bi-list-check"></i> Todo</a></li>
+              </ul>
             </div>
-        </div>
-    </nav>
+          </li>
+
+          <!-- Diary Group -->
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse" href="#diaryCollapse" role="button" aria-expanded="false" aria-controls="diaryCollapse">
+              <i class="bi bi-calendar-heart me-2"></i> Diary
+              <i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <div class="collapse collapse-item" id="diaryCollapse">
+              <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('diary_grid') }}?action=new"><i class="bi bi-plus-circle"></i> New Diary</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('diary_list') }}"><i class="bi bi-list-ul"></i> Diary List</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('diary_grid') }}"><i class="bi bi-grid-3x3"></i> Diary Grid</a></li>
+              </ul>
+            </div>
+          </li>
+
+          <!-- Learning Group -->
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse" href="#learningCollapse" role="button" aria-expanded="false" aria-controls="learningCollapse">
+              <i class="bi bi-book me-2"></i> Learning
+              <i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <div class="collapse collapse-item" id="learningCollapse">
+              <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('knowledge') }}"><i class="bi bi-lightbulb"></i> Knowledge</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('vocabulary') }}"><i class="bi bi-chat-quote"></i> Vocabulary</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('english_cloze') }}"><i class="bi bi-chat-quote"></i> English Cloze</a></li>
+              </ul>
+            </div>
+          </li>
+
+          <!-- Password Group -->
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse" href="#passwordCollapse" role="button" aria-expanded="false" aria-controls="passwordCollapse">
+              <i class="bi bi-shield-lock me-2"></i> Password
+              <i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <div class="collapse collapse-item" id="passwordCollapse">
+              <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('password_manager') }}"><i class="bi bi-key"></i> Password Manager</a></li>
+              </ul>
+            </div>
+          </li>
+
+          <!-- Wellness Group -->
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse" href="#wellnessCollapse" role="button" aria-expanded="false" aria-controls="wellnessCollapse">
+              <i class="bi bi-heart-pulse me-2"></i> Wellness
+              <i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <div class="collapse collapse-item" id="wellnessCollapse">
+              <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('contacts') }}"><i class="bi bi-person-lines-fill"></i> Contact</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('manage_quotes') }}"><i class="bi bi-chat-quote"></i> Quotes</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('breath') }}"><i class="bi bi-wind"></i> Breath</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('eye_exercise') }}"><i class="bi bi-eye"></i> Eye Exercise</a></li>
+                <li class="nav-item"><a class="nav-link" href="{{ url_for('game_flip') }}"><i class="bi bi-controller"></i> Memory Game</a></li>
+              </ul>
+            </div>
+          </li>
+
+          <!-- Single Items -->
+          <li class="nav-item"><a class="nav-link" href="#" id="openSettingsBtn"><i class="bi bi-gear"></i> Settings</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" id="linksBtn"><i class="bi bi-link-45deg"></i> Links</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" id="showCardListModal"><i class="bi bi-card-list"></i> Card List</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+
 
     <!-- Alert for birthday/anniversary with toggle -->
     {% if alerts_today or alerts_tomorrow %}
@@ -2805,6 +2788,16 @@
 
         // ===== MAIN APPLICATION =====
         document.addEventListener('DOMContentLoaded', function() {
+            // Optionally, close sidebar when a menu item is clicked (mobile UX)
+            document.querySelectorAll('#sidebarMenu .nav-link').forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    // Chỉ đóng sidebar nếu KHÔNG phải là menu cha (không có data-bs-toggle="collapse")
+                    if (!link.hasAttribute('data-bs-toggle')) {
+                        var sidebar = bootstrap.Offcanvas.getInstance(document.getElementById('sidebarMenu'));
+                        if (sidebar) sidebar.hide();
+                    }
+                });
+            });
             // Initialize all managers
             MindfulnessTimer.init();
             UISettingsManager.init();
@@ -2870,14 +2863,8 @@
 
             // Navbar auto-close on outside click (mobile UX)
             document.addEventListener('click', (event) => {
-                const navbarCollapse = document.getElementById('navbarNav');
                 const navbarToggler = document.querySelector('.navbar-toggler');
                 
-                if (navbarCollapse.classList.contains('show')) {
-                    if (!navbarCollapse.contains(event.target) && !navbarToggler.contains(event.target)) {
-                        new bootstrap.Collapse(navbarCollapse).hide();
-                    }
-                }
             });
 
             document.getElementById('db-tab').addEventListener('shown.bs.tab', async function() {
