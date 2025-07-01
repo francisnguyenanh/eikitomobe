@@ -461,7 +461,7 @@ class MindMap {
         this.updateZoomDisplay();
     }
     
-    createNode(x, y, text = 'New Node', isRoot = false) {
+    createNode(x, y, text = 'Node', isRoot = false) {
         // Tạo node id duy nhất dựa trên timestamp và random (tránh trùng khi import/export)
         const nodeId = `node_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
         const nodeElement = document.createElement('div');
@@ -615,8 +615,9 @@ class MindMap {
         
         const contextMenu = document.getElementById('contextMenu');
         contextMenu.style.display = 'block';
-        contextMenu.style.left = e.pageX + 'px';
-        contextMenu.style.top = e.pageY + 'px';
+
+        contextMenu.style.left = e.clientX + 'px';
+        contextMenu.style.top = e.clientY + 'px';
     }
     
     selectNode(node) {
@@ -724,6 +725,8 @@ class MindMap {
         
         document.getElementById('nodeEditor').style.display = 'block';
         document.getElementById('contextMenu').style.display = 'none';
+
+        document.getElementById('nodeText').focus();
     }
     
     saveNodeEdit() {
@@ -1357,5 +1360,20 @@ function toggleFullscreen() {
         }
     }
 }
+
+document.addEventListener('fullscreenchange', function() {
+    const container = document.getElementById('mindmapContainer');
+    const nodeEditor = document.getElementById('nodeEditor');
+    const contextMenu = document.getElementById('contextMenu');
+    if (document.fullscreenElement === container) {
+        // Nếu vào fullscreen, chuyển modal và context menu vào trong container
+        container.appendChild(nodeEditor);
+        container.appendChild(contextMenu);
+    } else {
+        // Nếu thoát fullscreen, chuyển modal và context menu ra ngoài container
+        document.body.appendChild(nodeEditor);
+        document.body.appendChild(contextMenu);
+    }
+});
 </script>
 {% endblock %}
