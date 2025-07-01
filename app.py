@@ -5406,10 +5406,6 @@ def update_mindmap(mindmap_id):
     mindmap = MindMap.query.get_or_404(mindmap_id)
     data = request.get_json()
     
-    MindMap.query.filter_by(mindmap_id=id).delete()
-    MindMapConnection.query.filter_by(mindmap_id=id).delete()
-    db.session.commit()
-    
     # Update mindmap info
     mindmap.title = data.get('title', mindmap.title)
     mindmap.description = data.get('description', mindmap.description)

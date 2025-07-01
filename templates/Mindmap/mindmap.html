@@ -17,15 +17,16 @@
         position: absolute;
         top: 0;
         left: 0;
-        width: 100%;
-        height: 100%;
+        width: 10000px; /* Kích thước lớn để chứa tất cả node */
+        height: 10000px;
         cursor: grab;
         background-image: 
             radial-gradient(circle, rgba(var(--primary-color-rgb), 0.1) 1px, transparent 1px);
         background-size: 20px 20px;
         background-color: bisque;
+        transform-origin: 0 0; /* Đặt origin để scale chính xác */
     }
-    
+
     .mindmap-canvas:active {
         cursor: grabbing;
     }
@@ -301,7 +302,7 @@
     
     <!-- Canvas -->
     <div class="mindmap-canvas" id="mindmapCanvas">
-        <svg id="connectionSvg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
+        <svg id="connectionSvg" style="position: absolute; top: 0; left: 0; width: 10000px; height: 10000px; pointer-events: none; z-index: 1;"></svg>
         </svg>
     </div>
 </div>
@@ -486,6 +487,24 @@ class MindMap {
         return nodeData;
     }
     
+    resizeCanvasIfNeeded() {
+        const nodes = Array.from(this.nodes.values());
+        let maxWidth = 10000; // Kích thước canvas mặc định
+        let maxHeight = 10000;
+
+        nodes.forEach(node => {
+            const right = node.x + node.element.offsetWidth;
+            const bottom = node.y + node.element.offsetHeight;
+            maxWidth = Math.max(maxWidth, right + 500); // Thêm padding
+            maxHeight = Math.max(maxHeight, bottom + 500);
+        });
+
+        this.canvas.style.width = `${maxWidth}px`;
+        this.canvas.style.height = `${maxHeight}px`;
+        this.svg.style.width = `${maxWidth}px`;
+        this.svg.style.height = `${maxHeight}px`;
+    }
+
     onNodeMouseDown(e, nodeElement) {
         e.stopPropagation();
         this.selectNode(this.nodes.get(nodeElement.id));
@@ -511,24 +530,28 @@ class MindMap {
     }
     
     onCanvasMouseMove(e) {
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = (e.clientX - rect.left - this.panX) / this.zoom;
+        const mouseY = (e.clientY - rect.top - this.panY) / this.zoom;
+
         if (this.isDragging && this.selectedNode) {
-            const rect = this.canvas.getBoundingClientRect();
-            const newX = (e.clientX - rect.left - this.dragOffset.x - this.panX) / this.zoom;
-            const newY = (e.clientY - rect.top - this.dragOffset.y - this.panY) / this.zoom;
-            
+            const newX = mouseX - this.dragOffset.x;
+            const newY = mouseY - this.dragOffset.y;
+
             this.selectedNode.x = newX;
             this.selectedNode.y = newY;
             this.selectedNode.element.style.left = newX + 'px';
             this.selectedNode.element.style.top = newY + 'px';
-            
+
             this.updateConnections();
+            this.resizeCanvasIfNeeded();
         } else if (this.isPanning) {
             const deltaX = e.clientX - this.lastPanPoint.x;
             const deltaY = e.clientY - this.lastPanPoint.y;
-            
+
             this.panX += deltaX;
             this.panY += deltaY;
-            
+
             this.updateCanvasTransform();
             this.lastPanPoint = { x: e.clientX, y: e.clientY };
         }
@@ -586,6 +609,9 @@ class MindMap {
     
     updateCanvasTransform() {
         this.canvas.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
+        this.canvas.style.transformOrigin = '0 0';
+        this.svg.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
+        this.svg.style.transformOrigin = '0 0';
     }
     
     updateZoomDisplay() {
@@ -605,6 +631,7 @@ class MindMap {
         const newNode = this.createNode(newX, newY);
         this.connectNodes(parentNode, newNode);
         this.selectNode(newNode);
+        this.resizeCanvasIfNeeded(); // Gọi để mở rộng canvas
     }
     
     addNodeAt(x, y) {
@@ -615,6 +642,7 @@ class MindMap {
     addChildNode() {
         this.addNode();
         document.getElementById('contextMenu').style.display = 'none';
+        this.resizeCanvasIfNeeded(); // Gọi để mở rộng canvas
     }
     
     deleteNode() {
@@ -717,96 +745,90 @@ class MindMap {
     }
     
     updateConnections() {
-        this.svg.innerHTML = '';
-        // Helper: get intersection point between a line and a rectangle
-        function getRectEdgeIntersection(rect, cx, cy, tx, ty) {
-            // rect: {left, top, right, bottom}
-            // (cx, cy): center, (tx, ty): target center
-            const dx = tx - cx;
-            const dy = ty - cy;
-            if (dx === 0 && dy === 0) return {x: cx, y: cy};
-            // Calculate intersection with each side
-            const sides = [];
-            // Left
-            if (dx !== 0) {
-                const t = (rect.left - cx) / dx;
-                if (t > 0 && t < 1) {
-                    const y = cy + t * dy;
-                    if (y >= rect.top && y <= rect.bottom) sides.push({x: rect.left, y});
+        requestAnimationFrame(() => {
+            this.svg.innerHTML = '';
+            this.svg.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
+            this.svg.style.transformOrigin = '0 0';
+
+            function getRectEdgeIntersection(rect, cx, cy, tx, ty) {
+                const dx = tx - cx;
+                const dy = ty - cy;
+                if (dx === 0 && dy === 0) return { x: cx, y: cy };
+
+                const sides = [];
+                if (dx !== 0) {
+                    const t = (rect.left - cx) / dx;
+                    if (t > 0 && t < 1) {
+                        const y = cy + t * dy;
+                        if (y >= rect.top && y <= rect.bottom) sides.push({ x: rect.left, y });
+                    }
                 }
-            }
-            // Right
-            if (dx !== 0) {
-                const t = (rect.right - cx) / dx;
-                if (t > 0 && t < 1) {
-                    const y = cy + t * dy;
-                    if (y >= rect.top && y <= rect.bottom) sides.push({x: rect.right, y});
+                if (dx !== 0) {
+                    const t = (rect.right - cx) / dx;
+                    if (t > 0 && t < 1) {
+                        const y = cy + t * dy;
+                        if (y >= rect.top && y <= rect.bottom) sides.push({ x: rect.right, y });
+                    }
                 }
-            }
-            // Top
-            if (dy !== 0) {
-                const t = (rect.top - cy) / dy;
-                if (t > 0 && t < 1) {
-                    const x = cx + t * dx;
-                    if (x >= rect.left && x <= rect.right) sides.push({x, y: rect.top});
+                if (dy !== 0) {
+                    const t = (rect.top - cy) / dy;
+                    if (t > 0 && t < 1) {
+                        const x = cx + t * dx;
+                        if (x >= rect.left && x <= rect.right) sides.push({ x, y: rect.top });
+                    }
                 }
-            }
-            // Bottom
-            if (dy !== 0) {
-                const t = (rect.bottom - cy) / dy;
-                if (t > 0 && t < 1) {
-                    const x = cx + t * dx;
-                    if (x >= rect.left && x <= rect.right) sides.push({x, y: rect.bottom});
+                if (dy !== 0) {
+                    const t = (rect.bottom - cy) / dy;
+                    if (t > 0 && t < 1) {
+                        const x = cx + t * dx;
+                        if (x >= rect.left && x <= rect.right) sides.push({ x, y: rect.bottom });
+                    }
                 }
+                if (sides.length === 0) return { x: cx, y: cy };
+                sides.sort((a, b) => {
+                    const da = (a.x - cx) ** 2 + (a.y - cy) ** 2;
+                    const db = (b.x - cx) ** 2 + (b.y - cy) ** 2;
+                    return da - db;
+                });
+                return sides[0];
             }
-            // Pick the closest intersection
-            if (sides.length === 0) return {x: cx, y: cy};
-            sides.sort((a, b) => {
-                const da = (a.x - cx) ** 2 + (a.y - cy) ** 2;
-                const db = (b.x - cx) ** 2 + (b.y - cy) ** 2;
-                return da - db;
+
+            this.connections.forEach(conn => {
+                const fromNode = this.nodes.get(conn.from);
+                const toNode = this.nodes.get(conn.to);
+                if (fromNode && toNode) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const fromRect = {
+                        left: fromNode.x,
+                        top: fromNode.y,
+                        right: fromNode.x + fromNode.element.offsetWidth,
+                        bottom: fromNode.y + fromNode.element.offsetHeight
+                    };
+                    const toRect = {
+                        left: toNode.x,
+                        top: toNode.y,
+                        right: toNode.x + toNode.element.offsetWidth,
+                        bottom: toNode.y + toNode.element.offsetHeight
+                    };
+                    const fromCenterX = (fromRect.left + fromRect.right) / 2;
+                    const fromCenterY = (fromRect.top + fromRect.bottom) / 2;
+                    const toCenterX = (toRect.left + toRect.right) / 2;
+                    const toCenterY = (toRect.top + toRect.bottom) / 2;
+                    const fromEdge = getRectEdgeIntersection(fromRect, fromCenterX, fromCenterY, toCenterX, toCenterY);
+                    const toEdge = getRectEdgeIntersection(toRect, toCenterX, toCenterY, fromCenterX, fromCenterY);
+                    const midX = (fromEdge.x + toEdge.x) / 2;
+                    const midY = (fromEdge.y + toEdge.y) / 2;
+                    const controlX = midX + (fromEdge.y - toEdge.y) * 0.2;
+                    const controlY = midY + (toEdge.x - fromEdge.x) * 0.2;
+                    const pathData = `M ${fromEdge.x} ${fromEdge.y} Q ${controlX} ${controlY} ${toEdge.x} ${toEdge.y}`;
+                    line.setAttribute('d', pathData);
+                    line.setAttribute('class', 'mindmap-connection');
+                    line.setAttribute('stroke', '#3498db');
+                    line.setAttribute('stroke-width', '2');
+                    line.setAttribute('fill', 'none');
+                    this.svg.appendChild(line);
+                }
             });
-            return sides[0];
-        }
-        this.connections.forEach(conn => {
-            const fromNode = this.nodes.get(conn.from);
-            const toNode = this.nodes.get(conn.to);
-            if (fromNode && toNode) {
-                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                // Get bounding rects (relative to canvas)
-                const fromRect = {
-                    left: fromNode.x,
-                    top: fromNode.y,
-                    right: fromNode.x + fromNode.element.offsetWidth,
-                    bottom: fromNode.y + fromNode.element.offsetHeight
-                };
-                const toRect = {
-                    left: toNode.x,
-                    top: toNode.y,
-                    right: toNode.x + toNode.element.offsetWidth,
-                    bottom: toNode.y + toNode.element.offsetHeight
-                };
-                // Centers
-                const fromCenterX = (fromRect.left + fromRect.right) / 2;
-                const fromCenterY = (fromRect.top + fromRect.bottom) / 2;
-                const toCenterX = (toRect.left + toRect.right) / 2;
-                const toCenterY = (toRect.top + toRect.bottom) / 2;
-                // Edge points
-                const fromEdge = getRectEdgeIntersection(fromRect, fromCenterX, fromCenterY, toCenterX, toCenterY);
-                const toEdge = getRectEdgeIntersection(toRect, toCenterX, toCenterY, fromCenterX, fromCenterY);
-                // Create curved path (optional: keep as before)
-                const midX = (fromEdge.x + toEdge.x) / 2;
-                const midY = (fromEdge.y + toEdge.y) / 2;
-                const controlX = midX + (fromEdge.y - toEdge.y) * 0.2;
-                const controlY = midY + (toEdge.x - fromEdge.x) * 0.2;
-                const pathData = `M ${fromEdge.x} ${fromEdge.y} Q ${controlX} ${controlY} ${toEdge.x} ${toEdge.y}`;
-                line.setAttribute('d', pathData);
-                line.setAttribute('class', 'mindmap-connection');
-                line.setAttribute('stroke', '#3498db');
-                line.setAttribute('stroke-width', '2');
-                line.setAttribute('fill', 'none');
-                this.svg.appendChild(line);
-            }
         });
     }
     
@@ -909,7 +931,7 @@ class MindMap {
         // Clear existing
         this.nodes.clear();
         this.connections = [];
-        this.canvas.innerHTML = '<svg id="connectionSvg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;"></svg>';
+        this.canvas.innerHTML = '<svg id="connectionSvg" style="position: absolute; top: 0; left: 0; width: 10000px; height: 10000px; pointer-events: none; z-index: 1;"></svg>';
         this.svg = document.getElementById('connectionSvg');
         
         // Load nodes
@@ -953,6 +975,8 @@ class MindMap {
             this.connections = data.connections;
             this.updateConnections();
         }
+        
+        this.resizeCanvasIfNeeded(); // Gọi để mở rộng canvas sau khi load
     }
     
     saveMindmap() {
