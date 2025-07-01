@@ -5197,5 +5197,27 @@ def get_contact_json(id):
         'note': contact.note
     })
     
+@app.route('/contacts/card_design')
+@login_required
+def card_design():
+    contacts = Contact.query.all()
+    return render_template('Contact/card_design.html', contacts=contacts)
+
+
+@app.route('/card/view')
+def contact_card_view():
+    data_b64 = request.args.get('data', '')
+    card_data = {}
+    if data_b64:
+        try:
+            # Add padding if missing
+            padded = data_b64 + '=' * (-len(data_b64) % 4)
+            json_str = base64.b64decode(padded).decode('utf-8')
+            card_data = json.loads(json_str)
+        except Exception:
+            card_data = {}
+    # Render card with animation effect (effect can be randomized in template)
+    return render_template('Contact/card_view.html', card=card_data)
+
 if __name__ == '__main__':
     app.run(debug=True)
