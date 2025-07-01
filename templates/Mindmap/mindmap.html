@@ -17,13 +17,13 @@
         position: absolute;
         top: 0;
         left: 0;
-        width: 10000px; /* Kích thước lớn để chứa tất cả node */
-        height: 10000px;
+        width: 50000px; /* Kích thước lớn để chứa tất cả node */
+        height: 50000px;
         cursor: grab;
         background-image: 
             radial-gradient(circle, rgba(var(--primary-color-rgb), 0.1) 1px, transparent 1px);
         background-size: 20px 20px;
-        background-color: bisque;
+        background-color: var(--bg-color);
         transform-origin: 0 0; /* Đặt origin để scale chính xác */
     }
 
@@ -259,17 +259,9 @@
 
 <!-- Main Mindmap Canvas -->
 <div class="mindmap-container" id="mindmapContainer">
-    <!-- Toolbar -->
-    <div class="mindmap-toolbar">
-        <button class="btn btn-sm btn-primary" onclick="addNode()" title="Add Node">
-            <i class="bi bi-plus-circle"></i>
-        </button>
-        <button class="btn btn-sm btn-secondary" onclick="deleteNode()" title="Delete Node">
-            <i class="bi bi-trash"></i>
-        </button>
-        <button class="btn btn-sm btn-info" onclick="editNode()" title="Edit Node">
-            <i class="bi bi-pencil"></i>
-        </button>
+    
+    <!-- Zoom Controls -->
+    <div class="mindmap-controls">
         <button class="btn btn-sm btn-success" onclick="saveMindmap()" title="Save">
             <i class="bi bi-save"></i>
         </button>
@@ -279,10 +271,6 @@
         <button class="btn btn-sm btn-info" onclick="importMindmap()" title="Import">
             <i class="bi bi-upload"></i>
         </button>
-    </div>
-    
-    <!-- Zoom Controls -->
-    <div class="mindmap-controls">
         <div class="zoom-controls">
             <button class="btn-icon" onclick="zoomOut()" title="Zoom Out">
                 <i class="bi bi-dash"></i>
@@ -297,6 +285,9 @@
         </button>
         <button class="btn-icon" onclick="autoLayout()" title="Auto Layout">
             <i class="bi bi-diagram-2"></i>
+        </button>
+        <button class="btn-icon" id="fullscreenBtn" onclick="toggleFullscreen()" title="Toàn màn hình">
+            <i class="bi bi-arrows-fullscreen" id="fullscreenIcon"></i>
         </button>
     </div>
     
@@ -446,9 +437,9 @@ class MindMap {
     }
     
     createRootNode() {
-        // Đặt node trung tâm ở giữa mindmap-canvas
-        const canvasWidth = 10000;
-        const canvasHeight = 10000;
+        // Đặt node trung tâm ở giữa mindmap-canvas (canvas mới: 50000x50000)
+        const canvasWidth = 50000;
+        const canvasHeight = 50000;
         const nodeWidth = 150; // root node min-width
         const nodeHeight = 80; // root node min-height
         const centerX = canvasWidth / 2 - nodeWidth / 2;
@@ -462,8 +453,6 @@ class MindMap {
         this.selectNode(node);
 
         // Đặt vùng hiển thị (container) ở giữa mindmap-canvas
-        // Tính toán panX, panY để vùng hiển thị nằm giữa canvas
-        // Lưu ý: canvas có thể đã bị scale, nên cần reset zoom về 1 trước
         this.zoom = 1;
         const containerRect = this.container.getBoundingClientRect();
         this.panX = (containerRect.width / 2) - (canvasWidth / 2);
@@ -1274,9 +1263,22 @@ function zoomOut() {
 
 function resetView() {
     if (mindmap) {
+        // Tìm node trung tâm (root)
+        const rootNode = Array.from(mindmap.nodes.values()).find(node => node.isRoot);
+        if (!rootNode) return;
+
+        // Đặt lại zoom về 1
         mindmap.zoom = 1;
-        mindmap.panX = 0;
-        mindmap.panY = 0;
+
+        // Lấy kích thước vùng hiển thị (container) và node trung tâm
+        const containerRect = mindmap.container.getBoundingClientRect();
+        const nodeWidth = rootNode.element.offsetWidth;
+        const nodeHeight = rootNode.element.offsetHeight;
+
+        // Tính panX, panY để node trung tâm nằm giữa vùng hiển thị
+        mindmap.panX = (containerRect.width / 2) - (rootNode.x + nodeWidth / 2);
+        mindmap.panY = (containerRect.height / 2) - (rootNode.y + nodeHeight / 2);
+
         mindmap.updateCanvasTransform();
         mindmap.updateZoomDisplay();
     }
@@ -1309,6 +1311,42 @@ function confirmSaveMindmap() {
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     createNewMindmap();
+
+    // Xử lý phím ESC để thoát toàn màn hình
+    document.addEventListener('fullscreenchange', function() {
+        const btn = document.getElementById('fullscreenBtn');
+        const icon = document.getElementById('fullscreenIcon');
+        if (document.fullscreenElement) {
+            icon.classList.remove('bi-arrows-fullscreen');
+            icon.classList.add('bi-fullscreen-exit');
+            btn.title = 'Thoát toàn màn hình';
+        } else {
+            icon.classList.remove('bi-fullscreen-exit');
+            icon.classList.add('bi-arrows-fullscreen');
+            btn.title = 'Toàn màn hình';
+        }
+    });
 });
+
+function toggleFullscreen() {
+    const container = document.getElementById('mindmapContainer');
+    if (!document.fullscreenElement) {
+        if (container.requestFullscreen) {
+            container.requestFullscreen();
+        } else if (container.webkitRequestFullscreen) {
+            container.webkitRequestFullscreen();
+        } else if (container.msRequestFullscreen) {
+            container.msRequestFullscreen();
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+}
 </script>
 {% endblock %}
