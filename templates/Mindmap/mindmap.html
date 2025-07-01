@@ -452,11 +452,11 @@ class MindMap {
         );
         this.selectNode(node);
 
-        // Đặt vùng hiển thị (container) ở giữa mindmap-canvas
+        // Đặt vùng hiển thị (container) sao cho node trung tâm nằm giữa vùng nhìn thấy
         this.zoom = 1;
         const containerRect = this.container.getBoundingClientRect();
-        this.panX = (containerRect.width / 2) - (canvasWidth / 2);
-        this.panY = (containerRect.height / 2) - (canvasHeight / 2);
+        this.panX = (containerRect.width / 2) - (centerX + nodeWidth / 2);
+        this.panY = (containerRect.height / 2) - (centerY + nodeHeight / 2);
         this.updateCanvasTransform();
         this.updateZoomDisplay();
     }
@@ -496,8 +496,8 @@ class MindMap {
     
     resizeCanvasIfNeeded() {
         const nodes = Array.from(this.nodes.values());
-        let maxWidth = 10000; // Kích thước canvas mặc định
-        let maxHeight = 10000;
+        let maxWidth = 50000; // Kích thước canvas mặc định
+        let maxHeight = 50000;
 
         nodes.forEach(node => {
             const right = node.x + node.element.offsetWidth;
@@ -881,9 +881,23 @@ class MindMap {
     autoLayout() {
         const rootNode = Array.from(this.nodes.values()).find(node => node.isRoot);
         if (!rootNode) return;
-        
+
+        // Đưa node trung tâm về giữa mindmap-canvas
+        const canvasWidth = 50000;
+        const canvasHeight = 50000;
+        const nodeWidth = rootNode.element.offsetWidth;
+        const nodeHeight = rootNode.element.offsetHeight;
+        rootNode.x = canvasWidth / 2 - nodeWidth / 2;
+        rootNode.y = canvasHeight / 2 - nodeHeight / 2;
+        rootNode.element.style.left = rootNode.x + 'px';
+        rootNode.element.style.top = rootNode.y + 'px';
+
+        // Sắp xếp các node con
         this.layoutRadial(rootNode);
         this.updateConnections();
+
+        // Sau khi sắp xếp, đưa node trung tâm ra giữa vùng hiển thị
+        resetView();
     }
     
     layoutRadial(rootNode) {
