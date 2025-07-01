@@ -901,14 +901,9 @@ class MindMap {
     }
     
     layoutRadial(rootNode) {
-        const centerX = this.container.offsetWidth / 2;
-        const centerY = this.container.offsetHeight / 2;
-        
-        rootNode.x = centerX - rootNode.element.offsetWidth / 2;
-        rootNode.y = centerY - rootNode.element.offsetHeight / 2;
-        rootNode.element.style.left = rootNode.x + 'px';
-        rootNode.element.style.top = rootNode.y + 'px';
-        
+        // Giữ nguyên vị trí node trung tâm, chỉ layout các node con xung quanh nó
+        const centerX = rootNode.x + rootNode.element.offsetWidth / 2;
+        const centerY = rootNode.y + rootNode.element.offsetHeight / 2;
         this.layoutChildren(rootNode, centerX, centerY, 150, 0, 360);
     }
     
