@@ -1534,25 +1534,100 @@ async function fetchMindmaps() {
         
         const container = document.getElementById('mindmapItems');
         container.innerHTML = '';
-        
+
+        // Add sortable header
+        if (!document.getElementById('mindmapListHeader')) {
+            const header = document.createElement('div');
+            header.id = 'mindmapListHeader';
+            header.style.display = 'flex';
+            header.style.alignItems = 'center';
+            header.style.fontWeight = 'bold';
+            header.style.borderBottom = '1px solid #ddd';
+            header.style.padding = '6px 0 6px 0';
+            header.innerHTML = `
+                <div id="sortTitle" style="flex:1; min-width:0; cursor:pointer; user-select:none;">Tiêu đề <span id="sortTitleIcon">▼</span></div>
+                <div id="sortCategory" style="width:120px; text-align:left; cursor:pointer; user-select:none;">Chủ đề <span id="sortCategoryIcon"></span></div>
+                <div id="sortCreated" style="width:160px; text-align:left; cursor:pointer; user-select:none;">Tạo <span id="sortCreatedIcon"></span></div>
+                <div id="sortUpdated" style="width:160px; text-align:left; cursor:pointer; user-select:none;">Cập nhật <span id="sortUpdatedIcon"></span></div>
+                <div style="width:40px;"></div>
+            `;
+            container.parentElement.insertBefore(header, container);
+        }
+
+        // Sorting logic
+        if (!window.mindmapSortState) {
+            window.mindmapSortState = { key: 'updated_at', dir: 'desc' };
+        }
+        const sortState = window.mindmapSortState;
+        function compare(a, b, key) {
+            if (key === 'updated_at') {
+                return new Date(a.updated_at || 0) - new Date(b.updated_at || 0);
+            }
+            if (key === 'created_at') {
+                return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+            }
+            if (key === 'title') {
+                return (a.title || '').localeCompare(b.title || '');
+            }
+            if (key === 'category') {
+                return (a.category || '').localeCompare(b.category || '');
+            }
+            return 0;
+        }
+        mindmaps.sort((a, b) => {
+            const cmp = compare(a, b, sortState.key);
+            return sortState.dir === 'asc' ? cmp : -cmp;
+        });
+
+        // Update sort icons
+        function updateSortIcons() {
+            const keys = ['title', 'category', 'created_at', 'updated_at'];
+            keys.forEach(k => {
+                const icon = document.getElementById('sort' + k.charAt(0).toUpperCase() + k.slice(1) + 'Icon');
+                if (icon) icon.textContent = (sortState.key === k) ? (sortState.dir === 'asc' ? '▲' : '▼') : '';
+            });
+        }
+        setTimeout(updateSortIcons, 0);
+
+        // Add click events for sorting
+        setTimeout(() => {
+            const titleH = document.getElementById('sortTitle');
+            const catH = document.getElementById('sortCategory');
+            const createdH = document.getElementById('sortCreated');
+            const updH = document.getElementById('sortUpdated');
+            if (titleH) titleH.onclick = () => { sortState.key = 'title'; sortState.dir = (sortState.key === 'title' && sortState.dir === 'asc') ? 'desc' : 'asc'; fetchMindmaps(); };
+            if (catH) catH.onclick = () => { sortState.key = 'category'; sortState.dir = (sortState.key === 'category' && sortState.dir === 'asc') ? 'desc' : 'asc'; fetchMindmaps(); };
+            if (createdH) createdH.onclick = () => { sortState.key = 'created_at'; sortState.dir = (sortState.key === 'created_at' && sortState.dir === 'asc') ? 'desc' : 'asc'; fetchMindmaps(); };
+            if (updH) updH.onclick = () => { sortState.key = 'updated_at'; sortState.dir = (sortState.key === 'updated_at' && sortState.dir === 'asc') ? 'desc' : 'asc'; fetchMindmaps(); };
+        }, 0);
+
         mindmaps.forEach(mm => {
             const item = document.createElement('div');
             item.className = 'mindmap-item';
+            item.style.position = 'relative';
+            item.style.display = 'flex';
+            item.style.alignItems = 'center';
+            item.style.flexDirection = 'row';
+            item.style.justifyContent = 'space-between';
+            item.style.paddingRight = '0';
             item.innerHTML = `
-                <div>
-                    <h5>${mm.title}</h5>
-                    <p class="mindmap-meta">${mm.description || 'No description'}</p>
-                    <small class="text-muted">Category: ${mm.category} | Created: ${new Date(mm.created_at).toLocaleDateString()}</small>
-                </div>
-                <div>
-                    <button class="btn btn-sm btn-primary me-2" onclick="loadMindmap(${mm.id})">
-                        <i class="bi bi-folder2-open me-1"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteMindmap(${mm.id})">
-                        <i class="bi bi-trash"></i>
-                    </button>
+                <div style="display:flex; align-items:center; width:100%;">
+                    <div style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        <span style=\"font-weight:600; font-size:1.1rem;\">${mm.title || 'Untitled'}</span>
+                        <span class=\"mindmap-meta ms-2\">${mm.category ? mm.category : ''}</span>
+                    </div>
+                    <div class=\"mindmap-meta ms-3\" style=\"width:120px; white-space:nowrap; color:#888; font-size:0.95em;\">${mm.category ? mm.category : ''}</div>
+                    <div class=\"mindmap-meta ms-3\" style=\"width:160px; white-space:nowrap; color:#888; font-size:0.95em;\">${mm.created_at ? new Date(mm.created_at).toLocaleString() : ''}</div>
+                    <div class=\"mindmap-meta ms-3\" style=\"width:160px; white-space:nowrap; color:#888; font-size:0.95em;\">${mm.updated_at ? new Date(mm.updated_at).toLocaleString() : ''}</div>
+                    <button class=\"btn btn-sm btn-danger ms-3\" onclick=\"event.stopPropagation(); deleteMindmap(${mm.id})\" title=\"Xoá mindmap\"><i class=\"bi bi-trash\"></i></button>
                 </div>
             `;
+            item.style.cursor = 'pointer';
+            item.addEventListener('click', function() {
+                if (mm.id) {
+                    loadMindmap(mm.id);
+                }
+            });
             container.appendChild(item);
         });
     } catch (error) {
