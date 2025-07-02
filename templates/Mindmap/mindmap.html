@@ -242,21 +242,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <input id="mindmapTitleHeader" type="text" class="form-control" style="font-size:2rem; font-weight:600; width:auto; min-width:200px; max-width:400px; display:inline-block; margin-right:16px; background:white; border:none; outline:none; box-shadow:none; color:var(--text-color);">
-            <div>
-                <button class="btn btn-primary" onclick="createNewMindmap()">
-                    <i class="bi bi-plus-circle me-1"></i>New Mind Map
-                </button>
-                <button class="btn btn-secondary" onclick="loadMindmaps()">
-                    <i class="bi bi-folder2-open me-1"></i>Load
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- Mind Map List -->
 <div id="mindmapList" class="mindmap-list" style="display: none;">
@@ -269,9 +255,8 @@
     
     <!-- Zoom Controls -->
     <div class="mindmap-controls">
-        <div id="saveStatus" class="me-2" style="font-size: 0.8rem;">
-            <i class="bi bi-cloud text-secondary"></i> Unsaved
-        </div>
+        <input id="mindmapTitleHeader" type="text" class="form-control me-2" style="font-size:1rem; font-weight:600; width:auto; min-width:120px; max-width:220px; display:inline-block; background:white; border:none; outline:none; box-shadow:none; color:var(--text-color); padding:2px 6px; height:28px; line-height:1.2;">
+        <div id="saveStatus" class="me-2" style="width:14px; height:14px; border-radius:50%; background:#bbb; display:inline-block; margin-top:8px; transition:background 0.3s;"></div>
         <button class="btn btn-sm btn-success" onclick="saveMindmap()" title="Save">
             <i class="bi bi-save"></i>
         </button>
@@ -280,6 +265,12 @@
         </button>
         <button class="btn btn-sm btn-info" onclick="importMindmap()" title="Import">
             <i class="bi bi-upload"></i>
+        </button>
+        <button class="btn btn-primary me-2" onclick="createNewMindmap()">
+            <i class="bi bi-plus-circle me-1"></i>
+        </button>
+        <button class="btn btn-secondary me-2" onclick="loadMindmaps()">
+            <i class="bi bi-folder2-open me-1"></i>
         </button>
         <div class="zoom-controls">
             <button class="btn-icon" onclick="zoomOut()" title="Zoom Out">
@@ -290,13 +281,13 @@
                 <i class="bi bi-plus"></i>
             </button>
         </div>
-        <button class="btn-icon" onclick="resetView()" title="Reset View">
+        <button class="btn btn-secondary me-2" onclick="resetView()" title="Reset View">
             <i class="bi bi-house"></i>
         </button>
-        <button class="btn-icon" onclick="autoLayout()" title="Auto Layout">
+        <button class="btn btn-secondary me-2" onclick="autoLayout()" title="Auto Layout">
             <i class="bi bi-diagram-2"></i>
         </button>
-        <button class="btn-icon" id="fullscreenBtn" onclick="toggleFullscreen()" title="Toàn màn hình">
+        <button class="btn btn-secondary me-2" id="fullscreenBtn" onclick="toggleFullscreen()" title="Toàn màn hình">
             <i class="bi bi-arrows-fullscreen" id="fullscreenIcon"></i>
         </button>
     </div>
@@ -1392,19 +1383,27 @@ class MindMap {
     updateSaveStatus(status) {
         const statusElement = document.getElementById('saveStatus');
         if (statusElement) {
+            // status: 'saving', 'saved', 'unsaved', 'error'
             switch(status) {
                 case 'saving':
-                    statusElement.innerHTML = '<i class="bi bi-cloud-arrow-up text-warning"></i> Saving...';
+                    statusElement.style.background = '#f7c948'; // yellow
+                    statusElement.title = 'Saving...';
                     break;
                 case 'saved':
-                    statusElement.innerHTML = '<i class="bi bi-cloud-check text-success"></i> Saved';
+                    statusElement.style.background = '#2ecc71'; // green
+                    statusElement.title = 'All changes saved';
                     break;
                 case 'unsaved':
-                    statusElement.innerHTML = '<i class="bi bi-cloud text-secondary"></i> Unsaved';
+                    statusElement.style.background = '#e74c3c'; // red
+                    statusElement.title = 'Unsaved changes';
                     break;
                 case 'error':
-                    statusElement.innerHTML = '<i class="bi bi-cloud-slash text-danger"></i> Error';
+                    statusElement.style.background = '#e67e22'; // orange
+                    statusElement.title = 'Save error';
                     break;
+                default:
+                    statusElement.style.background = '#bbb';
+                    statusElement.title = '';
             }
         }
     }
@@ -1471,6 +1470,9 @@ function createNewMindmap() {
     if (mindmap) {
         mindmap.destroy(); // Cleanup previous instance
     }
+    // Xóa toàn bộ node và connection cũ khỏi canvas
+    document.getElementById('mindmapCanvas').innerHTML = '';
+    document.getElementById('connectionSvg').innerHTML = '';
     document.getElementById('mindmapList').style.display = 'none';
     document.getElementById('mindmapContainer').style.display = 'block';
     mindmap = new MindMap();
