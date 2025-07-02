@@ -5508,6 +5508,66 @@ def shared_mindmap(mindmap_id):
                          permission=share.permission,
                          theme=get_theme())
 
-
+@app.route('/api/mindmaps/autosave', methods=['POST'])
+@login_required
+def autosave_mindmap():
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        if not data or 'title' not in data:
+            return jsonify({'error': 'Title is required'}), 400
+        
+        title = data.get('title', '').strip()
+        if not title:
+            return jsonify({'error': 'Title cannot be empty'}), 400
+        
+        # Check if mindmap exists by title for current user
+        existing = MindMap.query.filter_by(
+            title=title, 
+            user_id=session['user_id']
+        ).first()
+        
+        if existing:
+            # Update existing mindmap
+            existing.description = data.get('description', existing.description)
+            existing.category = data.get('category', existing.category)
+            existing.data = json.dumps({
+                'nodes': data.get('nodes', []),
+                'connections': data.get('connections', [])
+            })
+            existing.updated_at = datetime.now()
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'id': existing.id,
+                'message': 'Mindmap auto-saved successfully'
+            })
+        else:
+            # Create new mindmap
+            new_mindmap = Mindmap(
+                title=title,
+                description=data.get('description', ''),
+                category=data.get('category', 'personal'),
+                data=json.dumps({
+                    'nodes': data.get('nodes', []),
+                    'connections': data.get('connections', [])
+                }),
+                user_id=session['user_id']
+            )
+            db.session.add(new_mindmap)
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'id': new_mindmap.id,
+                'message': 'New mindmap auto-saved successfully'
+            })
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    
 if __name__ == '__main__':
     app.run(debug=True)

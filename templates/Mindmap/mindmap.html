@@ -269,6 +269,9 @@
     
     <!-- Zoom Controls -->
     <div class="mindmap-controls">
+        <div id="saveStatus" class="me-2" style="font-size: 0.8rem;">
+            <i class="bi bi-cloud text-secondary"></i> Unsaved
+        </div>
         <button class="btn btn-sm btn-success" onclick="saveMindmap()" title="Save">
             <i class="bi bi-save"></i>
         </button>
@@ -427,8 +430,14 @@ class MindMap {
         
         this.title = 'Mind Map';
         
+        this.autoSaveEnabled = true;
+        this.autoSaveInterval = 30000; // 30 seconds
+        this.autoSaveTimer = null;
+        this.hasUnsavedChanges = false;
+
         this.initializeEvents();
         this.createRootNode();
+        this.startAutoSave();
     }
     
     initializeEvents() {
@@ -453,6 +462,7 @@ class MindMap {
         });
     }
     
+
     createRootNode() {
         // Đặt node trung tâm ở giữa mindmap-canvas (canvas mới: 50000x50000)
         const canvasWidth = 50000;
@@ -508,6 +518,7 @@ class MindMap {
         };
 
         this.nodes.set(nodeId, nodeData);
+        this.markAsChanged(); // Thêm dòng này
         return nodeData;
     }
     
@@ -766,6 +777,7 @@ class MindMap {
         // Cập nhật lại canvas và connections
         this.resizeCanvasIfNeeded();
         this.updateConnections();
+        this.markAsChanged(); // Thêm dòng này
         setTimeout(() => {
             this.updateConnections();
         }, 10);
@@ -877,7 +889,7 @@ class MindMap {
         this.selectedNode = null;
         this.updateNodeSelection();
         this.updateConnections();
-
+        this.markAsChanged(); // Thêm dòng này
         document.getElementById('contextMenu').style.display = 'none';
     }
     
@@ -923,6 +935,7 @@ class MindMap {
             }
             // Cập nhật lại connections vì node có thể thay đổi kích thước
             this.updateConnections();
+            this.markAsChanged(); // Thêm dòng này
         }
 
         this.cancelNodeEdit();
@@ -1344,12 +1357,116 @@ class MindMap {
             }
         }
     }
+
+    // Auto save methods
+    startAutoSave() {
+        if (this.autoSaveEnabled) {
+            this.autoSaveTimer = setInterval(() => {
+                if (this.hasUnsavedChanges) {
+                    this.performAutoSave();
+                }
+            }, this.autoSaveInterval);
+        }
+    }
+    
+    stopAutoSave() {
+        if (this.autoSaveTimer) {
+            clearInterval(this.autoSaveTimer);
+            this.autoSaveTimer = null;
+        }
+    }
+    
+    markAsChanged() {
+        this.hasUnsavedChanges = true;
+        this.updateSaveStatus('unsaved');
+    }
+    
+    markAsSaved() {
+        this.hasUnsavedChanges = false;
+        this.updateSaveStatus('saved');
+    }
+    
+    updateSaveStatus(status) {
+        const statusElement = document.getElementById('saveStatus');
+        if (statusElement) {
+            switch(status) {
+                case 'saving':
+                    statusElement.innerHTML = '<i class="bi bi-cloud-arrow-up text-warning"></i> Saving...';
+                    break;
+                case 'saved':
+                    statusElement.innerHTML = '<i class="bi bi-cloud-check text-success"></i> Saved';
+                    break;
+                case 'unsaved':
+                    statusElement.innerHTML = '<i class="bi bi-cloud text-secondary"></i> Unsaved';
+                    break;
+                case 'error':
+                    statusElement.innerHTML = '<i class="bi bi-cloud-slash text-danger"></i> Error';
+                    break;
+            }
+        }
+    }
+    
+    async performAutoSave() {
+        if (!this.title || this.title.trim() === '') {
+            return; // Don't auto save if no title
+        }
+        
+        this.updateSaveStatus('saving');
+        
+        try {
+            const data = {
+                title: this.title,
+                description: this.description || '',
+                category: this.category || 'personal',
+                nodes: Array.from(this.nodes.values()).map(node => ({
+                    id: node.id,
+                    text: node.text,
+                    x: node.x,
+                    y: node.y,
+                    color: node.color,
+                    fontSize: node.fontSize,
+                    isRoot: node.isRoot,
+                    parent: node.parent,
+                    children: node.children
+                })),
+                connections: this.connections
+            };
+            
+            const response = await fetch('/api/mindmaps/autosave', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (!this.currentMindmapId) {
+                    this.currentMindmapId = result.id;
+                }
+                this.markAsSaved();
+            } else {
+                this.updateSaveStatus('error');
+            }
+        } catch (error) {
+            console.error('Auto save error:', error);
+            this.updateSaveStatus('error');
+        }
+    }
+
+    destroy() {
+        this.stopAutoSave();
+    }
 }
 
 // Global functions
 let mindmap;
 
 function createNewMindmap() {
+    if (mindmap) {
+        mindmap.destroy(); // Cleanup previous instance
+    }
     document.getElementById('mindmapList').style.display = 'none';
     document.getElementById('mindmapContainer').style.display = 'block';
     mindmap = new MindMap();
@@ -1611,16 +1728,15 @@ document.addEventListener('DOMContentLoaded', function() {
         titleInput.addEventListener('input', function() {
             if (window.mindmap) {
                 mindmap.title = this.value;
+                mindmap.markAsChanged(); // Thêm dòng này
             }
         });
         // On blur, save mindmap
         titleInput.addEventListener('blur', function() {
             if (window.mindmap) {
                 mindmap.title = this.value;
-                if (typeof mindmap.saveMindmap === 'function') {
-                    mindmap.saveMindmap();
-                } else if (typeof saveMindmap === 'function') {
-                    saveMindmap();
+                if (this.value.trim() !== '') {
+                    mindmap.performAutoSave(); // Thay đổi từ saveMindmap() thành performAutoSave()
                 }
             }
         });
