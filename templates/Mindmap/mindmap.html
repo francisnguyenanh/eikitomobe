@@ -258,9 +258,6 @@
     <div class="mindmap-controls">
         <input id="mindmapTitleHeader" type="text" class="form-control me-2" style="font-size:1rem; font-weight:600; width:auto; min-width:120px; max-width:220px; display:inline-block; background:white; border:none; outline:none; box-shadow:none; color:var(--text-color); padding:2px 6px; height:28px; line-height:1.2;">
         <div id="saveStatus" class="me-2" style="width:6px; height:6px; border-radius:50%; background:#bbb; display:inline-block; transition:background 0.3s;"></div>
-        <button class="btn btn-sm btn-success" onclick="saveMindmap()" title="Save">
-            <i class="bi bi-save"></i>
-        </button>
         <button class="btn btn-sm btn-warning" onclick="exportMindmap()" title="Export">
             <i class="bi bi-download"></i>
         </button>
@@ -291,7 +288,7 @@
     </div>
     
     <!-- Canvas -->
-    <div class="mindmap-canvas" id="mindmapCanvas">
+<div class="mindmap-canvas" id="mindmapCanvas" style="pointer-events:auto; opacity:1;">
     </div>
 <script>
 
@@ -433,6 +430,29 @@ class MindMap {
         
         // Initialize save status
         this.updateSaveStatus('unsaved');
+
+        // Lock canvas if title is blank
+        this.setupTitleLocking();
+    }
+    setupTitleLocking() {
+        const titleInput = document.getElementById('mindmapTitleHeader');
+        const canvas = this.canvas;
+        const lockCanvas = () => {
+            const title = titleInput.value.trim();
+            if (!title) {
+                canvas.style.pointerEvents = 'none';
+                canvas.style.opacity = '0.5';
+                canvas.setAttribute('aria-disabled', 'true');
+            } else {
+                canvas.style.pointerEvents = 'auto';
+                canvas.style.opacity = '1';
+                canvas.removeAttribute('aria-disabled');
+            }
+        };
+        // Initial check
+        lockCanvas();
+        // Listen for input changes
+        titleInput.addEventListener('input', lockCanvas);
     }
     
     initializeEvents() {
@@ -1342,6 +1362,15 @@ class MindMap {
     setTitle(newTitle) {
         this.title = newTitle || 'Mind Map';
         this.updateTitleHeader();
+        // Re-check lock state if title changes programmatically
+        if (document.getElementById('mindmapTitleHeader')) {
+            const event = new Event('input', { bubbles: true });
+            document.getElementById('mindmapTitleHeader').dispatchEvent(event);
+        }
+        // Also re-run locking logic directly (in case input event is ignored)
+        if (typeof this.setupTitleLocking === 'function') {
+            this.setupTitleLocking();
+        }
     }
     
     updateTitleHeader() {
@@ -1483,13 +1512,13 @@ function createNewMindmap() {
     document.getElementById('mindmapList').style.display = 'none';
     document.getElementById('mindmapContainer').style.display = 'block';
     mindmap = new MindMap();
-    // Set initial title to current date-time
-    const now = new Date();
-    const pad = n => n.toString().padStart(2, '0');
-    const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    mindmap.title = dateStr;
+    // Do not set initial title for new mindmap
     const titleInput = document.getElementById('mindmapTitleHeader');
-    if (titleInput) titleInput.value = dateStr;
+    if (titleInput) titleInput.value = '';
+    // Setup canvas locking logic (in case not called in constructor)
+    if (typeof mindmap.setupTitleLocking === 'function') {
+        mindmap.setupTitleLocking();
+    }
 }
 
 function loadMindmaps() {
@@ -1713,26 +1742,23 @@ function confirmSaveMindmap() {
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     createNewMindmap();
-
     // mindmapTitleHeader logic
     const titleInput = document.getElementById('mindmapTitleHeader');
     if (titleInput) {
-        // Set initial value for new mindmap (date/time) or loaded mindmap
+        // Set initial value for loaded mindmap only
         const setInitialTitle = () => {
             if (window.mindmap) {
-                if (!mindmap.currentMindmapId) {
-                    // New mindmap: set to current date/time
-                    const now = new Date();
-                    const pad = n => n.toString().padStart(2, '0');
-                    const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-                    mindmap.title = dateStr;
-                    titleInput.value = dateStr;
-                } else {
+                if (mindmap.currentMindmapId) {
                     // Loaded mindmap: use saved title
                     titleInput.value = mindmap.title || '';
                 }
+                // Always re-run locking logic after setting title
+                if (typeof mindmap.setupTitleLocking === 'function') {
+                    mindmap.setupTitleLocking();
+                }
             }
         };
+
         // Listen for mindmap creation/load
         const origCreateNewMindmap = window.createNewMindmap;
         window.createNewMindmap = function() {
@@ -1748,7 +1774,11 @@ document.addEventListener('DOMContentLoaded', function() {
         titleInput.addEventListener('input', function() {
             if (window.mindmap) {
                 mindmap.title = this.value;
-                mindmap.markAsChanged(); // Thêm dòng này
+                mindmap.markAsChanged();
+                // Lock/unlock canvas on input
+                if (typeof mindmap.setupTitleLocking === 'function') {
+                    mindmap.setupTitleLocking();
+                }
             }
         });
         // On blur, save mindmap
@@ -1756,14 +1786,17 @@ document.addEventListener('DOMContentLoaded', function() {
             if (window.mindmap) {
                 mindmap.title = this.value;
                 if (this.value.trim() !== '') {
-                    mindmap.performAutoSave(); // Thay đổi từ saveMindmap() thành performAutoSave()
+                    mindmap.performAutoSave();
+                }
+                // Lock/unlock canvas on blur
+                if (typeof mindmap.setupTitleLocking === 'function') {
+                    mindmap.setupTitleLocking();
                 }
             }
         });
         // Set initial value on first load
         setTimeout(setInitialTitle, 0);
     }
-
     // Xử lý phím ESC để thoát toàn màn hình
     document.addEventListener('fullscreenchange', function() {
         const btn = document.getElementById('fullscreenBtn');
