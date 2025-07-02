@@ -5524,6 +5524,7 @@ def autosave_mindmap():
         if not title:
             return jsonify({'error': 'Title cannot be empty'}), 400
 
+        print(f"Auto-saving mindmap with title: {data}")
         mindmap_id = data.get('id')
         existing = None
         if mindmap_id:

@@ -248,7 +248,6 @@
 
 <!-- Mind Map List -->
 <div id="mindmapList" class="mindmap-list" style="display: none;">
-    <h4>Your Mind Maps</h4>
     <div id="mindmapItems"></div>
 </div>
 
@@ -270,9 +269,6 @@
         </button>
         <button class="btn btn-primary me-2" onclick="createNewMindmap()">
             <i class="bi bi-plus-circle me-1"></i>
-        </button>
-        <button class="btn btn-secondary me-2" onclick="loadMindmaps()">
-            <i class="bi bi-folder2-open me-1"></i>
         </button>
         <div class="zoom-controls">
             <button class="btn-icon" onclick="zoomOut()" title="Zoom Out">
@@ -1414,6 +1410,11 @@ class MindMap {
     }
     
     async performAutoSave() {
+        // Always get the latest title from the input field
+        const titleInput = document.getElementById('mindmapTitleHeader');
+        if (titleInput) {
+            this.title = titleInput.value;
+        }
         if (!this.title || this.title.trim() === '') {
             return; // Don't auto save if no title
         }
@@ -1516,7 +1517,7 @@ async function fetchMindmaps() {
                 </div>
                 <div>
                     <button class="btn btn-sm btn-primary me-2" onclick="loadMindmap(${mm.id})">
-                        <i class="bi bi-folder-open"></i>
+                        <i class="bi bi-folder2-open me-1"></i>
                     </button>
                     <button class="btn btn-sm btn-danger" onclick="deleteMindmap(${mm.id})">
                         <i class="bi bi-trash"></i>
