@@ -298,42 +298,7 @@
     <div class="mindmap-canvas" id="mindmapCanvas">
     </div>
 <script>
-// --- Mindmap Canvas Locking Logic ---
-function setCanvasLockState(locked) {
-    const canvas = document.getElementById('mindmapCanvas');
-    const toolbar = document.querySelector('.mindmap-controls');
-    if (locked) {
-        canvas.style.pointerEvents = 'none';
-        canvas.style.opacity = 0.5;
-        if (toolbar) {
-            toolbar.querySelectorAll('button, input, select').forEach(el => {
-                if (el.id !== 'mindmapTitleHeader') el.disabled = true;
-            });
-        }
-    } else {
-        canvas.style.pointerEvents = '';
-        canvas.style.opacity = '';
-        if (toolbar) {
-            toolbar.querySelectorAll('button, input, select').forEach(el => {
-                el.disabled = false;
-            });
-        }
-    }
-}
 
-function checkTitleAndLockCanvas() {
-    const titleInput = document.getElementById('mindmapTitleHeader');
-    setCanvasLockState(!titleInput.value.trim());
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    const titleInput = document.getElementById('mindmapTitleHeader');
-    if (titleInput) {
-        titleInput.addEventListener('input', checkTitleAndLockCanvas);
-        titleInput.addEventListener('blur', checkTitleAndLockCanvas);
-        checkTitleAndLockCanvas();
-    }
-});
 </script>
     
     <!-- SVG for connections - placed outside canvas to avoid transform issues -->
@@ -1452,11 +1417,12 @@ class MindMap {
         if (!this.title || this.title.trim() === '') {
             return; // Don't auto save if no title
         }
-        
+
         this.updateSaveStatus('saving');
-        
+
         try {
             const data = {
+                id: this.currentMindmapId || undefined,
                 title: this.title,
                 description: this.description || '',
                 category: this.category || 'personal',
@@ -1473,7 +1439,7 @@ class MindMap {
                 })),
                 connections: this.connections
             };
-            
+
             const response = await fetch('/api/mindmaps/autosave', {
                 method: 'POST',
                 headers: {
@@ -1481,7 +1447,7 @@ class MindMap {
                 },
                 body: JSON.stringify(data)
             });
-            
+
             if (response.ok) {
                 const result = await response.json();
                 if (!this.currentMindmapId) {
@@ -1516,6 +1482,13 @@ function createNewMindmap() {
     document.getElementById('mindmapList').style.display = 'none';
     document.getElementById('mindmapContainer').style.display = 'block';
     mindmap = new MindMap();
+    // Set initial title to current date-time
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, '0');
+    const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    mindmap.title = dateStr;
+    const titleInput = document.getElementById('mindmapTitleHeader');
+    if (titleInput) titleInput.value = dateStr;
 }
 
 function loadMindmaps() {

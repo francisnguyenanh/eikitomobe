@@ -5512,33 +5512,37 @@ def shared_mindmap(mindmap_id):
                          permission=share.permission,
                          theme=get_theme())
 
+
 @app.route('/api/mindmaps/autosave', methods=['POST'])
 @login_required
 def autosave_mindmap():
     try:
         data = request.get_json()
-        
-        # Validate required fields
         if not data or 'title' not in data:
             return jsonify({'error': 'Title is required'}), 400
-        
         title = data.get('title', '').strip()
         if not title:
             return jsonify({'error': 'Title cannot be empty'}), 400
-        
-        # Check if mindmap exists by title (since there's no user_id field)
-        existing = MindMap.query.filter_by(title=title).first()
-        
+
+        mindmap_id = data.get('id')
+        existing = None
+        if mindmap_id:
+            existing = MindMap.query.filter_by(id=mindmap_id).first()
+        if not existing:
+            # Fallback: check by title (legacy, not recommended)
+            existing = MindMap.query.filter_by(title=title).first()
+
         if existing:
             # Update existing mindmap
+            existing.title = title
             existing.description = data.get('description', existing.description)
             existing.category = data.get('category', existing.category)
             existing.updated_at = datetime.now()
-            
+
             # Clear existing nodes and connections
             MindMapNode.query.filter_by(mindmap_id=existing.id).delete()
             MindMapConnection.query.filter_by(mindmap_id=existing.id).delete()
-            
+
             # Add updated nodes
             for node_data in data.get('nodes', []):
                 node = MindMapNode(
@@ -5553,7 +5557,7 @@ def autosave_mindmap():
                     parent_id=node_data.get('parent')
                 )
                 db.session.add(node)
-            
+
             # Add updated connections
             for conn_data in data.get('connections', []):
                 connection = MindMapConnection(
@@ -5562,9 +5566,9 @@ def autosave_mindmap():
                     to_node_id=conn_data['to']
                 )
                 db.session.add(connection)
-            
+
             db.session.commit()
-            
+
             return jsonify({
                 'success': True,
                 'id': existing.id,
@@ -5579,7 +5583,7 @@ def autosave_mindmap():
             )
             db.session.add(new_mindmap)
             db.session.flush()  # Get the ID
-            
+
             # Add nodes
             for node_data in data.get('nodes', []):
                 node = MindMapNode(
@@ -5594,7 +5598,7 @@ def autosave_mindmap():
                     parent_id=node_data.get('parent')
                 )
                 db.session.add(node)
-            
+
             # Add connections
             for conn_data in data.get('connections', []):
                 connection = MindMapConnection(
@@ -5603,15 +5607,14 @@ def autosave_mindmap():
                     to_node_id=conn_data['to']
                 )
                 db.session.add(connection)
-            
+
             db.session.commit()
-            
+
             return jsonify({
                 'success': True,
                 'id': new_mindmap.id,
                 'message': 'New mindmap auto-saved successfully'
             })
-            
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Auto save error: {str(e)}")
