@@ -245,7 +245,7 @@
 <div class="row">
     <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <input id="mindmapTitleHeader" type="text" class="form-control" style="font-size:2rem; font-weight:600; width:auto; min-width:200px; max-width:400px; display:inline-block; margin-right:16px; background:white; border:none; outline:none; box-shadow:none; color:var(--text-color);" value="Mind Map" oninput="if(window.mindmap){mindmap.setTitle(this.value);}else{this.value='Mind Map';}">
+            <input id="mindmapTitleHeader" type="text" class="form-control" style="font-size:2rem; font-weight:600; width:auto; min-width:200px; max-width:400px; display:inline-block; margin-right:16px; background:white; border:none; outline:none; box-shadow:none; color:var(--text-color);">
             <div>
                 <button class="btn btn-primary" onclick="createNewMindmap()">
                     <i class="bi bi-plus-circle me-1"></i>New Mind Map
@@ -1577,26 +1577,55 @@ function confirmSaveMindmap() {
 document.addEventListener('DOMContentLoaded', function() {
     createNewMindmap();
 
-    // Patch for mindmapTitleHeader input to prevent losing focus/reset on space/enter
+    // mindmapTitleHeader logic
     const titleInput = document.getElementById('mindmapTitleHeader');
     if (titleInput) {
-        // Prevent form submission or blur on Enter/Space
-        titleInput.addEventListener('keydown', function(e) {
-            // Allow typing space/enter, just let input work
-        });
-        // Update mindmap title on input, but do not reset value
-        titleInput.addEventListener('input', function(e) {
+        // Set initial value for new mindmap (date/time) or loaded mindmap
+        const setInitialTitle = () => {
             if (window.mindmap) {
-                window.mindmap.setTitle(this.value);
+                if (!mindmap.currentMindmapId) {
+                    // New mindmap: set to current date/time
+                    const now = new Date();
+                    const pad = n => n.toString().padStart(2, '0');
+                    const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                    mindmap.title = dateStr;
+                    titleInput.value = dateStr;
+                } else {
+                    // Loaded mindmap: use saved title
+                    titleInput.value = mindmap.title || '';
+                }
+            }
+        };
+        // Listen for mindmap creation/load
+        const origCreateNewMindmap = window.createNewMindmap;
+        window.createNewMindmap = function() {
+            origCreateNewMindmap();
+            setTimeout(setInitialTitle, 0);
+        };
+        const origLoadMindmap = window.loadMindmap;
+        window.loadMindmap = async function(id) {
+            await origLoadMindmap(id);
+            setTimeout(setInitialTitle, 0);
+        };
+        // Allow free editing
+        titleInput.addEventListener('input', function() {
+            if (window.mindmap) {
+                mindmap.title = this.value;
             }
         });
-        // Prevent blur from resetting value unless truly empty
+        // On blur, save mindmap
         titleInput.addEventListener('blur', function() {
-            if (!this.value.trim()) {
-                this.value = 'Mind Map';
-                if (window.mindmap) window.mindmap.setTitle('Mind Map');
+            if (window.mindmap) {
+                mindmap.title = this.value;
+                if (typeof mindmap.saveMindmap === 'function') {
+                    mindmap.saveMindmap();
+                } else if (typeof saveMindmap === 'function') {
+                    saveMindmap();
+                }
             }
         });
+        // Set initial value on first load
+        setTimeout(setInitialTitle, 0);
     }
 
     // Xử lý phím ESC để thoát toàn màn hình
