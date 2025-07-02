@@ -5406,6 +5406,10 @@ def update_mindmap(mindmap_id):
     mindmap = MindMap.query.get_or_404(mindmap_id)
     data = request.get_json()
     
+    MindMap.query.filter_by(mindmap_id=id).delete()
+    MindMapConnection.query.filter_by(mindmap_id=id).delete()
+    db.session.commit()
+    
     # Update mindmap info
     mindmap.title = data.get('title', mindmap.title)
     mindmap.description = data.get('description', mindmap.description)
@@ -5522,21 +5526,43 @@ def autosave_mindmap():
         if not title:
             return jsonify({'error': 'Title cannot be empty'}), 400
         
-        # Check if mindmap exists by title for current user
-        existing = MindMap.query.filter_by(
-            title=title, 
-            user_id=session['user_id']
-        ).first()
+        # Check if mindmap exists by title (since there's no user_id field)
+        existing = MindMap.query.filter_by(title=title).first()
         
         if existing:
             # Update existing mindmap
             existing.description = data.get('description', existing.description)
             existing.category = data.get('category', existing.category)
-            existing.data = json.dumps({
-                'nodes': data.get('nodes', []),
-                'connections': data.get('connections', [])
-            })
             existing.updated_at = datetime.now()
+            
+            # Clear existing nodes and connections
+            MindMapNode.query.filter_by(mindmap_id=existing.id).delete()
+            MindMapConnection.query.filter_by(mindmap_id=existing.id).delete()
+            
+            # Add updated nodes
+            for node_data in data.get('nodes', []):
+                node = MindMapNode(
+                    id=node_data['id'],
+                    mindmap_id=existing.id,
+                    text=node_data['text'],
+                    x=node_data['x'],
+                    y=node_data['y'],
+                    color=node_data['color'],
+                    font_size=node_data['fontSize'],
+                    is_root=node_data['isRoot'],
+                    parent_id=node_data.get('parent')
+                )
+                db.session.add(node)
+            
+            # Add updated connections
+            for conn_data in data.get('connections', []):
+                connection = MindMapConnection(
+                    mindmap_id=existing.id,
+                    from_node_id=conn_data['from'],
+                    to_node_id=conn_data['to']
+                )
+                db.session.add(connection)
+            
             db.session.commit()
             
             return jsonify({
@@ -5546,17 +5572,38 @@ def autosave_mindmap():
             })
         else:
             # Create new mindmap
-            new_mindmap = Mindmap(
+            new_mindmap = MindMap(
                 title=title,
                 description=data.get('description', ''),
-                category=data.get('category', 'personal'),
-                data=json.dumps({
-                    'nodes': data.get('nodes', []),
-                    'connections': data.get('connections', [])
-                }),
-                user_id=session['user_id']
+                category=data.get('category', 'personal')
             )
             db.session.add(new_mindmap)
+            db.session.flush()  # Get the ID
+            
+            # Add nodes
+            for node_data in data.get('nodes', []):
+                node = MindMapNode(
+                    id=node_data['id'],
+                    mindmap_id=new_mindmap.id,
+                    text=node_data['text'],
+                    x=node_data['x'],
+                    y=node_data['y'],
+                    color=node_data['color'],
+                    font_size=node_data['fontSize'],
+                    is_root=node_data['isRoot'],
+                    parent_id=node_data.get('parent')
+                )
+                db.session.add(node)
+            
+            # Add connections
+            for conn_data in data.get('connections', []):
+                connection = MindMapConnection(
+                    mindmap_id=new_mindmap.id,
+                    from_node_id=conn_data['from'],
+                    to_node_id=conn_data['to']
+                )
+                db.session.add(connection)
+            
             db.session.commit()
             
             return jsonify({
@@ -5567,6 +5614,7 @@ def autosave_mindmap():
             
     except Exception as e:
         db.session.rollback()
+        app.logger.error(f"Auto save error: {str(e)}")
         return jsonify({'error': str(e)}), 500
     
 if __name__ == '__main__':

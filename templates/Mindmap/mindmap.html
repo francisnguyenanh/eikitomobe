@@ -438,6 +438,9 @@ class MindMap {
         this.initializeEvents();
         this.createRootNode();
         this.startAutoSave();
+        
+        // Initialize save status
+        this.updateSaveStatus('unsaved');
     }
     
     initializeEvents() {
@@ -1448,6 +1451,7 @@ class MindMap {
                 this.markAsSaved();
             } else {
                 this.updateSaveStatus('error');
+                console.error('Auto save failed:', response.status, response.statusText);
             }
         } catch (error) {
             console.error('Auto save error:', error);
