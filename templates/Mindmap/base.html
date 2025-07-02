@@ -437,25 +437,45 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('ever_note') }}">
-                            <i class="bi bi-journal-richtext"></i>
-                            <span>Note</span>
+                        <a class="nav-link" href="{{ url_for('mindmap') }}">
+                            <i class="bi bi-diagram-3"></i>
+                            <span>Mindmap</span>
                         </a>
                     </li>
+                    <!-- Mindmap Dropdown Menu -->
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('task') }}">
+                        <a class="nav-link" href="#" id="mindmapDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" onclick="if(window.loadMindmaps){loadMindmaps();}">
                             <i class="bi bi-journal-text"></i>
-                            <span>Tasks</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('todo') }}">
-                            <i class="bi bi-calendar-check"></i>
-                            <span>Todo</span>
+                            <span>List</span>
                         </a>
                     </li>
                 </ul>
             </div>
+    <script>
+    // Load mindmap list for navbar dropdown
+    document.addEventListener('DOMContentLoaded', function() {
+        const mindmapListMenu = document.getElementById('mindmapNavbarList');
+        if (mindmapListMenu) {
+            fetch('/api/mindmaps')
+                .then(res => res.json())
+                .then(mindmaps => {
+                    mindmapListMenu.innerHTML = '';
+                    if (mindmaps.length === 0) {
+                        mindmapListMenu.innerHTML = '<li><span class="dropdown-item-text text-muted">No mind maps</span></li>';
+                    } else {
+                        mindmaps.forEach(mm => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<a class="dropdown-item" href="#" onclick="if(window.loadMindmap){loadMindmap(${mm.id});}"><i class='bi bi-diagram-3 me-2'></i>${mm.title || 'Untitled'}</a>`;
+                            mindmapListMenu.appendChild(li);
+                        });
+                    }
+                })
+                .catch(() => {
+                    mindmapListMenu.innerHTML = '<li><span class="dropdown-item-text text-danger">Error loading mind maps</span></li>';
+                });
+        }
+    });
+    </script>
         </div>
     </nav>
 
