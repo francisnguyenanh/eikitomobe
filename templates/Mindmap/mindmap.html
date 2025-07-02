@@ -6,7 +6,7 @@
     .mindmap-container {
         position: relative;
         width: 100%;
-        height: calc(100vh - 200px);
+        height: calc(100vh - 120px);
         overflow: hidden;
         background: var(--card-bg);
         border-radius: 15px;
@@ -116,6 +116,8 @@
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         display: flex;
         gap: 5px;
+        height: 48px; /* Thêm chiều cao cố định cho toolbar */
+        align-items: center;
     }
     
     .node-editor {
@@ -295,6 +297,44 @@
     <!-- Canvas -->
     <div class="mindmap-canvas" id="mindmapCanvas">
     </div>
+<script>
+// --- Mindmap Canvas Locking Logic ---
+function setCanvasLockState(locked) {
+    const canvas = document.getElementById('mindmapCanvas');
+    const toolbar = document.querySelector('.mindmap-controls');
+    if (locked) {
+        canvas.style.pointerEvents = 'none';
+        canvas.style.opacity = 0.5;
+        if (toolbar) {
+            toolbar.querySelectorAll('button, input, select').forEach(el => {
+                if (el.id !== 'mindmapTitleHeader') el.disabled = true;
+            });
+        }
+    } else {
+        canvas.style.pointerEvents = '';
+        canvas.style.opacity = '';
+        if (toolbar) {
+            toolbar.querySelectorAll('button, input, select').forEach(el => {
+                el.disabled = false;
+            });
+        }
+    }
+}
+
+function checkTitleAndLockCanvas() {
+    const titleInput = document.getElementById('mindmapTitleHeader');
+    setCanvasLockState(!titleInput.value.trim());
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.getElementById('mindmapTitleHeader');
+    if (titleInput) {
+        titleInput.addEventListener('input', checkTitleAndLockCanvas);
+        titleInput.addEventListener('blur', checkTitleAndLockCanvas);
+        checkTitleAndLockCanvas();
+    }
+});
+</script>
     
     <!-- SVG for connections - placed outside canvas to avoid transform issues -->
     <svg id="connectionSvg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: visible;">
