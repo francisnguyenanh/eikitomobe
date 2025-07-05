@@ -189,6 +189,18 @@
         transform: none;
     }
     
+    #layoutBtn {
+        position: relative;
+        min-width: 90px;
+    }
+    
+    #layoutBtn small {
+        font-size: 10px;
+        display: block;
+        line-height: 1;
+        margin-top: -2px;
+    }
+    
     .mindmap-list {
         background: var(--card-bg);
         border-radius: 15px;
@@ -279,8 +291,9 @@
         <button class="btn btn-secondary me-2" onclick="resetView()" title="Reset View">
             <i class="bi bi-house"></i>
         </button>
-        <button class="btn btn-secondary me-2" onclick="autoLayout()" title="Auto Layout">
+        <button class="btn btn-secondary me-2" onclick="cycleLayout()" title="Cycle Layout" id="layoutBtn">
             <i class="bi bi-diagram-2"></i>
+            <small class="ms-1" id="layoutType">Radial</small>
         </button>
         <button class="btn btn-secondary me-2" id="fullscreenBtn" onclick="toggleFullscreen()" title="Toàn màn hình">
             <i class="bi bi-arrows-fullscreen" id="fullscreenIcon"></i>
@@ -417,6 +430,10 @@ class MindMap {
         this.autoSaveInterval = 5000; // 5 seconds
         this.autoSaveTimer = null;
         this.hasUnsavedChanges = false;
+        
+        // Layout management
+        this.currentLayoutType = 0; // 0: Radial, 1: Force-Directed, 2: Left-Right
+        this.layoutTypes = ['Radial', 'Force', 'Left-Right'];
 
         this.initializeEvents();
         this.createRootNode();
@@ -1129,6 +1146,33 @@ class MindMap {
         requestAnimationFrame(() => this.updateConnections());
     }
     
+    cycleLayout() {
+        this.currentLayoutType = (this.currentLayoutType + 1) % this.layoutTypes.length;
+        this.updateLayoutButton();
+        this.applyCurrentLayout();
+    }
+    
+    updateLayoutButton() {
+        const layoutTypeElement = document.getElementById('layoutType');
+        if (layoutTypeElement) {
+            layoutTypeElement.textContent = this.layoutTypes[this.currentLayoutType];
+        }
+    }
+    
+    applyCurrentLayout() {
+        switch(this.currentLayoutType) {
+            case 0:
+                this.autoLayout(); // Radial
+                break;
+            case 1:
+                this.forceDirectedLayout(); // Force-Directed
+                break;
+            case 2:
+                this.leftRightLayout(); // Left-Right
+                break;
+        }
+    }
+    
     autoLayout() {
         const rootNode = Array.from(this.nodes.values()).find(node => node.isRoot);
         if (!rootNode) return;
@@ -1150,6 +1194,194 @@ class MindMap {
         // Sau khi sắp xếp, đưa node trung tâm ra giữa vùng hiển thị
         requestAnimationFrame(() => {
             resetView();
+        });
+    }
+    
+    forceDirectedLayout() {
+        const rootNode = Array.from(this.nodes.values()).find(node => node.isRoot);
+        if (!rootNode) return;
+
+        // Position root node at center
+        const canvasWidth = 50000;
+        const canvasHeight = 50000;
+        rootNode.x = canvasWidth / 2 - rootNode.element.offsetWidth / 2;
+        rootNode.y = canvasHeight / 2 - rootNode.element.offsetHeight / 2;
+        rootNode.element.style.left = rootNode.x + 'px';
+        rootNode.element.style.top = rootNode.y + 'px';
+
+        // Initialize positions randomly for force simulation
+        const nodes = Array.from(this.nodes.values());
+        nodes.forEach(node => {
+            if (!node.isRoot) {
+                // Random position around root
+                const angle = Math.random() * 2 * Math.PI;
+                const distance = 200 + Math.random() * 300;
+                node.x = rootNode.x + Math.cos(angle) * distance;
+                node.y = rootNode.y + Math.sin(angle) * distance;
+                node.vx = 0; // Velocity
+                node.vy = 0;
+            }
+        });
+
+        // Force simulation
+        for (let i = 0; i < 100; i++) {
+            this.forceSimulationStep(nodes);
+        }
+
+        // Apply final positions
+        nodes.forEach(node => {
+            node.element.style.left = node.x + 'px';
+            node.element.style.top = node.y + 'px';
+        });
+
+        this.updateConnections();
+        this.resizeCanvasIfNeeded();
+
+        requestAnimationFrame(() => {
+            resetView();
+        });
+    }
+
+    forceSimulationStep(nodes) {
+        const alpha = 0.1;
+        const linkDistance = 150;
+        const repelForce = 8000;
+
+        // Reset forces
+        nodes.forEach(node => {
+            node.fx = 0;
+            node.fy = 0;
+        });
+
+        // Repulsion between all nodes
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const nodeA = nodes[i];
+                const nodeB = nodes[j];
+                const dx = nodeB.x - nodeA.x;
+                const dy = nodeB.y - nodeA.y;
+                const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+                const force = repelForce / (distance * distance);
+                const fx = (dx / distance) * force;
+                const fy = (dy / distance) * force;
+                
+                nodeA.fx -= fx;
+                nodeA.fy -= fy;
+                nodeB.fx += fx;
+                nodeB.fy += fy;
+            }
+        }
+
+        // Attraction along connections
+        this.connections.forEach(conn => {
+            const nodeA = this.nodes.get(conn.from);
+            const nodeB = this.nodes.get(conn.to);
+            if (nodeA && nodeB) {
+                const dx = nodeB.x - nodeA.x;
+                const dy = nodeB.y - nodeA.y;
+                const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+                const force = (distance - linkDistance) * 0.3;
+                const fx = (dx / distance) * force;
+                const fy = (dy / distance) * force;
+                
+                nodeA.fx += fx;
+                nodeA.fy += fy;
+                nodeB.fx -= fx;
+                nodeB.fy -= fy;
+            }
+        });
+
+        // Apply forces
+        nodes.forEach(node => {
+            if (!node.isRoot) { // Don't move root node
+                node.vx = (node.vx + node.fx * alpha) * 0.9;
+                node.vy = (node.vy + node.fy * alpha) * 0.9;
+                node.x += node.vx;
+                node.y += node.vy;
+            }
+        });
+    }
+
+    leftRightLayout() {
+        const rootNode = Array.from(this.nodes.values()).find(node => node.isRoot);
+        if (!rootNode) return;
+
+        // Position root node at center
+        const canvasWidth = 50000;
+        const canvasHeight = 50000;
+        const nodeWidth = rootNode.element.offsetWidth;
+        const nodeHeight = rootNode.element.offsetHeight;
+        rootNode.x = canvasWidth / 2 - nodeWidth / 2;
+        rootNode.y = canvasHeight / 2 - nodeHeight / 2;
+        rootNode.element.style.left = rootNode.x + 'px';
+        rootNode.element.style.top = rootNode.y + 'px';
+
+        // Get direct children of root
+        const children = rootNode.children.map(id => this.nodes.get(id)).filter(Boolean);
+        
+        if (children.length === 0) return;
+
+        // Split children between left and right sides
+        const leftChildren = [];
+        const rightChildren = [];
+        
+        children.forEach((child, index) => {
+            if (index % 2 === 0) {
+                leftChildren.push(child);
+            } else {
+                rightChildren.push(child);
+            }
+        });
+
+        // Layout left side
+        this.layoutSide(leftChildren, rootNode, -1, canvasHeight / 2);
+        
+        // Layout right side  
+        this.layoutSide(rightChildren, rootNode, 1, canvasHeight / 2);
+
+        this.updateConnections();
+        this.resizeCanvasIfNeeded();
+
+        requestAnimationFrame(() => {
+            resetView();
+        });
+    }
+
+    layoutSide(children, rootNode, direction, centerY) {
+        if (children.length === 0) return;
+
+        const baseDistance = 200;
+        const verticalSpacing = 120;
+        const startY = centerY - ((children.length - 1) * verticalSpacing) / 2;
+
+        children.forEach((child, index) => {
+            const level = 1; // First level from root
+            child.x = rootNode.x + direction * baseDistance * level;
+            child.y = startY + index * verticalSpacing;
+            child.element.style.left = child.x + 'px';
+            child.element.style.top = child.y + 'px';
+
+            // Layout grandchildren
+            this.layoutChildrenRecursive(child, direction, level + 1);
+        });
+    }
+
+    layoutChildrenRecursive(parentNode, direction, level) {
+        const children = parentNode.children.map(id => this.nodes.get(id)).filter(Boolean);
+        if (children.length === 0) return;
+
+        const baseDistance = 180;
+        const verticalSpacing = Math.max(60, 120 - level * 10);
+        const startY = parentNode.y - ((children.length - 1) * verticalSpacing) / 2;
+
+        children.forEach((child, index) => {
+            child.x = parentNode.x + direction * baseDistance;
+            child.y = startY + index * verticalSpacing;
+            child.element.style.left = child.x + 'px';
+            child.element.style.top = child.y + 'px';
+
+            // Continue recursively
+            this.layoutChildrenRecursive(child, direction, level + 1);
         });
     }
     
@@ -1513,6 +1745,8 @@ function createNewMindmap() {
     if (typeof mindmap.setupTitleLocking === 'function') {
         mindmap.setupTitleLocking();
     }
+    // Initialize layout button
+    mindmap.updateLayoutButton();
 }
 
 function loadMindmaps() {
@@ -1668,6 +1902,9 @@ async function loadMindmap(id) {
         if (typeof mindmap.setupTitleLocking === 'function') {
             mindmap.setupTitleLocking(true); // forceUnlock = true
         }
+        
+        // Initialize layout button
+        mindmap.updateLayoutButton();
 
     } catch (error) {
         console.error('Error loading mindmap:', error);
@@ -1777,6 +2014,10 @@ function autoLayout() {
     mindmap?.autoLayout();
 }
 
+function cycleLayout() {
+    mindmap?.cycleLayout();
+}
+
 function changeNodeColor() {
     mindmap?.editNode();
 }
@@ -1855,6 +2096,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Set initial value on first load
         setTimeout(setInitialTitle, 0);
     }
+    
+    // Initialize layout button
+    setTimeout(() => {
+        if (window.mindmap && typeof mindmap.updateLayoutButton === 'function') {
+            mindmap.updateLayoutButton();
+        }
+    }, 100);
     // Xử lý phím ESC để thoát toàn màn hình
     document.addEventListener('fullscreenchange', function() {
         const btn = document.getElementById('fullscreenBtn');
