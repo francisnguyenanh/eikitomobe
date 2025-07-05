@@ -428,10 +428,17 @@ class MindMap {
         // Lock canvas if title is blank
         this.setupTitleLocking();
     }
-    setupTitleLocking() {
+    setupTitleLocking(forceUnlock = false) {
         const titleInput = document.getElementById('mindmapTitleHeader');
         const canvas = this.canvas;
         const lockCanvas = () => {
+            // If forceUnlock is true, always unlock
+            if (forceUnlock) {
+                canvas.style.pointerEvents = 'auto';
+                canvas.style.opacity = '1';
+                canvas.removeAttribute('aria-disabled');
+                return;
+            }
             const title = titleInput.value.trim();
             if (!title) {
                 canvas.style.pointerEvents = 'none';
@@ -1624,14 +1631,12 @@ async function loadMindmap(id) {
         
         mindmap = new MindMap();
         mindmap.currentMindmapId = id;
-        
         // Clear existing nodes
         mindmap.nodes.clear();
         mindmap.connections = [];
         mindmap.nodeIdCounter = 1;
         document.getElementById('mindmapCanvas').innerHTML = '';
         mindmap.svg = document.getElementById('connectionSvg');
-        
         // Load nodes
         data.nodes.forEach(nodeData => {
             const nodeElement = document.createElement('div');
@@ -1642,28 +1647,27 @@ async function loadMindmap(id) {
             nodeElement.style.fontSize = nodeData.fontSize;
             nodeElement.style.borderColor = nodeData.color;
             nodeElement.textContent = nodeData.text;
-            
             if (!nodeData.isRoot) {
                 nodeElement.style.backgroundColor = nodeData.color;
             }
-            
             nodeElement.addEventListener('mousedown', (e) => mindmap.onNodeMouseDown(e, nodeElement));
             nodeElement.addEventListener('dblclick', () => mindmap.editNode(mindmap.nodes.get(nodeElement.id)));
             nodeElement.addEventListener('contextmenu', (e) => mindmap.onNodeContextMenu(e, nodeElement));
-            
             mindmap.canvas.appendChild(nodeElement);
             mindmap.nodes.set(nodeData.id, {
                 ...nodeData,
                 element: nodeElement
             });
         });
-        
         // Load connections
         mindmap.connections = data.connections;
         mindmap.updateConnections();
-        
         mindmap.title = data.title || 'Mind Map';
         mindmap.updateTitleHeader();
+        // Unlock canvas after loading a mindmap from list (title is always non-blank)
+        if (typeof mindmap.setupTitleLocking === 'function') {
+            mindmap.setupTitleLocking(true); // forceUnlock = true
+        }
 
     } catch (error) {
         console.error('Error loading mindmap:', error);
