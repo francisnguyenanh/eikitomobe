@@ -376,13 +376,7 @@
                     <textarea class="form-control" id="mindmapDescription" rows="3" placeholder="Enter description (optional)"></textarea>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">Category:</label>
-                    <select class="form-select" id="mindmapCategory">
-                        <option value="personal">Personal</option>
-                        <option value="work">Work</option>
-                        <option value="study">Study</option>
-                        <option value="project">Project</option>
-                    </select>
+                    <!-- Category field removed -->
                 </div>
             </div>
             <div class="modal-footer">
@@ -1294,11 +1288,9 @@ class MindMap {
         if (this.currentMindmapId) {
             document.getElementById('mindmapTitle').value = this.title || '';
             document.getElementById('mindmapDescription').value = this.description || '';
-            document.getElementById('mindmapCategory').value = this.category || 'personal';
         } else {
             document.getElementById('mindmapTitle').value = '';
             document.getElementById('mindmapDescription').value = '';
-            document.getElementById('mindmapCategory').value = 'personal';
         }
         new bootstrap.Modal(document.getElementById('saveModal')).show();
     }
@@ -1306,17 +1298,13 @@ class MindMap {
     async confirmSave() {
         const title = document.getElementById('mindmapTitle').value.trim();
         const description = document.getElementById('mindmapDescription').value.trim();
-        const category = document.getElementById('mindmapCategory').value;
-        
         if (!title) {
             alert('Please enter a title');
             return;
         }
-        
         const data = {
             title: title,
             description: description,
-            category: category,
             nodes: Array.from(this.nodes.values()).map(node => ({
                 id: node.id,
                 text: node.text,
@@ -1455,7 +1443,6 @@ class MindMap {
                 id: this.currentMindmapId || undefined,
                 title: this.title,
                 description: this.description || '',
-                category: this.category || 'personal',
                 nodes: Array.from(this.nodes.values()).map(node => ({
                     id: node.id,
                     text: node.text,
@@ -1546,7 +1533,6 @@ async function fetchMindmaps() {
             header.style.padding = '6px 0 6px 0';
             header.innerHTML = `
                 <div id="sortTitle" style="flex:1; min-width:0; cursor:pointer; user-select:none;">Tiêu đề <span id="sortTitleIcon">▼</span></div>
-                <div id="sortCategory" style="width:120px; text-align:left; cursor:pointer; user-select:none;">Chủ đề <span id="sortCategoryIcon"></span></div>
                 <div id="sortCreated" style="width:160px; text-align:left; cursor:pointer; user-select:none;">Tạo <span id="sortCreatedIcon"></span></div>
                 <div id="sortUpdated" style="width:160px; text-align:left; cursor:pointer; user-select:none;">Cập nhật <span id="sortUpdatedIcon"></span></div>
                 <div style="width:40px;"></div>
@@ -1569,9 +1555,6 @@ async function fetchMindmaps() {
             if (key === 'title') {
                 return (a.title || '').localeCompare(b.title || '');
             }
-            if (key === 'category') {
-                return (a.category || '').localeCompare(b.category || '');
-            }
             return 0;
         }
         mindmaps.sort((a, b) => {
@@ -1581,7 +1564,7 @@ async function fetchMindmaps() {
 
         // Update sort icons
         function updateSortIcons() {
-            const keys = ['title', 'category', 'created_at', 'updated_at'];
+            const keys = ['title', 'created_at', 'updated_at'];
             keys.forEach(k => {
                 const icon = document.getElementById('sort' + k.charAt(0).toUpperCase() + k.slice(1) + 'Icon');
                 if (icon) icon.textContent = (sortState.key === k) ? (sortState.dir === 'asc' ? '▲' : '▼') : '';
@@ -1592,11 +1575,9 @@ async function fetchMindmaps() {
         // Add click events for sorting
         setTimeout(() => {
             const titleH = document.getElementById('sortTitle');
-            const catH = document.getElementById('sortCategory');
             const createdH = document.getElementById('sortCreated');
             const updH = document.getElementById('sortUpdated');
             if (titleH) titleH.onclick = () => { sortState.key = 'title'; sortState.dir = (sortState.key === 'title' && sortState.dir === 'asc') ? 'desc' : 'asc'; fetchMindmaps(); };
-            if (catH) catH.onclick = () => { sortState.key = 'category'; sortState.dir = (sortState.key === 'category' && sortState.dir === 'asc') ? 'desc' : 'asc'; fetchMindmaps(); };
             if (createdH) createdH.onclick = () => { sortState.key = 'created_at'; sortState.dir = (sortState.key === 'created_at' && sortState.dir === 'asc') ? 'desc' : 'asc'; fetchMindmaps(); };
             if (updH) updH.onclick = () => { sortState.key = 'updated_at'; sortState.dir = (sortState.key === 'updated_at' && sortState.dir === 'asc') ? 'desc' : 'asc'; fetchMindmaps(); };
         }, 0);
@@ -1614,9 +1595,7 @@ async function fetchMindmaps() {
                 <div style="display:flex; align-items:center; width:100%;">
                     <div style="flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
                         <span style=\"font-weight:600; font-size:1.1rem;\">${mm.title || 'Untitled'}</span>
-                        <span class=\"mindmap-meta ms-2\">${mm.category ? mm.category : ''}</span>
                     </div>
-                    <div class=\"mindmap-meta ms-3\" style=\"width:120px; white-space:nowrap; color:#888; font-size:0.95em;\">${mm.category ? mm.category : ''}</div>
                     <div class=\"mindmap-meta ms-3\" style=\"width:160px; white-space:nowrap; color:#888; font-size:0.95em;\">${mm.created_at ? new Date(mm.created_at).toLocaleString() : ''}</div>
                     <div class=\"mindmap-meta ms-3\" style=\"width:160px; white-space:nowrap; color:#888; font-size:0.95em;\">${mm.updated_at ? new Date(mm.updated_at).toLocaleString() : ''}</div>
                     <button class=\"btn btn-sm btn-danger ms-3\" onclick=\"event.stopPropagation(); deleteMindmap(${mm.id})\" title=\"Xoá mindmap\"><i class=\"bi bi-trash\"></i></button>
