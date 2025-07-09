@@ -17,93 +17,213 @@
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <!-- Custom CSS -->
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
       font-family: 'Quicksand', sans-serif;
-      background-color: #1a0933;
-      color: #ffffff;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #1d1d1f;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
+    
     .hero-section {
-      background: linear-gradient(135deg, #00f7ff 0%, #1a0933 100%);
-      padding: 50px 0;
-      border-radius: 15px;
-      margin: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 28px;
+      margin: 40px auto;
+      max-width: 900px;
+      box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.15), 
+        0 10px 20px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      overflow: hidden;
+      position: relative;
     }
+    
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+    }
+    
     .hero-section h1 {
-      font-size: 2.2rem;
-      font-weight: 700;
-      text-shadow: 0 0 10px #00f7ff;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 600;
+      color: #2d3436;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
     }
+    
     .hero-section p {
-      font-family: 'Noto Sans JP', sans-serif;
-      font-size: 1rem;
+      font-size: 1.1rem;
+      color: #636e72;
+      font-weight: 400;
+      margin-bottom: 1rem;
     }
-    .profile-img {
-      max-width: 180px;
-      border-radius: 50%;
-      border: 3px solid #ff00ff;
-      box-shadow: 0 0 15px #ff00ff, 0 0 30px #00f7ff;
-      margin-bottom: 15px;
-    }
+    
     .contact-info {
-      background-color: rgba(255, 255, 255, 0.1);
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 20px rgba(0, 247, 255, 0.3);
+      padding: 60px 40px;
+      background: transparent;
     }
+    
     footer {
-      background-color: #1a0933;
-      color: #00f7ff;
-      padding: 10px 0;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.8);
+      padding: 30px 0;
       text-align: center;
+      font-size: 0.95rem;
+      margin-top: auto;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     }
+    
     a {
-      color: #00f7ff;
+      color: #6c5ce7;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    
+    a:hover {
+      color: #5f3dc4;
       text-decoration: none;
     }
-    a:hover {
-      color: #ff00ff;
-      text-shadow: 0 0 5px #ff00ff;
+    
+    a::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+      transition: width 0.3s ease;
     }
+    
+    a:hover::after {
+      width: 100%;
+    }
+    
+    .profile-img {
+      width: 200px;
+      height: 200px;
+      border-radius: 24px;
+      object-fit: cover;
+      box-shadow: 
+        0 15px 35px rgba(102, 126, 234, 0.25), 
+        0 5px 15px rgba(0, 0, 0, 0.12);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      border: 3px solid rgba(255, 255, 255, 0.8);
+    }
+    
+    .profile-img:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 
+        0 20px 45px rgba(102, 126, 234, 0.35), 
+        0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .contact-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding: 16px 20px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.6));
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .contact-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+      transform: scaleY(0);
+      transition: transform 0.3s ease;
+    }
+    
+    .contact-item:hover {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+      transform: translateY(-2px);
+      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
+    }
+    
+    .contact-item:hover::before {
+      transform: scaleY(1);
+    }
+    
+    .contact-label {
+      font-weight: 700;
+      color: #2d3436;
+      min-width: 80px;
+      font-size: 0.95rem;
+    }
+    
+    .contact-value {
+      color: #636e72;
+      font-weight: 500;
+    }
+    
+    .name-main {
+      font-family: 'Shippori Mincho B1', 'Kosugi Maru', 'Noto Sans JP', serif;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      font-size: 2.3rem;
+      background: linear-gradient(135deg, #2d3436, #636e72);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: none;
+      line-height: 1.1;
+    }
+    
+    .name-sub {
+      font-weight: 500;
+      color: #636e72;
+      font-size: 1.4rem;
+    }
+    
+    @media (max-width: 768px) {
+      .hero-section {
+        margin: 20px;
+        border-radius: 20px;
+      }
+      
+      .contact-info {
+        padding: 40px 30px;
+      }
+      
       .profile-img {
-        width: 100%;
-        max-width: 180px;
-        aspect-ratio: 1 / 1;
-        height: auto;
-        border-radius: 10px;
-        margin-bottom: 15px;
-        object-fit: cover;
-        border: none;
-        box-shadow: none;
+        width: 160px;
+        height: 160px;
+        margin: 0 auto 30px;
       }
-        @media (max-width: 576px) {
-        .col-md-4.text-end {
-          text-align: right !important;
-        }
-        .profile-img {
-          margin-left: auto;
-          margin-right: 0;
-          display: block;
-        }
-      }
+      
       .name-sub {
-        display: inline;
+        display: block;
+        font-size: 1.1rem;
+        margin-top: 0.3rem;
       }
-      @media (max-width: 576px) {
-        .name-sub {
-          display: block;
-          font-size: 1.1rem;
-          margin-top: 0.2em;
-        }
-      }
-      .name-shodo {
-        font-family: 'Shippori Mincho B1', 'Kosugi Maru', 'Noto Sans JP', serif;
-        font-weight: 700;
-        letter-spacing: 0.05em;
-        font-size: 2.3rem;
-        color: #fff;
-        text-shadow: 0 0 10px #00f7ff;
-        line-height: 1.1;
-      }
+    }
   </style>
 </head>
 <body>
@@ -112,12 +232,11 @@
     <div class="container">
       <div class="row align-items-center">
         <!-- Profile Image -->
-        <!-- filepath: /Users/eikitomobe/Documents/3.Học tập/Lập trình/VS code/EikiTomobe/eikitomobe/templates/Card/card1.html -->
-        <div class="col-md-4 text-center text-md-center text-end">
+        <div class="col-md-4 text-center">
           {% if avatar_url %}
-            <img src="{{ avatar_url }}" alt="Hình ảnh cá nhân" class="profile-img img-fluid mx-auto d-block d-md-block d-sm-inline-block">
+            <img src="{{ avatar_url }}" alt="Hình ảnh cá nhân" class="profile-img">
           {% else %}
-            <img src="https://via.placeholder.com/180" alt="Hình ảnh cá nhân" class="profile-img img-fluid mx-auto d-block d-md-block d-sm-inline-block">
+            <img src="https://via.placeholder.com/200x200/f0f0f0/999999?text=Photo" alt="Hình ảnh cá nhân" class="profile-img">
           {% endif %}
         </div>
         <!-- Text and Contact Info -->
@@ -125,17 +244,33 @@
           {% set name_main = Name.split('（')[0].strip() %}
           {% set name_sub = '（' + Name.split('（', 1)[1] if '（' in Name else '' %}
           <h1>
-            <span class="name-shodo">{{ name_main }}</span>
+            <span class="name-main">{{ name_main }}</span>
             {% if name_sub %}
               <span class="name-sub">{{ name_sub }}</span>
             {% endif %}
           </h1>
-          <p>{{Job}}</p>
-          <p><strong>Email:</strong> {{Email}}</p>
-          <p><strong>Phone:</strong> {{Phone}}</p>
-          <p><strong>SNS:</strong> 
-            <a href="{{ 'https://' + SNS if not SNS.startswith('http') else SNS }}" target="_blank">Hồ sơ</a>
-          </p>
+          
+          <div class="contact-item">
+            <span class="contact-label">職業:</span>
+            <span class="contact-value">{{ Job }}</span>
+          </div>
+          
+          <div class="contact-item">
+            <span class="contact-label">Email:</span>
+            <span class="contact-value">{{ Email }}</span>
+          </div>
+          
+          <div class="contact-item">
+            <span class="contact-label">Phone:</span>
+            <span class="contact-value">{{ Phone }}</span>
+          </div>
+          
+          <div class="contact-item">
+            <span class="contact-label">SNS:</span>
+            <span class="contact-value">
+              <a href="{{ 'https://' + SNS if not SNS.startswith('http') else SNS }}" target="_blank">プロフィール</a>
+            </span>
+          </div>
         </div>
       </div>
     </div>
@@ -144,7 +279,7 @@
   <!-- Footer -->
   <footer>
     <div class="container">
-      <p>{{SubSlogan}}</p>
+      <p>{{ SubSlogan }}</p>
     </div>
   </footer>
 
