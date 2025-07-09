@@ -383,6 +383,21 @@ class Contact(db.Model):
     note = db.Column(db.Text)
     
 class UserSettings(db.Model):
+    def get_card_info(self):
+        """Get card info as dict"""
+        if self.card_info:
+            try:
+                return json.loads(self.card_info)
+            except Exception:
+                return {}
+        return {}
+
+    def set_card_info(self, data):
+        """Set card info from dict"""
+        if data:
+            self.card_info = json.dumps(data, ensure_ascii=False)
+        else:
+            self.card_info = json.dumps({}, ensure_ascii=False)
     __tablename__ = 'user_settings'
     id = db.Column(db.Integer, primary_key=True)
     
