@@ -2453,10 +2453,27 @@
             async showLinksModal() {
                 try {
                     const data = await API.getLinksTree();
-                    this.renderLinksTree(data.links_tree || []);
+                    console.log('Links API response:', data); // Debug log
+                    
+                    // Handle the new API response format
+                    let links_tree = [];
+                    if (data && data.status === 'success' && data.links_tree) {
+                        links_tree = data.links_tree;
+                    } else if (data && data.links_tree) {
+                        // Fallback for old format
+                        links_tree = data.links_tree;
+                    } else if (data && Array.isArray(data)) {
+                        // Fallback if data is directly an array
+                        links_tree = data;
+                    }
+                    
+                    this.renderLinksTree(links_tree);
                     new bootstrap.Modal(document.getElementById('linksModal')).show();
                 } catch (error) {
                     console.error('Failed to load links:', error);
+                    // Show modal with empty content on error
+                    this.renderLinksTree([]);
+                    new bootstrap.Modal(document.getElementById('linksModal')).show();
                 }
             },
 

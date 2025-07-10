@@ -398,6 +398,39 @@ class UserSettings(db.Model):
             self.card_info = json.dumps(data, ensure_ascii=False)
         else:
             self.card_info = json.dumps({}, ensure_ascii=False)
+
+    def get_links_tree(self):
+        """Get links tree as list"""
+        if self.links_tree:
+            try:
+                return json.loads(self.links_tree)
+            except:
+                return []
+        return []
+
+    def set_links_tree(self, data):
+        """Set links tree from list"""
+        if data:
+            self.links_tree = json.dumps(data, ensure_ascii=False)
+        else:
+            self.links_tree = None
+
+    def get_breath_settings(self):
+        """Get breath settings as dict"""
+        if self.breath_settings:
+            try:
+                return json.loads(self.breath_settings)
+            except:
+                return {}
+        return {}
+
+    def set_breath_settings(self, data):
+        """Set breath settings from dict"""
+        if data:
+            self.breath_settings = json.dumps(data, ensure_ascii=False)
+        else:
+            self.breath_settings = None
+
     __tablename__ = 'user_settings'
     id = db.Column(db.Integer, primary_key=True)
     
@@ -426,6 +459,24 @@ class UserSettings(db.Model):
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'master_password_hint': self.master_password_hint,
+            'theme_preference': self.theme_preference,
+            'show_bg_image': self.show_bg_image,
+            'show_quote': self.show_quote,
+            'user_name': self.user_name,
+            'user_birthday': self.user_birthday,
+            'card_info': self.get_card_info(),
+            'links_tree': self.get_links_tree(),
+            'breath_settings': self.get_breath_settings(),
+            'ai_question_template': self.ai_question_template,
+            'vocabulary_query_template': self.vocabulary_query_template,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
 
 
 # Mindmap Models
@@ -484,73 +535,6 @@ class MindMapShare(db.Model):
     expires_at = db.Column(db.DateTime, nullable=True)
     
     mindmap = db.relationship('MindMap', backref='shares')
-    
-    
-def get_card_info(self):
-    """Get card info as dict"""
-    if self.card_info:
-        try:
-            return json.loads(self.card_info)
-        except:
-            return {}
-    return {}
-
-def set_card_info(self, data):
-    """Set card info from dict"""
-    if data:
-        self.card_info = json.dumps(data, ensure_ascii=False)
-    else:
-        self.card_info = None
-
-def get_links_tree(self):
-    """Get links tree as list"""
-    if self.links_tree:
-        try:
-            return json.loads(self.links_tree)
-        except:
-            return []
-    return []
-
-def set_links_tree(self, data):
-    """Set links tree from list"""
-    if data:
-        self.links_tree = json.dumps(data, ensure_ascii=False)
-    else:
-        self.links_tree = None
-
-def get_breath_settings(self):
-    """Get breath settings as dict"""
-    if self.breath_settings:
-        try:
-            return json.loads(self.breath_settings)
-        except:
-            return {}
-    return {}
-
-def set_breath_settings(self, data):
-    """Set breath settings from dict"""
-    if data:
-        self.breath_settings = json.dumps(data, ensure_ascii=False)
-    else:
-        self.breath_settings = None
-
-def to_dict(self):
-    return {
-        'id': self.id,
-        'master_password_hint': self.master_password_hint,
-        'theme_preference': self.theme_preference,
-        'show_bg_image': self.show_bg_image,
-        'show_quote': self.show_quote,
-        'user_name': self.user_name,
-        'user_birthday': self.user_birthday,
-        'card_info': self.get_card_info(),
-        'links_tree': self.get_links_tree(),
-        'breath_settings': self.get_breath_settings(),
-        'ai_question_template': self.ai_question_template,
-        'vocabulary_query_template': self.vocabulary_query_template,
-        'created_at': self.created_at.isoformat() if self.created_at else None,
-        'updated_at': self.updated_at.isoformat() if self.updated_at else None
-    }
     
 def get_user_settings():
     """Get or create user settings - always default for single user"""
@@ -2036,16 +2020,17 @@ def api_links_tree():
             return jsonify({'status': 'success'})
         except Exception as e:
             app.logger.error(f"Error saving links tree: {str(e)}")
-            return jsonify({'status': 'error', 'message': str(e)}), 500
+            return jsonify({'status': 'error', 'message': str(e)}), 200  # Return 200 to prevent frontend errors
     else:
         try:
             # ✅ SỬA: Lấy từ UserSettings
             settings = get_user_settings()
             links_tree = settings.get_links_tree()
-            return jsonify({'links_tree': links_tree})
+            return jsonify({'status': 'success', 'links_tree': links_tree})
         except Exception as e:
             app.logger.error(f"Error loading links tree: {str(e)}")
-            return jsonify({'status': 'error', 'message': str(e)}), 500
+            # Always return a valid response even on error
+            return jsonify({'status': 'error', 'links_tree': [], 'message': str(e)}), 200
         
 
 
