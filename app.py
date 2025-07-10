@@ -381,7 +381,60 @@ class Contact(db.Model):
     anniv3_date = db.Column(db.String(10))
     dependents = db.Column(db.String(200))  # comma separated or text
     note = db.Column(db.Text)
+
+# Thêm model này sau class UserSettings (khoảng dòng 400)
+
+class FlashcardDeck(db.Model):
+    __tablename__ = 'flashcard_deck'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    color = db.Column(db.String(7), nullable=False, default='#007bff')  # HEX color
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
+    # Relationship
+    flashcards = db.relationship('Flashcard', backref='deck', lazy=True, cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'color': self.color,
+            'card_count': len(self.flashcards),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+class Flashcard(db.Model):
+    __tablename__ = 'flashcard'
+    id = db.Column(db.Integer, primary_key=True)
+    deck_id = db.Column(db.Integer, db.ForeignKey('flashcard_deck.id'), nullable=False)
+    front = db.Column(db.Text, nullable=False)
+    back = db.Column(db.Text, nullable=False)
+    difficulty = db.Column(db.String(10), nullable=False, default='medium')  # easy, medium, hard
+    last_reviewed = db.Column(db.DateTime, nullable=True)
+    review_count = db.Column(db.Integer, default=0)
+    success_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'deck_id': self.deck_id,
+            'front': self.front,
+            'back': self.back,
+            'difficulty': self.difficulty,
+            'last_reviewed': self.last_reviewed.isoformat() if self.last_reviewed else None,
+            'review_count': self.review_count,
+            'success_count': self.success_count,
+            'success_rate': round((self.success_count / self.review_count * 100), 1) if self.review_count > 0 else 0,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+        
 class UserSettings(db.Model):
     def get_card_info(self):
         """Get card info as dict"""
@@ -762,6 +815,46 @@ with app.app_context():
     load_criteria_methods()
     db.create_all()
 
+    # ✅ THÊM: Tạo default flashcard deck
+    if not FlashcardDeck.query.first():
+        default_deck = FlashcardDeck(
+            name="Sample Deck",
+            description="A sample flashcard deck to get you started",
+            color="#007bff"
+        )
+        db.session.add(default_deck)
+        db.session.flush()  # Get the ID
+        
+        # Add sample cards
+        sample_cards = [
+            {
+                'front': 'What is the capital of France?',
+                'back': 'Paris',
+                'difficulty': 'easy'
+            },
+            {
+                'front': 'What is 2 + 2?',
+                'back': '4',
+                'difficulty': 'easy'
+            },
+            {
+                'front': 'Who wrote "Romeo and Juliet"?',
+                'back': 'William Shakespeare',
+                'difficulty': 'medium'
+            }
+        ]
+        
+        for card_data in sample_cards:
+            card = Flashcard(
+                deck_id=default_deck.id,
+                front=card_data['front'],
+                back=card_data['back'],
+                difficulty=card_data['difficulty']
+            )
+            db.session.add(card)
+        
+        app.logger.info("Created default flashcard deck with sample cards")
+        
     # ✅ SỬA: Tạo default password categories thay vì categories chung
     default_password_categories = [
         ('General', '#6c757d'),
@@ -5620,6 +5713,285 @@ def autosave_mindmap():
         db.session.rollback()
         app.logger.error(f"Auto save error: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+# Thêm các routes này vào cuối file, trước if __name__ == '__main__':
+
+@app.route('/flashcard')
+@login_required
+def flashcard():
+    return render_template('learning/flashcard.html')
+
+# Deck Management Routes
+@app.route('/api/flashcard/decks', methods=['GET'])
+@login_required
+def get_flashcard_decks():
+    try:
+        decks = FlashcardDeck.query.order_by(FlashcardDeck.name.asc()).all()
+        return jsonify({
+            'status': 'success',
+            'decks': [deck.to_dict() for deck in decks]
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting decks: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/flashcard/decks', methods=['POST'])
+@login_required
+def create_flashcard_deck():
+    try:
+        data = request.json
+        name = data.get('name', '').strip()
+        
+        if not name:
+            return jsonify({'status': 'error', 'message': 'Deck name is required'}), 400
+        
+        deck = FlashcardDeck(
+            name=name,
+            description=data.get('description', ''),
+            color=data.get('color', '#007bff')
+        )
+        
+        db.session.add(deck)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'deck': deck.to_dict()
+        })
+    except Exception as e:
+        app.logger.error(f"Error creating deck: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/flashcard/decks/<int:deck_id>', methods=['PUT'])
+@login_required
+def update_flashcard_deck(deck_id):
+    try:
+        deck = FlashcardDeck.query.get_or_404(deck_id)
+        data = request.json
+        
+        deck.name = data.get('name', deck.name)
+        deck.description = data.get('description', deck.description)
+        deck.color = data.get('color', deck.color)
+        deck.updated_at = datetime.now()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'deck': deck.to_dict()
+        })
+    except Exception as e:
+        app.logger.error(f"Error updating deck: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/flashcard/decks/<int:deck_id>', methods=['DELETE'])
+@login_required
+def delete_flashcard_deck(deck_id):
+    try:
+        deck = FlashcardDeck.query.get_or_404(deck_id)
+        db.session.delete(deck)
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        app.logger.error(f"Error deleting deck: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# Flashcard Management Routes
+@app.route('/api/flashcard/decks/<int:deck_id>/cards', methods=['GET'])
+@login_required
+def get_flashcards(deck_id):
+    try:
+        deck = FlashcardDeck.query.get_or_404(deck_id)
+        cards = Flashcard.query.filter_by(deck_id=deck_id).order_by(Flashcard.created_at.desc()).all()
+        
+        return jsonify({
+            'status': 'success',
+            'deck': deck.to_dict(),
+            'cards': [card.to_dict() for card in cards]
+        })
+    except Exception as e:
+        app.logger.error(f"Error getting flashcards: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/flashcard/cards', methods=['POST'])
+@login_required
+def create_flashcard():
+    try:
+        data = request.json
+        deck_id = data.get('deck_id')
+        front = data.get('front', '').strip()
+        back = data.get('back', '').strip()
+        
+        if not deck_id or not front or not back:
+            return jsonify({'status': 'error', 'message': 'Deck ID, front, and back are required'}), 400
+        
+        card = Flashcard(
+            deck_id=deck_id,
+            front=front,
+            back=back,
+            difficulty=data.get('difficulty', 'medium')
+        )
+        
+        db.session.add(card)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'card': card.to_dict()
+        })
+    except Exception as e:
+        app.logger.error(f"Error creating flashcard: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/flashcard/cards/<int:card_id>', methods=['PUT'])
+@login_required
+def update_flashcard(card_id):
+    try:
+        card = Flashcard.query.get_or_404(card_id)
+        data = request.json
+        
+        card.front = data.get('front', card.front)
+        card.back = data.get('back', card.back)
+        card.difficulty = data.get('difficulty', card.difficulty)
+        card.updated_at = datetime.now()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'card': card.to_dict()
+        })
+    except Exception as e:
+        app.logger.error(f"Error updating flashcard: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/flashcard/cards/<int:card_id>', methods=['DELETE'])
+@login_required
+def delete_flashcard(card_id):
+    try:
+        card = Flashcard.query.get_or_404(card_id)
+        db.session.delete(card)
+        db.session.commit()
+        
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        app.logger.error(f"Error deleting flashcard: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/flashcard/cards/<int:card_id>/review', methods=['POST'])
+@login_required
+def review_flashcard(card_id):
+    try:
+        card = Flashcard.query.get_or_404(card_id)
+        data = request.json
+        success = data.get('success', False)
+        
+        card.review_count += 1
+        if success:
+            card.success_count += 1
+        card.last_reviewed = datetime.now()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'card': card.to_dict()
+        })
+    except Exception as e:
+        app.logger.error(f"Error reviewing flashcard: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# Import/Export Routes
+@app.route('/api/flashcard/decks/<int:deck_id>/export', methods=['GET'])
+@login_required
+def export_flashcard_deck(deck_id):
+    try:
+        deck = FlashcardDeck.query.get_or_404(deck_id)
+        cards = Flashcard.query.filter_by(deck_id=deck_id).all()
+        
+        export_data = {
+            'deck': {
+                'name': deck.name,
+                'description': deck.description,
+                'color': deck.color
+            },
+            'cards': [
+                {
+                    'front': card.front,
+                    'back': card.back,
+                    'difficulty': card.difficulty
+                }
+                for card in cards
+            ]
+        }
+        
+        # Create JSON file in memory
+        output = BytesIO()
+        output.write(json.dumps(export_data, ensure_ascii=False, indent=2).encode('utf-8'))
+        output.seek(0)
+        
+        return send_file(
+            output,
+            as_attachment=True,
+            download_name=f"{deck.name}_flashcards.json",
+            mimetype='application/json'
+        )
+    except Exception as e:
+        app.logger.error(f"Error exporting deck: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@app.route('/api/flashcard/import', methods=['POST'])
+@login_required
+def import_flashcard_deck():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'status': 'error', 'message': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'status': 'error', 'message': 'No file selected'}), 400
+        
+        # Read and parse JSON
+        content = file.read().decode('utf-8')
+        data = json.loads(content)
+        
+        # Create deck
+        deck_data = data.get('deck', {})
+        deck = FlashcardDeck(
+            name=deck_data.get('name', 'Imported Deck'),
+            description=deck_data.get('description', ''),
+            color=deck_data.get('color', '#007bff')
+        )
+        
+        db.session.add(deck)
+        db.session.flush()  # Get deck ID
+        
+        # Create cards
+        cards_data = data.get('cards', [])
+        imported_count = 0
+        
+        for card_data in cards_data:
+            if card_data.get('front') and card_data.get('back'):
+                card = Flashcard(
+                    deck_id=deck.id,
+                    front=card_data['front'],
+                    back=card_data['back'],
+                    difficulty=card_data.get('difficulty', 'medium')
+                )
+                db.session.add(card)
+                imported_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Imported {imported_count} cards',
+            'deck': deck.to_dict()
+        })
+    except Exception as e:
+        app.logger.error(f"Error importing deck: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True)
