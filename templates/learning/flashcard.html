@@ -236,9 +236,11 @@
                     </div>
                 </div>
 
-                <div id="cardsList">
-                    <!-- Cards will be loaded here -->
-                </div>
+            <div id="cardsList">
+                <ul id="cardsListUl" class="list-group">
+                    <!-- Cards will be loaded here as list items -->
+                </ul>
+            </div>
             </div>
 
             <!-- Study Mode View -->
@@ -472,65 +474,42 @@ function renderCardsManagement(cards) {
     document.getElementById('deckManageView').style.display = 'none';
     document.getElementById('cardsManageView').style.display = 'block';
     document.getElementById('studyModeView').style.display = 'none';
-    
+
     document.getElementById('currentDeckName').textContent = currentDeck.name;
     document.getElementById('currentDeckDescription').textContent = currentDeck.description || 'No description';
-    
-    const container = document.getElementById('cardsList');
-    
+
+    const container = document.getElementById('cardsListUl');
+
     if (cards.length === 0) {
         container.innerHTML = `
-            <div class="card">
-                <div class="card-body text-center">
-                    <i class="bi bi-plus-circle" style="font-size: 3rem; opacity: 0.3;"></i>
-                    <h5 class="mt-3">No cards in this deck</h5>
-                    <p class="text-muted">Add some flashcards to start studying</p>
-                    <button class="btn btn-primary" onclick="showAddCardModal()">
-                        <i class="bi bi-plus"></i> Add First Card
-                    </button>
-                </div>
-            </div>
+            <li class="list-group-item text-center text-muted">
+                <i class="bi bi-plus-circle" style="font-size: 3rem; opacity: 0.3;"></i>
+                <h5 class="mt-3">No cards in this deck</h5>
+                <p>Add some flashcards to start studying</p>
+                <button class="btn btn-primary" onclick="showAddCardModal()">
+                    <i class="bi bi-plus"></i> Add First Card
+                </button>
+            </li>
         `;
         return;
     }
-    
-    container.innerHTML = `
-        <div class="row">
-            ${cards.map(card => `
-                <div class="col-md-6 mb-3">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="difficulty-badge difficulty-${card.difficulty}">
-                                    ${card.difficulty.toUpperCase()}
-                                </span>
-                                <div class="dropdown">
-                                    <button class="btn btn-link btn-sm" type="button" data-bs-toggle="dropdown">
-                                        <i class="bi bi-three-dots-vertical"></i>
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#" onclick="editCard(${card.id})">
-                                            <i class="bi bi-pencil me-2"></i>Edit
-                                        </a></li>
-                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteCard(${card.id})">
-                                            <i class="bi bi-trash me-2"></i>Delete
-                                        </a></li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <h6 class="card-title">${escapeHtml(card.front).substring(0, 50)}${card.front.length > 50 ? '...' : ''}</h6>
-                            <p class="card-text text-muted small">${escapeHtml(card.back).substring(0, 100)}${card.back.length > 100 ? '...' : ''}</p>
-                            <div class="text-muted small">
-                                <i class="bi bi-arrow-repeat me-1"></i>
-                                Reviewed ${card.review_count} times
-                                ${card.review_count > 0 ? `(${card.success_rate}% success)` : ''}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('')}
-        </div>
-    `;
+
+    container.innerHTML = cards.map(card => `
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+                <strong>${escapeHtml(card.front)}</strong><br>
+                <small class="text-muted">${escapeHtml(card.back)}</small>
+            </div>
+            <div>
+                <button class="btn btn-sm btn-outline-primary me-2" onclick="editCard(${card.id})">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteCard(${card.id})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </li>
+    `).join('');
 }
 
 // Study Mode
