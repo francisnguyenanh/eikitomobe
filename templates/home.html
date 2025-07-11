@@ -872,9 +872,28 @@
     {% if alerts_today or alerts_tomorrow %}
     <div class="container mt-3 position-relative">
         <div class="alert alert-info p-0 border-0 bg-transparent position-absolute end-0 top-0" id="alertsBox" style="min-width:48px; max-width:60px; z-index:1052;">
-            <button class="btn p-0 border-0 bg-transparent" id="toggleAlertsBtn" type="button" style="font-size:1.6rem;">
+        <button class="btn p-0 border-0 bg-transparent" id="toggleAlertsBtn" type="button" style="font-size:1.6rem; margin-right: 8px;">
             <span id="toggleAlertsIcon" class="bi bi-bell"></span>
-            </button>
+        </button>
+        <button class="btn p-0 border-0 bg-transparent" id="mindfulnessBtn" type="button" style="font-size:1.6rem;">
+            <i class="bi bi-alexa"></i>
+        </button>
+        <script>
+            document.getElementById('mindfulnessBtn').addEventListener('click', function() {
+                var mindfulnessModal = new bootstrap.Modal(document.getElementById('mindfulnessModal'));
+                mindfulnessModal.show();
+            });
+            // Add hover effect for mindfulnessBtn like toggleAlertsBtn
+            const mindfulnessBtn = document.getElementById('mindfulnessBtn');
+            const toggleAlertsIcon = document.getElementById('toggleAlertsIcon');
+            mindfulnessBtn.addEventListener('mouseenter', () => {
+                mindfulnessBtn.style.color = '#dc3545';
+                mindfulnessBtn.style.transition = 'color 0.2s';
+            });
+            mindfulnessBtn.addEventListener('mouseleave', () => {
+                mindfulnessBtn.style.color = '';
+            });
+        </script>
         </div>
         <div id="alertsList" class="mt-2 d-none">
                 <!-- Contact alerts today -->
@@ -1460,7 +1479,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <i class="bi bi-heart me-2"></i>
+                        <i class="bi bi-alexa"></i>
                         Mindfulness
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -2948,12 +2967,6 @@
                 };
             }
 
-            // Quote click to open mindfulness modal
-            document.querySelectorAll('.quote-content').forEach(el => {
-                el.addEventListener('click', () => {
-                    new bootstrap.Modal(document.getElementById('mindfulnessModal')).show();
-                });
-            });
 
             // Navbar auto-close on outside click (mobile UX)
             document.addEventListener('click', (event) => {
