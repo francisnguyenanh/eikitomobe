@@ -1930,15 +1930,21 @@ def upload_bg():
 
 
 def get_random_quote_from_db():
-    """Lấy 1 quote ngẫu nhiên từ bảng quote trong quotes.db"""
-
-    quote = Quote.query.order_by(db.func.random()).first()
-    if quote:
-        quote_text = quote.content
-        quote_author = quote.category.name if quote.category else ""
-    else:
-        quote_text = "Chưa có trích dẫn nào."
-        quote_author = ""
+    """Lấy quote ngẫu nhiên từ API zenquotes.io"""
+    import requests
+    try:
+        response = requests.get("https://zenquotes.io/api/random")
+        if response.status_code == 200:
+            data = response.json()
+            if isinstance(data, list) and data:
+                quote_text = data[0].get('q', '')
+                quote_author = data[0].get('a', '')
+                return quote_text, quote_author
+        # Nếu lỗi hoặc không lấy được, trả về quote mặc định
+        return "Stay positive, work hard, make it happen.", "Unknown"
+    except Exception as e:
+        # Log lỗi nếu cần
+        return "Stay positive, work hard, make it happen.", "Unknown"
     return quote_text, quote_author
     
 @app.route('/home')
