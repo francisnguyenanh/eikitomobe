@@ -1063,11 +1063,14 @@
                                 <div class="form-check form-switch mb-2">
                                     <input class="form-check-input" type="checkbox" id="toggleBgImage">
                                     <label class="form-check-label" for="toggleBgImage">Hiển thị hình nền</label>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="toggleQuote" checked>
-                                    <label class="form-check-label" for="toggleQuote">Hiển thị quote</label>
-                                </div>
+                                </div>                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="toggleQuote" checked>
+                                <label class="form-check-label" for="toggleQuote">Hiển thị quote nội bộ</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="toggleZenQuote">
+                                <label class="form-check-label" for="toggleZenQuote">Hiển thị ZenQuote</label>
+                            </div>
                             </div>
                             <!-- Avatar -->
                             <div class="mb-4">
@@ -1170,9 +1173,13 @@
                                 <input class="form-check-input" type="checkbox" id="toggleBgImage">
                                 <label class="form-check-label" for="toggleBgImage">Hiển thị hình nền</label>
                             </div>
-                            <div class="form-check form-switch">
+                            <div class="form-check form-switch mb-2">
                                 <input class="form-check-input" type="checkbox" id="toggleQuote" checked>
-                                <label class="form-check-label" for="toggleQuote">Hiển thị quote</label>
+                                <label class="form-check-label" for="toggleQuote">Hiển thị quote nội bộ</label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="toggleZenQuote">
+                                <label class="form-check-label" for="toggleZenQuote">Hiển thị ZenQuote</label>
                             </div>
                         </div>
                         <div class="tab-pane fade" id="avatarTab">
@@ -2155,8 +2162,9 @@
                         const data = await API.getUISettings();
                         document.getElementById('toggleBgImage').checked = !!data.show_bg_image;
                         document.getElementById('toggleQuote').checked = !!data.show_quote;
+                        document.getElementById('toggleZenQuote').checked = !!data.show_zen_quote;
                         this.applyBgImage(!!data.show_bg_image);
-                        this.applyQuote(!!data.show_quote);
+                        this.applyQuote(!!data.show_quote, !!data.show_zen_quote);
                     } catch (error) {
                         console.error('Failed to load UI settings:', error);
                     }
@@ -2168,8 +2176,19 @@
                 });
 
                 document.getElementById('toggleQuote').addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        document.getElementById('toggleZenQuote').checked = false;
+                    }
                     this.saveSettings();
-                    this.applyQuote(e.target.checked);
+                    this.applyQuote(e.target.checked, false);
+                });
+
+                document.getElementById('toggleZenQuote').addEventListener('change', (e) => {
+                    if (e.target.checked) {
+                        document.getElementById('toggleQuote').checked = false;
+                    }
+                    this.saveSettings();
+                    this.applyQuote(false, e.target.checked);
                 });
             },
 
@@ -2177,7 +2196,8 @@
                 try {
                     await API.updateUISettings({
                         show_bg_image: document.getElementById('toggleBgImage').checked,
-                        show_quote: document.getElementById('toggleQuote').checked
+                        show_quote: document.getElementById('toggleQuote').checked,
+                        show_zen_quote: document.getElementById('toggleZenQuote').checked
                     });
                 } catch (error) {
                     console.error('Failed to save UI settings:', error);
@@ -2196,10 +2216,12 @@
                 }
             },
 
-            applyQuote(show) {
+            applyQuote(showLocal, showZen) {
+                const showAnyQuote = showLocal || showZen;
                 document.querySelectorAll('.card.shadow-sm').forEach(card => {
-                    card.style.display = show ? '' : 'none';
+                    card.style.display = showAnyQuote ? '' : 'none';
                 });
+                // Không reload trang để tránh đóng modal settings
             }
         };
 

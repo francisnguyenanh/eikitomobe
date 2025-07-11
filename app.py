@@ -215,6 +215,7 @@ class QuoteCategory(db.Model):
 class Quote(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
+    author = db.Column(db.String(200), nullable=True, default='Unknown')
     category_id = db.Column(db.Integer, db.ForeignKey('quote_category.id'), nullable=False)
 
 
@@ -494,6 +495,7 @@ class UserSettings(db.Model):
     theme_preference = db.Column(db.String(10), default='light')
     show_bg_image = db.Column(db.Boolean, default=True)
     show_quote = db.Column(db.Boolean, default=True)
+    show_zen_quote = db.Column(db.Boolean, default=False)  # Thêm toggle zen quote
     
     # User profile info
     user_name = db.Column(db.String(100), nullable=True)
@@ -520,6 +522,7 @@ class UserSettings(db.Model):
             'theme_preference': self.theme_preference,
             'show_bg_image': self.show_bg_image,
             'show_quote': self.show_quote,
+            'show_zen_quote': self.show_zen_quote,
             'user_name': self.user_name,
             'user_birthday': self.user_birthday,
             'card_info': self.get_card_info(),
@@ -814,6 +817,28 @@ with app.app_context():
     load_knowledge_categories()
     load_criteria_methods()
     db.create_all()
+
+
+    # ✅ MIGRATION: Add show_zen_quote column if it doesn't exist
+    try:
+        from sqlalchemy import text
+        # Add show_zen_quote if missing
+        result = db.session.execute(text("PRAGMA table_info(user_settings)"))
+        columns = [row[1] for row in result.fetchall()]
+        if 'show_zen_quote' not in columns:
+            db.session.execute(text("ALTER TABLE user_settings ADD COLUMN show_zen_quote BOOLEAN DEFAULT 0"))
+            db.session.commit()
+            app.logger.info("Added show_zen_quote column to user_settings table")
+        # Add author column to quote if missing
+        result = db.session.execute(text("PRAGMA table_info(quote)"))
+        columns = [row[1] for row in result.fetchall()]
+        if 'author' not in columns:
+            db.session.execute(text("ALTER TABLE quote ADD COLUMN author VARCHAR(200) DEFAULT 'Unknown'"))
+            db.session.commit()
+            app.logger.info("Added author column to quote table")
+    except Exception as e:
+        app.logger.error(f"Error during migration: {str(e)}")
+        db.session.rollback()
 
     # ✅ THÊM: Tạo default flashcard deck
     if not FlashcardDeck.query.first():
@@ -1930,26 +1955,40 @@ def upload_bg():
 
 
 def get_random_quote_from_db():
-    """Lấy quote ngẫu nhiên từ API zenquotes.io"""
-    import requests
-    try:
-        response = requests.get("https://zenquotes.io/api/random")
-        if response.status_code == 200:
-            data = response.json()
-            if isinstance(data, list) and data:
-                quote_text = data[0].get('q', '')
-                quote_author = data[0].get('a', '')
-                return quote_text, quote_author
-        # Nếu lỗi hoặc không lấy được, trả về quote mặc định
-        return "Stay positive, work hard, make it happen.", "Unknown"
-    except Exception as e:
-        # Log lỗi nếu cần
-        return "Stay positive, work hard, make it happen.", "Unknown"
-    return quote_text, quote_author
+    """Lấy quote ngẫu nhiên từ database hoặc API zenquotes.io tùy vào setting"""
+    settings = get_user_settings()
+    
+    if settings.show_zen_quote:
+        # Lấy quote từ ZenQuotes API
+        import requests
+        try:
+            response = requests.get("https://zenquotes.io/api/random")
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list) and data:
+                    quote_text = data[0].get('q', '')
+                    quote_author = data[0].get('a', '')
+                    return quote_text, quote_author
+            # Nếu lỗi hoặc không lấy được, trả về quote mặc định
+            return "Stay positive, work hard, make it happen.", "Unknown"
+        except Exception as e:
+            # Log lỗi nếu cần
+            return "Stay positive, work hard, make it happen.", "Unknown"
+    else:
+        # Lấy quote từ database local
+        quote = db.session.query(Quote).order_by(db.func.random()).first()
+        if quote:
+            return quote.content, quote.author
+        else:
+            return "Chưa có quote nào trong database.", "Unknown"
     
 @app.route('/home')
 @login_required
 def home():
+    # ✅ SỬA: Lấy UI settings từ UserSettings trước
+    settings = get_user_settings()
+    
+    # Get quote based on user settings (local or ZenQuotes)
     quote_text, quote_author = get_random_quote_from_db()
     
     bg_image_url = None
@@ -1959,8 +1998,6 @@ def home():
         if files:
             bg_image_url = url_for('static', filename=f'photo/{files[0]}')
     
-    # ✅ SỬA: Lấy UI settings từ UserSettings
-    settings = get_user_settings()
     alerts_today, alerts_tomorrow = get_birthday_alerts()
     
     return render_template(
@@ -1968,7 +2005,8 @@ def home():
         quote_content=quote_text,
         quote_author=quote_author,
         bg_image_url=bg_image_url if settings.show_bg_image else None,
-        show_quote=settings.show_quote,
+        show_quote=settings.show_quote or settings.show_zen_quote,  # Show quote section if either toggle is on
+        show_zen_quote=settings.show_zen_quote,
         alerts_today=alerts_today,
         alerts_tomorrow=alerts_tomorrow
     )
@@ -2083,7 +2121,8 @@ def api_ui_settings():
             # ✅ SỬA: Cập nhật vào UserSettings
             update_user_setting(
                 show_bg_image=bool(data.get('show_bg_image', True)),
-                show_quote=bool(data.get('show_quote', True))
+                show_quote=bool(data.get('show_quote', True)),
+                show_zen_quote=bool(data.get('show_zen_quote', False))
             )
             
             return jsonify({'status': 'success'})
@@ -2096,7 +2135,8 @@ def api_ui_settings():
             settings = get_user_settings()
             return jsonify({
                 'show_bg_image': settings.show_bg_image,
-                'show_quote': settings.show_quote
+                'show_quote': settings.show_quote,
+                'show_zen_quote': settings.show_zen_quote
             })
         except Exception as e:
             app.logger.error(f"Error loading UI settings: {str(e)}")
