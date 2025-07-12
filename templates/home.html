@@ -775,25 +775,7 @@
       <i class="bi bi-list"></i>
     </button>
     <!-- Mindfulness button moved next to bell icon -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const mindfulnessBtn = document.getElementById('mindfulnessBtn');
-            if (mindfulnessBtn) {
-                mindfulnessBtn.addEventListener('click', function() {
-                    var mindfulnessModal = new bootstrap.Modal(document.getElementById('mindfulnessModal'));
-                    mindfulnessModal.show();
-                });
-                // Add hover effect for mindfulnessBtn like toggleAlertsBtn
-                mindfulnessBtn.addEventListener('mouseenter', () => {
-                    mindfulnessBtn.style.color = '#dc3545';
-                    mindfulnessBtn.style.transition = 'color 0.2s';
-                });
-                mindfulnessBtn.addEventListener('mouseleave', () => {
-                    mindfulnessBtn.style.color = '';
-                });
-            }
-        });
-    </script>
+    
     <!-- Offcanvas vertical sidebar menu (menu chính) -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
       <div class="offcanvas-header">
@@ -880,7 +862,6 @@
 
           <!-- Single Items -->
           <li class="nav-item"><a class="nav-link" href="#" id="openSettingsBtn"><i class="bi bi-gear"></i> Settings</a></li>
-          <li class="nav-item"><a class="nav-link" href="#" id="linksBtn"><i class="bi bi-link-45deg"></i> Links</a></li>
           <li class="nav-item"><a class="nav-link" href="#" id="showCardListModal"><i class="bi bi-card-list"></i> Card List</a></li>
           <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
         </ul>
@@ -897,6 +878,44 @@
             <button class="btn p-0 border-0 bg-transparent" id="mindfulnessBtn" type="button" style="font-size:1.6rem; margin-left: 0.8rem;">
                 <i class="bi bi-alexa"></i>
             </button>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const mindfulnessBtn = document.getElementById('mindfulnessBtn');
+                    if (mindfulnessBtn) {
+                        mindfulnessBtn.addEventListener('click', function() {
+                            var mindfulnessModal = new bootstrap.Modal(document.getElementById('mindfulnessModal'));
+                            mindfulnessModal.show();
+                        });
+                        // Add hover effect for mindfulnessBtn like toggleAlertsBtn
+                        mindfulnessBtn.addEventListener('mouseenter', () => {
+                            mindfulnessBtn.style.color = '#dc3545';
+                            mindfulnessBtn.style.transition = 'color 0.2s';
+                        });
+                        mindfulnessBtn.addEventListener('mouseleave', () => {
+                            mindfulnessBtn.style.color = '';
+                        });
+                    }
+                });
+            </script>
+            <button class="btn p-0 border-0 bg-transparent" id="linksBtn" type="button" style="font-size:1.6rem; margin-left: 0.8rem;">
+                <i class="bi bi-link-45deg"></i>
+            </button>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const linksBtn = document.getElementById('linksBtn');
+                    if (linksBtn) {
+                        // Add hover effect for mindfulnessBtn like toggleAlertsBtn
+                        linksBtn.addEventListener('mouseenter', () => {
+                            linksBtn.style.color = '#dc3545';
+                            linksBtn.style.transition = 'color 0.2s';
+                        });
+                        linksBtn.addEventListener('mouseleave', () => {
+                            linksBtn.style.color = '';
+                        });
+                    }
+                });
+            </script>
+
         </div>
         {% if alerts_today or alerts_tomorrow %}
         <div id="alertsList" class="mt-2 d-none">
@@ -943,9 +962,32 @@
                 {% if show_quote %}
                 <div class="card shadow-sm">
                     <div class="card-body text-center">
-                        <div class="quote-content">
+                        <div class="quote-content" id="quoteContent" style="cursor:pointer;">
                             {{ quote_content | nl2br | safe }}
                         </div>
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const quoteContent = document.getElementById('quoteContent');
+                            if (quoteContent) {
+                                quoteContent.addEventListener('click', function() {
+                                    // Remove HTML tags and decode entities for copying plain text
+                                    const tempDiv = document.createElement('div');
+                                    tempDiv.innerHTML = quoteContent.innerHTML;
+                                    const text = tempDiv.innerText;
+                                    navigator.clipboard.writeText(text).then(function() {
+                                        // Visual feedback
+                                        quoteContent.style.background = '#e0ffe0';
+                                        quoteContent.style.transition = 'background 0.3s';
+                                        setTimeout(() => {
+                                            quoteContent.style.background = '';
+                                        }, 600);
+                                    });
+                                });
+                                // Optional: show pointer and tooltip
+                                quoteContent.title = 'Click to copy quote';
+                            }
+                        });
+                        </script>
                         <div class="quote-author mt-3">
                             — {{ quote_author }}
                         </div>
