@@ -774,6 +774,26 @@
     <button class="btn btn-hamburger" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" style="position: fixed; top: 10px; left: 10px; z-index: 1051;">
       <i class="bi bi-list"></i>
     </button>
+    <!-- Mindfulness button moved next to bell icon -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mindfulnessBtn = document.getElementById('mindfulnessBtn');
+            if (mindfulnessBtn) {
+                mindfulnessBtn.addEventListener('click', function() {
+                    var mindfulnessModal = new bootstrap.Modal(document.getElementById('mindfulnessModal'));
+                    mindfulnessModal.show();
+                });
+                // Add hover effect for mindfulnessBtn like toggleAlertsBtn
+                mindfulnessBtn.addEventListener('mouseenter', () => {
+                    mindfulnessBtn.style.color = '#dc3545';
+                    mindfulnessBtn.style.transition = 'color 0.2s';
+                });
+                mindfulnessBtn.addEventListener('mouseleave', () => {
+                    mindfulnessBtn.style.color = '';
+                });
+            }
+        });
+    </script>
     <!-- Offcanvas vertical sidebar menu (menu chính) -->
     <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
       <div class="offcanvas-header">
@@ -868,70 +888,54 @@
     </div>
 
 
-    <!-- Alert for birthday/anniversary with toggle -->
-    {% if alerts_today or alerts_tomorrow %}
+    <!-- Always show bell icon (toggleAlertsBtn), alertsList only if alerts exist -->
     <div class="container mt-3 position-relative">
-        <div class="alert alert-info p-0 border-0 bg-transparent position-absolute end-0 top-0" id="alertsBox" style="min-width:48px; max-width:60px; z-index:1052;">
-        <button class="btn p-0 border-0 bg-transparent" id="toggleAlertsBtn" type="button" style="font-size:1.6rem; margin-right: 8px;">
-            <span id="toggleAlertsIcon" class="bi bi-bell"></span>
-        </button>
-        <button class="btn p-0 border-0 bg-transparent" id="mindfulnessBtn" type="button" style="font-size:1.6rem;">
-            <i class="bi bi-alexa"></i>
-        </button>
-        <script>
-            document.getElementById('mindfulnessBtn').addEventListener('click', function() {
-                var mindfulnessModal = new bootstrap.Modal(document.getElementById('mindfulnessModal'));
-                mindfulnessModal.show();
-            });
-            // Add hover effect for mindfulnessBtn like toggleAlertsBtn
-            const mindfulnessBtn = document.getElementById('mindfulnessBtn');
-            const toggleAlertsIcon = document.getElementById('toggleAlertsIcon');
-            mindfulnessBtn.addEventListener('mouseenter', () => {
-                mindfulnessBtn.style.color = '#dc3545';
-                mindfulnessBtn.style.transition = 'color 0.2s';
-            });
-            mindfulnessBtn.addEventListener('mouseleave', () => {
-                mindfulnessBtn.style.color = '';
-            });
-        </script>
+        <div class="alert alert-info p-0 border-0 bg-transparent position-absolute end-0 top-0 d-flex align-items-center gap-1" id="alertsBox" style="min-width:90px; max-width:140px; z-index:1052;">
+            <button class="btn p-0 border-0 bg-transparent" id="toggleAlertsBtn" type="button" style="font-size:1.6rem;">
+                <span id="toggleAlertsIcon" class="bi bi-bell"></span>
+            </button>
+            <button class="btn p-0 border-0 bg-transparent" id="mindfulnessBtn" type="button" style="font-size:1.6rem; margin-left: 0.8rem;">
+                <i class="bi bi-alexa"></i>
+            </button>
         </div>
+        {% if alerts_today or alerts_tomorrow %}
         <div id="alertsList" class="mt-2 d-none">
-                <!-- Contact alerts today -->
-                {% for alert in alerts_today %}
-                    {% if 'sinh nhật' in alert %}
-                        <div style="color:#28a745;font-weight:bold"><i class="bi bi-cake2 me-2"></i>{{ alert }}</div>
-                    {% elif 'kỷ niệm' in alert %}
-                        <div style="color:#28a745;font-weight:bold"><i class="bi bi-heart-fill me-2"></i>{{ alert }}</div>
-                    {% endif %}
-                {% endfor %}
+            <!-- Contact alerts today -->
+            {% for alert in alerts_today %}
+                {% if 'sinh nhật' in alert %}
+                    <div style="color:#28a745;font-weight:bold"><i class="bi bi-cake2 me-2"></i>{{ alert }}</div>
+                {% elif 'kỷ niệm' in alert %}
+                    <div style="color:#28a745;font-weight:bold"><i class="bi bi-heart-fill me-2"></i>{{ alert }}</div>
+                {% endif %}
+            {% endfor %}
 
-                <!-- Contact alerts tomorrow -->
-                {% for alert in alerts_tomorrow %}
-                    {% if 'sinh nhật' in alert %}
-                        <div><i class="bi bi-cake2 me-2"></i>{{ alert }}</div>
-                    {% elif 'kỷ niệm' in alert %}
-                        <div><i class="bi bi-heart me-2"></i>{{ alert }}</div>
-                    {% endif %}
-                {% endfor %}
+            <!-- Contact alerts tomorrow -->
+            {% for alert in alerts_tomorrow %}
+                {% if 'sinh nhật' in alert %}
+                    <div><i class="bi bi-cake2 me-2"></i>{{ alert }}</div>
+                {% elif 'kỷ niệm' in alert %}
+                    <div><i class="bi bi-heart me-2"></i>{{ alert }}</div>
+                {% endif %}
+            {% endfor %}
 
-                <!-- Task alerts today -->
-                {% for alert in alerts_today %}
-                    {% if 'Task' in alert and 'quá hạn' in alert %}
-                        <div style="color:#dc3545;font-weight:bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ alert }}</div>
-                    {% elif 'Task' in alert %}
-                        <div style="color:#fd7e14;font-weight:bold"><i class="bi bi-clock-fill me-2"></i>{{ alert }}</div>
-                    {% endif %}
-                {% endfor %}
+            <!-- Task alerts today -->
+            {% for alert in alerts_today %}
+                {% if 'Task' in alert and 'quá hạn' in alert %}
+                    <div style="color:#dc3545;font-weight:bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ alert }}</div>
+                {% elif 'Task' in alert %}
+                    <div style="color:#fd7e14;font-weight:bold"><i class="bi bi-clock-fill me-2"></i>{{ alert }}</div>
+                {% endif %}
+            {% endfor %}
 
-                <!-- Task alerts tomorrow -->
-                {% for alert in alerts_tomorrow %}
-                    {% if 'Task' in alert %}
-                        <div><i class="bi bi-clock me-2"></i>{{ alert }}</div>
-                    {% endif %}
-                {% endfor %}
-            </div>
+            <!-- Task alerts tomorrow -->
+            {% for alert in alerts_tomorrow %}
+                {% if 'Task' in alert %}
+                    <div><i class="bi bi-clock me-2"></i>{{ alert }}</div>
+                {% endif %}
+            {% endfor %}
         </div>
-    {% endif %}
+        {% endif %}
+    </div>
 
     <div class="container py-4 center-quote">
         <div class="row g-3">
