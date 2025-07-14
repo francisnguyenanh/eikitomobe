@@ -1,19 +1,8 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="{{ theme|default('light') }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tomo Quotes</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='android-chrome-192x192.png') }}">
-    <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='android-chrome-512x512.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+{% extends "baseall.html" %}
+
+{% block title %}Tomo Quotes{% endblock %}
+
+{% block extra_head %}
     <style>
         /* Modern Layout Styles */
         body {
@@ -247,102 +236,86 @@
             transition: color 0.3s ease, background-color 0.3s ease;
         }
     </style>
-    {% block head %}{% endblock %}
-</head>
-<body>
-    <nav class="navbar navbar-expand-lg">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/home">
-                <i class="bi bi-chat-quote me-2"></i>
-                Quotes
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('quotes') }}">
-                            <i class="bi bi-chat-quote"></i>
-                            <span>View Quote</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('manage_quotes') }}">
-                            <i class="bi bi-list-ul"></i>
-                            <span>List Quote</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+{% endblock %}
 
-    <div class="container mt-4">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                        <strong>
-                            {% if category == 'success' %}
-                                <i class="bi bi-check-circle-fill me-2"></i>
-                            {% elif category == 'danger' or category == 'error' %}
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            {% elif category == 'warning' %}
-                                <i class="bi bi-exclamation-circle-fill me-2"></i>
-                            {% elif category == 'info' %}
-                                <i class="bi bi-info-circle-fill me-2"></i>
-                            {% endif %}
-                        </strong>
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        {% block content %}{% endblock %}
+{% block navbar_content %}
+    <a class="navbar-brand" href="/home">
+        <i class="bi bi-chat-quote me-2"></i>
+        Quotes
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('quotes') }}">
+                    <i class="bi bi-chat-quote"></i>
+                    <span>View Quote</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('manage_quotes') }}">
+                    <i class="bi bi-list-ul"></i>
+                    <span>List Quote</span>
+                </a>
+            </li>
+        </ul>
     </div>
+{% endblock %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    {% block scripts %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Auto-dismiss alerts after 3 seconds
-            setTimeout(function() {
-                document.querySelectorAll('.alert-dismissible').forEach(function(alert) {
-                    if (typeof bootstrap !== 'undefined' && bootstrap.Alert) {
-                        const alertInstance = new bootstrap.Alert(alert);
-                        alertInstance.close();
-                    } else {
-                        alert.remove();
-                    }
-                });
-            }, 3000);
+{% block content %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    <strong>
+                        {% if category == 'success' %}
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                        {% elif category == 'danger' or category == 'error' %}
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        {% elif category == 'warning' %}
+                            <i class="bi bi-exclamation-circle-fill me-2"></i>
+                        {% elif category == 'info' %}
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                        {% endif %}
+                    </strong>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    {% block page_content %}{% endblock %}
+{% endblock %}
 
-            // Close navbar on outside click (mobile)
-            document.addEventListener('click', function(event) {
-                const navbarCollapse = document.getElementById('navbarNav');
-                const navbarToggler = document.querySelector('.navbar-toggler');
-                
-                if (navbarCollapse && navbarToggler && navbarCollapse.classList.contains('show')) {
-                    if (!navbarCollapse.contains(event.target) && !navbarToggler.contains(event.target)) {
-                        new bootstrap.Collapse(navbarCollapse).hide();
-                    }
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-dismiss alerts after 3 seconds
+        setTimeout(function() {
+            document.querySelectorAll('.alert-dismissible').forEach(function(alert) {
+                if (typeof bootstrap !== 'undefined' && bootstrap.Alert) {
+                    const alertInstance = new bootstrap.Alert(alert);
+                    alertInstance.close();
+                } else {
+                    alert.remove();
                 }
             });
+        }, 3000);
 
-            // Add entrance animation to alerts
-            document.querySelectorAll('.alert').forEach((alert, index) => {
-                alert.style.opacity = '0';
-                alert.style.transform = 'translateY(-20px)';
-                setTimeout(() => {
-                    alert.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-                    alert.style.opacity = '1';
-                    alert.style.transform = 'translateY(0)';
-                }, index * 100);
-            });
+        // Close navbar on outside click (mobile)
+        document.addEventListener('click', function(event) {
+            const navbarCollapse = document.getElementById('navbarNav');
+            const navbarToggler = document.querySelector('.navbar-toggler');
+            
+            if (navbarCollapse && navbarToggler && navbarCollapse.classList.contains('show')) {
+                if (!navbarCollapse.contains(event.target) && !navbarToggler.contains(event.target)) {
+                    new bootstrap.Collapse(navbarCollapse).hide();
+                }
+            }
         });
-    </script>
-    {% endblock %}
-</body>
-</html>
+    });
+</script>
+{% endblock %}

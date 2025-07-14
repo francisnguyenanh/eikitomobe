@@ -1,20 +1,8 @@
-<!-- filepath: /Users/eikitomobe/Documents/3. Học tập/Lập trình/VS code/Memo_WEB/templates/Quote/base.html -->
-<!DOCTYPE html>
-<html lang="en" data-theme="{{ theme|default('light') }}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tome Game</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='android-chrome-192x192.png') }}">
-    <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='android-chrome-512x512.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+{% extends "baseall.html" %}
+
+{% block title %}Tome Game{% endblock %}
+
+{% block extra_head %}
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         
@@ -29,34 +17,31 @@
         .container.py-4 {
             padding-left: 0 !important;
         }
-        
     </style>
-    {% block head %}{% endblock %}
-</head>
-<body>
-<nav class="navbar navbar-expand-lg navbar-light" style="background-color: var(--card-bg);">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/home">Game</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('game_flip') }}">
-                        <i class="bi bi-grid-3x3-gap"></i> Lật hình
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('game_math') }}">
-                        <i class="bi bi-calculator"></i> Tính toán
-                    </a>
-                </li>
-            </ul>
-        </div>
+{% endblock %}
+
+{% block navbar_content %}
+    <a class="navbar-brand" href="/home">Game</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('game_flip') }}">
+                    <i class="bi bi-grid-3x3-gap"></i> Lật hình
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('game_math') }}">
+                    <i class="bi bi-calculator"></i> Tính toán
+                </a>
+            </li>
+        </ul>
     </div>
-</nav>
-<div class="container mt-4">
+{% endblock %}
+
+{% block content %}
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -67,9 +52,9 @@
             {% endfor %}
         {% endif %}
     {% endwith %}
-    {% block content %}{% endblock %}
-</div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block page_content %}{% endblock %}
+{% endblock %}
+
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -100,5 +85,3 @@
     });
 </script>
 {% endblock %}
-</body>
-</html>
