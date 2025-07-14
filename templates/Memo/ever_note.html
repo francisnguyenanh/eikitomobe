@@ -2982,6 +2982,16 @@ html.auto-scroll-smooth {
 </style>
 
 <script>
+
+    function getWordCountFromHtml(html) {
+        if (!html) return 0;
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const plainText = tempDiv.textContent || tempDiv.innerText || '';
+        const words = plainText.trim().match(/[\p{L}\p{N}_]+/gu);
+        return words ? words.length : 0;
+    }
+
 // ===== APPLICATION STATE =====
 const AppState = {
     notes: [],
@@ -4809,25 +4819,10 @@ const NoteManager = {
 
     updateMeta(note) {
         const metaDiv = document.getElementById('note-meta');
-
-        // Function to count words in editor content
-        function countWords(text) {
-            if (!text) return 0;
-            // Strip HTML tags
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = text;
-            const plainText = tempDiv.textContent || tempDiv.innerText || '';
-            // Match words using regex including Vietnamese accented characters
-            const words = plainText.trim().match(/[\p{L}\p{N}_]+/gu);
-            return words ? words.length : 0;
-        }
-
-        // Get word count from editor content
         const editor = document.getElementById('evernote-editor');
-        const wordCount = editor ? countWords(editor.innerHTML) : 0;
+        const wordCount = editor ? getWordCountFromHtml(editor.innerHTML) : 0;
 
         if (note.created_at && note.updated_at) {
-            // Display folder and word count on one line to save space
             const folderInfo = note.folder_name ? `Folder: ${note.folder_name}` : '';
             metaDiv.innerHTML = `${new Date(note.created_at).toLocaleString()} ～ ${new Date(note.updated_at).toLocaleString()}${folderInfo ? ' | ' + folderInfo : ''} | Words: ${wordCount}`;
         } else {
@@ -6047,32 +6042,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const editor = document.getElementById('evernote-editor');
     if (editor) {
         editor.addEventListener('input', () => {
-            // Check for duplicate images sections after any input
             ImageManager.cleanupDuplicateSections();
             autoCapitalizeAfterDotOrNewline(editor);
 
-            // Update word count in meta on input
-            const metaDiv = document.getElementById('note-meta');
-            if (metaDiv) {
-                // Function to count words in editor content
-                function countWords(text) {
-                    if (!text) return 0;
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = text;
-                    const plainText = tempDiv.textContent || tempDiv.innerText || '';
-                    const words = plainText.trim().match(/\b\w+\b/g);
-                    return words ? words.length : 0;
-                }
-                const wordCount = countWords(editor.innerHTML);
-                // Remove existing word count line if any
-                const lines = metaDiv.innerHTML.split('<br>').filter(line => !line.startsWith('Word count:'));
-                metaDiv.innerHTML = lines.join('<br>') + `<br>Word count: ${wordCount}`;
+            // Cập nhật meta (gồm word count) cho note hiện tại
+            const currentNote = AppState.notes.find(n => n.id === AppState.currentId);
+            if (currentNote) {
+                NoteManager.updateMeta(currentNote);
             }
         });
-        
+
         editor.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                // Prevent Enter from creating new sections
                 setTimeout(() => {
                     ImageManager.cleanupDuplicateSections();
                 }, 10);
