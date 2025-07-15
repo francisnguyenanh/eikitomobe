@@ -2016,7 +2016,8 @@ def home():
         show_quote=settings.show_quote or settings.show_zen_quote,  # Show quote section if either toggle is on
         show_zen_quote=settings.show_zen_quote,
         alerts_today=alerts_today,
-        alerts_tomorrow=alerts_tomorrow
+        alerts_tomorrow=alerts_tomorrow,
+        settings=settings
     )
 
 @app.route('/upload_avatar', methods=['POST'])

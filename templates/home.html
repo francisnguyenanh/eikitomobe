@@ -1099,7 +1099,7 @@
                                     User Name
                                 </label>
                                 <input type="text" class="form-control" id="userNameInput" value="{{ username or '' }}" maxlength="100" autocomplete="off" placeholder="Enter your name">
-                                <button type="button" class="btn btn-outline-primary mt-2 w-100" id="saveUserNameBtn">
+                                <button type="button" class="btn btn-primary w-100 mt-2" id="saveUserNameBtn">
                                     <i class="bi bi-save me-1"></i> Save User Name
                                 </button>
                                 <div id="userNameMsg" class="form-text text-success d-none">Saved!</div>
@@ -1165,14 +1165,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                     </button>
                                 </form>
                                 <div class="form-check form-switch mb-2">
-                                    <input class="form-check-input" type="checkbox" id="toggleBgImage">
+<input class="form-check-input" type="checkbox" id="toggleBgImage" {% if settings and settings.show_bg_image %}checked{% endif %}>
                                     <label class="form-check-label" for="toggleBgImage">Hiển thị hình nền</label>
                                 </div>                            <div class="form-check form-switch mb-2">
-                                <input class="form-check-input" type="checkbox" id="toggleQuote" checked>
+<input class="form-check-input" type="checkbox" id="toggleQuote" {% if settings and settings.show_quote %}checked{% endif %}>
                                 <label class="form-check-label" for="toggleQuote">Hiển thị quote nội bộ</label>
                             </div>
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="toggleZenQuote">
+<input class="form-check-input" type="checkbox" id="toggleZenQuote" {% if settings and settings.show_zen_quote %}checked{% endif %}>
                                 <label class="form-check-label" for="toggleZenQuote">Hiển thị ZenQuote</label>
                             </div>
                             </div>
