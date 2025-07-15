@@ -1584,10 +1584,18 @@ def delete_category(id):
 def login():
     if request.method == 'POST':
         password = request.form['password']
+        settings = get_user_settings()
+        hash_str = settings.user_password_hash if settings else None
+        # Nếu chưa có password hash, cho phép login không cần mật khẩu
+        if not hash_str:
+            user = User()
+            login_user(user)
+            session['theme'] = get_theme()
+            return redirect(url_for('home'))
+        # Nếu đã có password hash, kiểm tra mật khẩu như bình thường
         if verify_password(password):
             user = User()
             login_user(user)
-            # Lấy theme từ config và lưu vào session
             session['theme'] = get_theme()
             return redirect(url_for('home'))
         flash('Invalid password', 'danger')
