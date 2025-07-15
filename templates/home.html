@@ -765,6 +765,131 @@
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
     line-height: 1.2;
     transition: all 0.3s ease;
+}
+
+/* ===== BREATH MODAL STYLES ===== */
+#breathModal .modal-content {
+    background: var(--card-bg);
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+#breathModal .modal-header {
+    border-bottom: 1px solid var(--navbar-border);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px 15px 0 0;
+}
+
+#breathModal .modal-body {
+    padding: 2rem 1.5rem;
+    text-align: center;
+}
+
+#breathModal .breath-container {
+    max-width: none;
+    width: 100%;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+}
+
+#breathModal .circle-visual {
+    margin: 20px auto;
+    width: 280px;
+    height: 280px;
+    position: relative;
+}
+
+#breathModal .circle-svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+#breathModal .circle-bg {
+    stroke: #e0e0e0;
+}
+
+#breathModal .circle-progress {
+    stroke: #0d6efd;
+    transition: stroke-dashoffset 0.2s linear, stroke 0.7s linear;
+}
+
+#breathModal .breath-phase {
+    font-size: 1.4rem;
+    font-weight: bold;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+#breathModal .breath-controls-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+#breathModal .countdown-info {
+    font-size: 1.1rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+#breathModal .breath-settings-input {
+    min-width: 120px;
+    max-width: 180px;
+    width: 150px;
+    font-size: 1rem;
+    padding: 0.5rem;
+}
+
+#breathModal .breath-controls-row label {
+    min-width: 80px;
+    text-align: right;
+    margin-bottom: 0;
+    font-size: 1rem;
+    color: var(--text-color);
+}
+
+#breathModal .nav-tabs .nav-link {
+    color: var(--text-color);
+}
+
+#breathModal .nav-tabs .nav-link.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    #breathModal .modal-dialog {
+        max-width: 95vw;
+        margin: 1rem auto;
+    }
+    
+    #breathModal .circle-visual {
+        width: 240px;
+        height: 240px;
+    }
+    
+    #breathModal .breath-controls-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    #breathModal .breath-controls-row label {
+        text-align: center;
+        min-width: unset;
+    }
+}
 
     </style>
 </head>
@@ -867,7 +992,7 @@
 
     <!-- Always show bell icon (toggleAlertsBtn), alertsList only if alerts exist -->
     <div class="container mt-3 position-relative">
-        <div class="alert alert-info p-0 border-0 bg-transparent position-absolute end-0 top-0 d-flex align-items-center gap-1" id="alertsBox" style="min-width:90px; max-width:140px; z-index:1052;">
+        <div class="alert alert-info p-0 border-0 bg-transparent position-absolute end-0 top-0 d-flex align-items-center gap-1" id="alertsBox" style="min-width:140px; max-width:200px; z-index:1052;">
             <button class="btn p-0 border-0 bg-transparent" id="toggleAlertsBtn" type="button" style="font-size:1.6rem;">
                 <span id="toggleAlertsIcon" class="bi bi-bell"></span>
             </button>
@@ -889,6 +1014,28 @@
                         });
                         mindfulnessBtn.addEventListener('mouseleave', () => {
                             mindfulnessBtn.style.color = '';
+                        });
+                    }
+                });
+            </script>
+            <button class="btn p-0 border-0 bg-transparent" id="breathBtn" type="button" style="font-size:1.6rem; margin-left: 0.8rem;">
+                <i class="bi bi-wind"></i>
+            </button>
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const breathBtn = document.getElementById('breathBtn');
+                    if (breathBtn) {
+                        breathBtn.addEventListener('click', function() {
+                            var breathModal = new bootstrap.Modal(document.getElementById('breathModal'));
+                            breathModal.show();
+                        });
+                        // Add hover effect for breathBtn like toggleAlertsBtn
+                        breathBtn.addEventListener('mouseenter', () => {
+                            breathBtn.style.color = '#dc3545';
+                            breathBtn.style.transition = 'color 0.2s';
+                        });
+                        breathBtn.addEventListener('mouseleave', () => {
+                            breathBtn.style.color = '';
                         });
                     }
                 });
@@ -1622,6 +1769,77 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         </div>
     </div>
+    
+    <!-- Breath Modal -->
+    <div class="modal fade" id="breathModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+                    <div class="breath-container">
+                        <!-- Controls -->
+                        <div class="breath-controls">
+                            <ul class="nav nav-tabs mb-3" id="breathTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="practice-tab" data-bs-toggle="tab" data-bs-target="#practice" type="button" role="tab" aria-controls="practice" aria-selected="true">Practice</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">Settings</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content" id="breathTabContent">
+                                <div class="tab-pane fade show active" id="practice" role="tabpanel" aria-labelledby="practice-tab">
+                                    <div class="circle-visual" style="position: relative;">
+                                        <svg class="circle-svg" width="320" height="320" viewBox="0 0 320 320">
+                                            <!-- Background segments -->
+                                            <circle id="bg-inhale" cx="160" cy="160" r="140" fill="none" stroke="#0d6efd" stroke-width="8" opacity="0.3" stroke-dasharray="879" stroke-dashoffset="0"/>
+                                            <circle id="bg-hold1" cx="160" cy="160" r="140" fill="none" stroke="#ffc107" stroke-width="8" opacity="0.3" stroke-dasharray="879" stroke-dashoffset="0"/>
+                                            <circle id="bg-exhale" cx="160" cy="160" r="140" fill="none" stroke="#28a745" stroke-width="8" opacity="0.3" stroke-dasharray="879" stroke-dashoffset="0"/>
+                                            <circle id="bg-hold2" cx="160" cy="160" r="140" fill="none" stroke="#ffc107" stroke-width="8" opacity="0.3" stroke-dasharray="879" stroke-dashoffset="0"/>
+                                            
+                                            <!-- Background circle -->
+                                            <circle class="circle-bg" cx="160" cy="160" r="140" fill="none" stroke="#e0e0e0" stroke-width="12"/>
+                                            
+                                            <!-- Progress circle -->
+                                            <circle class="circle-progress" cx="160" cy="160" r="140" fill="none" stroke="#0d6efd" stroke-width="12" stroke-dasharray="879" stroke-dashoffset="879" stroke-linecap="round"/>
+                                            
+                                            <!-- Progress dot -->
+                                            <circle id="progress-dot" r="12" fill="#0d6efd" cx="160" cy="20"/>
+                                        </svg>
+                                    </div>
+                                    <div class="breath-phase" id="phaseLabel">Ready</div>
+                                    <div class="countdown-info" id="countdownInfo"></div>
+                                </div>
+                                <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                                    <div class="breath-controls-row">
+                                        <label for="patternSelect">Pattern:</label>
+                                        <select id="patternSelect" class="form-select breath-settings-input d-inline-block">
+                                            <option value="5-5-5-5">5-5-5-5 (Box)</option>
+                                            <option value="4-7-8">4-7-8 (Calm)</option>
+                                            <option value="6-3-6-3">6-3-6-3 (Balance)</option>
+                                        </select>
+                                    </div>
+                                    <div class="breath-controls-row">
+                                        <label for="levelSelect">Level:</label>
+                                        <select id="levelSelect" class="form-select breath-settings-input d-inline-block">
+                                            <option value="1">Beginner (1x)</option>
+                                            <option value="2">Intermediate (2x)</option>
+                                            <option value="3">Advanced (3x)</option>
+                                        </select>
+                                    </div>
+                                    <div class="breath-controls-row">
+                                        <label for="cycleInput">Cycles:</label>
+                                        <input id="cycleInput" type="number" min="1" value="30" class="form-control breath-settings-input d-inline-block">
+                                    </div>
+                                    <div class="mb-2" id="totalTimeInfoSettings" style="font-size:1rem;color:var(--text-color);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script src="{{ url_for('static', filename='js/master_password_auth.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -3165,6 +3383,333 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('db-tab').dispatchEvent(new Event('shown.bs.tab'));
         };
 
+        });
+
+        // ===== BREATH MODAL MANAGER =====
+        const BreathModalManager = {
+            // Breath patterns: [in, hold1, out, hold2] (seconds)
+            patterns: {
+                "5-5-5-5": [5, 5, 5, 5],
+                "4-7-8": [4, 7, 8],
+                "6-3-6-3": [6, 3, 6, 3]
+            },
+            
+            patternMeta: {
+                "5-5-5-5": {
+                    names: ["Inhale", "Hold", "Exhale", "Hold"],
+                    colors: ["#0d6efd", "#ffc107", "#28a745", "#ffc107"],
+                    bgIds: ['bg-inhale', 'bg-hold1', 'bg-exhale', 'bg-hold2']
+                },
+                "4-7-8": {
+                    names: ["Inhale", "Hold", "Exhale"],
+                    colors: ["#0d6efd", "#ffc107", "#28a745"],
+                    bgIds: ['bg-inhale', 'bg-hold1', 'bg-exhale']
+                },
+                "6-3-6-3": {
+                    names: ["Inhale", "Hold", "Exhale", "Hold"],
+                    colors: ["#0d6efd", "#ffc107", "#28a745", "#ffc107"],
+                    bgIds: ['bg-inhale', 'bg-hold1', 'bg-exhale', 'bg-hold2']
+                }
+            },
+
+            running: false,
+            pattern: null,
+            total: 0,
+            animationId: null,
+            startTime: null,
+            cycles: 1,
+            cyclesLeft: 1,
+            totalSec: 0,
+            elapsedSec: 0,
+            phaseDurations: [],
+            phaseEnds: [],
+            phaseNames: [],
+            phaseColors: [],
+            phaseBgIds: [],
+            circleLength: 2 * Math.PI * 140,
+
+            init() {
+                const modal = document.getElementById('breathModal');
+                if (!modal) return;
+
+                this.circle = modal.querySelector('.circle-progress');
+                this.phaseLabel = modal.querySelector('#phaseLabel');
+                this.patternSelect = modal.querySelector('#patternSelect');
+                this.levelSelect = modal.querySelector('#levelSelect');
+                this.cycleInput = modal.querySelector('#cycleInput');
+                this.countdownInfo = modal.querySelector('#countdownInfo');
+                this.totalTimeInfoSettings = modal.querySelector('#totalTimeInfoSettings');
+
+                if (!this.circle || !this.phaseLabel || !this.patternSelect || !this.levelSelect || !this.cycleInput) return;
+
+                this.pattern = this.patterns[this.patternSelect.value];
+                this.total = this.pattern.reduce((a, b) => a + b, 0);
+                this.updatePhaseMeta();
+
+                // Event listeners
+                this.patternSelect.onchange = () => this.onPatternChange();
+                this.levelSelect.onchange = () => this.onLevelChange();
+                this.cycleInput.oninput = () => this.onCyclesChange();
+
+                const circleVisual = modal.querySelector('.circle-visual');
+                if (circleVisual) {
+                    circleVisual.addEventListener('click', () => this.toggleBreath());
+                }
+
+                // Initialize
+                this.resetCircle();
+                this.setPhaseSegments(this.getPattern());
+                this.updateTotalTime();
+                this.loadBreathSettings();
+            },
+
+            updatePhaseMeta() {
+                const meta = this.patternMeta[this.patternSelect.value];
+                this.phaseNames = meta.names;
+                this.phaseColors = meta.colors;
+                this.phaseBgIds = meta.bgIds;
+            },
+
+            setPhaseSegments(pattern) {
+                const total = pattern.reduce((a, b) => a + b, 0);
+                let acc = 0;
+                for (let i = 0; i < pattern.length; i++) {
+                    const len = pattern[i] / total * this.circleLength;
+                    const gap = this.circleLength - len;
+                    const el = document.getElementById(this.phaseBgIds[i]);
+                    if (el) {
+                        el.setAttribute('stroke-dasharray', `${len} ${gap}`);
+                        el.setAttribute('stroke-dashoffset', -acc);
+                        acc += len;
+                    }
+                }
+                // Hide unused segments
+                for (let i = pattern.length; i < 4; i++) {
+                    const el = document.getElementById(['bg-inhale', 'bg-hold1', 'bg-exhale', 'bg-hold2'][i]);
+                    if (el) {
+                        el.setAttribute('stroke-dasharray', `0 ${this.circleLength}`);
+                    }
+                }
+            },
+
+            lerpColor(a, b, t) {
+                const ah = a.replace('#', '');
+                const bh = b.replace('#', '');
+                const ar = parseInt(ah.substring(0,2),16), ag = parseInt(ah.substring(2,4),16), ab = parseInt(ah.substring(4,6),16);
+                const br = parseInt(bh.substring(0,2),16), bg = parseInt(bh.substring(2,4),16), bb = parseInt(bh.substring(4,6),16);
+                const rr = Math.round(ar + (br-ar)*t);
+                const rg = Math.round(ag + (bg-ag)*t);
+                const rb = Math.round(ab + (bb-ab)*t);
+                return `#${rr.toString(16).padStart(2,'0')}${rg.toString(16).padStart(2,'0')}${rb.toString(16).padStart(2,'0')}`;
+            },
+
+            resetCircle() {
+                if (this.circle) {
+                    this.circle.setAttribute('stroke-dasharray', this.circleLength);
+                    this.circle.setAttribute('stroke-dashoffset', this.circleLength);
+                    this.updateProgressDot(0);
+                }
+            },
+
+            updateCircle(progress) {
+                if (this.circle) {
+                    const offset = this.circleLength - progress * this.circleLength;
+                    this.circle.setAttribute('stroke-dashoffset', offset);
+                }
+            },
+
+            updateProgressDot(progress) {
+                const r = 140;
+                const centerX = 160;
+                const centerY = 160;
+                const angle = 2 * Math.PI * (progress % 1);
+                const x = centerX + r * Math.cos(angle);
+                const y = centerY + r * Math.sin(angle);
+                const dot = document.getElementById('progress-dot');
+                if (dot) {
+                    dot.setAttribute('cx', x);
+                    dot.setAttribute('cy', y);
+                }
+            },
+
+            animateBreath(now) {
+                if (!this.running) return;
+                if (!this.startTime) this.startTime = now;
+                let elapsed = (now - this.startTime) / 1000;
+                this.elapsedSec = Math.floor(elapsed);
+
+                let cycleElapsed = elapsed % this.total;
+                let currentPhase = 0;
+                let phaseStartTime = 0;
+                for (let i = 0; i < this.phaseEnds.length; i++) {
+                    if (cycleElapsed < this.phaseEnds[i]) {
+                        currentPhase = i;
+                        break;
+                    }
+                    phaseStartTime = this.phaseEnds[i];
+                }
+
+                if (this.phaseLabel) {
+                    this.phaseLabel.textContent = this.phaseNames[currentPhase];
+                }
+
+                let colorA = this.phaseColors[currentPhase];
+                let colorB = this.phaseColors[(currentPhase+1)%this.phaseColors.length];
+                let phaseDuration = this.phaseDurations[currentPhase];
+                let phaseProgress = (cycleElapsed - phaseStartTime) / phaseDuration;
+                let smoothColor = this.lerpColor(colorA, colorB, Math.min(Math.max(phaseProgress,0),1));
+                
+                if (this.circle) {
+                    this.circle.style.stroke = smoothColor;
+                }
+
+                let cycleProgress = elapsed / this.total;
+                this.updateCircle(cycleProgress);
+                this.updateProgressDot(cycleProgress);
+
+                let cyclesPassed = Math.floor(elapsed / this.total);
+                this.cyclesLeft = Math.max(0, this.cycles - cyclesPassed);
+                let remainSec = Math.max(0, this.totalSec - this.elapsedSec);
+                let min = Math.floor(remainSec / 60);
+                let sec = remainSec % 60;
+                
+                if (this.countdownInfo) {
+                    this.countdownInfo.textContent = `Cycles left: ${this.cyclesLeft} | Time left: ${min}m ${sec < 10 ? '0' : ''}${sec}s`;
+                }
+
+                if (this.elapsedSec >= this.totalSec) {
+                    this.stopBreath(true);
+                    return;
+                }
+
+                this.animationId = requestAnimationFrame((now) => this.animateBreath(now));
+            },
+
+            startBreath() {
+                this.running = true;
+                this.pattern = this.getPattern();
+                this.total = this.pattern.reduce((a, b) => a + b, 0);
+                this.cycles = this.getCycles();
+                this.cyclesLeft = this.cycles;
+                this.totalSec = this.total * this.cycles;
+                this.elapsedSec = 0;
+
+                this.phaseDurations = this.pattern;
+                this.phaseEnds = [];
+                let acc = 0;
+                for (let d of this.phaseDurations) {
+                    acc += d;
+                    this.phaseEnds.push(acc);
+                }
+
+                this.startTime = null;
+                this.animationId = requestAnimationFrame((now) => this.animateBreath(now));
+            },
+
+            stopBreath(finished = false) {
+                this.running = false;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                }
+                if (this.phaseLabel) {
+                    this.phaseLabel.textContent = finished ? "Done!" : "Ready";
+                }
+                this.resetCircle();
+                if (this.countdownInfo) {
+                    this.countdownInfo.textContent = finished ? "Completed all cycles!" : "";
+                }
+            },
+
+            toggleBreath() {
+                if (!this.running) {
+                    this.startBreath();
+                } else {
+                    this.stopBreath();
+                }
+            },
+
+            getLevelMultiplier() {
+                return parseInt(this.levelSelect?.value) || 1;
+            },
+
+            getCycles() {
+                return Math.max(1, parseInt(this.cycleInput?.value) || 1);
+            },
+
+            getPattern() {
+                const base = this.patterns[this.patternSelect?.value || "5-5-5-5"];
+                const mul = this.getLevelMultiplier();
+                return base.map(x => x * mul);
+            },
+
+            updateTotalTime() {
+                const pattern = this.getPattern();
+                const cycles = this.getCycles();
+                const totalSec = pattern.reduce((a, b) => a + b, 0) * cycles;
+                const min = Math.floor(totalSec / 60);
+                const sec = totalSec % 60;
+                if (this.totalTimeInfoSettings) {
+                    this.totalTimeInfoSettings.textContent = `Total time: ${min}m ${sec}s`;
+                }
+            },
+
+            onPatternChange() {
+                if (this.running) this.stopBreath();
+                this.updatePhaseMeta();
+                this.resetCircle();
+                if (this.phaseLabel) this.phaseLabel.textContent = "Ready";
+                this.setPhaseSegments(this.getPattern());
+                this.updateTotalTime();
+                this.saveBreathSettings();
+            },
+
+            onLevelChange() {
+                if (this.running) this.stopBreath();
+                this.resetCircle();
+                if (this.phaseLabel) this.phaseLabel.textContent = "Ready";
+                this.setPhaseSegments(this.getPattern());
+                this.updateTotalTime();
+                this.saveBreathSettings();
+            },
+
+            onCyclesChange() {
+                this.updateTotalTime();
+                if (this.running) this.stopBreath();
+                this.saveBreathSettings();
+            },
+
+            saveBreathSettings() {
+                if (!this.patternSelect || !this.levelSelect || !this.cycleInput) return;
+                fetch('/breath_settings', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        pattern: this.patternSelect.value,
+                        level: this.levelSelect.value,
+                        cycles: this.cycleInput.value
+                    })
+                }).catch(err => console.log('Could not save breath settings:', err));
+            },
+
+            loadBreathSettings() {
+                fetch('/breath_settings')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (this.patternSelect && data.pattern) this.patternSelect.value = data.pattern;
+                        if (this.levelSelect && data.level) this.levelSelect.value = data.level;
+                        if (this.cycleInput && data.cycles) this.cycleInput.value = data.cycles;
+                        this.updatePhaseMeta();
+                        this.resetCircle();
+                        this.setPhaseSegments(this.getPattern());
+                        this.updateTotalTime();
+                    })
+                    .catch(err => console.log('Could not load breath settings:', err));
+            }
+        };
+
+        // Initialize breath modal when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            BreathModalManager.init();
         });
 
         document.addEventListener('DOMContentLoaded', function() {

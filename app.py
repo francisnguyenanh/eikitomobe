@@ -2228,6 +2228,31 @@ def public_card(card_hash):
 def ever_note():
     return render_template('Memo/ever_note.html')
 
+@app.route('/breath_settings', methods=['GET', 'POST'])
+@login_required
+def breath_settings():
+    if request.method == 'POST':
+        try:
+            data = request.json
+            
+            # ✅ SỬA: Lưu vào UserSettings
+            settings = get_user_settings()
+            settings.set_breath_settings(data)
+            settings.updated_at = datetime.now()
+            db.session.commit()
+            
+            return jsonify({'status': 'success'})
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+    else:
+        try:
+            # ✅ SỬA: Lấy từ UserSettings
+            settings = get_user_settings()
+            return jsonify(settings.get_breath_settings())
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': str(e)}), 500
+    
+    
 @app.route('/api/evernote_folders', methods=['GET'])
 @login_required
 def get_evernote_folders():
