@@ -3595,6 +3595,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     phaseStartTime = this.phaseEnds[i];
                 }
 
+                // Track phase changes and play sound
+                if (this.lastPhase !== currentPhase) {
+                    this.lastPhase = currentPhase;
+                    
+                    // Play sound based on phase
+                    const phaseName = this.phaseNames[currentPhase];
+                    this.playPhaseSound(phaseName);
+                    
+                    // Store phase start time for potential future use
+                    this.currentPhaseStartTime = now;
+                    this.currentPhaseStartTimestamp = new Date().toLocaleTimeString();
+                }
+
                 if (this.phaseLabel) {
                     this.phaseLabel.textContent = this.phaseNames[currentPhase];
                 }
@@ -3648,8 +3661,37 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.phaseEnds.push(acc);
                 }
 
+                // Initialize phase tracking
+                this.lastPhase = -1; // Initialize to -1 so first phase will be detected
+                this.currentPhaseStartTime = null;
+                this.currentPhaseStartTimestamp = null;
+                this.phaseStartTimes = []; // Array to store all phase start times
+
                 this.startTime = null;
                 this.animationId = requestAnimationFrame((now) => this.animateBreath(now));
+            },
+
+            playPhaseSound(phaseName) {
+                try {
+                    let soundFile = '';
+                    if (phaseName === 'Inhale') {
+                        soundFile = '{{ url_for("static", filename="in.mp3") }}';
+                    } else if (phaseName === 'Hold') {
+                        soundFile = '{{ url_for("static", filename="hold.mp3") }}';
+                    } else if (phaseName === 'Exhale') {
+                        soundFile = '{{ url_for("static", filename="out.mp3") }}';
+                    }
+                    
+                    if (soundFile) {
+                        const audio = new Audio(soundFile);
+                        audio.volume = 0.5; // Set volume to 50%
+                        audio.play().catch(err => {
+                            // Ignore audio play errors (e.g., user hasn't interacted with page yet)
+                        });
+                    }
+                } catch (err) {
+                    // Ignore any audio errors
+                }
             },
 
             stopBreath(finished = false) {
@@ -3664,6 +3706,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (this.countdownInfo) {
                     this.countdownInfo.textContent = finished ? "Completed all cycles!" : "";
                 }
+                
+                // Reset phase tracking
+                this.lastPhase = -1;
+                this.currentPhaseStartTime = null;
+                this.currentPhaseStartTimestamp = null;
             },
 
             toggleBreath() {
@@ -3737,6 +3784,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 }).catch(err => console.log('Could not save breath settings:', err));
             },
 
+            // Get current phase information including start time
+            getCurrentPhaseInfo() {
+                if (!this.running) {
+                    return {
+                        running: false,
+                        message: "Breath session is not running"
+                    };
+                }
+
+                return {
+                    running: true,
+                    currentPhase: this.phaseNames[this.lastPhase] || "Unknown",
+                    phaseStartTime: this.currentPhaseStartTimestamp,
+                    sessionStartTime: this.startTime ? new Date(this.startTime).toLocaleTimeString() : null,
+                    cyclesCompleted: Math.floor((Date.now() - this.startTime) / 1000 / this.total),
+                    cyclesRemaining: this.cyclesLeft,
+                    totalElapsedSeconds: this.elapsedSec
+                };
+            },
+
             loadBreathSettings() {
                 fetch('/breath_settings')
                     .then(res => res.json())
@@ -3756,6 +3823,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initialize breath modal when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             BreathModalManager.init();
+            
+            // Make BreathModalManager accessible from console for debugging
+            window.BreathModalManager = BreathModalManager;
+            
+            // Add helper function to console
+            window.getBreathInfo = function() {
+                const info = BreathModalManager.getCurrentPhaseInfo();
+                return info;
+            };
         });
 
         document.addEventListener('DOMContentLoaded', function() {
