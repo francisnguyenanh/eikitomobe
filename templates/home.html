@@ -777,7 +777,7 @@
 
 #breathModal .modal-header {
     border-bottom: 1px solid var(--navbar-border);
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: transparent;
     color: white;
     border-radius: 15px 15px 0 0;
 }
@@ -785,6 +785,9 @@
 #breathModal .modal-body {
     padding: 2rem 1.5rem;
     text-align: center;
+    min-height: 500px;
+    max-height: 500px;
+    overflow-y: auto;
 }
 
 #breathModal .breath-container {
@@ -868,10 +871,45 @@
     border-color: var(--primary-color);
 }
 
+#breathModal .tab-content {
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+#breathModal .tab-pane {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#breathModal .tab-pane.active {
+    display: flex !important;
+}
+
+#breathModal #settings .breath-controls-row {
+    margin-bottom: 1.5rem;
+}
+
+#breathModal #breath-settings .breath-controls-row {
+    margin-bottom: 1.5rem;
+}
+
 @media (max-width: 768px) {
     #breathModal .modal-dialog {
         max-width: 95vw;
         margin: 1rem auto;
+    }
+    
+    #breathModal .modal-body {
+        min-height: 450px;
+        max-height: 450px;
+        padding: 1.5rem 1rem;
+    }
+    
+    #breathModal .tab-content {
+        min-height: 350px;
     }
     
     #breathModal .circle-visual {
@@ -883,6 +921,7 @@
         flex-direction: column;
         align-items: center;
         gap: 0.75rem;
+        margin-bottom: 1rem;
     }
     
     #breathModal .breath-controls-row label {
@@ -1774,20 +1813,27 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="modal fade" id="breathModal" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-wind me-2"></i>
+                        Breath Practice
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
                 <div class="modal-body">
                     <div class="breath-container">
                         <!-- Controls -->
                         <div class="breath-controls">
                             <ul class="nav nav-tabs mb-3" id="breathTab" role="tablist">
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="practice-tab" data-bs-toggle="tab" data-bs-target="#practice" type="button" role="tab" aria-controls="practice" aria-selected="true">Practice</button>
+                                    <button class="nav-link active" id="breath-practice-tab" data-bs-toggle="tab" data-bs-target="#breath-practice" type="button" role="tab" aria-controls="breath-practice" aria-selected="true">Practice</button>
                                 </li>
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false">Settings</button>
+                                    <button class="nav-link" id="breath-settings-tab" data-bs-toggle="tab" data-bs-target="#breath-settings" type="button" role="tab" aria-controls="breath-settings" aria-selected="false">Settings</button>
                                 </li>
                             </ul>
                             <div class="tab-content" id="breathTabContent">
-                                <div class="tab-pane fade show active" id="practice" role="tabpanel" aria-labelledby="practice-tab">
+                                <div class="tab-pane fade show active" id="breath-practice" role="tabpanel" aria-labelledby="breath-practice-tab">
                                     <div class="circle-visual" style="position: relative;">
                                         <svg class="circle-svg" width="320" height="320" viewBox="0 0 320 320">
                                             <!-- Background segments -->
@@ -1809,7 +1855,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="breath-phase" id="phaseLabel">Ready</div>
                                     <div class="countdown-info" id="countdownInfo"></div>
                                 </div>
-                                <div class="tab-pane fade" id="settings" role="tabpanel" aria-labelledby="settings-tab">
+                                <div class="tab-pane fade" id="breath-settings" role="tabpanel" aria-labelledby="breath-settings-tab">
                                     <div class="breath-controls-row">
                                         <label for="patternSelect">Pattern:</label>
                                         <select id="patternSelect" class="form-select breath-settings-input d-inline-block">
