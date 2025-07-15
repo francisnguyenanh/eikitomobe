@@ -2117,26 +2117,29 @@ def api_ui_settings():
     if request.method == 'POST':
         try:
             data = request.get_json()
-            
-            # ✅ SỬA: Cập nhật vào UserSettings
-            update_user_setting(
-                show_bg_image=bool(data.get('show_bg_image', True)),
-                show_quote=bool(data.get('show_quote', True)),
-                show_zen_quote=bool(data.get('show_zen_quote', False))
-            )
-            
+            update_kwargs = {}
+            if 'show_bg_image' in data:
+                update_kwargs['show_bg_image'] = bool(data['show_bg_image'])
+            if 'show_quote' in data:
+                update_kwargs['show_quote'] = bool(data['show_quote'])
+            if 'show_zen_quote' in data:
+                update_kwargs['show_zen_quote'] = bool(data['show_zen_quote'])
+            if 'user_name' in data:
+                update_kwargs['user_name'] = data['user_name']
+            if update_kwargs:
+                update_user_setting(**update_kwargs)
             return jsonify({'status': 'success'})
         except Exception as e:
             app.logger.error(f"Error saving UI settings: {str(e)}")
             return jsonify({'status': 'error', 'message': str(e)}), 500
     else:
         try:
-            # ✅ SỬA: Lấy từ UserSettings
             settings = get_user_settings()
             return jsonify({
                 'show_bg_image': settings.show_bg_image,
                 'show_quote': settings.show_quote,
-                'show_zen_quote': settings.show_zen_quote
+                'show_zen_quote': settings.show_zen_quote,
+                'user_name': settings.user_name
             })
         except Exception as e:
             app.logger.error(f"Error loading UI settings: {str(e)}")

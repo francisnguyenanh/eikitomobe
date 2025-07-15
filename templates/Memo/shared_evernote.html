@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ note.title }} - Shared Note</title>
+    <title>{{ note.title }} Tomo Shared Note</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
     <meta property="og:title" content="{{ note.title }} - Shared Note">
-    <meta property="og:description" content="Shared note from 友部　瑛稀">
+    <meta property="og:description" content="Shared note from {{ username or '友部 瑛稀' }}">
     <meta property="og:type" content="article">
     <meta property="og:url" content="{{ request.url }}">
     <style>
@@ -207,7 +207,7 @@
         {% endif %}
         
         <div class="powered-by">
-            <i class="bi bi-share"></i> Shared from 友部　瑛稀
+            <i class="bi bi-share"></i> Shared from {{ username or '友部 瑛稀' }}
         </div>
     </div>
 
