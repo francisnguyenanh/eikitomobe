@@ -18,7 +18,7 @@ Gửi và xóa ảnh:
 Người dùng có thể dán ảnh, chọn ảnh, hoặc kéo thả ảnh từ máy local để gửi trong khung chat.
 Ảnh được upload và lưu vào thư mục trên server (ví dụ: static/uploads/<room_name>/).
 Người dùng có thể xóa ảnh họ đã gửi ngay trên khung chat (chỉ ảnh của chính họ).
-
+nén ảnh để không chiếm dung lượng khi upload, hỗ trợ các định dạng ảnh PNG, JPEG, HEX (ảnh từ iphone)
 
 Tự hủy phòng chat:
 
