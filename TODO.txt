@@ -29,7 +29,7 @@ Tất cả người dùng (bao gồm chủ phòng) rời khỏi phòng.
 
 
 Khi phòng bị hủy, tất cả ảnh và tin nhắn liên quan trong thư mục server và SQLite sẽ bị xóa để giải phóng dung lượng.
-
+trong vòng 8h nếu trong phòng ko có tin nhắn mới thì sẽ tự huỷ phòng
 
 Tìm kiếm tin nhắn cũ:
 
