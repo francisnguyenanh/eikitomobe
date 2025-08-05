@@ -1,0 +1,10 @@
+flask
+flask-sqlalchemy
+flask-login
+flask-socketio
+bcrypt
+pillow
+cryptography
+reportlab
+requests
+wand
