@@ -733,20 +733,26 @@ class ChatApp {
         if (roomFromUrl) {
             // Mark that we accessed via room link for history management
             this.accessedViaRoomLink = true;
-            
+
             // Setup history management to prevent going back to login/modal
             this.setupHistoryManagement();
-            
+
             // If accessed via room link, show only join tab and pre-fill room name
             document.getElementById('joinRoomName').value = roomFromUrl;
             this.showJoinOnlyModal();
         } else if (!this.currentRoom) {
             // Show normal modal if no room data exists
+            // Ẩn trường password ở tab Join Room
+            const joinPasswordDiv = document.getElementById('joinPassword').parentElement;
+            joinPasswordDiv.style.display = 'none';
             const roomModal = new bootstrap.Modal(document.getElementById('roomModal'));
             roomModal.show();
         }
 
         document.getElementById('create-tab').addEventListener('click', async () => {
+            // Ẩn trường password khi tạo phòng
+            const createPasswordDiv = document.getElementById('createPassword').parentElement;
+            createPasswordDiv.style.display = 'none';
             try {
                 const res = await fetch('/api/ui_settings');
                 const data = await res.json();
@@ -944,18 +950,22 @@ class ChatApp {
         document.getElementById('create-pane').style.display = 'none';
         document.getElementById('rooms-tab').style.display = 'none';
         document.getElementById('rooms-pane').style.display = 'none';
-        
+
         // Disable room name input since it's pre-filled from URL
         const roomNameInput = document.getElementById('joinRoomName');
         roomNameInput.setAttribute('readonly', true);
         roomNameInput.style.backgroundColor = '#f8f9fa';
-        
+
+        // Hide password field when joining via link
+        const passwordDiv = document.getElementById('joinPassword').parentElement;
+        passwordDiv.style.display = 'none';
+
         // Update modal title
         document.querySelector('.modal-title').innerHTML = `
             <i class="bi bi-box-arrow-in-right me-2"></i>
             Join Room
         `;
-        
+
         // Show the modal
         const roomModal = new bootstrap.Modal(document.getElementById('roomModal'));
         roomModal.show();
@@ -998,39 +1008,44 @@ class ChatApp {
     
     async handleJoinRoom(e) {
         e.preventDefault();
-        
+
         const roomName = document.getElementById('joinRoomName').value.trim();
-        const password = document.getElementById('joinPassword').value.trim();
         const userName = document.getElementById('joinUserName').value.trim();
-        
+        let password = '';
+        // Nếu trường password đang hiển thị thì lấy giá trị, còn nếu ẩn thì để rỗng
+        const passwordField = document.getElementById('joinPassword');
+        if (passwordField.parentElement.style.display !== 'none') {
+            password = passwordField.value.trim();
+        }
+
         if (!roomName || !userName) {
             this.showError('Room name and user name are required');
             return;
         }
-        
+
         try {
             const response = await fetch('/api/chat/join_room', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ room_name: roomName, password: password, user_name: userName })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.status === 'success') {
                 this.currentRoom = roomName;
                 this.currentUser = userName;
                 this.isOwner = data.is_owner;
-                
+
                 // Save room data for refresh handling
                 this.saveRoomData();
-                
+
                 // Join socket room
                 this.socket.emit('join_room', { room_name: roomName, user_name: userName });
-                
+
                 // Hide modal
                 bootstrap.Modal.getInstance(document.getElementById('roomModal')).hide();
-                
+
             } else {
                 this.showError(data.message);
             }
@@ -1043,8 +1058,9 @@ class ChatApp {
         e.preventDefault();
         
         const roomName = document.getElementById('createRoomName').value.trim();
-        const password = document.getElementById('createPassword').value.trim();
         const ownerName = document.getElementById('createOwnerName').value.trim();
+        // Password mặc định là rỗng
+        const password = '';
         
         if (!roomName || !ownerName) {
             this.showError('Room name and owner name are required');
@@ -1096,6 +1112,11 @@ class ChatApp {
             document.getElementById('deleteRoomBtn').style.display = 'block';
         }
         
+        if (this.isOwner) {
+            document.getElementById('navbarBrand').style.display = 'block';
+        } else {
+            document.getElementById('navbarBrand').style.display = 'none';
+        }
         // Load messages
         this.loadMessages(data.messages);
         
