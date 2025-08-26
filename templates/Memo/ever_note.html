@@ -4823,8 +4823,16 @@ const NoteManager = {
         const wordCount = editor ? getWordCountFromHtml(editor.innerHTML) : 0;
 
         if (note.created_at && note.updated_at) {
+            // Đảm bảo cả hai thời gian đều được hiển thị theo giờ local
+            const createdDate = new Date(note.created_at);
+            const updatedDate = new Date(note.updated_at);
+            
+            // Sử dụng cùng một cách format để đảm bảo đồng nhất
+            const createdStr = createdDate.toLocaleString();
+            const updatedStr = updatedDate.toLocaleString();
+            
             const folderInfo = note.folder_name ? `Folder: ${note.folder_name}` : '';
-            metaDiv.innerHTML = `${new Date(note.created_at).toLocaleString()} ～ ${new Date(note.updated_at).toLocaleString()}${folderInfo ? ' | ' + folderInfo : ''} | Words: ${wordCount}`;
+            metaDiv.innerHTML = `${createdStr} ～ ${updatedStr}${folderInfo ? ' | ' + folderInfo : ''} | Words: ${wordCount}`;
         } else {
             metaDiv.innerHTML = '';
         }
