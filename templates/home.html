@@ -1014,6 +1014,12 @@
                         <i class="bi bi-info-circle me-1"></i>
                         Click vào mã QR để copy link card vào clipboard
                     </p>
+                    <div class="mb-3">
+                        <a href="/manage_cv" class="btn btn-primary w-100">
+                            <i class="bi bi-pencil-square me-2"></i>
+                            Quản lý thông tin CV
+                        </a>
+                    </div>
                     <div id="cardList" class="row g-3"></div>
                 </div>
             </div>
@@ -2823,21 +2829,38 @@
                 colDiv.appendChild(qrContainer);
                 container.appendChild(colDiv);
                 
-                try {
-                    const data = await API.getCardHash(file);
-                    if (data.hash) {
-                        const publicUrl = `${window.location.origin}/public_card/${data.hash}`;
-                        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(publicUrl)}`;
-                        qrImg.src = qrApiUrl;
-                        
-                        qrImg.onerror = () => this.showErrorFallback(qrImg, qrContainer, filename, 'QR Error');
-                        qrContainer.onclick = () => Utils.copyToClipboard(publicUrl, qrContainer);
-                    } else {
-                        this.showErrorFallback(qrImg, qrContainer, filename, 'Link Error');
+                // Only show QR code for Card1
+                if (file === 'Card1.html') {
+                    try {
+                        const data = await API.getCardHash(file);
+                        if (data.hash) {
+                            const publicUrl = `${window.location.origin}/public_card/${data.hash}`;
+                            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(publicUrl)}`;
+                            qrImg.src = qrApiUrl;
+                            
+                            qrImg.onerror = () => this.showErrorFallback(qrImg, qrContainer, filename, 'QR Error');
+                            qrContainer.onclick = () => Utils.copyToClipboard(publicUrl, qrContainer);
+                        } else {
+                            this.showErrorFallback(qrImg, qrContainer, filename, 'Link Error');
+                        }
+                    } catch (error) {
+                        console.error('Error getting card hash:', error);
+                        this.showErrorFallback(qrImg, qrContainer, filename, 'Hash Error');
                     }
-                } catch (error) {
-                    console.error('Error getting card hash:', error);
-                    this.showErrorFallback(qrImg, qrContainer, filename, 'Hash Error');
+                } else {
+                    // For Card2 and Card3, show direct link without QR code
+                    qrImg.style.display = 'none';
+                    const linkText = document.createElement('div');
+                    linkText.textContent = 'View Card';
+                    linkText.style.color = '#6c5ce7';
+                    linkText.style.fontSize = '0.9rem';
+                    linkText.style.textAlign = 'center';
+                    linkText.style.marginTop = '10px';
+                    linkText.style.cursor = 'pointer';
+                    qrContainer.insertBefore(linkText, filename);
+                    
+                    const cardUrl = `${window.location.origin}/card_view/${file}`;
+                    qrContainer.onclick = () => Utils.copyToClipboard(cardUrl, qrContainer);
                 }
             },
 

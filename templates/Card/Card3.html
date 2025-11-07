@@ -6,6 +6,8 @@
   <title>友部 瑛希</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <!-- Google Fonts: Manrope & Noto Sans JP -->
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700&display=swap" rel="stylesheet">
@@ -25,8 +27,8 @@
     
     body {
       font-family: 'Manrope', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #1d1d1f;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+      color: #2c3e50;
       line-height: 1.6;
       min-height: 100vh;
       display: flex;
@@ -269,5 +271,176 @@
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    // Load CV data from API
+    fetch('/api/cv_data')
+      .then(response => response.json())
+      .then(result => {
+        if (result.success && result.data) {
+          const cv = result.data;
+          
+          // Update contact info section
+          const contactInfo = document.querySelector('.contact-info');
+          const contactHTML = `
+            <div class="text-center mb-3">
+              <h1 class="fw-bold mb-2" style="color: #2d3436; font-family: 'Shippori Mincho B1', serif; font-size: 2.3rem;">
+                ${cv.氏名 || ''}
+              </h1>
+              <p class="fs-5 mb-0" style="font-family: 'Noto Sans JP', sans-serif; color: #636e72;">
+                ${cv.フリガナ || ''}
+              </p>
+            </div>
+          `;
+          contactInfo.innerHTML = contactHTML;
+          
+          // Create career details section
+          const heroSection = document.querySelector('.hero-section');
+          const careerHTML = `
+            <div class="container" style="padding: 30px;">
+              <div class="row g-4">
+                
+                <!-- Career Details -->
+                <div class="col-12">
+                  <div class="card border-0 shadow-lg" style="border-radius: 25px; overflow: hidden; border-top: 4px solid #2c5f8d;">
+                    <div class="card-header text-white py-4" style="background: linear-gradient(135deg, #2c5f8d 0%, #1e3a5f 100%);">
+                      <h2 class="mb-0 fw-bold">
+                        <i class="bi bi-briefcase-fill me-2"></i>職務経歴詳細
+                      </h2>
+                    </div>
+                    <div class="card-body p-4" style="background: #ffffff;" id="careerDetailsSection">
+                      <!-- Career details will be populated dynamically -->
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Self PR -->
+                <div class="col-12">
+                  <div class="card border-0 shadow-lg" style="border-radius: 25px; overflow: hidden; border-top: 4px solid #34495e;">
+                    <div class="card-header text-white py-4" style="background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);">
+                      <h2 class="mb-0 fw-bold">
+                        <i class="bi bi-person-badge-fill me-2"></i>自己PR
+                      </h2>
+                    </div>
+                    <div class="card-body p-4" style="background: #ffffff;">
+                      <div class="bg-white rounded-3 shadow-sm p-4" style="border-left: 4px solid #34495e; background: #f8f9fa !important;">
+                        <p class="mb-0" style="line-height: 2; white-space: pre-line; font-size: 1.05rem; color: #2c3e50;">
+                          ${cv.自己PR || ''}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Motivation -->
+                <div class="col-12">
+                  <div class="card border-0 shadow-lg" style="border-radius: 25px; overflow: hidden; border-top: 4px solid #16a085;">
+                    <div class="card-header text-white py-4" style="background: linear-gradient(135deg, #16a085 0%, #138d75 100%);">
+                      <h2 class="mb-0 fw-bold">
+                        <i class="bi bi-heart-fill me-2"></i>志望動機
+                      </h2>
+                    </div>
+                    <div class="card-body p-4" style="background: #ffffff;">
+                      <div class="bg-white rounded-3 shadow-sm p-4" style="border-left: 4px solid #16a085; background: #f8f9fa !important;">
+                        <p class="mb-0" style="line-height: 2; white-space: pre-line; font-size: 1.05rem; color: #2c3e50;">
+                          ${cv.志望動機 || ''}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+              </div>
+            </div>
+          `;
+          
+          // Insert before footer
+          const footer = document.querySelector('footer');
+          footer.insertAdjacentHTML('beforebegin', careerHTML);
+          
+          // Render career details dynamically
+          renderCareerDetails(cv);
+        }
+      })
+      .catch(error => console.error('Error loading CV data:', error));
+    
+    // Function to render career details dynamically
+    function renderCareerDetails(cv) {
+      const careerSection = document.getElementById('careerDetailsSection');
+      if (!careerSection) return;
+      
+      // Find all career detail entries
+      const careerIndices = [];
+      Object.keys(cv).forEach(key => {
+        if (key.startsWith('職務経歴_会社名')) {
+          const num = parseInt(key.replace('職務経歴_会社名', ''));
+          if (!isNaN(num) && cv[key]) {
+            careerIndices.push(num);
+          }
+        }
+      });
+      
+      // Sort indices
+      careerIndices.sort((a, b) => a - b);
+      
+      // Color options for different companies
+      const colors = ['#2c5f8d', '#16a085', '#8e44ad', '#e67e22', '#c0392b', '#27ae60'];
+      
+      // Build HTML for all career entries
+      let careerHTML = '';
+      careerIndices.forEach((index, i) => {
+        const companyName = cv[`職務経歴_会社名${index}`];
+        const period = cv[`職務経歴_期間${index}`] || '';
+        const duties = cv[`職務経歴_職務内容${index}`] || '';
+        const achievements = cv[`職務経歴_実績${index}`] || '';
+        const borderColor = colors[i % colors.length];
+        
+        careerHTML += `
+          <div class="company-card mb-4 bg-white rounded-3 shadow-sm p-4" style="border-left: 5px solid ${borderColor};">
+            <div class="d-flex align-items-center mb-3">
+              <div class="company-icon me-3" style="width: 50px; height: 50px; background: ${borderColor}; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <i class="bi bi-building text-white fs-4"></i>
+              </div>
+              <div>
+                <h3 class="mb-1 fw-bold" style="color: ${borderColor}; font-size: 1.5rem;">${companyName}</h3>
+                <p class="mb-0 text-muted">
+                  <i class="bi bi-calendar-range me-1"></i>
+                  <span class="badge" style="background: ${borderColor};">${period}</span>
+                </p>
+              </div>
+            </div>
+            
+            <div class="mt-4">
+              ${duties ? `
+              <div class="mb-4">
+                <h4 class="h6 fw-bold mb-3 d-flex align-items-center" style="color: #34495e;">
+                  <span class="badge me-2" style="background: #16a085;"><i class="bi bi-list-task"></i></span>
+                  職務内容
+                </h4>
+                <div class="content-box p-3 rounded" style="border-left: 4px solid ${borderColor}; background: #f8f9fa;">
+                  <p class="mb-0" style="line-height: 1.9; white-space: pre-line; color: #2c3e50;">${duties}</p>
+                </div>
+              </div>
+              ` : ''}
+              
+              ${achievements ? `
+              <div>
+                <h4 class="h6 fw-bold mb-3 d-flex align-items-center" style="color: #34495e;">
+                  <span class="badge me-2" style="background: #8e44ad;"><i class="bi bi-trophy"></i></span>
+                  実績・成果
+                </h4>
+                <div class="content-box p-3 rounded" style="border-left: 4px solid ${borderColor}; background: #f8f9fa;">
+                  <p class="mb-0" style="line-height: 1.9; white-space: pre-line; color: #2c3e50;">${achievements}</p>
+                </div>
+              </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      });
+      
+      careerSection.innerHTML = careerHTML;
+    }
+  </script>
 </body>
 </html>

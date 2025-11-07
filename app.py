@@ -2178,9 +2178,14 @@ def encode_card(filename):
 
 # Ví dụ ánh xạ tạm thời (nên lưu vào DB nếu dùng thực tế)
 CARD_HASH_MAP = {}
+CARD_HASH_EXPIRY = {}  # Store expiry time for each hash
+
 def get_card_hash(filename):
     h = encode_card(filename)
     CARD_HASH_MAP[h] = filename
+    # Card1 expires in 6 months (180 days), others in 30 days
+    expiry_days = 180 if filename == 'Card1.html' else 30
+    CARD_HASH_EXPIRY[h] = datetime.now() + timedelta(days=expiry_days)
     return h
 
 @app.route('/get_card_hash/<filename>')
@@ -2190,13 +2195,24 @@ def get_card_hash_api(filename):
     if not filename.endswith('.html') or filename not in os.listdir(card_dir):
         return jsonify({'error': 'Invalid file'}), 400
     h = get_card_hash(filename)
-    return jsonify({'hash': h})
+    return jsonify({'hash': h, 'expires_at': CARD_HASH_EXPIRY[h].isoformat()})
 
 @app.route('/public_card/<card_hash>')
 def public_card(card_hash):
     filename = CARD_HASH_MAP.get(card_hash)
+    
+    # Check if hash exists and is not expired
     if not filename or not filename.endswith('.html'):
         return "Invalid or expired link", 404
+    
+    # Check expiry
+    expiry = CARD_HASH_EXPIRY.get(card_hash)
+    if expiry and datetime.now() > expiry:
+        # Clean up expired hash
+        del CARD_HASH_MAP[card_hash]
+        del CARD_HASH_EXPIRY[card_hash]
+        return "Link đã hết hạn", 404
+    
     card_dir = f'Card/{filename}'  # SỬA Ở ĐÂY
     settings = get_user_settings()
     card_info = settings.get_card_info()
@@ -6038,6 +6054,167 @@ def import_flashcard_deck():
     except Exception as e:
         app.logger.error(f"Error importing deck: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# CV Data Functions
+def get_cv_data_path():
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cv_data.csv')
+
+def load_cv_data():
+    """Load CV data from CSV file"""
+    try:
+        cv_path = get_cv_data_path()
+        if not os.path.exists(cv_path):
+            return None
+        
+        with open(cv_path, 'r', encoding='utf-8') as f:
+            import csv
+            reader = csv.DictReader(f)
+            data = next(reader)  # Get first row
+            return data
+    except Exception as e:
+        app.logger.error(f"Error loading CV data: {str(e)}")
+        return None
+
+@app.route('/api/cv_data')
+def get_cv_data():
+    """API endpoint to get CV data"""
+    try:
+        cv_data = load_cv_data()
+        if cv_data:
+            return jsonify({
+                'success': True,
+                'data': cv_data
+            })
+        return jsonify({
+            'success': False,
+            'error': 'CV data not found'
+        }), 404
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+def save_cv_data(cv_data):
+    """Save CV data to CSV file"""
+    try:
+        cv_path = get_cv_data_path()
+        
+        # Start with base fields
+        base_fields = [
+            '氏名', 'フリガナ', '生年月日', '性別', '現住所', '電話番号', 'メールアドレス',
+            '学歴1', '学歴2', '学歴3', '学歴4'
+        ]
+        
+        # Collect all dynamic fields from cv_data
+        work_history_fields = []
+        certification_fields = []
+        career_detail_fields = []
+        
+        for key in cv_data.keys():
+            if key.startswith('職歴'):
+                num = key.replace('職歴', '')
+                if num.isdigit():
+                    work_history_fields.append(int(num))
+            elif key.startswith('免許資格'):
+                num = key.replace('免許資格', '')
+                if num.isdigit():
+                    certification_fields.append(int(num))
+            elif key.startswith('職務経歴_会社名'):
+                num = key.replace('職務経歴_会社名', '')
+                if num.isdigit():
+                    career_detail_fields.append(int(num))
+        
+        # Sort and create field names
+        work_history_fields = sorted(set(work_history_fields))
+        certification_fields = sorted(set(certification_fields))
+        career_detail_fields = sorted(set(career_detail_fields))
+        
+        # Build complete fieldnames list
+        fieldnames = base_fields.copy()
+        
+        # Add 職歴 fields
+        for num in work_history_fields:
+            fieldnames.append(f'職歴{num}')
+        
+        # Add 免許資格 fields
+        for num in certification_fields:
+            fieldnames.append(f'免許資格{num}')
+        
+        # Add static fields
+        fieldnames.extend(['志望動機', '本人希望記入欄'])
+        
+        # Add 職務経歴詳細 fields
+        for num in career_detail_fields:
+            fieldnames.extend([
+                f'職務経歴_会社名{num}',
+                f'職務経歴_期間{num}',
+                f'職務経歴_職務内容{num}',
+                f'職務経歴_実績{num}'
+            ])
+        
+        # Add final fields
+        fieldnames.extend(['自己PR', '保有スキル'])
+        
+        # Ensure all fields exist in data
+        complete_data = {field: cv_data.get(field, '') for field in fieldnames}
+        
+        # Write to CSV
+        with open(cv_path, 'w', encoding='utf-8', newline='') as f:
+            import csv
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerow(complete_data)
+        
+        return True
+    except Exception as e:
+        app.logger.error(f"Error saving CV data: {str(e)}")
+        return False
+
+@app.route('/manage_cv')
+def manage_cv():
+    """Render CV management page"""
+    return render_template('CV/manage_cv.html')
+
+@app.route('/api/cv_data/update', methods=['POST'])
+def update_cv_data():
+    """API endpoint to update CV data"""
+    try:
+        cv_data = request.json
+        
+        if not cv_data:
+            return jsonify({
+                'success': False,
+                'error': 'No data provided'
+            }), 400
+        
+        # Validate required fields
+        required_fields = ['氏名', 'フリガナ']
+        for field in required_fields:
+            if not cv_data.get(field):
+                return jsonify({
+                    'success': False,
+                    'error': f'{field}は必須項目です'
+                }), 400
+        
+        # Save data
+        if save_cv_data(cv_data):
+            return jsonify({
+                'success': True,
+                'message': 'CVデータが正常に保存されました'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': '保存中にエラーが発生しました'
+            }), 500
+            
+    except Exception as e:
+        app.logger.error(f"Error updating CV data: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
     
 if __name__ == '__main__':
     app.run(debug=True)

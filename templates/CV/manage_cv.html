@@ -1,0 +1,770 @@
+{% extends "CV/base.html" %}
+
+{% block head %}
+  <style>
+    .page-header {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .page-header h1 {
+      color: var(--text-color);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    .section-card {
+      background: var(--card-bg);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 25px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .section-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .section-header h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    
+    .btn-save {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      padding: 15px 40px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-save:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-preview {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      border: none;
+      color: white;
+      padding: 10px 25px;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-preview:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(240, 147, 251, 0.4);
+    }
+    
+    .repeater-item {
+      background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.05);
+      border: 2px solid var(--navbar-border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 15px;
+      position: relative;
+    }
+    
+    .btn-remove {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 35px;
+      height: 35px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-remove:hover {
+      background: #c82333;
+      transform: scale(1.1);
+    }
+    
+    .btn-add {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-add:hover {
+      background: #218838;
+      transform: translateY(-2px);
+    }
+    
+    .sticky-actions {
+      position: sticky;
+      bottom: 20px;
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+      margin-top: 30px;
+      z-index: 100;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <!-- Page Header -->
+  
+  <!-- Success Message -->
+  <div id="successAlert" class="alert alert-success d-none" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i>
+    <strong>保存成功！</strong> CVデータが正常に更新されました。
+  </div>
+  
+  <form id="cvForm">      <!-- Basic Information -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2><i class="bi bi-person-fill me-2"></i>基本情報</h2>
+          <button type="button" class="btn btn-preview btn-sm" onclick="previewCard(1)">
+            <i class="bi bi-eye me-1"></i>プレビュー
+          </button>
+        </div>
+        
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">氏名 <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="氏名" required>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label">フリガナ <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="フリガナ" required>
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label">生年月日</label>
+            <input type="text" class="form-control" name="生年月日" placeholder="例：1995年4月15日">
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label">性別</label>
+            <select class="form-select" name="性別">
+              <option value="">選択してください</option>
+              <option value="男性">男性</option>
+              <option value="女性">女性</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label">電話番号</label>
+            <input type="tel" class="form-control" name="電話番号" placeholder="例：090-1234-5678">
+          </div>
+          
+          <div class="col-md-12">
+            <label class="form-label">メールアドレス</label>
+            <input type="email" class="form-control" name="メールアドレス" placeholder="例：example@email.com">
+          </div>
+          
+          <div class="col-12">
+            <label class="form-label">現住所</label>
+            <input type="text" class="form-control" name="現住所" placeholder="例：東京都渋谷区〇〇">
+          </div>
+        </div>
+      </div>
+      
+      <!-- Education -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2><i class="bi bi-mortarboard-fill me-2"></i>学歴</h2>
+        </div>
+        
+        <div id="educationContainer">
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <label class="form-label">学歴1</label>
+              <input type="text" class="form-control" name="学歴1" placeholder="例：2010年3月 〇〇高等学校 卒業">
+            </div>
+          </div>
+          
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <label class="form-label">学歴2</label>
+              <input type="text" class="form-control" name="学歴2" placeholder="例：2013年4月 〇〇大学 入学">
+            </div>
+          </div>
+          
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <label class="form-label">学歴3</label>
+              <input type="text" class="form-control" name="学歴3" placeholder="例：2017年3月 〇〇大学 卒業">
+            </div>
+          </div>
+          
+          <div class="row g-3 mb-3">
+            <div class="col-12">
+              <label class="form-label">学歴4</label>
+              <input type="text" class="form-control" name="学歴4">
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Work History -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2><i class="bi bi-briefcase-fill me-2"></i>職歴</h2>
+          <button type="button" class="btn btn-add btn-sm" onclick="addWorkHistory()">
+            <i class="bi bi-plus-lg me-1"></i>追加
+          </button>
+        </div>
+        
+        <div id="workHistoryContainer">
+          <div class="repeater-item" data-index="1">
+            <button type="button" class="btn-remove" onclick="removeWorkHistory(this)" style="display: none;">
+              <i class="bi bi-dash-lg"></i>
+            </button>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">職歴1</label>
+                <input type="text" class="form-control" name="職歴1" placeholder="例：2017年4月 株式会社〇〇 入社">
+              </div>
+            </div>
+          </div>
+          
+          <div class="repeater-item" data-index="2">
+            <button type="button" class="btn-remove" onclick="removeWorkHistory(this)">
+              <i class="bi bi-dash-lg"></i>
+            </button>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">職歴2</label>
+                <input type="text" class="form-control" name="職歴2">
+              </div>
+            </div>
+          </div>
+          
+          <div class="repeater-item" data-index="3">
+            <button type="button" class="btn-remove" onclick="removeWorkHistory(this)">
+              <i class="bi bi-dash-lg"></i>
+            </button>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">職歴3</label>
+                <input type="text" class="form-control" name="職歴3">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Licenses & Certifications -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2><i class="bi bi-award-fill me-2"></i>免許・資格</h2>
+          <button type="button" class="btn btn-add btn-sm" onclick="addCertification()">
+            <i class="bi bi-plus-lg me-1"></i>追加
+          </button>
+        </div>
+        
+        <div id="certificationsContainer">
+          <div class="repeater-item" data-index="1">
+            <button type="button" class="btn-remove" onclick="removeCertification(this)" style="display: none;">
+              <i class="bi bi-dash-lg"></i>
+            </button>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">免許資格1</label>
+                <input type="text" class="form-control" name="免許資格1" placeholder="例：2020年6月 TOEIC 850点">
+              </div>
+            </div>
+          </div>
+          
+          <div class="repeater-item" data-index="2">
+            <button type="button" class="btn-remove" onclick="removeCertification(this)">
+              <i class="bi bi-dash-lg"></i>
+            </button>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">免許資格2</label>
+                <input type="text" class="form-control" name="免許資格2">
+              </div>
+            </div>
+          </div>
+          
+          <div class="repeater-item" data-index="3">
+            <button type="button" class="btn-remove" onclick="removeCertification(this)">
+              <i class="bi bi-dash-lg"></i>
+            </button>
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label">免許資格3</label>
+                <input type="text" class="form-control" name="免許資格3">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Motivation & Requests -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2><i class="bi bi-heart-fill me-2"></i>志望動機・本人希望</h2>
+        </div>
+        
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">志望動機</label>
+            <textarea class="form-control" name="志望動機" rows="5" placeholder="志望動機を入力してください"></textarea>
+          </div>
+          
+          <div class="col-12">
+            <label class="form-label">本人希望記入欄</label>
+            <textarea class="form-control" name="本人希望記入欄" rows="3" placeholder="希望条件などを入力してください"></textarea>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Career Details - Company 1 -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2><i class="bi bi-building me-2"></i>職務経歴詳細</h2>
+          <div>
+            <button type="button" class="btn btn-add btn-sm me-2" onclick="addCareerDetail()">
+              <i class="bi bi-plus-lg me-1"></i>会社追加
+            </button>
+            <button type="button" class="btn btn-preview btn-sm" onclick="previewCard(3)">
+              <i class="bi bi-eye me-1"></i>プレビュー
+            </button>
+          </div>
+        </div>
+        
+        <div id="careerDetailsContainer">
+          <div class="repeater-item" data-index="1">
+            <button type="button" class="btn-remove" onclick="removeCareerDetail(this)" style="display: none;">
+              <i class="bi bi-dash-lg"></i>
+            </button>
+            <h5 class="mb-3 text-primary"><i class="bi bi-building me-2"></i>会社1</h5>
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">会社名</label>
+                <input type="text" class="form-control" name="職務経歴_会社名1" placeholder="例：株式会社〇〇">
+              </div>
+              
+              <div class="col-md-4">
+                <label class="form-label">在籍期間</label>
+                <input type="text" class="form-control" name="職務経歴_期間1" placeholder="例：2017年4月 - 2020年3月">
+              </div>
+              
+              <div class="col-12">
+                <label class="form-label">職務内容</label>
+                <textarea class="form-control" name="職務経歴_職務内容1" rows="5" placeholder="担当した業務内容を詳しく記入してください"></textarea>
+              </div>
+              
+              <div class="col-12">
+                <label class="form-label">実績・成果</label>
+                <textarea class="form-control" name="職務経歴_実績1" rows="5" placeholder="達成した成果や実績を記入してください"></textarea>
+              </div>
+            </div>
+          </div>
+          
+          <div class="repeater-item" data-index="2">
+            <button type="button" class="btn-remove" onclick="removeCareerDetail(this)">
+              <i class="bi bi-dash-lg"></i>
+            </button>
+            <h5 class="mb-3 text-primary"><i class="bi bi-building me-2"></i>会社2</h5>
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">会社名</label>
+                <input type="text" class="form-control" name="職務経歴_会社名2" placeholder="例：株式会社△△">
+              </div>
+              
+              <div class="col-md-4">
+                <label class="form-label">在籍期間</label>
+                <input type="text" class="form-control" name="職務経歴_期間2" placeholder="例：2020年4月 - 現在">
+              </div>
+              
+              <div class="col-12">
+                <label class="form-label">職務内容</label>
+                <textarea class="form-control" name="職務経歴_職務内容2" rows="5"></textarea>
+              </div>
+              
+              <div class="col-12">
+                <label class="form-label">実績・成果</label>
+                <textarea class="form-control" name="職務経歴_実績2" rows="5"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Self PR & Skills -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2><i class="bi bi-person-badge-fill me-2"></i>自己PR・保有スキル</h2>
+          <button type="button" class="btn btn-preview btn-sm" onclick="previewCard(2)">
+            <i class="bi bi-eye me-1"></i>プレビュー
+          </button>
+        </div>
+        
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">自己PR</label>
+            <textarea class="form-control" name="自己PR" rows="6" placeholder="あなたの強みやアピールポイントを記入してください"></textarea>
+          </div>
+          
+          <div class="col-12">
+            <label class="form-label">保有スキル</label>
+            <textarea class="form-control" name="保有スキル" rows="6" placeholder="保有している技術スキルや知識を記入してください"></textarea>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="sticky-actions">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <button type="button" class="btn btn-preview me-2" onclick="previewCard(1)">
+              <i class="bi bi-eye me-1"></i>Card1プレビュー
+            </button>
+            <button type="button" class="btn btn-preview me-2" onclick="previewCard(2)">
+              <i class="bi bi-eye me-1"></i>Card2プレビュー
+            </button>
+            <button type="button" class="btn btn-preview" onclick="previewCard(3)">
+              <i class="bi bi-eye me-1"></i>Card3プレビュー
+            </button>
+          </div>
+          <button type="submit" class="btn btn-save">
+            <i class="bi bi-save me-2"></i>変更を保存
+          </button>
+        </div>
+      </div>
+      
+    </form>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    // Counter for dynamic items
+    let workHistoryCount = 3;
+    let certificationCount = 3;
+    let careerDetailCount = 2;
+    
+    // Add Work History
+    function addWorkHistory() {
+      workHistoryCount++;
+      const container = document.getElementById('workHistoryContainer');
+      const newItem = document.createElement('div');
+      newItem.className = 'repeater-item';
+      newItem.setAttribute('data-index', workHistoryCount);
+      newItem.innerHTML = `
+        <button type="button" class="btn-remove" onclick="removeWorkHistory(this)">
+          <i class="bi bi-dash-lg"></i>
+        </button>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">職歴${workHistoryCount}</label>
+            <input type="text" class="form-control" name="職歴${workHistoryCount}">
+          </div>
+        </div>
+      `;
+      container.appendChild(newItem);
+      updateRemoveButtons('workHistoryContainer');
+    }
+    
+    // Remove Work History
+    function removeWorkHistory(btn) {
+      const container = document.getElementById('workHistoryContainer');
+      const items = container.querySelectorAll('.repeater-item');
+      if (items.length > 1) {
+        btn.closest('.repeater-item').remove();
+        renumberItems('workHistoryContainer', '職歴');
+        updateRemoveButtons('workHistoryContainer');
+      }
+    }
+    
+    // Add Certification
+    function addCertification() {
+      certificationCount++;
+      const container = document.getElementById('certificationsContainer');
+      const newItem = document.createElement('div');
+      newItem.className = 'repeater-item';
+      newItem.setAttribute('data-index', certificationCount);
+      newItem.innerHTML = `
+        <button type="button" class="btn-remove" onclick="removeCertification(this)">
+          <i class="bi bi-dash-lg"></i>
+        </button>
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">免許資格${certificationCount}</label>
+            <input type="text" class="form-control" name="免許資格${certificationCount}">
+          </div>
+        </div>
+      `;
+      container.appendChild(newItem);
+      updateRemoveButtons('certificationsContainer');
+    }
+    
+    // Remove Certification
+    function removeCertification(btn) {
+      const container = document.getElementById('certificationsContainer');
+      const items = container.querySelectorAll('.repeater-item');
+      if (items.length > 1) {
+        btn.closest('.repeater-item').remove();
+        renumberItems('certificationsContainer', '免許資格');
+        updateRemoveButtons('certificationsContainer');
+      }
+    }
+    
+    // Add Career Detail
+    function addCareerDetail() {
+      careerDetailCount++;
+      const container = document.getElementById('careerDetailsContainer');
+      const newItem = document.createElement('div');
+      newItem.className = 'repeater-item';
+      newItem.setAttribute('data-index', careerDetailCount);
+      newItem.innerHTML = `
+        <button type="button" class="btn-remove" onclick="removeCareerDetail(this)">
+          <i class="bi bi-dash-lg"></i>
+        </button>
+        <h5 class="mb-3 text-primary"><i class="bi bi-building me-2"></i>会社${careerDetailCount}</h5>
+        <div class="row g-3">
+          <div class="col-md-8">
+            <label class="form-label">会社名</label>
+            <input type="text" class="form-control" name="職務経歴_会社名${careerDetailCount}">
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label">在籍期間</label>
+            <input type="text" class="form-control" name="職務経歴_期間${careerDetailCount}">
+          </div>
+          
+          <div class="col-12">
+            <label class="form-label">職務内容</label>
+            <textarea class="form-control" name="職務経歴_職務内容${careerDetailCount}" rows="5"></textarea>
+          </div>
+          
+          <div class="col-12">
+            <label class="form-label">実績・成果</label>
+            <textarea class="form-control" name="職務経歴_実績${careerDetailCount}" rows="5"></textarea>
+          </div>
+        </div>
+      `;
+      container.appendChild(newItem);
+      updateRemoveButtons('careerDetailsContainer');
+    }
+    
+    // Remove Career Detail
+    function removeCareerDetail(btn) {
+      const container = document.getElementById('careerDetailsContainer');
+      const items = container.querySelectorAll('.repeater-item');
+      if (items.length > 1) {
+        btn.closest('.repeater-item').remove();
+        renumberCareerDetails();
+        updateRemoveButtons('careerDetailsContainer');
+      }
+    }
+    
+    // Renumber items after removal
+    function renumberItems(containerId, prefix) {
+      const container = document.getElementById(containerId);
+      const items = container.querySelectorAll('.repeater-item');
+      items.forEach((item, index) => {
+        const newIndex = index + 1;
+        item.setAttribute('data-index', newIndex);
+        const label = item.querySelector('.form-label');
+        const input = item.querySelector('input[type="text"]');
+        if (label) label.textContent = `${prefix}${newIndex}`;
+        if (input) input.name = `${prefix}${newIndex}`;
+      });
+      
+      // Update counter
+      if (containerId === 'workHistoryContainer') {
+        workHistoryCount = items.length;
+      } else if (containerId === 'certificationsContainer') {
+        certificationCount = items.length;
+      }
+    }
+    
+    // Renumber career details (more complex due to multiple fields)
+    function renumberCareerDetails() {
+      const container = document.getElementById('careerDetailsContainer');
+      const items = container.querySelectorAll('.repeater-item');
+      items.forEach((item, index) => {
+        const newIndex = index + 1;
+        item.setAttribute('data-index', newIndex);
+        
+        // Update heading
+        const heading = item.querySelector('h5');
+        if (heading) heading.innerHTML = `<i class="bi bi-building me-2"></i>会社${newIndex}`;
+        
+        // Update all input names
+        const inputs = item.querySelectorAll('input, textarea');
+        inputs.forEach(input => {
+          const name = input.name;
+          if (name.startsWith('職務経歴_会社名')) {
+            input.name = `職務経歴_会社名${newIndex}`;
+          } else if (name.startsWith('職務経歴_期間')) {
+            input.name = `職務経歴_期間${newIndex}`;
+          } else if (name.startsWith('職務経歴_職務内容')) {
+            input.name = `職務経歴_職務内容${newIndex}`;
+          } else if (name.startsWith('職務経歴_実績')) {
+            input.name = `職務経歴_実績${newIndex}`;
+          }
+        });
+      });
+      careerDetailCount = items.length;
+    }
+    
+    // Update remove buttons visibility
+    function updateRemoveButtons(containerId) {
+      const container = document.getElementById(containerId);
+      const items = container.querySelectorAll('.repeater-item');
+      items.forEach((item, index) => {
+        const removeBtn = item.querySelector('.btn-remove');
+        if (removeBtn) {
+          removeBtn.style.display = (items.length > 1 && index > 0) ? 'flex' : 'none';
+        }
+      });
+    }
+    
+    // Initialize remove button visibility on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      updateRemoveButtons('workHistoryContainer');
+      updateRemoveButtons('certificationsContainer');
+      updateRemoveButtons('careerDetailsContainer');
+    });
+    
+    // Load existing CV data
+    fetch('/api/cv_data')
+      .then(response => response.json())
+      .then(result => {
+        if (result.success && result.data) {
+          const cv = result.data;
+          
+          // Find max indices for dynamic fields
+          let maxWorkHistory = 0;
+          let maxCertification = 0;
+          let maxCareerDetail = 0;
+          
+          Object.keys(cv).forEach(key => {
+            // Check 職歴
+            if (key.startsWith('職歴')) {
+              const num = parseInt(key.replace('職歴', ''));
+              if (!isNaN(num) && num > maxWorkHistory) {
+                maxWorkHistory = num;
+              }
+            }
+            // Check 免許資格
+            if (key.startsWith('免許資格')) {
+              const num = parseInt(key.replace('免許資格', ''));
+              if (!isNaN(num) && num > maxCertification) {
+                maxCertification = num;
+              }
+            }
+            // Check 職務経歴_会社名
+            if (key.startsWith('職務経歴_会社名')) {
+              const num = parseInt(key.replace('職務経歴_会社名', ''));
+              if (!isNaN(num) && num > maxCareerDetail) {
+                maxCareerDetail = num;
+              }
+            }
+          });
+          
+          // Add missing 職歴 fields
+          while (workHistoryCount < maxWorkHistory) {
+            addWorkHistory();
+          }
+          
+          // Add missing 免許資格 fields
+          while (certificationCount < maxCertification) {
+            addCertification();
+          }
+          
+          // Add missing 職務経歴詳細 fields
+          while (careerDetailCount < maxCareerDetail) {
+            addCareerDetail();
+          }
+          
+          // Populate form fields
+          const form = document.getElementById('cvForm');
+          Object.keys(cv).forEach(key => {
+            const input = form.querySelector(`[name="${key}"]`);
+            if (input && cv[key]) {
+              input.value = cv[key];
+            }
+          });
+        }
+      })
+      .catch(error => console.error('Error loading CV data:', error));
+    
+    // Handle form submission
+    document.getElementById('cvForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(this);
+      const cvData = {};
+      
+      formData.forEach((value, key) => {
+        cvData[key] = value;
+      });
+      
+      // Save CV data
+      fetch('/api/cv_data/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cvData)
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.success) {
+          // Show success message
+          const alert = document.getElementById('successAlert');
+          alert.classList.remove('d-none');
+          
+          // Scroll to top
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          
+          // Hide alert after 3 seconds
+          setTimeout(() => {
+            alert.classList.add('d-none');
+          }, 3000);
+        } else {
+          alert('保存に失敗しました: ' + (result.error || ''));
+        }
+      })
+      .catch(error => {
+        console.error('Error saving CV data:', error);
+        alert('保存中にエラーが発生しました');
+      });
+    });
+    
+    // Preview card functions
+    function previewCard(cardNumber) {
+      window.open(`/card_view/Card${cardNumber}.html`, '_blank');
+    }
+  </script>
+{% endblock %}
