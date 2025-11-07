@@ -1,0 +1,219 @@
+chức năng phòng chat:
+
+Yêu cầu tổng thể của chức năng
+
+Chức năng chính:
+
+Tạo phòng chat: Người dùng có thể tạo phòng chat với tên phòng và mật khẩu (tùy chọn).
+Tham gia phòng chat: Người dùng nhập tên phòng, mật khẩu (nếu có), và tên tùy ý để tham gia phòng mà không cần đăng nhập.
+Quản lý người dùng:
+
+Người dùng được gán tên tùy ý khi tham gia phòng.
+Tên người dùng bị xóa khỏi phòng khi họ rời phòng hoặc ngắt kết nối.
+
+
+Hiển thị thông báo: Hiển thị thông báo trên website khi có tin nhắn mới (văn bản hoặc ảnh) trong phòng.
+Gửi và xóa ảnh:
+
+Người dùng có thể dán ảnh, chọn ảnh, hoặc kéo thả ảnh từ máy local để gửi trong khung chat.
+Ảnh được upload và lưu vào thư mục trên server (ví dụ: static/uploads/<room_name>/).
+Người dùng có thể xóa ảnh họ đã gửi ngay trên khung chat (chỉ ảnh của chính họ).
+nén ảnh để không chiếm dung lượng khi upload, hỗ trợ các định dạng ảnh PNG, JPEG, HEX (ảnh từ iphone)
+
+Tự hủy phòng chat:
+
+Phòng chat bị xóa khi:
+
+Chủ phòng thực hiện hành động xóa phòng.
+Tất cả người dùng (bao gồm chủ phòng) rời khỏi phòng.
+
+
+Khi phòng bị hủy, tất cả ảnh và tin nhắn liên quan trong thư mục server và SQLite sẽ bị xóa để giải phóng dung lượng.
+trong vòng 8h nếu trong phòng ko có tin nhắn mới thì sẽ tự huỷ phòng
+
+Tìm kiếm tin nhắn cũ:
+
+Người dùng có thể tìm kiếm tin nhắn cũ (văn bản) trong phòng chat hiện tại bằng cách nhập từ khóa vào ô tìm kiếm.
+Kết quả tìm kiếm hiển thị các tin nhắn khớp với từ khóa, bao gồm tên người gửi, nội dung, và thời gian.
+
+
+Chỉnh sửa tin nhắn:
+
+Người dùng có thể chỉnh sửa tin nhắn văn bản mà họ đã gửi.
+Tin nhắn chỉnh sửa được cập nhật trong khung chat của tất cả người dùng trong phòng, với ghi chú “(đã chỉnh sửa)”.
+
+
+Trích dẫn (quote) tin nhắn:
+
+Người dùng có thể trích dẫn một tin nhắn cụ thể (văn bản hoặc ảnh) để trả lời, hiển thị tin nhắn gốc kèm nội dung trả lời.
+
+
+Nhắc đến (mention) người dùng:
+
+Người dùng có thể nhắc đến một người dùng khác trong phòng bằng cú pháp @username.
+Tin nhắn chứa mention sẽ làm nổi bật tên người được nhắc (ví dụ: tô đậm hoặc đổi màu).
+
+
+Hiển thị tin nhắn:
+
+Tin nhắn do người dùng hiện tại gửi sẽ hiển thị ở bên phải khung chat.
+Tin nhắn do người khác gửi sẽ hiển thị ở bên trái khung chat.
+Mỗi tin nhắn (văn bản hoặc ảnh) hiển thị giờ gửi (theo định dạng HH:MM:SS, múi giờ JST).
+
+
+Hỗ trợ ngôn ngữ:
+
+Hỗ trợ hiển thị và nhập tin nhắn bằng tiếng Nhật và tiếng Việt (bao gồm ký tự Unicode, chữ có dấu, và chữ Kanji/Hiragana/Katakana).
+
+
+Gửi link phòng chat:
+
+Người dùng (chủ phòng hoặc khách mời) có thể gửi một link mời vào phòng chat (ví dụ: http://localhost:5000/chat?room=<room_name>).
+Khi nhấp vào link, người dùng được chuyển đến giao diện tham gia phòng chat với tên phòng đã được điền sẵn, nhưng vẫn cần nhập mật khẩu (nếu có) và tên người dùng.
+
+
+
+
+Tích hợp với hệ thống hiện có:
+
+Trang web đã có sẵn chức năng đăng nhập (ví dụ: sử dụng Flask-Login cho các tính năng khác).
+Phòng chat không yêu cầu đăng nhập: Bất kỳ ai cũng có thể truy cập phòng chat bằng cách nhập đúng tên phòng và mật khẩu (nếu có), không cần tài khoản hoặc đăng nhập.
+
+
+Quy mô ứng dụng:
+
+Tối đa 2-3 người dùng trong mỗi phòng.
+Tối đa 2-3 phòng chat đồng thời.
+
+
+Phân quyền:
+
+Chủ phòng (owner): Người tạo phòng có quyền:
+
+Xóa người dùng (kick user) khỏi phòng.
+Xóa phòng chat (khi xóa, tất cả người dùng bị ngắt kết nối, và ảnh/tin nhắn liên quan bị xóa khỏi server).
+
+
+Khách mời (guest): Người tham gia phòng không có quyền xóa người dùng hoặc phòng.
+Hiển thị rõ vai trò (chủ phòng hoặc khách mời) trong danh sách người dùng.
+
+
+Quản lý xóa người dùng:
+
+Chủ phòng có thể xóa một người dùng cụ thể khỏi phòng.
+Khi người dùng bị xóa, họ sẽ bị ngắt kết nối khỏi phòng và nhận thông báo.
+
+
+Quản lý ảnh:
+
+Ảnh được upload vào thư mục server (ví dụ: static/uploads/<room_name>/).
+Mỗi ảnh được gán một ID duy nhất và liên kết với phòng chat, người gửi.
+Người dùng chỉ có thể xóa ảnh do chính họ gửi.
+Khi phòng bị hủy, tất cả ảnh trong thư mục của phòng sẽ bị xóa khỏi server.
+
+
+Quản lý tin nhắn:
+
+Tin nhắn (văn bản và ảnh) được lưu trong SQLite để hỗ trợ tìm kiếm, chỉnh sửa, và trích dẫn.
+Mỗi tin nhắn được gán ID duy nhất, liên kết với phòng chat, người gửi, và thời gian gửi.
+Hỗ trợ chỉnh sửa tin nhắn văn bản (chỉ người gửi có thể chỉnh sửa).
+Hỗ trợ trích dẫn tin nhắn (hiển thị tin nhắn gốc kèm nội dung trả lời).
+Hỗ trợ nhắc đến người dùng bằng cú pháp @username, với giao diện làm nổi bật tên người được nhắc.
+Tin nhắn hiển thị theo kiểu:
+
+Bên phải: Tin nhắn của người dùng hiện tại, với giờ gửi (HH:MM:SS, JST).
+Bên trái: Tin nhắn của người khác, với giờ gửi (HH:MM:SS, JST).
+
+
+
+
+Tìm kiếm tin nhắn:
+
+Người dùng có thể tìm kiếm tin nhắn cũ trong phòng chat hiện tại thông qua một ô tìm kiếm.
+Kết quả tìm kiếm hiển thị danh sách tin nhắn khớp (văn bản), bao gồm tên người gửi, nội dung, và thời gian.
+
+
+Gửi link phòng chat:
+
+Người dùng có thể gửi một link phòng chat (ví dụ: http://localhost:5000/chat?room=<room_name>).
+Khi nhấp vào link, giao diện tham gia phòng sẽ hiển thị với tên phòng được điền sẵn.
+Người dùng vẫn phải nhập mật khẩu (nếu phòng có mật khẩu) và tên người dùng để tham gia.
+
+
+Công nghệ sử dụng:
+
+Framework: Flask (Python) cho server.
+Cơ sở dữ liệu: SQLite để lưu thông tin phòng (tên phòng, mật khẩu, chủ phòng) và tin nhắn (văn bản, ảnh).
+Giao tiếp thời gian thực: Flask-SocketIO cho chat, thông báo, và các hành động như chỉnh sửa, trích dẫn, mention.
+Giao diện: HTML/CSS/JavaScript với Bootstrap để tạo giao diện responsive, đơn giản.
+Quản lý file: Python os/shutil để xử lý upload và xóa ảnh trên server.
+
+
+Yêu cầu giao diện:
+
+Form để tạo phòng (tên phòng, mật khẩu, tên người dùng).
+Form để tham gia phòng (tên phòng, mật khẩu, tên người dùng; tên phòng tự động điền nếu truy cập qua link).
+Khu vực chat hiển thị tin nhắn (văn bản và ảnh) và danh sách người dùng.
+Hỗ trợ gửi ảnh qua:
+
+Chọn file từ máy (input file).
+Kéo thả ảnh vào khung chat.
+Dán ảnh từ clipboard.
+
+
+Ô tìm kiếm tin nhắn cũ trong khung chat.
+Nút “Chỉnh sửa” và “Trích dẫn” bên cạnh tin nhắn văn bản (chỉ hiển thị cho người gửi).
+Nút “Xóa” bên cạnh ảnh (chỉ hiển thị cho người gửi ảnh).
+Nút “Xóa” bên cạnh tên khách mời (chỉ hiển thị cho chủ phòng).
+Nút “Xóa phòng” chỉ hiển thị cho chủ phòng.
+Nút hoặc chức năng để sao chép link phòng chat (ví dụ: nút “Sao chép link phòng”).
+Hiển thị thông báo ngắn (2 giây) khi có tin nhắn mới (văn bản hoặc ảnh).
+Hiển thị tên người được nhắc đến (@username) nổi bật (tô đậm hoặc đổi màu).
+Tin nhắn của người dùng hiện tại hiển thị bên phải, của người khác bên trái, kèm giờ gửi (HH:MM:SS, JST).
+Hỗ trợ hiển thị ký tự tiếng Nhật (Kanji, Hiragana, Katakana) và tiếng Việt (Unicode, chữ có dấu).
+
+
+Hiệu suất và tối ưu:
+
+Lưu thông tin người dùng tạm thời trong bộ nhớ (dictionary) để giảm truy vấn SQLite.
+Lưu tin nhắn trong SQLite để hỗ trợ tìm kiếm và chỉnh sửa, nhưng xóa tin nhắn khi phòng bị hủy.
+Giới hạn số phòng (3) và số người dùng mỗi phòng (3) để đảm bảo hiệu suất cho quy mô nhỏ.
+Xóa ảnh và tin nhắn khỏi server khi phòng bị hủy để tiết kiệm dung lượng.
+
+
+Bảo mật:
+
+Kiểm tra mật khẩu phòng khi tham gia (bao gồm khi truy cập qua link).
+Chỉ chủ phòng được phép xóa người dùng hoặc phòng, với kiểm tra quyền trên server.
+Chỉ người gửi được chỉnh sửa hoặc xóa tin nhắn/ảnh của họ.
+Không yêu cầu xác thực người dùng (đăng nhập) để truy cập phòng chat, chỉ cần thông tin phòng hợp lệ.
+Kiểm tra định dạng và kích thước ảnh khi upload để tránh lỗi hoặc tấn công.
+Lọc nội dung tin nhắn để ngăn chặn XSS hoặc các vấn đề bảo mật khác.
+
+
+
+Cách triển khai bổ sung
+Để đáp ứng yêu cầu gửi link phòng chat, cần điều chỉnh mã như sau:
+
+Tạo link phòng chat:
+
+Thêm nút “Sao chép link phòng” trong giao diện chat, sử dụng JavaScript để sao chép link (ví dụ: http://localhost:5000/chat?room=<room_name>).
+Link được tạo dựa trên tên phòng và dẫn đến route /chat với tham số room.
+
+
+Xử lý truy cập qua link:
+
+Cập nhật route /chat để nhận tham số room từ query string và tự động điền tên phòng vào form tham gia.
+Người dùng vẫn phải nhập mật khẩu (nếu có) và tên người dùng để tham gia.
+
+
+Hỗ trợ ngôn ngữ:
+
+Đảm bảo SQLite và giao diện hỗ trợ ký tự Unicode (tiếng Nhật, tiếng Việt).
+Sử dụng font phù hợp (ví dụ: Noto Serif CJK JP cho tiếng Nhật) để hiển thị đúng ký tự.
+
+
+Hiển thị tin nhắn:
+
+Sử dụng CSS để căn chỉnh tin nhắn: float: right cho tin nhắn của người dùng hiện tại, float: left cho người khác.
+Thêm giờ gửi (HH:MM:SS, JST) vào mỗi tin nhắn, lấy từ trường timestamp trong SQLite.

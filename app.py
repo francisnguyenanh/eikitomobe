@@ -1584,10 +1584,18 @@ def delete_category(id):
 def login():
     if request.method == 'POST':
         password = request.form['password']
+        settings = get_user_settings()
+        hash_str = settings.user_password_hash if settings else None
+        # Nếu chưa có password hash, cho phép login không cần mật khẩu
+        if not hash_str:
+            user = User()
+            login_user(user)
+            session['theme'] = get_theme()
+            return redirect(url_for('home'))
+        # Nếu đã có password hash, kiểm tra mật khẩu như bình thường
         if verify_password(password):
             user = User()
             login_user(user)
-            # Lấy theme từ config và lưu vào session
             session['theme'] = get_theme()
             return redirect(url_for('home'))
         flash('Invalid password', 'danger')
@@ -2008,7 +2016,8 @@ def home():
         show_quote=settings.show_quote or settings.show_zen_quote,  # Show quote section if either toggle is on
         show_zen_quote=settings.show_zen_quote,
         alerts_today=alerts_today,
-        alerts_tomorrow=alerts_tomorrow
+        alerts_tomorrow=alerts_tomorrow,
+        settings=settings
     )
 
 @app.route('/upload_avatar', methods=['POST'])
@@ -2117,26 +2126,29 @@ def api_ui_settings():
     if request.method == 'POST':
         try:
             data = request.get_json()
-            
-            # ✅ SỬA: Cập nhật vào UserSettings
-            update_user_setting(
-                show_bg_image=bool(data.get('show_bg_image', True)),
-                show_quote=bool(data.get('show_quote', True)),
-                show_zen_quote=bool(data.get('show_zen_quote', False))
-            )
-            
+            update_kwargs = {}
+            if 'show_bg_image' in data:
+                update_kwargs['show_bg_image'] = bool(data['show_bg_image'])
+            if 'show_quote' in data:
+                update_kwargs['show_quote'] = bool(data['show_quote'])
+            if 'show_zen_quote' in data:
+                update_kwargs['show_zen_quote'] = bool(data['show_zen_quote'])
+            if 'user_name' in data:
+                update_kwargs['user_name'] = data['user_name']
+            if update_kwargs:
+                update_user_setting(**update_kwargs)
             return jsonify({'status': 'success'})
         except Exception as e:
             app.logger.error(f"Error saving UI settings: {str(e)}")
             return jsonify({'status': 'error', 'message': str(e)}), 500
     else:
         try:
-            # ✅ SỬA: Lấy từ UserSettings
             settings = get_user_settings()
             return jsonify({
                 'show_bg_image': settings.show_bg_image,
                 'show_quote': settings.show_quote,
-                'show_zen_quote': settings.show_zen_quote
+                'show_zen_quote': settings.show_zen_quote,
+                'user_name': settings.user_name
             })
         except Exception as e:
             app.logger.error(f"Error loading UI settings: {str(e)}")
@@ -2226,10 +2238,11 @@ def public_card(card_hash):
     card_info['avatar_url'] = url_for('static', filename=avatar_file) if avatar_file else ''
     return render_template(card_dir, **card_info)
 
-@app.route('/breath')
+# app.py
+@app.route('/ever_note')
 @login_required
-def breath():
-    return render_template('breath.html')
+def ever_note():
+    return render_template('Memo/ever_note.html')
 
 @app.route('/breath_settings', methods=['GET', 'POST'])
 @login_required
@@ -2255,26 +2268,7 @@ def breath_settings():
         except Exception as e:
             return jsonify({'status': 'error', 'message': str(e)}), 500
     
-@app.route('/eye_exercise')
-@login_required
-def eye_exercise():
-    return render_template('eye_exercise.html')
-
-# app.py
-@app.route('/game_flip')
-def game_flip():
-    return render_template('Game/game_memory.html')
-
-@app.route('/game_math')
-def game_math():
-    return render_template('Game/game_math.html')
-
-# app.py
-@app.route('/ever_note')
-@login_required
-def ever_note():
-    return render_template('Memo/ever_note.html')
-
+    
 @app.route('/api/evernote_folders', methods=['GET'])
 @login_required
 def get_evernote_folders():
