@@ -393,10 +393,11 @@ footer {
 
 .toggle-category .category-name {
     flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     font-weight: 600;
+    line-height: 1.4;
 }
 
 .task-count {
@@ -447,6 +448,42 @@ footer {
 }
 
 /* === MODAL COMPONENTS === */
+/* Category Color Picker Styling */
+.form-control-color {
+    width: 100% !important;
+    height: 50px !important;
+    padding: 5px !important;
+    border: 2px solid #dee2e6 !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+.form-control-color:hover {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25) !important;
+}
+
+.form-control-color:focus {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.5) !important;
+    outline: none !important;
+}
+
+#addCategoryForm .row.align-items-end {
+    align-items: center !important;
+}
+
+#addCategoryForm .col {
+    flex: 1;
+    min-width: 0;
+}
+
+#addCategoryForm .col-auto {
+    flex: 0 0 auto;
+    padding-left: 10px;
+}
+
 #viewMemoModal .modal-body,
 #viewMemoModal #viewMemoTitle,
 #viewMemoModal #viewMemoContent {
@@ -471,6 +508,25 @@ footer {
     word-wrap: break-word;
     border: 1px solid #ddd;
     transition: background-color 0.2s ease;
+}
+
+/* === MODAL INPUT STYLING === */
+#addMemoModal #memoTitle,
+#addMemoModal #memoContent,
+#editMemoModal #editMemoTitle,
+#editMemoModal #editMemoContent {
+    border: 2px solid #ced4da !important;
+    border-radius: 8px !important;
+    transition: all 0.3s ease;
+}
+
+#addMemoModal #memoTitle:focus,
+#addMemoModal #memoContent:focus,
+#editMemoModal #editMemoTitle:focus,
+#editMemoModal #editMemoContent:focus {
+    border-color: #0d6efd !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+    outline: none;
 }
 
 /* === CALENDAR MODAL === */
@@ -1212,14 +1268,16 @@ footer {
                 <div class="modal-body">
                     <form id="addCategoryForm" class="mb-3">
                         <div class="mb-3">
-                            <input type="text" class="form-control" id="categoryName" name="name" placeholder="Category Name" required>
+                            <label for="categoryName" class="form-label fw-bold">Category Name</label>
+                            <input type="text" class="form-control" id="categoryName" name="name" placeholder="Enter category name" required>
                         </div>
                         <div class="row mb-3 align-items-end">
                             <div class="col">
-                                <input type="color" class="form-control form-control-color" id="categoryColor" name="color" value="#ffffff">
+                                <label for="categoryColor" class="form-label fw-bold">Category Color</label>
+                                <input type="color" class="form-control form-control-color" id="categoryColor" name="color" value="#0d6efd" title="Choose category color">
                             </div>
                             <div class="col-auto">
-                                <button type="submit" class="btn btn-primary">Add Category</button>
+                                <button type="submit" class="btn btn-primary px-4">Add Category</button>
                             </div>
                         </div>
                     </form>
@@ -1452,26 +1510,10 @@ const ui = {
     },
 
     adjustCategoryButtonWidths() {
+        // Category buttons now auto-adjust to content width
+        // No fixed width needed - buttons will wrap text naturally
         const buttons = document.querySelectorAll('.toggle-category');
         if (!buttons.length) return;
-        
-        let maxWidth = 0;
-        const span = document.createElement('span');
-        Object.assign(span.style, {
-            visibility: 'hidden',
-            position: 'absolute',
-            fontWeight: 'bold',
-            fontSize: getComputedStyle(buttons[0]).fontSize
-        });
-        
-        document.body.appendChild(span);
-        buttons.forEach(btn => {
-            span.textContent = btn.textContent.trim();
-            maxWidth = Math.max(maxWidth, span.offsetWidth);
-        });
-        document.body.removeChild(span);
-        
-        buttons.forEach(btn => btn.style.width = `${maxWidth + 32}px`);
     },
 
     highlightDueDates() {
