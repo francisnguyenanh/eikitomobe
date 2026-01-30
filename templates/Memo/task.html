@@ -1452,6 +1452,46 @@ footer {
 .btn-toggle-all:not(.collapsed) i {
     transform: rotate(180deg);
 }
+
+/* Toggle Completed Button - Same style as Toggle All */
+.btn-toggle-completed {
+    background: var(--primary-color);
+    border: none;
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-toggle-completed:hover {
+    background: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-toggle-completed:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-toggle-completed i {
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.btn-toggle-completed.active {
+    background: var(--primary-color);
+}
+
+.btn-toggle-completed.active i {
+    transform: scale(1.1);
+}
 </style>
 
     <!-- Search Form -->
@@ -1470,10 +1510,10 @@ footer {
                 </button>
             </div>
             <div class="col-auto">
-                <div class="form-check form-switch mb-0">
-                    <input class="form-check-input" type="checkbox" id="showCompleted" name="show_completed" value="1" {% if show_completed %}checked{% endif %}>
-                    <label class="form-check-label" for="showCompleted">Completed</label>
-                </div>
+                <button type="button" class="btn btn-toggle-completed {% if show_completed %}active{% endif %}" id="showCompleted" title="Show/Hide Completed Tasks">
+                    <i class="bi bi-{% if show_completed %}check-circle-fill{% else %}check-circle{% endif %}"></i>
+                    
+                </button>
             </div>
             <div class="col-auto">
                 <button type="button" class="btn btn-toggle-all collapsed" id="toggleAllCategories" title="Expand/Collapse All Categories">
@@ -2224,11 +2264,14 @@ const eventHandlers = {
 
     attachCategoryToggleListeners() {
         document.querySelectorAll('.toggle-category').forEach(button => {
-            const newButton = button.cloneNode(true);
-            button.parentNode.replaceChild(newButton, button);
+            // Remove old listener if exists
+            if (button._clickHandler) {
+                button.removeEventListener('click', button._clickHandler);
+            }
             
-            newButton.addEventListener('click', () => {
-                const categoryId = newButton.dataset.categoryId;
+            // Create new handler
+            button._clickHandler = () => {
+                const categoryId = button.dataset.categoryId;
                 const tableWrapper = document.getElementById(`category-table-${categoryId}`);
                 const icon = document.getElementById(`toggle-icon-${categoryId}`);
                 
@@ -2237,15 +2280,18 @@ const eventHandlers = {
                     icon.classList.toggle('bi-chevron-down');
                     icon.classList.toggle('bi-chevron-right');
                 }
-            });
+            };
+            
+            button.addEventListener('click', button._clickHandler);
         });
         ui.adjustCategoryButtonWidths();
         
-        // Attach toggle all button listener
+        // Attach toggle all button listener - only once
         const toggleAllBtn = document.getElementById('toggleAllCategories');
-        if (toggleAllBtn) {
-            toggleAllBtn.addEventListener('click', () => {
-                const isCollapsed = toggleAllBtn.classList.contains('collapsed');
+        if (toggleAllBtn && !toggleAllBtn._listenerAttached) {
+            toggleAllBtn._listenerAttached = true;
+            toggleAllBtn.addEventListener('click', function toggleAllHandler() {
+                const isCollapsed = this.classList.contains('collapsed');
                 const tableWrappers = document.querySelectorAll('.category-table-wrapper');
                 const icons = document.querySelectorAll('[id^="toggle-icon-"]');
                 
@@ -2267,10 +2313,10 @@ const eventHandlers = {
                     }
                 });
                 
-                toggleAllBtn.classList.toggle('collapsed');
+                this.classList.toggle('collapsed');
                 
                 // Update button icon and text
-                const btnIcon = toggleAllBtn.querySelector('i');
+                const btnIcon = this.querySelector('i');
                 if (btnIcon) {
                     if (isCollapsed) {
                         btnIcon.className = 'bi bi-arrows-collapse';
@@ -2570,10 +2616,18 @@ const noteManager = {
         if (!container) return;
         
         try {
+            // Save current category states before reload
+            const categoryStates = {};
+            document.querySelectorAll('.category-table-wrapper').forEach(wrapper => {
+                const categoryId = wrapper.id.replace('category-table-', '');
+                categoryStates[categoryId] = !wrapper.classList.contains('collapsed');
+            });
+            
             // Xóa category_id parameter, mặc định search tất cả
+            const showCompletedBtn = document.getElementById('showCompleted');
             const params = new URLSearchParams({
                 search: document.querySelector(SELECTORS.inputs.search)?.value || '',
-                show_completed: document.querySelector(SELECTORS.inputs.showCompleted)?.checked ? 1 : 0
+                show_completed: showCompletedBtn?.classList.contains('active') ? 1 : 0
             });
             
             const response = await fetch(`/task?${params.toString()}`);
@@ -2614,8 +2668,33 @@ const noteManager = {
             // Update task counts after search - SỬA LỖI TẠI ĐÂY
             noteManager.updateTaskCounts();
             
-            // Sử dụng noteManager.updateEventListeners thay vì this.updateEventListeners
+            // Re-attach event listeners first
             noteManager.updateEventListeners();
+            
+            // Then restore category states after reload
+            let hasExpandedCategories = false;
+            Object.keys(categoryStates).forEach(categoryId => {
+                const wrapper = document.getElementById(`category-table-${categoryId}`);
+                const icon = document.getElementById(`toggle-icon-${categoryId}`);
+                if (wrapper && categoryStates[categoryId]) {
+                    wrapper.classList.remove('collapsed');
+                    hasExpandedCategories = true;
+                    if (icon) {
+                        icon.classList.remove('bi-chevron-right');
+                        icon.classList.add('bi-chevron-down');
+                    }
+                }
+            });
+            
+            // Sync toggle all button state
+            const toggleAllBtn = document.getElementById('toggleAllCategories');
+            if (toggleAllBtn && hasExpandedCategories) {
+                toggleAllBtn.classList.remove('collapsed');
+                const btnIcon = toggleAllBtn.querySelector('i');
+                if (btnIcon) {
+                    btnIcon.className = 'bi bi-arrows-collapse';
+                }
+            }
         } catch (error) {
             console.error('Search error details:', error);
             ui.showFlashMessage('danger', `Error searching notes: ${error.message}`);
@@ -3270,7 +3349,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const showCompleted = document.getElementById('showCompleted');
     if (showCompleted) {
-        showCompleted.addEventListener('change', () => noteManager.updateSearch());
+        showCompleted.addEventListener('click', () => {
+            showCompleted.classList.toggle('active');
+            const icon = showCompleted.querySelector('i');
+            if (icon) {
+                if (showCompleted.classList.contains('active')) {
+                    icon.className = 'bi bi-check-circle-fill';
+                } else {
+                    icon.className = 'bi bi-check-circle';
+                }
+            }
+            noteManager.updateSearch();
+        });
     }
     
     // Setup delete confirmation
