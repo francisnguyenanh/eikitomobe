@@ -8,10 +8,10 @@ form#searchForm {
     top: 0;
     z-index: 100;
     background: var(--bg-color);
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 footer {
@@ -36,17 +36,17 @@ footer {
     border-color: var(--primary-color);
 }
 
-/* === TASK TABLE (4 COLUMNS LAYOUT) === */
+/* === TASK TABLE (5 COLUMNS LAYOUT) === */
 .task-table {
     table-layout: fixed;
     width: 100%;
-    min-width: 600px;
+    min-width: 500px;
     background-color: transparent !important;
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    margin-bottom: 0.75rem;
 }
 
 .task-table thead {
@@ -58,11 +58,11 @@ footer {
 
 .task-table thead th {
     font-weight: 600;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     color: #495057;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 10px 10px;
+    letter-spacing: 0.3px;
+    padding: 6px 6px;
     border: none;
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
     position: relative;
@@ -112,7 +112,7 @@ footer {
 
 .task-table th, .task-table td {
     vertical-align: middle !important;
-    padding: 8px 10px;
+    padding: 4px 6px;
     border: none !important;
     background: transparent !important;
     position: relative;
@@ -123,30 +123,31 @@ footer {
 
 /* 5-Column Layout: Checkbox | Title | Content | Due Date | Actions */
 .task-table th:nth-child(1), .task-table td:nth-child(1) { 
-    width: 40px; 
-    min-width: 40px; 
-    max-width: 50px; 
+    width: 14px; 
+    min-width: 14px; 
+    max-width: 18px; 
     text-align: center;
+    padding: 1px !important;
 }
 .task-table th:nth-child(2), .task-table td:nth-child(2) { 
-    width: 25%; 
-    min-width: 140px; 
-    max-width: 250px; 
+    width: 20%; 
+    min-width: 120px; 
+    max-width: 200px; 
 }
 .task-table th:nth-child(3), .task-table td:nth-child(3) { 
-    width: 40%; 
-    min-width: 160px; 
-    max-width: 350px; 
+    width: 52%; 
+    min-width: 200px; 
+    max-width: none; 
 }
 .task-table th:nth-child(4), .task-table td:nth-child(4) { 
-    width: 18%; 
-    min-width: 100px; 
-    max-width: 150px; 
+    width: 12%; 
+    min-width: 75px; 
+    max-width: 100px; 
 }
 .task-table th:nth-child(5), .task-table td:nth-child(5) { 
-    width: 10%; 
-    min-width: 100px; 
-    max-width: 130px;
+    width: 8%; 
+    min-width: 85px; 
+    max-width: 100px;
     text-align: center;
 }
 
@@ -185,16 +186,17 @@ footer {
 
 /* Task Checkbox Styling */
 .task-checkbox {
-    width: 20px;
-    height: 20px;
+    width: 14px;
+    height: 14px;
     cursor: pointer;
     accent-color: #28a745;
-    transform: scale(1.2);
+    transform: scale(1);
     transition: transform 0.2s ease;
+    margin: 0;
 }
 
 .task-checkbox:hover {
-    transform: scale(1.3);
+    transform: scale(1.15);
 }
 
 .task-checkbox:checked {
@@ -217,16 +219,16 @@ footer {
 }
 
 .task-table .task-due {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
     color: #fd7e14;
     background: rgba(253, 126, 20, 0.1);
-    padding: 5px 8px;
-    border-radius: 16px;
+    padding: 3px 6px;
+    border-radius: 12px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 80px;
+    min-width: 55px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -340,10 +342,10 @@ footer {
 /* Table wrapper */
 .category-table-wrapper {
     overflow-x: auto;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     background: white;
-    margin-bottom: 2rem;
+    margin-bottom: 0.5rem;
 }
 
 .category-table-wrapper.collapsed {
@@ -353,31 +355,31 @@ footer {
 /* === CATEGORY COMPONENTS === */
 .task-category {
     font-weight: bold;
-    font-size: 1.1rem;
-    margin: 0.5rem 0;
+    font-size: 0.95rem;
+    margin: 0.25rem 0;
     color: #0d6efd;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.3px;
 }
 
 .toggle-category {
     background: linear-gradient(135deg, var(--primary-color, #0d6efd) 0%, rgba(13, 110, 253, 0.8) 100%) !important;
     border: none !important;
-    border-radius: 12px !important;
-    padding: 12px 20px !important;
+    border-radius: 8px !important;
+    padding: 6px 12px !important;
     font-weight: 600 !important;
-    font-size: 1rem !important;
+    font-size: 0.85rem !important;
     color: white !important;
     text-decoration: none !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15) !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 6px rgba(13, 110, 253, 0.12) !important;
     position: relative !important;
     overflow: hidden !important;
-    min-height: 44px !important;
+    min-height: 32px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    gap: 8px !important;
-    min-width: 140px !important;
+    gap: 6px !important;
+    min-width: 100px !important;
     text-align: left !important;
 }
 
@@ -431,13 +433,13 @@ footer {
 }
 
 .task-count {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: #6c757d;
-    margin-left: 12px;
-    padding: 4px 10px;
+    margin-left: 8px;
+    padding: 2px 8px;
     background: rgba(108, 117, 125, 0.08);
-    border-radius: 16px;
+    border-radius: 12px;
     border: 1px solid rgba(108, 117, 125, 0.12);
     backdrop-filter: blur(4px);
     transition: all 0.2s ease;
@@ -512,6 +514,57 @@ footer {
 #addCategoryForm .col-auto {
     flex: 0 0 auto;
     padding-left: 10px;
+}
+
+/* Category Card Styling in Modal */
+.category-card-item {
+    transition: all 0.2s ease;
+    border-radius: 8px !important;
+}
+
+.category-card-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.category-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.category-actions .btn:hover {
+    transform: scale(1.1);
+}
+
+#manageCategoriesModal .modal-dialog {
+    max-width: 800px;
+    height: 90vh;
+    margin: 5vh auto;
+}
+
+#manageCategoriesModal .modal-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+#manageCategoriesModal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+}
+
+#manageCategoriesModal #addCategoryForm {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 1.5rem;
+}
+
+#manageCategoriesModal #categoriesContainer {
+    flex: 1;
+    overflow-y: auto;
 }
 
 #viewMemoModal .modal-body,
@@ -682,29 +735,30 @@ footer {
 
     /* Mobile column widths for 5-column layout */
     .task-table th:nth-child(1), .task-table td:nth-child(1) { 
-        width: 30px; 
-        min-width: 30px; 
-        max-width: 35px; 
+        width: 12px; 
+        min-width: 12px; 
+        max-width: 16px;
+        padding: 1px !important;
     }
     .task-table th:nth-child(2), .task-table td:nth-child(2) { 
-        width: 22%; 
-        min-width: 90px; 
-        max-width: 130px; 
+        width: 20%; 
+        min-width: 80px; 
+        max-width: 110px; 
     }
     .task-table th:nth-child(3), .task-table td:nth-child(3) { 
-        width: 30%; 
-        min-width: 100px; 
-        max-width: 150px; 
+        width: 42%; 
+        min-width: 120px; 
+        max-width: none; 
     }
     .task-table th:nth-child(4), .task-table td:nth-child(4) { 
-        width: 20%; 
-        min-width: 70px; 
-        max-width: 100px; 
+        width: 14%; 
+        min-width: 55px; 
+        max-width: 70px; 
     }
     .task-table th:nth-child(5), .task-table td:nth-child(5) { 
-        width: 18%; 
-        min-width: 80px; 
-        max-width: 100px; 
+        width: 16%; 
+        min-width: 70px; 
+        max-width: 85px; 
     }
 
     .task-checkbox {
@@ -1103,7 +1157,7 @@ footer {
                 {% set total_count = category_notes|length %}
                 <div class="task-category d-flex align-items-center">
                     <button class="toggle-category" type="button" data-category-id="{{ category.id }}" style="background: linear-gradient(135deg, {{ category.color or '#0d6efd' }} 0%, {{ category.color or '#0d6efd' }}CC 100%) !important;">
-                        <i class="bi bi-chevron-down" id="toggle-icon-{{ category.id }}"></i>
+                        <i class="bi bi-chevron-right" id="toggle-icon-{{ category.id }}"></i>
                         <span class="category-name">{{ category.name }}</span>
                     </button>
                     <span class="task-count {% if completed_count > 0 %}has-completed{% endif %}">
@@ -1114,7 +1168,7 @@ footer {
                         {% endif %}
                     </span>
                 </div>
-                <div class="category-table-wrapper" id="category-table-{{ category.id }}">
+                <div class="category-table-wrapper collapsed" id="category-table-{{ category.id }}">
                     <table class="table task-table">
                         <thead>
                             <tr>
@@ -2203,29 +2257,53 @@ const noteManager = {
 };
 
 const categoryManager = {
+    isEditing: false,
+    editingCategoryId: null,
+    
     async editCategory({ categoryId, categoryName, categoryColor }) {
         const form = document.querySelector(SELECTORS.forms.addCategory);
         if (!form) return;
         
+        this.isEditing = true;
+        this.editingCategoryId = categoryId;
+        
         form.querySelector('#categoryName').value = categoryName;
-        form.querySelector('#categoryColor').value = categoryColor;
+        form.querySelector('#categoryColor').value = categoryColor || '#0d6efd';
         
         const submitBtn = form.querySelector('button[type="submit"]');
         submitBtn.textContent = 'Update Category';
-        form.dataset.categoryId = categoryId;
+        submitBtn.classList.remove('btn-primary');
+        submitBtn.classList.add('btn-success');
         
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            const formData = new FormData(form);
-            
+        // Add cancel button if not exists
+        if (!form.querySelector('.btn-cancel-edit')) {
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.className = 'btn btn-secondary ms-2 btn-cancel-edit';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.onclick = () => this.resetForm();
+            submitBtn.parentNode.appendChild(cancelBtn);
+        }
+        
+        // Focus on name input
+        form.querySelector('#categoryName').focus();
+    },
+
+    async submitCategory(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        
+        if (this.isEditing && this.editingCategoryId) {
+            // Update existing category
             try {
-                const data = await api.request(`/edit_category/${categoryId}`, {
+                const data = await api.request(`/edit_category/${this.editingCategoryId}`, {
                     method: 'POST',
                     body: formData
                 });
                 
                 if (data?.status === 'success') {
-                    const index = state.categories.findIndex(c => c.id == categoryId);
+                    const index = state.categories.findIndex(c => c.id == this.editingCategoryId);
                     if (index !== -1) state.categories[index] = data.category;
                     
                     this.updateDisplays();
@@ -2237,11 +2315,30 @@ const categoryManager = {
             } catch (error) {
                 ui.showFlashMessage('danger', 'Error updating category');
             }
-        };
+        } else {
+            // Add new category
+            try {
+                const data = await api.request('/add_category', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (data?.status === 'success') {
+                    state.categories.push(data.category);
+                    this.updateDisplays();
+                    this.resetForm();
+                    ui.showFlashMessage('success', 'Category added successfully');
+                } else {
+                    ui.showFlashMessage('danger', data?.message || 'Failed to add category');
+                }
+            } catch (error) {
+                ui.showFlashMessage('danger', 'Error adding category');
+            }
+        }
     },
 
     async deleteCategory(categoryId) {
-        if (!confirm('Are you sure you want to delete this category?')) return;
+        if (!confirm('Are you sure you want to delete this category? All notes in this category will be moved to "Uncategorized".')) return;
         
         try {
             const data = await api.request(`/delete_category/${categoryId}`, { method: 'POST' });
@@ -2272,8 +2369,8 @@ const categoryManager = {
             const div = document.createElement('div');
             div.className = 'col-12 col-md-6 mb-3';
             div.innerHTML = `
-                <div class="card" style="background-color: ${category.color || '#ffffff'};">
-                    <div class="card-body d-flex justify-content-between align-items-center">
+                <div class="card category-card-item" style="background-color: ${category.color || '#f8f9fa'}; border: 2px solid ${category.color || '#dee2e6'};">
+                    <div class="card-body d-flex justify-content-between align-items-center py-2">
                         <span class="category-label" style="
                             background-color: ${category.color || '#0d6efd'};
                             color: ${category.color ? this.getContrastColor(category.color) : '#ffffff'};
@@ -2283,18 +2380,22 @@ const categoryManager = {
                             justify-content: center;
                             border-radius: 0.5rem;
                             margin-right: 10px;
-                            min-width: 120px;
-                            height: 38px;
-                            padding: 0 16px;
+                            min-width: 100px;
+                            height: 32px;
+                            padding: 0 12px;
+                            font-size: 0.9rem;
                         ">${category.name}</span>
-                        <div>
-                            <button class="btn btn-sm me-1 edit-category" 
+                        <div class="category-actions">
+                            <button class="btn btn-sm btn-outline-secondary me-1 edit-category" 
                                 data-category-id="${category.id}" 
                                 data-category-name="${category.name}" 
-                                data-category-color="${category.color || '#ffffff'}">
+                                data-category-color="${category.color || '#0d6efd'}"
+                                title="Edit category">
                                 <i class="bi bi-pencil"></i>
                             </button>
-                            <button class="btn btn-sm delete-category" data-category-id="${category.id}">
+                            <button class="btn btn-sm btn-outline-danger delete-category" 
+                                data-category-id="${category.id}"
+                                title="Delete category">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </div>
@@ -2317,10 +2418,20 @@ const categoryManager = {
         const form = document.querySelector(SELECTORS.forms.addCategory);
         if (!form) return;
         
+        this.isEditing = false;
+        this.editingCategoryId = null;
+        
         form.reset();
-        form.querySelector('button[type="submit"]').textContent = 'Add Category';
-        delete form.dataset.categoryId;
-        form.onsubmit = null;
+        form.querySelector('#categoryColor').value = '#0d6efd';
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.textContent = 'Add Category';
+        submitBtn.classList.remove('btn-success');
+        submitBtn.classList.add('btn-primary');
+        
+        // Remove cancel button if exists
+        const cancelBtn = form.querySelector('.btn-cancel-edit');
+        if (cancelBtn) cancelBtn.remove();
     }
 };
 
@@ -2640,27 +2751,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     
-    setupFormHandler(SELECTORS.forms.addCategory, async (e) => {
-        e.preventDefault();
-        if (e.target.dataset.categoryId) return;
-        
-        try {
-            const data = await api.request('/add_category', {
-                method: 'POST',
-                body: new FormData(e.target)
-            });
-            
-            if (data?.status === 'success') {
-                state.categories.push(data.category);
-                categoryManager.updateDisplays();
-                e.target.reset();
-                ui.showFlashMessage('success', 'Category added successfully');
-            } else {
-                ui.showFlashMessage('danger', data?.message || 'Failed to add category');
-            }
-        } catch (error) {
-            ui.showFlashMessage('danger', 'Error adding category');
-        }
+    setupFormHandler(SELECTORS.forms.addCategory, (e) => {
+        categoryManager.submitCategory(e);
     });
     
     // Setup file input handlers
@@ -2813,6 +2905,20 @@ if (calendarModal) {
     noteManager.updateEventListeners();
     ui.highlightDueDates();
     
+    // Setup manage categories modal
+    const manageCategoriesModal = document.getElementById('manageCategoriesModal');
+    if (manageCategoriesModal) {
+        manageCategoriesModal.addEventListener('shown.bs.modal', () => {
+            // Attach event listeners when modal is shown
+            eventHandlers.attachCategoryEventListeners();
+            categoryManager.resetForm();
+        });
+        
+        manageCategoriesModal.addEventListener('hidden.bs.modal', () => {
+            cleanBackdrops();
+            categoryManager.resetForm();
+        });
+    }
 
     // Make functions globally available
     window.openViewMemoModal = (noteId) => noteManager.openViewModal(noteId, false); // Default not from calendar
