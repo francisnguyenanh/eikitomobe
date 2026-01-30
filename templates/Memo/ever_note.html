@@ -80,6 +80,12 @@
                         <button id="upload-btn" class="toolbar-btn" title="Upload image">
                             <i class="bi bi-image"></i>
                         </button>
+                        <button id="paste-formatted-btn" class="toolbar-btn" title="Paste with formatting (Ctrl+V)">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                        <button id="paste-plain-btn" class="toolbar-btn" title="Paste as plain text (Ctrl+Shift+V)">
+                            <i class="bi bi-clipboard-minus"></i>
+                        </button>
                         <label class="auto-scroll-toggle" title="Bật/tắt tự động cuộn theo cursor">
                             <input type="checkbox" id="autoScrollToggle" checked>
                             <span class="toggle-slider"></span>
@@ -6281,11 +6287,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Improved paste handling - clean up formatting from external sources
+        // Improved paste handling with options
+        let pastePlainTextMode = false; // Track paste mode
+        
+        // Handle keyboard shortcuts for paste
+        editor.addEventListener('keydown', (e) => {
+            // Ctrl+Shift+V or Cmd+Shift+V - paste as plain text
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'v') {
+                e.preventDefault();
+                pasteAsPlainText();
+            }
+            // Ctrl+V or Cmd+V is handled by default paste event below
+        });
+        
         editor.addEventListener('paste', (e) => {
-            // Get plain text from clipboard
             const text = e.clipboardData.getData('text/plain');
             const html = e.clipboardData.getData('text/html');
+            
+            // If paste plain text mode is active or user explicitly wants plain text
+            if (pastePlainTextMode) {
+                e.preventDefault();
+                document.execCommand('insertText', false, text);
+                pastePlainTextMode = false; // Reset mode
+                return;
+            }
             
             // If pasting HTML, check if it's from an external source
             if (html && html.includes('<!--StartFragment-->')) {
@@ -6317,6 +6342,80 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.execCommand('insertHTML', false, temp.innerHTML);
             }
         });
+        
+        // Function to paste with formatting
+        async function pasteWithFormatting() {
+            try {
+                if (navigator.clipboard && navigator.clipboard.read) {
+                    const clipboardItems = await navigator.clipboard.read();
+                    for (const item of clipboardItems) {
+                        if (item.types.includes('text/html')) {
+                            const blob = await item.getType('text/html');
+                            const html = await blob.text();
+                            
+                            // Insert with formatting
+                            const temp = document.createElement('div');
+                            temp.innerHTML = html;
+                            
+                            // Clean up but keep formatting
+                            temp.querySelectorAll('*').forEach(el => {
+                                const color = el.style.color;
+                                const fontWeight = el.style.fontWeight;
+                                const fontStyle = el.style.fontStyle;
+                                const textDecoration = el.style.textDecoration;
+                                const backgroundColor = el.style.backgroundColor;
+                                
+                                el.removeAttribute('class');
+                                const oldStyle = el.getAttribute('style');
+                                el.removeAttribute('style');
+                                
+                                // Restore formatting
+                                if (color) el.style.color = color;
+                                if (fontWeight) el.style.fontWeight = fontWeight;
+                                if (fontStyle) el.style.fontStyle = fontStyle;
+                                if (textDecoration) el.style.textDecoration = textDecoration;
+                                if (backgroundColor) el.style.backgroundColor = backgroundColor;
+                            });
+                            
+                            document.execCommand('insertHTML', false, temp.innerHTML);
+                            return;
+                        } else if (item.types.includes('text/plain')) {
+                            const blob = await item.getType('text/plain');
+                            const text = await blob.text();
+                            document.execCommand('insertText', false, text);
+                            return;
+                        }
+                    }
+                } else {
+                    // Fallback: trigger paste event
+                    document.execCommand('paste');
+                }
+            } catch (err) {
+                console.error('Paste with formatting failed:', err);
+                alert('Unable to paste. Please use Ctrl+V instead.');
+            }
+        }
+        
+        // Function to paste as plain text
+        async function pasteAsPlainText() {
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    const text = await navigator.clipboard.readText();
+                    document.execCommand('insertText', false, text);
+                } else {
+                    // Fallback: set flag and trigger paste
+                    pastePlainTextMode = true;
+                    document.execCommand('paste');
+                }
+            } catch (err) {
+                console.error('Paste as plain text failed:', err);
+                alert('Unable to paste. Please use Ctrl+Shift+V instead.');
+            }
+        }
+        
+        // Setup paste buttons
+        document.getElementById('paste-formatted-btn').addEventListener('click', pasteWithFormatting);
+        document.getElementById('paste-plain-btn').addEventListener('click', pasteAsPlainText);
     }
 
     // Setup image upload
