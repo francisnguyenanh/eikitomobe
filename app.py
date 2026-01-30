@@ -5369,9 +5369,15 @@ def get_birthday_alerts():
         if contact.birthday:
             birthday = datetime.strptime(contact.birthday, '%Y-%m-%d').date()
             if birthday.month == today.month and birthday.day == today.day:
-                alerts_today.append(f"Hôm nay là sinh nhật của {contact.name}")
+                alerts_today.append({
+                    'type': 'birthday',
+                    'message': f"Hôm nay là sinh nhật của {contact.name}"
+                })
             elif birthday.month == tomorrow.month and birthday.day == tomorrow.day:
-                alerts_tomorrow.append(f"Ngày mai là sinh nhật của {contact.name}")
+                alerts_tomorrow.append({
+                    'type': 'birthday',
+                    'message': f"Ngày mai là sinh nhật của {contact.name}"
+                })
         
         # Check anniversaries (anniv1_date, anniv2_date, anniv3_date)
         for i in [1, 2, 3]:
@@ -5380,9 +5386,15 @@ def get_birthday_alerts():
             if anniv_date:
                 anniv = datetime.strptime(anniv_date, '%Y-%m-%d').date()
                 if anniv.month == today.month and anniv.day == today.day:
-                    alerts_today.append(f"Hôm nay là {anniv_text or 'kỷ niệm'} của {contact.name}")
+                    alerts_today.append({
+                        'type': 'anniversary',
+                        'message': f"Hôm nay là {anniv_text or 'kỷ niệm'} của {contact.name}"
+                    })
                 elif anniv.month == tomorrow.month and anniv.day == tomorrow.day:
-                    alerts_tomorrow.append(f"Ngày mai là {anniv_text or 'kỷ niệm'} của {contact.name}")
+                    alerts_tomorrow.append({
+                        'type': 'anniversary',
+                        'message': f"Ngày mai là {anniv_text or 'kỷ niệm'} của {contact.name}"
+                    })
     
     # Check task deadlines
     tasks = Task.query.filter(Task.is_completed == False).all()
@@ -5391,11 +5403,23 @@ def get_birthday_alerts():
             due_date = task.due_date.date()
             category_name = task.category.name if task.category else "uncategorized"
             if due_date == today:
-                alerts_today.append(f"{category_name} - '{task.title}' hết hạn hôm nay")
+                alerts_today.append({
+                    'type': 'task',
+                    'task_id': task.id,
+                    'message': f"{category_name} - '{task.title}' hết hạn hôm nay"
+                })
             elif due_date == tomorrow:
-                alerts_tomorrow.append(f"{category_name} - '{task.title}' hết hạn ngày mai")
+                alerts_tomorrow.append({
+                    'type': 'task',
+                    'task_id': task.id,
+                    'message': f"{category_name} - '{task.title}' hết hạn ngày mai"
+                })
             elif due_date < today:
-                alerts_today.append(f"{category_name} - '{task.title}' đã quá hạn từ {due_date.strftime('%d/%m/%Y')}")
+                alerts_today.append({
+                    'type': 'task',
+                    'task_id': task.id,
+                    'message': f"{category_name} - '{task.title}' đã quá hạn từ {due_date.strftime('%d/%m/%Y')}"
+                })
     
     return alerts_today, alerts_tomorrow
 

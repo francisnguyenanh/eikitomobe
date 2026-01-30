@@ -1103,35 +1103,43 @@
         <div id="alertsList" class="mt-2 d-none">
             <!-- Contact alerts today -->
             {% for alert in alerts_today %}
-                {% if 'sinh nhật' in alert %}
-                    <div style="color:#28a745;font-weight:bold"><i class="bi bi-cake2 me-2"></i>{{ alert }}</div>
-                {% elif 'kỷ niệm' in alert %}
-                    <div style="color:#28a745;font-weight:bold"><i class="bi bi-heart-fill me-2"></i>{{ alert }}</div>
+                {% if alert.type == 'birthday' %}
+                    <div style="color:#28a745;font-weight:bold"><i class="bi bi-cake2 me-2"></i>{{ alert.message }}</div>
+                {% elif alert.type == 'anniversary' %}
+                    <div style="color:#28a745;font-weight:bold"><i class="bi bi-heart-fill me-2"></i>{{ alert.message }}</div>
                 {% endif %}
             {% endfor %}
 
             <!-- Contact alerts tomorrow -->
             {% for alert in alerts_tomorrow %}
-                {% if 'sinh nhật' in alert %}
-                    <div><i class="bi bi-cake2 me-2"></i>{{ alert }}</div>
-                {% elif 'kỷ niệm' in alert %}
-                    <div><i class="bi bi-heart me-2"></i>{{ alert }}</div>
+                {% if alert.type == 'birthday' %}
+                    <div><i class="bi bi-cake2 me-2"></i>{{ alert.message }}</div>
+                {% elif alert.type == 'anniversary' %}
+                    <div><i class="bi bi-heart me-2"></i>{{ alert.message }}</div>
                 {% endif %}
             {% endfor %}
 
             <!-- Task alerts today -->
             {% for alert in alerts_today %}
-                {% if 'quá hạn' in alert %}
-                    <div style="color:#dc3545;font-weight:bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ alert }}</div>
-                {% elif 'hết hạn' in alert %}
-                    <div style="color:#fd7e14;font-weight:bold"><i class="bi bi-clock-fill me-2"></i>{{ alert }}</div>
+                {% if alert.type == 'task' %}
+                    {% if 'quá hạn' in alert.message %}
+                        <div class="task-alert" data-task-id="{{ alert.task_id }}" style="color:#dc3545;font-weight:bold;cursor:pointer">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ alert.message }}
+                        </div>
+                    {% else %}
+                        <div class="task-alert" data-task-id="{{ alert.task_id }}" style="color:#fd7e14;font-weight:bold;cursor:pointer">
+                            <i class="bi bi-clock-fill me-2"></i>{{ alert.message }}
+                        </div>
+                    {% endif %}
                 {% endif %}
             {% endfor %}
 
             <!-- Task alerts tomorrow -->
             {% for alert in alerts_tomorrow %}
-                {% if 'hết hạn' in alert %}
-                    <div><i class="bi bi-clock me-2"></i>{{ alert }}</div>
+                {% if alert.type == 'task' %}
+                    <div class="task-alert" data-task-id="{{ alert.task_id }}" style="cursor:pointer">
+                        <i class="bi bi-clock me-2"></i>{{ alert.message }}
+                    </div>
                 {% endif %}
             {% endfor %}
         </div>
@@ -3313,6 +3321,17 @@ document.addEventListener('DOMContentLoaded', function() {
             alertsList.classList.remove('d-none');
             toggleAlertsIcon.className = 'bi bi-bell-fill';
             }
+
+            // Handle task alert clicks
+            document.querySelectorAll('.task-alert').forEach(alertDiv => {
+                alertDiv.addEventListener('click', function() {
+                    const taskId = this.getAttribute('data-task-id');
+                    if (taskId) {
+                        // Redirect to task page with task ID to open edit modal
+                        window.location.href = `/task?edit=${taskId}`;
+                    }
+                });
+            });
 
             if (openSettingsBtn) {
                 openSettingsBtn.addEventListener('click', async function(e) {

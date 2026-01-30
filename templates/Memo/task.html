@@ -3256,6 +3256,18 @@ if (calendarModal) {
     // Make functions globally available
     window.openViewMemoModal = (noteId) => noteManager.openViewModal(noteId, false); // Default not from calendar
     window.openEditMemoModal = (noteId) => noteManager.openEditModal(noteId, false); // Default not from calendar
+
+    // Check URL parameters and open edit modal if needed
+    const urlParams = new URLSearchParams(window.location.search);
+    const editTaskId = urlParams.get('edit');
+    if (editTaskId) {
+        // Wait for data to be loaded then open edit modal
+        setTimeout(() => {
+            window.openEditMemoModal(editTaskId);
+            // Clean URL after opening modal
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }, 500);
+    }
 });
 
 // === IMAGE UPLOAD MANAGEMENT (Tham khảo từ evernote) ===
