@@ -548,6 +548,105 @@ footer {
     flex-direction: column;
 }
 
+/* Add Memo Modal - 95% height, 90% width */
+#addMemoModal .modal-dialog {
+    width: 90vw;
+    max-width: 90vw;
+    height: 95vh;
+    max-height: 95vh;
+    margin: 2.5vh auto;
+}
+
+#addMemoModal .modal-content {
+    height: 95vh;
+    max-height: 95vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#addMemoModal .modal-body {
+    flex: 1 1 auto;
+    overflow: hidden;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+#addMemoModal form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#addMemoModal .row {
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+/* Edit Memo Modal - same size as Add Modal */
+#editMemoModal .modal-dialog {
+    width: 90vw;
+    max-width: 90vw;
+    height: 95vh;
+    max-height: 95vh;
+    margin: 2.5vh auto;
+}
+
+#editMemoModal .modal-content {
+    height: 95vh;
+    max-height: 95vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#editMemoModal .modal-body {
+    flex: 1 1 auto;
+    overflow: hidden;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+#editMemoModal form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#editMemoModal .row {
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+/* View Memo Modal - same size as Add/Edit Modal */
+#viewMemoModal .modal-dialog {
+    width: 90vw;
+    max-width: 90vw;
+    height: 95vh;
+    max-height: 95vh;
+    margin: 2.5vh auto;
+}
+
+#viewMemoModal .modal-content {
+    height: 95vh;
+    max-height: 95vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#viewMemoModal .modal-body {
+    flex: 1 1 auto;
+    overflow: hidden;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+#viewMemoModal .row {
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
 #manageCategoriesModal .modal-body {
     flex: 1;
     overflow-y: auto;
@@ -1188,10 +1287,10 @@ footer {
                                                {% if note.is_completed %}checked{% endif %}
                                                title="Mark as {% if note.is_completed %}incomplete{% else %}complete{% endif %}">
                                     </td>
-                                    <td onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">
+                                    <td onclick="openEditMemoModal({{ note.id }})" style="cursor:pointer;">
                                         <div class="task-title">{{ note.title }}</div>
                                     </td>
-                                    <td onclick="openViewMemoModal({{ note.id }})" style="cursor:pointer;">
+                                    <td onclick="openEditMemoModal({{ note.id }})" style="cursor:pointer;">
                                         <div class="task-content">{{ note.content|truncate(80) }}</div>
                                     </td>
                                     <td class="due-date-cell" data-note-id="{{ note.id }}" style="cursor:pointer;" title="Click to toggle completion">
@@ -1244,38 +1343,35 @@ footer {
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-body">
-                    <ul class="nav nav-tabs mb-3">
-                        <li class="nav-item">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#add-content" type="button">Content</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#add-meta" type="button">Meta</button>
-                        </li>
-                    </ul>
                     <form id="addMemoForm" method="POST" action="{{ url_for('add_note') }}" enctype="multipart/form-data">
-                        <div class="tab-content">
-                            <div class="tab-pane fade show active" id="add-content">
+                        <div class="row">
+                            <!-- Left Column: Title and Content -->
+                            <div class="col-md-7">
                                 <div class="mb-3">
                                     <input type="text" class="form-control" id="memoTitle" name="title" placeholder="Title" required tabindex="1">
                                 </div>
                                 <div class="mb-3">
-                                    <textarea class="form-control" id="memoContent" name="content" rows="14" placeholder="Content" required tabindex="2"></textarea>
+                                    <textarea class="form-control" id="memoContent" name="content" rows="20" placeholder="Content" required tabindex="2" style="resize: vertical;"></textarea>
                                 </div>
                             </div>
-                            <div class="tab-pane fade" id="add-meta">
+                            <!-- Right Column: Meta fields -->
+                            <div class="col-md-5">
                                 <div class="mb-3">
+                                    <label class="form-label">Images</label>
                                     <input type="file" class="form-control" id="memoImages" name="images" multiple accept="image/png,image/jpeg,image/gif,image/heic">
-                                    <div id="imagePreview" class="mt-2 d-flex flex-wrap gap-2"></div>
+                                    <div id="imagePreview" class="mt-2 d-flex flex-wrap gap-2" style="max-height: 200px; overflow-y: auto;"></div>
                                 </div>
                                 <div class="mb-3">
+                                    <label class="form-label">Due Date</label>
                                     <input type="datetime-local" class="form-control" id="memoDueDate" name="due_date" step="60">
                                 </div>
                                 <div class="mb-3">
+                                    <label class="form-label">Category</label>
                                     <select class="form-select" id="memoCategory" name="category_id" required></select>
                                 </div>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-end">
+                        <div class="d-flex justify-content-end mt-2">
                             <button type="submit" class="btn btn-primary">Save Memo</button>
                         </div>
                     </form>
@@ -1290,28 +1386,37 @@ footer {
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-body">
-                    <ul class="nav nav-tabs mb-3">
-                        <li class="nav-item">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#view-content" type="button">Content</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#view-meta" type="button">Meta</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content">
-                        <div class="tab-pane fade show active" id="view-content">
+                    <div class="row">
+                        <!-- Left Column: Title and Content -->
+                        <div class="col-md-7">
                             <h6 id="viewMemoTitle" class="mb-3"></h6>
-                            <p id="viewMemoContent" style="white-space: pre-wrap;"></p>
+                            <div id="viewMemoContent" style="white-space: pre-wrap; overflow-y: auto; max-height: calc(95vh - 200px);"></div>
                         </div>
-                        <div class="tab-pane fade" id="view-meta">
-                            <div id="viewMemoImages" class="mt-2 d-flex flex-wrap gap-2"></div>
-                            <p id="viewMemoDueDate" class="text-muted"></p>
-                            <p id="viewMemoCategory" class="text-muted"></p>
-                            <p id="viewMemoShare" class="text-muted"></p>
-                            <p id="viewMemoCompleted" class="text-muted"></p>
+                        <!-- Right Column: Meta fields -->
+                        <div class="col-md-5">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Images</label>
+                                <div id="viewMemoImages" class="mt-2 d-flex flex-wrap gap-2" style="max-height: 200px; overflow-y: auto;"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Due Date</label>
+                                <p id="viewMemoDueDate" class="text-muted mb-1"></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Category</label>
+                                <p id="viewMemoCategory" class="text-muted mb-1"></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Share</label>
+                                <p id="viewMemoShare" class="text-muted mb-1"></p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Status</label>
+                                <p id="viewMemoCompleted" class="text-muted mb-1"></p>
+                            </div>
                         </div>
                     </div>
-                    <div class="d-flex justify-content-end mt-3">
+                    <div class="d-flex justify-content-end mt-2">
                         <button type="button" class="btn btn-primary" onclick="noteManager.openEditModal(this.dataset.noteId)">Edit</button>
                     </div>
                 </div>
@@ -1325,39 +1430,36 @@ footer {
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-body">
-                    <ul class="nav nav-tabs mb-3">
-                        <li class="nav-item">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#edit-content" type="button">Content</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#edit-meta" type="button">Meta</button>
-                        </li>
-                    </ul>
                     <form id="editMemoForm" method="POST" enctype="multipart/form-data">
                         <input type="hidden" id="editMemoId" name="id">
-                        <div class="tab-content">
-                            <div class="tab-pane fade show active" id="edit-content">
+                        <div class="row">
+                            <!-- Left Column: Title and Content -->
+                            <div class="col-md-7">
                                 <div class="mb-3">
                                     <input type="text" class="form-control" id="editMemoTitle" name="title" required tabindex="1">
                                 </div>
                                 <div class="mb-3">
-                                    <textarea class="form-control" id="editMemoContent" name="content" rows="14" required tabindex="2"></textarea>
+                                    <textarea class="form-control" id="editMemoContent" name="content" rows="20" required tabindex="2" style="resize: vertical;"></textarea>
                                 </div>
                             </div>
-                            <div class="tab-pane fade" id="edit-meta">
+                            <!-- Right Column: Meta fields -->
+                            <div class="col-md-5">
                                 <div class="mb-3">
+                                    <label class="form-label">Images</label>
                                     <input type="file" class="form-control" id="editMemoImages" name="images" multiple accept="image/png,image/jpeg,image/gif,image/heic">
-                                    <div id="editImagePreview" class="mt-2 d-flex flex-wrap gap-2"></div>
+                                    <div id="editImagePreview" class="mt-2 d-flex flex-wrap gap-2" style="max-height: 200px; overflow-y: auto;"></div>
                                 </div>
                                 <div class="mb-3">
+                                    <label class="form-label">Due Date</label>
                                     <input type="datetime-local" class="form-control" id="editMemoDueDate" name="due_date" step="60">
                                 </div>
                                 <div class="mb-3">
+                                    <label class="form-label">Category</label>
                                     <select class="form-select" id="editMemoCategory" name="category_id" required></select>
                                 </div>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-end">
+                        <div class="d-flex justify-content-end mt-2">
                             <button type="submit" class="btn btn-primary">Update Memo</button>
                         </div>
                     </form>
