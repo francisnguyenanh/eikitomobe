@@ -749,6 +749,21 @@
     max-width: 50%;
 }
 
+/* Task alert hover effects */
+.task-alert {
+    padding: 0.1rem 0.1rem;
+    margin-bottom: 0.1rem;
+    border-radius: 1px;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.task-alert:hover {
+    background: rgba(var(--primary-color-rgb, 52, 152, 219), 0.15);
+    transform: translateX(5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
 .btn-hamburger {
     height: 40px;
     display: flex;
