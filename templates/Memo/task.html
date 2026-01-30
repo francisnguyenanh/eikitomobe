@@ -1416,17 +1416,13 @@ footer {
     <!-- Search Form -->
     <form class="mb-3" id="searchForm">
         <div class="row g-2 align-items-center">
-            <div class="col-auto">
-                <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#addMemoModal" title="Add New Note">
-                    <i class="bi bi-plus-circle"></i>
-                </button>
-            </div>
+            
             <div class="col-12 col-md order-1 order-md-0">
                 <input type="text" class="form-control" id="searchInput" name="search" placeholder="Search notes..." value="{{ search_query }}">
             </div>
             <div class="col-auto">
-                <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#calendarModal">
-                    <i class="bi bi-calendar-event"></i>
+                <button class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#addMemoModal" title="Add New Note">
+                    <i class="bi bi-plus-circle"></i>
                 </button>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#manageCategoriesModal">
                     <i class="bi bi-tags"></i> 
@@ -1557,8 +1553,15 @@ footer {
                                     <div id="imagePreview" class="mt-2 d-flex flex-wrap gap-2" style="max-height: 200px; overflow-y: auto;"></div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Due Date</label>
-                                    <input type="datetime-local" class="form-control" id="memoDueDate" name="due_date" step="60">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="setDueDateCheckbox" checked>
+                                        <label class="form-check-label" for="setDueDateCheckbox">
+                                            Set Due Date
+                                        </label>
+                                    </div>
+                                    <div id="dueDateInputContainer">
+                                        <input type="datetime-local" class="form-control" id="memoDueDate" name="due_date" step="60">
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Category</label>
@@ -2955,6 +2958,16 @@ document.addEventListener('DOMContentLoaded', () => {
         addMemoModal.addEventListener('show.bs.modal', () => {
             cleanBackdrops();
             const dueDateInput = document.getElementById('memoDueDate');
+            const setDueDateCheckbox = document.getElementById('setDueDateCheckbox');
+            const dueDateContainer = document.getElementById('dueDateInputContainer');
+            
+            // Set initial state - checkbox checked, show input with today's date
+            if (setDueDateCheckbox) {
+                setDueDateCheckbox.checked = true;
+            }
+            if (dueDateContainer) {
+                dueDateContainer.style.display = 'block';
+            }
             if (dueDateInput) {
                 const now = new Date();
                 now.setHours(23, 59, 0, 0);
@@ -2964,6 +2977,28 @@ document.addEventListener('DOMContentLoaded', () => {
             // Initialize empty image preview
             ui.updateImagePreview(document.querySelector(SELECTORS.containers.imagePreview), [], true);
         });
+        
+        // Handle due date checkbox toggle
+        const setDueDateCheckbox = document.getElementById('setDueDateCheckbox');
+        const dueDateInput = document.getElementById('memoDueDate');
+        const dueDateContainer = document.getElementById('dueDateInputContainer');
+        
+        if (setDueDateCheckbox && dueDateInput && dueDateContainer) {
+            setDueDateCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    // Show date input and set to today 23:59
+                    dueDateContainer.style.display = 'block';
+                    const now = new Date();
+                    now.setHours(23, 59, 0, 0);
+                    const pad = n => n.toString().padStart(2, '0');
+                    dueDateInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                } else {
+                    // Hide date input and set to far future date
+                    dueDateContainer.style.display = 'none';
+                    dueDateInput.value = '2099-01-01T23:59';
+                }
+            });
+        }
         
         addMemoModal.addEventListener('hidden.bs.modal', () => {
             cleanBackdrops();
@@ -3026,12 +3061,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data?.status === 'success') {
                 modals.addMemo.hide();
                 
-                // Update local state
-                if (data.note) {
-                    state.notes.push(data.note);
-                }
-                
-                noteManager.updateSearch();
+                // Refresh data from server (updateSearch already fetches and updates state.notes)
+                await noteManager.updateSearch();
                 ui.showFlashMessage('success', 'Memo added successfully');
             } else {
                 ui.showFlashMessage('danger', data?.message || 'Failed to add memo');

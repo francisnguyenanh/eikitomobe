@@ -1180,8 +1180,10 @@ def add_note():
             'id': note.id,
             'title': note.title,
             'content': note.content,
+            'category_id': note.category_id,
             'category': note.category.name if note.category else 'Uncategorized',
             'due_date': note.due_date.strftime('%Y-%m-%d %H:%M') if note.due_date else None,
+            'is_completed': note.is_completed,
             'images': images_data,
         }
         
