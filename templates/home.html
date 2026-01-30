@@ -1121,16 +1121,16 @@
 
             <!-- Task alerts today -->
             {% for alert in alerts_today %}
-                {% if 'Task' in alert and 'quá hạn' in alert %}
+                {% if 'quá hạn' in alert %}
                     <div style="color:#dc3545;font-weight:bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>{{ alert }}</div>
-                {% elif 'Task' in alert %}
+                {% elif 'hết hạn' in alert %}
                     <div style="color:#fd7e14;font-weight:bold"><i class="bi bi-clock-fill me-2"></i>{{ alert }}</div>
                 {% endif %}
             {% endfor %}
 
             <!-- Task alerts tomorrow -->
             {% for alert in alerts_tomorrow %}
-                {% if 'Task' in alert %}
+                {% if 'hết hạn' in alert %}
                     <div><i class="bi bi-clock me-2"></i>{{ alert }}</div>
                 {% endif %}
             {% endfor %}
@@ -3298,7 +3298,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const toggleAlertsIcon = document.getElementById('toggleAlertsIcon');
 
             if (alertsBox && alertsList && toggleAlertsBtn && toggleAlertsIcon) {
-            let expanded = false;
+            let expanded = true;
             toggleAlertsBtn.onclick = function() {
                 expanded = !expanded;
                 if (expanded) {
@@ -3309,9 +3309,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 toggleAlertsIcon.className = 'bi bi-bell';
                 }
             };
-            // Mặc định ẩn
-            alertsList.classList.add('d-none');
-            toggleAlertsIcon.className = 'bi bi-bell';
+            // Mặc định mở
+            alertsList.classList.remove('d-none');
+            toggleAlertsIcon.className = 'bi bi-bell-fill';
             }
 
             if (openSettingsBtn) {

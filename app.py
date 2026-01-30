@@ -1049,6 +1049,84 @@ def normalize_filename(filename):
     safe_name = safe_name.replace('..', '.').rstrip('.')
     return safe_name or 'image.jpg'
 
+# Image processing configuration
+IMAGE_CONFIG = {
+    'max_file_size': 10 * 1024 * 1024,  # 10MB
+    'max_dimension': (1920, 1080),
+    'jpeg_quality': 85,
+    'allowed_extensions': {'png', 'jpg', 'jpeg', 'gif', 'heic'}
+}
+
+def allowed_image_file(filename):
+    """Check if file extension is allowed"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in IMAGE_CONFIG['allowed_extensions']
+
+def process_uploaded_image(image_file, upload_folder):
+    """
+    Process and save uploaded image file.
+    Returns dict with image info or None if failed.
+    """
+    if not image_file or not image_file.filename:
+        return None
+    
+    if not allowed_image_file(image_file.filename):
+        logging.warning(f"File type not allowed: {image_file.filename}")
+        return None
+    
+    try:
+        # Generate unique filename
+        timestamp = int(time.time() * 1000)
+        original_filename = secure_filename(image_file.filename)
+        name, ext = os.path.splitext(original_filename)
+        unique_filename = f"{name}_{timestamp}_{uuid4().hex[:8]}{ext}"
+        
+        # Determine file path
+        filepath = os.path.join(upload_folder, unique_filename)
+        
+        # Process based on file type
+        if image_file.filename.lower().endswith('.heic'):
+            try:
+                with Image(blob=image_file.read()) as img:
+                    img.format = 'jpeg'
+                    img.compression_quality = IMAGE_CONFIG['jpeg_quality']
+                    new_filepath = filepath.replace('.heic', '.jpg').replace('.HEIC', '.jpg')
+                    img.save(filename=new_filepath)
+                    unique_filename = unique_filename.replace('.heic', '.jpg').replace('.HEIC', '.jpg')
+                    filepath = new_filepath
+            except Exception as heic_error:
+                logging.error(f"HEIC conversion failed, saving as-is: {heic_error}")
+                image_file.seek(0)  # Reset file pointer
+                image_file.save(filepath)
+        else:
+            # Regular image processing with PIL
+            pil_image = PILImage.open(image_file)
+            
+            # Resize if too large
+            max_size = IMAGE_CONFIG['max_dimension']
+            if pil_image.size[0] > max_size[0] or pil_image.size[1] > max_size[1]:
+                pil_image.thumbnail(max_size, PILImage.Resampling.LANCZOS)
+            
+            # Convert to RGB if necessary (for JPEG compatibility)
+            if pil_image.mode in ('RGBA', 'P'):
+                pil_image = pil_image.convert('RGB')
+            
+            # Save with compression
+            pil_image.save(filepath, 'JPEG', quality=IMAGE_CONFIG['jpeg_quality'], optimize=True)
+        
+        # Return image info
+        return {
+            'filename': unique_filename,
+            'original_name': original_filename,
+            'path': f'/static/uploads/task/{unique_filename}',
+            'upload_time': datetime.now().isoformat(),
+            'size': os.path.getsize(filepath) if os.path.exists(filepath) else 0
+        }
+        
+    except Exception as e:
+        logging.error(f"Error processing image {image_file.filename}: {str(e)}")
+        return None
+
 @app.route('/add_note', methods=['POST'])
 @login_required
 def add_note():
@@ -1061,7 +1139,7 @@ def add_note():
         if not title:
             return jsonify({'status': 'error', 'message': 'Title is required'})
         
-        # ✅ SỬA: Parse due_date với format datetime-local
+        # Parse due_date với format datetime-local
         due_date_parsed = None
         if due_date:
             try:
@@ -1076,61 +1154,21 @@ def add_note():
                 logging.error(f"Invalid due date format: {due_date}, error: {str(e)}")
                 return jsonify({'status': 'error', 'message': 'Invalid due date format'})
         
-        # Process images
+        # Process images using helper function
         images = request.files.getlist('images')
         images_data = []
         
         for image in images:
-            if image and image.filename:
-                try:
-                    # Generate unique filename
-                    timestamp = int(time.time() * 1000)
-                    original_filename = secure_filename(image.filename)
-                    name, ext = os.path.splitext(original_filename)
-                    unique_filename = f"{name}_{timestamp}_{uuid4().hex[:8]}{ext}"
-                    
-                    # Save file to disk
-                    filepath = os.path.join(app.config['TASK_UPLOAD_FOLDER'], unique_filename)
-                    
-                    # Process image like in upload_task_images
-                    if image.filename.lower().endswith('.heic'):
-                        try:
-                            with Image(blob=image.read()) as img:
-                                img.format = 'jpeg'
-                                img.compression_quality = 85
-                                img.save(filename=filepath.replace('.heic', '.jpg').replace('.HEIC', '.jpg'))
-                                unique_filename = unique_filename.replace('.heic', '.jpg').replace('.HEIC', '.jpg')
-                        except:
-                            image.save(filepath)
-                    else:
-                        pil_image = PILImage.open(image)
-                        max_size = (1920, 1080)
-                        if pil_image.size[0] > max_size[0] or pil_image.size[1] > max_size[1]:
-                            pil_image.thumbnail(max_size, PILImage.Resampling.LANCZOS)
-                        
-                        if pil_image.mode in ('RGBA', 'P'):
-                            pil_image = pil_image.convert('RGB')
-                        
-                        pil_image.save(filepath, 'JPEG', quality=85, optimize=True)
-                    
-                    images_data.append({
-                        'filename': unique_filename,
-                        'original_name': original_filename,
-                        'path': f'/static/uploads/task/{unique_filename}',
-                        'upload_time': datetime.now().isoformat(),
-                        'size': os.path.getsize(filepath) if os.path.exists(filepath) else 0
-                    })
-                    
-                except Exception as e:
-                    logging.error(f"Error processing image {image.filename}: {str(e)}")
-                    continue
+            image_info = process_uploaded_image(image, app.config['TASK_UPLOAD_FOLDER'])
+            if image_info:
+                images_data.append(image_info)
         
         # Create note
         note = Task(
             title=title,
             content=content,
             category_id=int(category_id) if category_id and category_id.isdigit() else None,
-            due_date=due_date_parsed,  # ✅ SỬA: Sử dụng due_date_parsed thay vì due_date.strptime()
+            due_date=due_date_parsed,
             images=json.dumps(images_data) if images_data else None
         )
         
@@ -1143,7 +1181,7 @@ def add_note():
             'title': note.title,
             'content': note.content,
             'category': note.category.name if note.category else 'Uncategorized',
-            'due_date': note.due_date.strftime('%Y-%m-%d %H:%M') if note.due_date else None,  # ✅ SỬA: Format đầy đủ
+            'due_date': note.due_date.strftime('%Y-%m-%d %H:%M') if note.due_date else None,
             'images': images_data,
         }
         
@@ -1185,55 +1223,14 @@ def edit_note(id):
                     app.logger.error(f"Invalid due date format: {due_date}")
                     return jsonify({'status': 'error', 'message': 'Invalid due date format'}), 400
 
-            # Process new images
+            # Process new images using helper function
             new_images = request.files.getlist('images')
             existing_images = json.loads(note.images) if note.images else []
             
             for image in new_images:
-                if image and image.filename:
-                    try:
-                        # Generate unique filename
-                        timestamp = int(time.time() * 1000)
-                        original_filename = secure_filename(image.filename)
-                        name, ext = os.path.splitext(original_filename)
-                        unique_filename = f"{name}_{timestamp}_{uuid4().hex[:8]}{ext}"
-                        
-                        # Save file to disk
-                        filepath = os.path.join(app.config['TASK_UPLOAD_FOLDER'], unique_filename)
-                        
-                        # Process image
-                        if image.filename.lower().endswith('.heic'):
-                            try:
-                                with Image(blob=image.read()) as img:
-                                    img.format = 'jpeg'
-                                    img.compression_quality = 85
-                                    img.save(filename=filepath.replace('.heic', '.jpg').replace('.HEIC', '.jpg'))
-                                    unique_filename = unique_filename.replace('.heic', '.jpg').replace('.HEIC', '.jpg')
-                            except:
-                                image.save(filepath)
-                        else:
-                            pil_image = PILImage.open(image)
-                            max_size = (1920, 1080)
-                            if pil_image.size[0] > max_size[0] or pil_image.size[1] > max_size[1]:
-                                pil_image.thumbnail(max_size, PILImage.Resampling.LANCZOS)
-                            
-                            if pil_image.mode in ('RGBA', 'P'):
-                                pil_image = pil_image.convert('RGB')
-                            
-                            pil_image.save(filepath, 'JPEG', quality=85, optimize=True)
-                        
-                        # Add to existing images
-                        existing_images.append({
-                            'filename': unique_filename,
-                            'original_name': original_filename,
-                            'path': f'/static/uploads/task/{unique_filename}',
-                            'upload_time': datetime.now().isoformat(),
-                            'size': os.path.getsize(filepath) if os.path.exists(filepath) else 0
-                        })
-                        
-                    except Exception as e:
-                        app.logger.error(f"Error processing image {image.filename}: {str(e)}")
-                        continue
+                image_info = process_uploaded_image(image, app.config['TASK_UPLOAD_FOLDER'])
+                if image_info:
+                    existing_images.append(image_info)
 
             # Update note
             note.title = title
@@ -5042,63 +5039,12 @@ def upload_task_images():
         existing_images = json.loads(note.images) if note.images else []
         uploaded_images = []
         
-        # Process new images
+        # Process new images using helper function
         for image in images:
-            if image and image.filename:
-                try:
-                    # Generate unique filename
-                    timestamp = int(time.time() * 1000)
-                    original_filename = secure_filename(image.filename)
-                    name, ext = os.path.splitext(original_filename)
-                    unique_filename = f"{name}_{timestamp}_{uuid4().hex[:8]}{ext}"
-                    
-                    # Save file to disk
-                    filepath = os.path.join(app.config['TASK_UPLOAD_FOLDER'], unique_filename)
-                    
-                    # Process and save image
-                    if image.filename.lower().endswith('.heic'):
-                        # Handle HEIC files
-                        try:
-                            with Image(blob=image.read()) as img:
-                                img.format = 'jpeg'
-                                img.compression_quality = 85
-                                img.save(filename=filepath.replace('.heic', '.jpg').replace('.HEIC', '.jpg'))
-                                unique_filename = unique_filename.replace('.heic', '.jpg').replace('.HEIC', '.jpg')
-                                filepath = filepath.replace('.heic', '.jpg').replace('.HEIC', '.jpg')
-                        except:
-                            # Fallback: save as is
-                            image.save(filepath)
-                    else:
-                        # Regular image processing
-                        pil_image = PILImage.open(image)
-                        
-                        # Resize if too large
-                        max_size = (1920, 1080)
-                        if pil_image.size[0] > max_size[0] or pil_image.size[1] > max_size[1]:
-                            pil_image.thumbnail(max_size, PILImage.Resampling.LANCZOS)
-                        
-                        # Convert to RGB if necessary
-                        if pil_image.mode in ('RGBA', 'P'):
-                            pil_image = pil_image.convert('RGB')
-                        
-                        # Save with compression
-                        pil_image.save(filepath, 'JPEG', quality=85, optimize=True)
-                    
-                    # Create image info
-                    image_info = {
-                        'filename': unique_filename,
-                        'original_name': original_filename,
-                        'path': f'/static/uploads/task/{unique_filename}',
-                        'upload_time': datetime.now().isoformat(),
-                        'size': os.path.getsize(filepath) if os.path.exists(filepath) else 0
-                    }
-                    
-                    existing_images.append(image_info)
-                    uploaded_images.append(image_info)
-                    
-                except Exception as e:
-                    logging.error(f"Error processing image {image.filename}: {str(e)}")
-                    continue
+            image_info = process_uploaded_image(image, app.config['TASK_UPLOAD_FOLDER'])
+            if image_info:
+                existing_images.append(image_info)
+                uploaded_images.append(image_info)
         
         # Update note with new images
         note.images = json.dumps(existing_images) if existing_images else None
@@ -5443,12 +5389,13 @@ def get_birthday_alerts():
     for task in tasks:
         if task.due_date:
             due_date = task.due_date.date()
+            category_name = task.category.name if task.category else "uncategorized"
             if due_date == today:
-                alerts_today.append(f"Task '{task.title}' hết hạn hôm nay")
+                alerts_today.append(f"{category_name} - '{task.title}' hết hạn hôm nay")
             elif due_date == tomorrow:
-                alerts_tomorrow.append(f"Task '{task.title}' hết hạn ngày mai")
+                alerts_tomorrow.append(f"{category_name} - '{task.title}' hết hạn ngày mai")
             elif due_date < today:
-                alerts_today.append(f"Task '{task.title}' đã quá hạn từ {due_date.strftime('%d/%m/%Y')}")
+                alerts_today.append(f"{category_name} - '{task.title}' đã quá hạn từ {due_date.strftime('%d/%m/%Y')}")
     
     return alerts_today, alerts_tomorrow
 

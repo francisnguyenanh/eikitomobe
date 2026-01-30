@@ -1205,6 +1205,50 @@ footer {
     border: 2px dashed #dee2e6;
 }
 
+/* Image drop placeholder styling */
+.image-drop-placeholder {
+    transition: all 0.3s ease;
+}
+
+.image-drop-placeholder:hover {
+    background: #e9ecef !important;
+    border-color: #0d6efd !important;
+}
+
+/* Image preview item improvements */
+.image-preview-item {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.image-preview-item img {
+    transition: opacity 0.3s ease;
+}
+
+.image-preview-item:hover img {
+    opacity: 0.9;
+}
+
+/* Loading overlay for image upload */
+.image-upload-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    z-index: 10;
+}
+
+.image-upload-loading .spinner-border {
+    width: 2rem;
+    height: 2rem;
+}
+
 /* Mobile responsive cho image previews */
 @media (max-width: 768px) {
     .image-preview-item {
@@ -1214,6 +1258,157 @@ footer {
     .image-preview-item .img-container {
         width: 100px;
         height: 100px;
+    }
+}
+
+/* Toast Notifications - Fixed position, no layout shift */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    width: 350px;
+    max-width: calc(100vw - 40px);
+    pointer-events: none;
+}
+
+.toast-notification {
+    pointer-events: auto;
+    margin-bottom: 10px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: slideInRight 0.3s ease-out;
+    background: white;
+    border-left: 4px solid;
+    min-height: 60px;
+}
+
+.toast-notification.success {
+    border-left-color: #198754;
+    background: linear-gradient(to right, rgba(25, 135, 84, 0.05) 0%, white 10%);
+}
+
+.toast-notification.danger,
+.toast-notification.error {
+    border-left-color: #dc3545;
+    background: linear-gradient(to right, rgba(220, 53, 69, 0.05) 0%, white 10%);
+}
+
+.toast-notification.warning {
+    border-left-color: #ffc107;
+    background: linear-gradient(to right, rgba(255, 193, 7, 0.05) 0%, white 10%);
+}
+
+.toast-notification.info {
+    border-left-color: #0dcaf0;
+    background: linear-gradient(to right, rgba(13, 202, 240, 0.05) 0%, white 10%);
+}
+
+.toast-notification .toast-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.toast-notification .toast-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.toast-notification.success .toast-icon {
+    color: #198754;
+}
+
+.toast-notification.danger .toast-icon,
+.toast-notification.error .toast-icon {
+    color: #dc3545;
+}
+
+.toast-notification.warning .toast-icon {
+    color: #ffc107;
+}
+
+.toast-notification.info .toast-icon {
+    color: #0dcaf0;
+}
+
+.toast-notification .toast-message {
+    font-size: 14px;
+    font-weight: 500;
+    color: #212529;
+    line-height: 1.5;
+}
+
+.toast-notification .toast-close {
+    background: none;
+    border: none;
+    color: #6c757d;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.toast-notification .toast-close:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #212529;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast-notification.removing {
+    animation: slideOutRight 0.3s ease-out forwards;
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+/* Mobile responsive */
+@media (max-width: 576px) {
+    .toast-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        width: auto;
+        max-width: none;
+    }
+    
+    .toast-notification {
+        padding: 12px 16px;
+        min-height: 50px;
+    }
+    
+    .toast-notification .toast-message {
+        font-size: 13px;
     }
 }
 </style>
@@ -1566,6 +1761,14 @@ const SELECTORS = {
     }
 };
 
+// Image upload configuration
+const IMAGE_CONFIG = {
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+    maxFiles: 10,
+    allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/heic'],
+    allowedExtensions: ['.jpg', '.jpeg', '.png', '.gif', '.heic']
+};
+
 // State variables
 const state = {
     notes: [],
@@ -1573,6 +1776,8 @@ const state = {
     selectedFilesAdd: [],
     selectedFilesEdit: [],
     existingImagesEdit: [],
+    isUploading: false,
+    objectURLs: [], // Track ObjectURLs for cleanup
     currentTheme: localStorage.getItem('theme') || '{{ session.get("theme", "light") }}'
 };
 
@@ -1637,21 +1842,10 @@ const utils = {
 // === UI MANAGEMENT ===
 const ui = {
     showFlashMessage(category, message) {
-        const container = document.querySelector('.container.mt-4');
-        if (!container) return;
-        
-        const alert = document.createElement('div');
-        alert.className = `alert alert-${category} alert-dismissible fade show`;
-        alert.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        
-        container.insertBefore(alert, container.firstChild);
-        setTimeout(() => {
-            alert.classList.remove('show');
-            setTimeout(() => alert.remove(), 150);
-        }, 3000);
+        // Use global showFlashMessage function from baseall.html
+        if (typeof window.showFlashMessage === 'function') {
+            window.showFlashMessage(category, message);
+        }
     },
 
     updateCategorySelect(selectElement = null, selectedId = null) {
@@ -1673,12 +1867,16 @@ const ui = {
 
     updateImagePreview(container, files, isAddModal, noteId = null)  {
         if (!container) return;
+        
+        // Cleanup old ObjectURLs to prevent memory leak
+        state.objectURLs.forEach(url => URL.revokeObjectURL(url));
+        state.objectURLs = [];
     
         container.innerHTML = '';
         
         if (!files || files.length === 0) {
             container.innerHTML = `
-                <div style="
+                <div class="image-drop-placeholder" style="
                     padding: 2rem;
                     text-align: center;
                     color: #6c757d;
@@ -1686,13 +1884,22 @@ const ui = {
                     border-radius: 8px;
                     background: #f8f9fa;
                     margin: 1rem 0;
+                    cursor: pointer;
                 ">
                     <i class="bi bi-images" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
                     <div>Drag & drop images here or click to select</div>
-                    <small>Supports JPG, PNG, GIF, HEIC</small>
+                    <small>Supports JPG, PNG, GIF, HEIC (max ${IMAGE_CONFIG.maxFileSize / 1024 / 1024}MB each, max ${IMAGE_CONFIG.maxFiles} files)</small>
                 </div>
             `;
             return;
+        }
+        
+        // Show file count if near limit
+        if (files.length >= IMAGE_CONFIG.maxFiles - 2) {
+            const countIndicator = document.createElement('div');
+            countIndicator.className = 'text-muted small mb-2';
+            countIndicator.textContent = `${files.length}/${IMAGE_CONFIG.maxFiles} images`;
+            container.appendChild(countIndicator);
         }
         
         files.forEach((fileObj, index) => {
@@ -2754,6 +2961,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pad = n => n.toString().padStart(2, '0');
                 dueDateInput.value = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
             }
+            // Initialize empty image preview
+            ui.updateImagePreview(document.querySelector(SELECTORS.containers.imagePreview), [], true);
         });
         
         addMemoModal.addEventListener('hidden.bs.modal', () => {
@@ -2761,9 +2970,38 @@ document.addEventListener('DOMContentLoaded', () => {
             const form = document.querySelector(SELECTORS.forms.addMemo);
             if (form) {
                 form.reset();
+                // Clear selected files and cleanup ObjectURLs
                 state.selectedFilesAdd = [];
+                state.objectURLs.forEach(url => URL.revokeObjectURL(url));
+                state.objectURLs = [];
                 const preview = document.querySelector(SELECTORS.containers.imagePreview);
                 if (preview) preview.innerHTML = '';
+            }
+        });
+    }
+    
+    // Setup editMemoModal cleanup
+    const editMemoModal = document.getElementById('editMemoModal');
+    if (editMemoModal) {
+        editMemoModal.addEventListener('hidden.bs.modal', () => {
+            cleanBackdrops();
+            const form = document.querySelector(SELECTORS.forms.editMemo);
+            if (form) {
+                form.reset();
+            }
+            // Clear state and ObjectURLs
+            state.selectedFilesEdit = [];
+            state.existingImagesEdit = [];
+            state.objectURLs.forEach(url => URL.revokeObjectURL(url));
+            state.objectURLs = [];
+            const preview = document.querySelector(SELECTORS.containers.editImagePreview);
+            if (preview) preview.innerHTML = '';
+            
+            // If opened from calendar and not submitted, go back to calendar with preserved view
+            if (noteManager.isInCalendarMode) {
+                setTimeout(() => {
+                    noteManager.backToCalendar();
+                }, 300);
             }
         });
     }
@@ -2857,33 +3095,49 @@ document.addEventListener('DOMContentLoaded', () => {
         categoryManager.submitCategory(e);
     });
     
-    // Setup file input handlers
+    // Setup file input handlers with validation
     const setupFileHandler = (selector, fileArray, previewContainer) => {
         const input = document.querySelector(selector);
-        if (input) {
-            // Click handler cho file input
-            input.addEventListener('change', function() {
-                const files = Array.from(this.files);
-                if (fileArray === 'add') {
-                    state.selectedFilesAdd = [...state.selectedFilesAdd, ...files];
+        if (!input || input._fileHandlerSetup) return;
+        input._fileHandlerSetup = true;
+        
+        // Click handler cho file input with validation
+        input.addEventListener('change', function() {
+            const files = Array.from(this.files);
+            
+            if (fileArray === 'add') {
+                const currentCount = state.selectedFilesAdd.length;
+                const validFiles = imageManager.filterValidFiles(files, currentCount);
+                if (validFiles.length > 0) {
+                    state.selectedFilesAdd = [...state.selectedFilesAdd, ...validFiles];
                     ui.updateImagePreview(document.querySelector(previewContainer), state.selectedFilesAdd, true);
-                } else {
-                    state.selectedFilesEdit = [...state.selectedFilesEdit, ...files];
+                }
+            } else {
+                const currentCount = state.existingImagesEdit.length + state.selectedFilesEdit.length;
+                const validFiles = imageManager.filterValidFiles(files, currentCount);
+                if (validFiles.length > 0) {
+                    state.selectedFilesEdit = [...state.selectedFilesEdit, ...validFiles];
                     ui.updateImagePreview(document.querySelector(previewContainer), [...state.existingImagesEdit, ...state.selectedFilesEdit], false);
                 }
-            });
-            
-            // Make preview area clickable to trigger file input
-            const previewEl = document.querySelector(previewContainer);
-            if (previewEl) {
-                previewEl.style.cursor = 'pointer';
-                previewEl.addEventListener('click', (e) => {
-                    // Only trigger if clicking on empty area, not on existing images
-                    if (e.target === previewEl || e.target.closest('.image-preview-item') === null) {
-                        input.click();
-                    }
-                });
             }
+            
+            // Reset input to allow selecting same file again
+            this.value = '';
+        });
+        
+        // Make preview area clickable to trigger file input
+        const previewEl = document.querySelector(previewContainer);
+        if (previewEl && !previewEl._clickHandlerSetup) {
+            previewEl._clickHandlerSetup = true;
+            previewEl.style.cursor = 'pointer';
+            previewEl.addEventListener('click', (e) => {
+                // Only trigger if clicking on empty area, placeholder, or not on existing images
+                const isPlaceholder = e.target.closest('.image-drop-placeholder');
+                const isPreviewItem = e.target.closest('.image-preview-item');
+                if (e.target === previewEl || isPlaceholder || !isPreviewItem) {
+                    input.click();
+                }
+            });
         }
     };
     
@@ -2978,29 +3232,6 @@ if (calendarModal) {
             }
         });
     }
-
-    const editMemoModal = document.getElementById('editMemoModal');
-    if (editMemoModal) {
-        editMemoModal.addEventListener('hidden.bs.modal', () => {
-            cleanBackdrops();
-            // Reset state when edit modal is closed
-            const form = document.querySelector(SELECTORS.forms.editMemo);
-            if (form) {
-                form.reset();
-                state.selectedFilesEdit = [];
-                state.existingImagesEdit = [];
-                const preview = document.querySelector(SELECTORS.containers.editImagePreview);
-                if (preview) preview.innerHTML = '';
-            }
-            
-            // If opened from calendar and not submitted, go back to calendar with preserved view
-            if (noteManager.isInCalendarMode) {
-                setTimeout(() => {
-                    noteManager.backToCalendar();
-                }, 300);
-            }
-        });
-    }
     
     // Initialize UI
     ui.updateCategorySelect();
@@ -3029,31 +3260,88 @@ if (calendarModal) {
 
 // === IMAGE UPLOAD MANAGEMENT (Tham khảo từ evernote) ===
 const imageManager = {
+    _dropZonesSetup: false, // Flag to prevent duplicate setup
+    
+    // Validate file before adding
+    validateFile(file) {
+        // Check file size
+        if (file.size > IMAGE_CONFIG.maxFileSize) {
+            const sizeMB = (file.size / 1024 / 1024).toFixed(2);
+            return { valid: false, error: `File "${file.name}" is too large (${sizeMB}MB). Max size is ${IMAGE_CONFIG.maxFileSize / 1024 / 1024}MB.` };
+        }
+        
+        // Check file type
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        const isValidType = IMAGE_CONFIG.allowedTypes.includes(file.type) || 
+                           IMAGE_CONFIG.allowedExtensions.includes(ext);
+        if (!isValidType) {
+            return { valid: false, error: `File "${file.name}" is not a supported image format.` };
+        }
+        
+        return { valid: true };
+    },
+    
+    // Filter and validate files
+    filterValidFiles(files, currentCount) {
+        const validFiles = [];
+        const errors = [];
+        
+        for (const file of files) {
+            // Check max files limit
+            if (currentCount + validFiles.length >= IMAGE_CONFIG.maxFiles) {
+                errors.push(`Maximum ${IMAGE_CONFIG.maxFiles} images allowed.`);
+                break;
+            }
+            
+            const validation = this.validateFile(file);
+            if (validation.valid) {
+                validFiles.push(file);
+            } else {
+                errors.push(validation.error);
+            }
+        }
+        
+        if (errors.length > 0) {
+            ui.showFlashMessage('warning', errors[0]);
+        }
+        
+        return validFiles;
+    },
+    
     // Drag & Drop handlers
     setupDragAndDrop() {
+        // Prevent duplicate setup
+        if (this._dropZonesSetup) return;
+        this._dropZonesSetup = true;
+        
         // Setup cho Add Modal
         this.setupDropZone('#addMemoModal .modal-body', () => state.selectedFilesAdd, (files) => {
-            state.selectedFilesAdd = files;
-            ui.updateImagePreview(document.querySelector('#imagePreview'), files, true);
+            const validFiles = this.filterValidFiles(files, state.selectedFilesAdd.length);
+            if (validFiles.length > 0) {
+                state.selectedFilesAdd = [...state.selectedFilesAdd, ...validFiles];
+                ui.updateImagePreview(document.querySelector('#imagePreview'), state.selectedFilesAdd, true);
+            }
         });
         
         // Setup cho Edit Modal
         this.setupDropZone('#editMemoModal .modal-body', () => [...state.existingImagesEdit, ...state.selectedFilesEdit], (files) => {
-            // Tách existing và new files
-            const existingCount = state.existingImagesEdit.length;
-            state.selectedFilesEdit = files.slice(existingCount);
-            ui.updateImagePreview(document.querySelector('#editImagePreview'), files, false);
+            const currentCount = state.existingImagesEdit.length + state.selectedFilesEdit.length;
+            const validFiles = this.filterValidFiles(files, currentCount);
+            if (validFiles.length > 0) {
+                state.selectedFilesEdit = [...state.selectedFilesEdit, ...validFiles];
+                ui.updateImagePreview(document.querySelector('#editImagePreview'), [...state.existingImagesEdit, ...state.selectedFilesEdit], false);
+            }
         });
     },
 
     setupDropZone(selector, getCurrentFiles, setFiles) {
         const dropZone = document.querySelector(selector);
-        if (!dropZone) return;
+        if (!dropZone || dropZone._dropZoneSetup) return;
+        dropZone._dropZoneSetup = true; // Mark as setup
 
         // Prevent default drag behaviors
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropZone.addEventListener(eventName, this.preventDefaults, false);
-            document.body.addEventListener(eventName, this.preventDefaults, false);
         });
 
         // Highlight drop zone when item is dragged over it
@@ -3072,10 +3360,7 @@ const imageManager = {
             );
             
             if (files.length > 0) {
-                const currentFiles = getCurrentFiles();
-                const newFiles = [...currentFiles, ...files];
-                setFiles(newFiles);
-                
+                setFiles(files);
                 ui.showFlashMessage('success', `${files.length} image(s) added`);
             }
         }, false);
@@ -3188,8 +3473,18 @@ const imageManager = {
             // Existing image from server (file storage)
             const img = document.createElement('img');
             img.src = fileObj.path;
+            img.alt = fileObj.original_name || 'Image';
+            img.loading = 'lazy'; // Lazy load for performance
             img.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer;';
             img.onclick = () => this.showImageModal(fileObj.path);
+            img.onerror = () => {
+                imgContainer.innerHTML = `
+                    <div style="text-align: center; color: #dc3545;">
+                        <i class="bi bi-exclamation-triangle" style="font-size: 1.5rem;"></i>
+                        <div style="font-size: 0.7rem; margin-top: 5px;">Image not found</div>
+                    </div>
+                `;
+            };
             imgContainer.appendChild(img);
         } else if (fileObj instanceof File) {
             // New file being uploaded
@@ -3198,14 +3493,17 @@ const imageManager = {
                     <div style="text-align: center; color: #6c757d;">
                         <i class="bi bi-image" style="font-size: 2rem;"></i>
                         <div style="font-size: 0.8rem; margin-top: 5px;">HEIC</div>
-                        <div style="font-size: 0.7rem;">${fileObj.name}</div>
+                        <div style="font-size: 0.7rem; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${fileObj.name}">${fileObj.name}</div>
                     </div>
                 `;
             } else {
+                const objectURL = URL.createObjectURL(fileObj);
+                state.objectURLs.push(objectURL); // Track for cleanup
                 const img = document.createElement('img');
-                img.src = URL.createObjectURL(fileObj);
+                img.src = objectURL;
+                img.alt = fileObj.name;
                 img.style.cssText = 'max-width: 100%; max-height: 100%; object-fit: contain; cursor: pointer;';
-                img.onclick = () => this.showImageModal(img.src);
+                img.onclick = () => this.showImageModal(objectURL);
                 imgContainer.appendChild(img);
             }
         }
