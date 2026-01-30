@@ -1412,6 +1412,46 @@ footer {
         font-size: 13px;
     }
 }
+
+/* Toggle All Categories Button */
+.btn-toggle-all {
+    background: var(--primary-color);
+    border: none;
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-toggle-all:hover {
+    background: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-toggle-all:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-toggle-all i {
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-toggle-all.collapsed i {
+    transform: rotate(0deg);
+}
+
+.btn-toggle-all:not(.collapsed) i {
+    transform: rotate(180deg);
+}
 </style>
 
     <!-- Search Form -->
@@ -1434,6 +1474,12 @@ footer {
                     <input class="form-check-input" type="checkbox" id="showCompleted" name="show_completed" value="1" {% if show_completed %}checked{% endif %}>
                     <label class="form-check-label" for="showCompleted">Completed</label>
                 </div>
+            </div>
+            <div class="col-auto">
+                <button type="button" class="btn btn-toggle-all collapsed" id="toggleAllCategories" title="Expand/Collapse All Categories">
+                    <i class="bi bi-arrows-expand"></i>
+                    
+                </button>
             </div>
         </div>
     </form>
@@ -2194,6 +2240,46 @@ const eventHandlers = {
             });
         });
         ui.adjustCategoryButtonWidths();
+        
+        // Attach toggle all button listener
+        const toggleAllBtn = document.getElementById('toggleAllCategories');
+        if (toggleAllBtn) {
+            toggleAllBtn.addEventListener('click', () => {
+                const isCollapsed = toggleAllBtn.classList.contains('collapsed');
+                const tableWrappers = document.querySelectorAll('.category-table-wrapper');
+                const icons = document.querySelectorAll('[id^="toggle-icon-"]');
+                
+                tableWrappers.forEach(wrapper => {
+                    if (isCollapsed) {
+                        wrapper.classList.remove('collapsed');
+                    } else {
+                        wrapper.classList.add('collapsed');
+                    }
+                });
+                
+                icons.forEach(icon => {
+                    if (isCollapsed) {
+                        icon.classList.remove('bi-chevron-right');
+                        icon.classList.add('bi-chevron-down');
+                    } else {
+                        icon.classList.remove('bi-chevron-down');
+                        icon.classList.add('bi-chevron-right');
+                    }
+                });
+                
+                toggleAllBtn.classList.toggle('collapsed');
+                
+                // Update button icon and text
+                const btnIcon = toggleAllBtn.querySelector('i');
+                if (btnIcon) {
+                    if (isCollapsed) {
+                        btnIcon.className = 'bi bi-arrows-collapse';
+                    } else {
+                        btnIcon.className = 'bi bi-arrows-expand';
+                    }
+                }
+            });
+        }
     },
 
     attachCategoryEventListeners() {
