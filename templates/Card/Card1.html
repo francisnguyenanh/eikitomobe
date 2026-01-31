@@ -3,22 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ username or '友部 瑛稀' }}</title>
+  <title>{{ username or '友部 瑛稀' }} | IT Professional</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <!-- Google Fonts: Quicksand & Noto Sans JP -->
-  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@700&display=swap" rel="stylesheet">
+  <!-- Google Fonts: Inter, JetBrains Mono & Noto Sans JP -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
   <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon-16x16.png') }}">
   <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
   <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='android-chrome-192x192.png') }}">
   <link rel="icon" type="image/png" sizes="512x512" href="{{ url_for('static', filename='android-chrome-512x512.png') }}">
-<link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
   <!-- Custom CSS -->
   <style>
+    :root {
+      --primary: #0ea5e9;
+      --primary-dark: #0284c7;
+      --secondary: #8b5cf6;
+      --accent: #06b6d4;
+      --dark: #0f172a;
+      --dark-light: #1e293b;
+      --gray-900: #111827;
+      --gray-800: #1f2937;
+      --gray-700: #374151;
+      --gray-600: #4b5563;
+      --gray-500: #6b7280;
+      --gray-400: #9ca3af;
+      --gray-300: #d1d5db;
+      --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6;
+      --white: #ffffff;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --code-bg: #1e1e2e;
+    }
+    
     * {
       margin: 0;
       padding: 0;
@@ -26,27 +47,60 @@
     }
     
     body {
-      font-family: 'Quicksand', sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
-      color: #2c3e50;
-      line-height: 1.6;
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--dark);
+      color: var(--gray-300);
+      line-height: 1.7;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
     }
     
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        linear-gradient(rgba(14, 165, 233, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(14, 165, 233, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    /* Gradient orbs */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -50%;
+      right: -20%;
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(14, 165, 233, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    .main-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    
+    /* Hero Card */
     .hero-section {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(25px);
-      -webkit-backdrop-filter: blur(25px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      border-radius: 28px;
-      margin: 40px auto;
-      max-width: 900px;
-      box-shadow: 
-        0 25px 50px rgba(0, 0, 0, 0.15), 
-        0 10px 20px rgba(0, 0, 0, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 24px;
+      margin-bottom: 30px;
       overflow: hidden;
       position: relative;
     }
@@ -57,233 +111,549 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #2c5f8d, #1e3a5f, #2c5f8d);
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
     }
     
-    .hero-section h1 {
-      font-size: clamp(2rem, 4vw, 2.8rem);
-      font-weight: 600;
-      color: #2d3436;
-      margin-bottom: 0.5rem;
-      letter-spacing: -0.02em;
+    .hero-content {
+      padding: 50px;
     }
     
-    .hero-section p {
-      font-size: 1.1rem;
-      color: #636e72;
-      font-weight: 400;
-      margin-bottom: 1rem;
-    }
-    
-    .contact-info {
-      padding: 60px 40px;
-      background: transparent;
-    }
-    
-    footer {
-      background: transparent;
-      color: rgba(255, 255, 255, 0.8);
-      padding: 30px 0;
-      text-align: center;
-      font-size: 0.95rem;
-      margin-top: auto;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    }
-    
-    a {
-      color: #6c5ce7;
-      text-decoration: none;
-      font-weight: 600;
-      transition: all 0.3s ease;
+    .profile-wrapper {
       position: relative;
-    }
-    
-    a:hover {
-      color: #5f3dc4;
-      text-decoration: none;
-    }
-    
-    a::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 0;
-      width: 0;
-      height: 2px;
-      background: linear-gradient(90deg, #6c5ce7, #a29bfe);
-      transition: width 0.3s ease;
-    }
-    
-    a:hover::after {
-      width: 100%;
+      display: inline-block;
     }
     
     .profile-img {
-      width: 200px;
-      height: 200px;
-      border-radius: 24px;
+      width: 180px;
+      height: 180px;
+      border-radius: 20px;
       object-fit: cover;
+      border: 3px solid var(--dark-light);
       box-shadow: 
-        0 15px 35px rgba(102, 126, 234, 0.25), 
-        0 5px 15px rgba(0, 0, 0, 0.12);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      border: 3px solid rgba(255, 255, 255, 0.8);
+        0 0 0 4px rgba(14, 165, 233, 0.2),
+        0 20px 40px rgba(0, 0, 0, 0.4);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
     .profile-img:hover {
-      transform: translateY(-3px) scale(1.02);
+      transform: translateY(-5px) scale(1.02);
       box-shadow: 
-        0 20px 45px rgba(102, 126, 234, 0.35), 
-        0 8px 20px rgba(0, 0, 0, 0.15);
+        0 0 0 4px rgba(14, 165, 233, 0.4),
+        0 0 30px rgba(14, 165, 233, 0.3),
+        0 25px 50px rgba(0, 0, 0, 0.5);
+    }
+    
+    .status-indicator {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      width: 20px;
+      height: 20px;
+      background: var(--success);
+      border: 3px solid var(--dark-light);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    }
+    
+    .name-section {
+      margin-bottom: 2rem;
+    }
+    
+    .name-main {
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+      font-weight: 700;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      color: var(--white);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+    
+    .name-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 400;
+      color: var(--gray-400);
+      font-size: 1.1rem;
+    }
+    
+    .role-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(139, 92, 246, 0.15));
+      border: 1px solid rgba(14, 165, 233, 0.3);
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      color: var(--primary);
+      font-weight: 500;
+      margin-top: 1rem;
+    }
+    
+    .role-badge i {
+      font-size: 1rem;
+    }
+    
+    /* Contact Grid */
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 2rem;
     }
     
     .contact-item {
       display: flex;
       align-items: center;
-      margin-bottom: 1rem;
+      gap: 16px;
+      padding: 18px 20px;
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 14px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .contact-item:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: rgba(14, 165, 233, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .contact-icon {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(6, 182, 212, 0.1));
+      border-radius: 12px;
+      color: var(--primary);
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    
+    .contact-content {
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .contact-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gray-500);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .contact-value {
+      color: var(--gray-200);
+      font-weight: 500;
+      font-size: 0.95rem;
+      word-break: break-word;
+    }
+    
+    .contact-value a {
+      color: var(--primary);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .contact-value a:hover {
+      color: var(--accent);
+    }
+    
+    /* Section Cards */
+    .section-card {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 20px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+    
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 24px 32px;
+      background: linear-gradient(90deg, rgba(14, 165, 233, 0.1), transparent);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    
+    .section-icon {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 12px;
+      color: var(--white);
+      font-size: 1.3rem;
+    }
+    
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--white);
+      margin: 0;
+    }
+    
+    .section-body {
+      padding: 32px;
+    }
+    
+    /* Timeline */
+    .timeline {
+      position: relative;
+      padding-left: 30px;
+    }
+    
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 6px;
+      top: 8px;
+      bottom: 8px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--primary), var(--secondary));
+      border-radius: 2px;
+    }
+    
+    .timeline-item {
+      position: relative;
+      padding-bottom: 20px;
+      padding-left: 20px;
+    }
+    
+    .timeline-item:last-child {
+      padding-bottom: 0;
+    }
+    
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -24px;
+      top: 8px;
+      width: 12px;
+      height: 12px;
+      background: var(--dark);
+      border: 3px solid var(--primary);
+      border-radius: 50%;
+      z-index: 1;
+    }
+    
+    .timeline-text {
+      color: var(--gray-300);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+    
+    /* Skill Tags */
+    .skill-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .skill-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      background: rgba(14, 165, 233, 0.1);
+      border: 1px solid rgba(14, 165, 233, 0.2);
+      border-radius: 8px;
+      color: var(--primary);
+      font-size: 0.85rem;
+      font-weight: 500;
+      font-family: 'JetBrains Mono', monospace;
+      transition: all 0.2s;
+    }
+    
+    .skill-tag:hover {
+      background: rgba(14, 165, 233, 0.2);
+      border-color: var(--primary);
+      transform: translateY(-2px);
+    }
+    
+    .skill-tag i {
+      color: var(--accent);
+    }
+    
+    /* Certification Cards */
+    .cert-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    
+    .cert-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
       padding: 16px 20px;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.6));
+      background: rgba(16, 185, 129, 0.05);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 12px;
+      transition: all 0.3s;
+    }
+    
+    .cert-card:hover {
+      background: rgba(16, 185, 129, 0.1);
+      transform: translateX(5px);
+    }
+    
+    .cert-card i {
+      color: var(--success);
+      font-size: 1.2rem;
+    }
+    
+    .cert-card span {
+      color: var(--gray-200);
+      font-size: 0.9rem;
+    }
+    
+    /* Career Cards */
+    .career-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.1);
       border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      transition: all 0.3s ease;
+      padding: 28px;
+      margin-bottom: 20px;
+      transition: all 0.3s;
       position: relative;
       overflow: hidden;
     }
     
-    .contact-item::before {
+    .career-card::before {
       content: '';
       position: absolute;
       left: 0;
       top: 0;
       bottom: 0;
       width: 4px;
-      background: linear-gradient(135deg, #6c5ce7, #a29bfe);
-      transform: scaleY(0);
-      transition: transform 0.3s ease;
+      background: linear-gradient(to bottom, var(--primary), var(--secondary));
     }
     
-    .contact-item:hover {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
-      transform: translateY(-2px);
-      box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
+    .career-card:hover {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: rgba(14, 165, 233, 0.2);
+      transform: translateX(5px);
     }
     
-    .contact-item:hover::before {
-      transform: scaleY(1);
+    .career-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
     }
     
-    .contact-label {
+    .career-company {
+      font-size: 1.2rem;
       font-weight: 700;
-      color: #2d3436;
-      min-width: 80px;
-      font-size: 0.95rem;
+      color: var(--white);
     }
     
-    .contact-value {
-      color: #636e72;
-      font-weight: 500;
+    .career-period {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 20px;
+      color: var(--secondary);
+      font-size: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
     }
     
-    .name-main {
-      font-family: 'Shippori Mincho B1', 'Kosugi Maru', 'Noto Sans JP', serif;
-      font-weight: 700;
+    .career-section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-transform: uppercase;
       letter-spacing: 0.05em;
-      font-size: 2.3rem;
-      background: linear-gradient(135deg, #2d3436, #636e72);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-shadow: none;
-      line-height: 1.1;
+      margin: 20px 0 12px;
     }
     
-    .name-sub {
-      font-weight: 500;
-      color: #636e72;
-      font-size: 1.4rem;
+    .career-section-title i {
+      color: var(--primary);
     }
     
+    .career-content {
+      color: var(--gray-300);
+      line-height: 1.8;
+      padding-left: 16px;
+      border-left: 2px solid rgba(148, 163, 184, 0.2);
+      white-space: pre-line;
+    }
+    
+    /* Text Content Box */
+    .content-box {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 12px;
+      padding: 24px;
+      color: var(--gray-300);
+      line-height: 1.9;
+      white-space: pre-line;
+    }
+    
+    /* Code-style accent */
+    .code-accent {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(14, 165, 233, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: var(--accent);
+      font-size: 0.9em;
+    }
+    
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--gray-500);
+      font-size: 0.9rem;
+      border-top: 1px solid rgba(148, 163, 184, 0.1);
+      margin-top: 40px;
+    }
+    
+    footer p {
+      margin: 0;
+    }
+    
+    /* Responsive */
     @media (max-width: 768px) {
-      .hero-section {
-        margin: 20px;
-        border-radius: 20px;
+      .main-container {
+        padding: 20px 16px;
       }
       
-      .contact-info {
-        padding: 40px 30px;
+      .hero-content {
+        padding: 30px 24px;
+        text-align: center;
       }
       
       .profile-img {
-        width: 160px;
-        height: 160px;
-        margin: 0 auto 30px;
+        width: 140px;
+        height: 140px;
+        margin-bottom: 24px;
       }
       
-      .name-sub {
-        display: block;
-        font-size: 1.1rem;
-        margin-top: 0.3rem;
+      .contact-grid {
+        grid-template-columns: 1fr;
       }
+      
+      .section-body {
+        padding: 24px;
+      }
+      
+      .career-header {
+        flex-direction: column;
+      }
+      
+      .name-main {
+        font-size: 1.8rem;
+      }
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: var(--dark);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: var(--gray-700);
+      border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--gray-600);
     }
   </style>
 </head>
 <body>
-  <!-- Hero Section with Image and Contact Info -->
-  <section class="hero-section">
-    <div class="container">
-      <div class="row align-items-center">
-        <!-- Profile Image -->
-        <div class="col-md-4 text-center">
-          {% if avatar_url %}
-            <img src="{{ avatar_url }}" alt="Hình ảnh cá nhân" class="profile-img">
-          {% else %}
-            <img src="https://via.placeholder.com/200x200/f0f0f0/999999?text=Photo" alt="Hình ảnh cá nhân" class="profile-img">
-          {% endif %}
-        </div>
-        <!-- Text and Contact Info -->
-        <div class="col-md-8 contact-info">
-          {% set name_main = Name.split('（')[0].strip() %}
-          {% set name_sub = '（' + Name.split('（', 1)[1] if '（' in Name else '' %}
-          <h1>
-            <span class="name-main">{{ name_main }}</span>
-            {% if name_sub %}
-              <span class="name-sub">{{ name_sub }}</span>
-            {% endif %}
-          </h1>
-          
-          <div class="contact-item">
-            <span class="contact-label">職業:</span>
-            <span class="contact-value">{{ Job }}</span>
+  <div class="main-container">
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-content">
+        <div class="row align-items-center g-4">
+          <!-- Profile Image -->
+          <div class="col-lg-4 text-center text-lg-start">
+            <div class="profile-wrapper">
+              {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="Profile Photo" class="profile-img">
+              {% else %}
+                <img src="https://via.placeholder.com/180x180/1e293b/0ea5e9?text=DEV" alt="Profile Photo" class="profile-img">
+              {% endif %}
+              <div class="status-indicator" title="Available"></div>
+            </div>
           </div>
           
-          <div class="contact-item">
-            <span class="contact-label">Email:</span>
-            <span class="contact-value">{{ Email }}</span>
-          </div>
-          
-          <div class="contact-item">
-            <span class="contact-label">Phone:</span>
-            <span class="contact-value">{{ Phone }}</span>
-          </div>
-          
-          <div class="contact-item">
-            <span class="contact-label">SNS:</span>
-            <span class="contact-value">
-              <a href="{{ 'https://' + SNS if not SNS.startswith('http') else SNS }}" target="_blank">プロフィール</a>
-            </span>
+          <!-- Name & Role -->
+          <div class="col-lg-8">
+            <div class="name-section">
+              {% set name_main = Name.split('（')[0].strip() %}
+              {% set name_sub = Name.split('（', 1)[1].replace('）', '') if '（' in Name else '' %}
+              <h1 class="name-main">{{ name_main }}</h1>
+              {% if name_sub %}
+                <p class="name-sub">{{ name_sub }}</p>
+              {% endif %}
+            </div>
+            
+            <!-- Contact Grid -->
+            <div class="contact-grid">
+              <div class="contact-item">
+                <div class="contact-icon">
+                  <i class="bi bi-envelope-fill"></i>
+                </div>
+                <div class="contact-content">
+                  <div class="contact-label">Email</div>
+                  <div class="contact-value">{{ Email }}</div>
+                </div>
+              </div>
+              
+              <div class="contact-item">
+                <div class="contact-icon">
+                  <i class="bi bi-telephone-fill"></i>
+                </div>
+                <div class="contact-content">
+                  <div class="contact-label">Phone</div>
+                  <div class="contact-value">{{ Phone }}</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
-
-  <!-- Footer -->
-  <footer>
-    <div class="container">
-      <p>{{ SubSlogan }}</p>
-    </div>
-  </footer>
+    </section>
+    
+    <!-- CV Sections Container -->
+    <div id="cvSectionsContainer"></div>
+    
+    <!-- Footer -->
+    <footer>
+    </footer>
+  </div>
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -295,227 +665,162 @@
       .then(result => {
         if (result.success && result.data) {
           const cv = result.data;
+          const container = document.getElementById('cvSectionsContainer');
           
-          // Update profile sections with CV data
-          document.querySelector('.name-main').textContent = cv.氏名 || '';
-          document.querySelector('.name-sub').textContent = '（' + cv.フリガナ + '）' || '';
+          // Build sections HTML
+          let sectionsHTML = '';
           
-          // Update contact info
-          const contactInfo = document.querySelector('.contact-info');
-          const contactHTML = `
-            <div class="text-center mb-4">
-              <h1 class="display-4 fw-bold mb-2" style="color: #2d3436; font-family: 'Shippori Mincho B1', serif;">
-                ${cv.氏名 || ''}
-              </h1>
-              <p class="fs-5 text-muted mb-4" style="font-family: 'Noto Sans JP', sans-serif;">
-                ${cv.フリガナ || ''}
-              </p>
-            </div>
-            
-            <div class="row g-3 mt-3">
-              <div class="col-12">
-                <div class="card border-0 shadow-sm" style="background: #ffffff; border-left: 4px solid #2c5f8d !important;">
-                  <div class="card-body py-3">
-                    <div class="d-flex align-items-center">
-                      <i class="bi bi-calendar-event fs-5 me-3" style="color: #2c5f8d;"></i>
-                      <div class="d-flex align-items-center w-100">
-                        <span class="text-muted me-3" style="min-width: 100px;">生年月日:</span>
-                        <strong class="fs-6" style="color: #2c3e50;">${cv.生年月日 || ''}</strong>
-                      </div>
-                    </div>
-                  </div>
+          // 履歴書 Section
+          sectionsHTML += `
+            <section class="section-card">
+              <div class="section-header">
+                <div class="section-icon">
+                  <i class="bi bi-file-earmark-person"></i>
                 </div>
+                <h2 class="section-title">履歴書 / Resume</h2>
               </div>
-              
-              <div class="col-12">
-                <div class="card border-0 shadow-sm" style="background: #ffffff; border-left: 4px solid #34495e !important;">
-                  <div class="card-body py-3">
-                    <div class="d-flex align-items-center">
-                      <i class="bi bi-envelope fs-5 me-3" style="color: #34495e;"></i>
-                      <div class="d-flex align-items-center w-100">
-                        <span class="text-muted me-3" style="min-width: 100px;">Email:</span>
-                        <strong class="fs-6" style="word-break: break-all; color: #2c3e50;">${cv.メールアドレス || ''}</strong>
-                      </div>
-                    </div>
-                  </div>
+              <div class="section-body">
+                
+                <!-- Personal Info -->
+                
+                <!-- 学歴 -->
+                <div class="mb-5">
+                  <h3 class="h5 fw-bold mb-3" style="color: var(--secondary);">
+                    <i class="bi bi-mortarboard-fill me-2"></i>学歴 / Education
+                  </h3>
+                  <div class="timeline" id="educationTimeline"></div>
                 </div>
-              </div>
-              
-              <div class="col-12">
-                <div class="card border-0 shadow-sm" style="background: #ffffff; border-left: 4px solid #16a085 !important;">
-                  <div class="card-body py-3">
-                    <div class="d-flex align-items-center">
-                      <i class="bi bi-telephone fs-5 me-3" style="color: #16a085;"></i>
-                      <div class="d-flex align-items-center w-100">
-                        <span class="text-muted me-3" style="min-width: 100px;">電話:</span>
-                        <strong class="fs-6" style="color: #2c3e50;">${cv.電話番号 || ''}</strong>
-                      </div>
-                    </div>
-                  </div>
+                
+                <!-- 職歴 -->
+                <div class="mb-5">
+                  <h3 class="h5 fw-bold mb-3" style="color: var(--success);">
+                    <i class="bi bi-briefcase-fill me-2"></i>職歴 / Work History
+                  </h3>
+                  <div class="timeline" id="workHistoryTimeline"></div>
                 </div>
-              </div>
-              
-              <div class="col-12">
-                <div class="card border-0 shadow-sm" style="background: #ffffff; border-left: 4px solid #7f8c8d !important;">
-                  <div class="card-body py-3">
-                    <div class="d-flex align-items-center">
-                      <i class="bi bi-geo-alt fs-5 me-3" style="color: #7f8c8d;"></i>
-                      <div class="d-flex align-items-center w-100">
-                        <span class="text-muted me-3" style="min-width: 100px;">住所:</span>
-                        <strong class="fs-6" style="color: #2c3e50;">${cv.現住所 || ''}</strong>
-                      </div>
-                    </div>
-                  </div>
+                
+                <!-- 免許・資格 -->
+                <div class="mb-5">
+                  <h3 class="h5 fw-bold mb-3" style="color: var(--warning);">
+                    <i class="bi bi-award-fill me-2"></i>免許・資格 / Certifications
+                  </h3>
+                  <div class="cert-grid" id="certificationsGrid"></div>
                 </div>
+                
+                <!-- 志望動機 -->
+                ${cv.志望動機 ? `
+                <div class="mb-5">
+                  <h3 class="h5 fw-bold mb-3" style="color: var(--accent);">
+                    <i class="bi bi-lightning-fill me-2"></i>志望動機 / Motivation
+                  </h3>
+                  <div class="content-box">${cv.志望動機}</div>
+                </div>
+                ` : ''}
+                
+                <!-- 本人希望記入欄 -->
+                ${cv.本人希望記入欄 ? `
+                <div>
+                  <h3 class="h5 fw-bold mb-3" style="color: var(--gray-400);">
+                    <i class="bi bi-chat-quote-fill me-2"></i>本人希望記入欄
+                  </h3>
+                  <div class="content-box">${cv.本人希望記入欄}</div>
+                </div>
+                ` : ''}
+                
               </div>
-            </div>
+            </section>
           `;
-          contactInfo.innerHTML = contactHTML;
           
-          // Add CV sections (履歴書 & 職務経歴書)
-          const container = document.querySelector('.hero-section .container');
-          const cvSectionsHTML = `
-            <div class="container my-5">
-              <div class="row">
-                <div class="col-12">
-                  <!-- 履歴書 Section -->
-                  <div class="card border-0 shadow-lg mb-4" style="border-radius: 20px; overflow: hidden; border-top: 4px solid #2c5f8d;">
-                    <div class="card-header text-white py-4" style="background: linear-gradient(135deg, #2c5f8d 0%, #1e3a5f 100%);">
-                      <h2 class="mb-0 fw-bold">
-                        <i class="bi bi-file-earmark-text me-2"></i>履歴書
-                      </h2>
-                    </div>
-                    <div class="card-body p-4" style="background: #ffffff;">
-                      
-                      <!-- 学歴 -->
-                      <div class="mb-4">
-                        <h3 class="h5 fw-bold mb-3 pb-2 border-bottom" style="color: #2c5f8d; border-color: #2c5f8d !important;">
-                          <i class="bi bi-mortarboard me-2"></i>学歴
-                        </h3>
-                        <div class="timeline">
-                          ${cv.学歴1 ? `
-                          <div class="timeline-item d-flex mb-3">
-                            <div class="timeline-marker rounded-circle me-3" style="width: 12px; height: 12px; margin-top: 6px; background: #2c5f8d;"></div>
-                            <p class="mb-0 fs-6" style="color: #34495e;">${cv.学歴1}</p>
-                          </div>` : ''}
-                          ${cv.学歴2 ? `
-                          <div class="timeline-item d-flex mb-3">
-                            <div class="timeline-marker rounded-circle me-3" style="width: 12px; height: 12px; margin-top: 6px; background: #2c5f8d;"></div>
-                            <p class="mb-0 fs-6" style="color: #34495e;">${cv.学歴2}</p>
-                          </div>` : ''}
-                          ${cv.学歴3 ? `
-                          <div class="timeline-item d-flex mb-3">
-                            <div class="timeline-marker rounded-circle me-3" style="width: 12px; height: 12px; margin-top: 6px; background: #2c5f8d;"></div>
-                            <p class="mb-0 fs-6" style="color: #34495e;">${cv.学歴3}</p>
-                          </div>` : ''}
-                          ${cv.学歴4 ? `
-                          <div class="timeline-item d-flex mb-3">
-                            <div class="timeline-marker rounded-circle me-3" style="width: 12px; height: 12px; margin-top: 6px; background: #2c5f8d;"></div>
-                            <p class="mb-0 fs-6" style="color: #34495e;">${cv.学歴4}</p>
-                          </div>` : ''}
-                        </div>
-                      </div>
-                      
-                      <!-- 職歴 -->
-                      <div class="mb-4">
-                        <h3 class="h5 fw-bold mb-3 pb-2 border-bottom" style="color: #16a085; border-color: #16a085 !important;">
-                          <i class="bi bi-briefcase me-2"></i>職歴
-                        </h3>
-                        <div class="timeline" id="workHistoryTimeline">
-                          <!-- Work history will be populated dynamically -->
-                        </div>
-                      </div>
-                      
-                      <!-- 免許・資格 -->
-                      <div class="mb-4">
-                        <h3 class="h5 fw-bold mb-3 pb-2 border-bottom" style="color: #8e44ad; border-color: #8e44ad !important;">
-                          <i class="bi bi-award me-2"></i>免許・資格
-                        </h3>
-                        <div class="row g-3" id="certificationsGrid">
-                          <!-- Certifications will be populated dynamically -->
-                        </div>
-                      </div>
-                      
-                      <!-- 志望動機 -->
-                      <div class="mb-4">
-                        <h3 class="h5 fw-bold mb-3 pb-2 border-bottom" style="color: #34495e; border-color: #34495e !important;">
-                          <i class="bi bi-pencil-square me-2"></i>志望動機
-                        </h3>
-                        <div class="card border-0" style="background: #f8f9fa;">
-                          <div class="card-body">
-                            <p class="mb-0" style="line-height: 1.8; white-space: pre-line; color: #2c3e50;">${cv.志望動機 || ''}</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <!-- 本人希望記入欄 -->
-                      <div>
-                        <h3 class="h5 fw-bold mb-3 pb-2 border-bottom" style="color: #34495e; border-color: #34495e !important;">
-                          <i class="bi bi-pencil-square me-2"></i>本人希望記入欄
-                        </h3>
-                        <div class="card border-0" style="background: #f8f9fa;">
-                          <div class="card-body">
-                            <p class="mb-0" style="line-height: 1.8; white-space: pre-line; color: #2c3e50;">${cv.本人希望記入欄 || ''}</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                    </div>
-                  </div>
-                  
-                  <!-- 職務経歴書 Section -->
-                  <div class="card border-0 shadow-lg mb-4" style="border-radius: 20px; overflow: hidden; border-top: 4px solid #34495e;">
-                    <div class="card-header text-white py-4" style="background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);">
-                      <h2 class="mb-0 fw-bold">
-                        <i class="bi bi-journal-text me-2"></i>職務経歴書
-                      </h2>
-                    </div>
-                    <div class="card-body p-4" style="background: #ffffff;" id="careerDetailsSection">
-                      <!-- Career details will be populated dynamically -->
-                    </div>
-                  </div>
-                  
-                  <!-- 自己PR Section -->
-                      <div class="mb-4">
-                        <h3 class="h5 fw-bold mb-3 pb-2 border-bottom" style="color: #2c5f8d; border-color: #2c5f8d !important;">
-                          <i class="bi bi-person-badge me-2"></i>自己PR
-                        </h3>
-                        <div class="card border-0" style="background: #f8f9fa;">
-                          <div class="card-body">
-                            <p class="mb-0" style="line-height: 1.8; white-space: pre-line; color: #2c3e50;">${cv.自己PR || ''}</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <!-- 保有スキル -->
-                      <div>
-                        <h3 class="h5 fw-bold mb-3 pb-2 border-bottom" style="color: #16a085; border-color: #16a085 !important;">
-                          <i class="bi bi-tools me-2"></i>保有スキル
-                        </h3>
-                        <div class="card border-0" style="background: #f8f9fa;">
-                          <div class="card-body">
-                            <p class="mb-0" style="line-height: 1.8; white-space: pre-line; color: #2c3e50;">${cv.保有スキル || ''}</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                    </div>
-                  </div>
+          // 職務経歴書 Section
+          sectionsHTML += `
+            <section class="section-card">
+              <div class="section-header">
+                <div class="section-icon" style="background: linear-gradient(135deg, var(--secondary), #a855f7);">
+                  <i class="bi bi-journal-code"></i>
                 </div>
+                <h2 class="section-title">職務経歴書 / Career History</h2>
               </div>
-            </div>
+              <div class="section-body" id="careerDetailsSection"></div>
+            </section>
           `;
-          container.innerHTML += cvSectionsHTML;
+          
+          // Skills & Self PR Section
+          sectionsHTML += `
+            <section class="section-card">
+              <div class="section-header">
+                <div class="section-icon" style="background: linear-gradient(135deg, var(--success), #22c55e);">
+                  <i class="bi bi-terminal-fill"></i>
+                </div>
+                <h2 class="section-title">スキル & 自己PR / Skills & About</h2>
+              </div>
+              <div class="section-body">
+                
+                <!-- 自己PR -->
+                ${cv.自己PR ? `
+                <div class="mb-5">
+                  <h3 class="h5 fw-bold mb-3" style="color: var(--primary);">
+                    <i class="bi bi-person-badge-fill me-2"></i>自己PR / About Me
+                  </h3>
+                  <div class="content-box">${cv.自己PR}</div>
+                </div>
+                ` : ''}
+                
+                <!-- 保有スキル -->
+                ${cv.保有スキル ? `
+                <div>
+                  <h3 class="h5 fw-bold mb-3" style="color: var(--accent);">
+                    <i class="bi bi-gear-fill me-2"></i>保有スキル / Technical Skills
+                  </h3>
+                  <div class="skill-grid" id="skillsGrid"></div>
+                </div>
+                ` : ''}
+                
+              </div>
+            </section>
+          `;
+          
+          container.innerHTML = sectionsHTML;
           
           // Render dynamic sections
+          renderEducation(cv);
           renderWorkHistory(cv);
           renderCertifications(cv);
           renderCareerDetails(cv);
+          renderSkills(cv);
         }
       })
       .catch(error => console.error('Error loading CV data:', error));
     
-    // Function to render work history dynamically
+    // Function to render education
+    function renderEducation(cv) {
+      const timeline = document.getElementById('educationTimeline');
+      if (!timeline) return;
+      
+      const eduIndices = [];
+      Object.keys(cv).forEach(key => {
+        if (key.startsWith('学歴')) {
+          const num = parseInt(key.replace('学歴', ''));
+          if (!isNaN(num) && cv[key]) {
+            eduIndices.push(num);
+          }
+        }
+      });
+      
+      eduIndices.sort((a, b) => a - b);
+      
+      let html = '';
+      eduIndices.forEach(index => {
+        html += `
+          <div class="timeline-item">
+            <p class="timeline-text">${cv[`学歴${index}`]}</p>
+          </div>
+        `;
+      });
+      
+      timeline.innerHTML = html;
+    }
+    
+    // Function to render work history
     function renderWorkHistory(cv) {
       const timeline = document.getElementById('workHistoryTimeline');
       if (!timeline) return;
@@ -535,9 +840,8 @@
       let html = '';
       workIndices.forEach(index => {
         html += `
-          <div class="timeline-item d-flex mb-3">
-            <div class="timeline-marker rounded-circle me-3" style="width: 12px; height: 12px; margin-top: 6px; background: #16a085;"></div>
-            <p class="mb-0 fs-6" style="color: #34495e;">${cv[`職歴${index}`]}</p>
+          <div class="timeline-item">
+            <p class="timeline-text">${cv[`職歴${index}`]}</p>
           </div>
         `;
       });
@@ -545,7 +849,7 @@
       timeline.innerHTML = html;
     }
     
-    // Function to render certifications dynamically
+    // Function to render certifications
     function renderCertifications(cv) {
       const grid = document.getElementById('certificationsGrid');
       if (!grid) return;
@@ -565,11 +869,9 @@
       let html = '';
       certIndices.forEach(index => {
         html += `
-          <div class="col-md-6">
-            <div class="mb-0 d-flex align-items-center p-3 rounded" style="border-left: 4px solid #8e44ad; background: #f8f9fa;">
-              <i class="bi bi-check-circle-fill me-2" style="color: #8e44ad;"></i>
-              <span style="color: #2c3e50;">${cv[`免許資格${index}`]}</span>
-            </div>
+          <div class="cert-card">
+            <i class="bi bi-patch-check-fill"></i>
+            <span>${cv[`免許資格${index}`]}</span>
           </div>
         `;
       });
@@ -577,12 +879,11 @@
       grid.innerHTML = html;
     }
     
-    // Function to render career details dynamically
+    // Function to render career details
     function renderCareerDetails(cv) {
       const careerSection = document.getElementById('careerDetailsSection');
       if (!careerSection) return;
       
-      // Find all career detail entries
       const careerIndices = [];
       Object.keys(cv).forEach(key => {
         if (key.startsWith('職務経歴_会社名')) {
@@ -593,50 +894,67 @@
         }
       });
       
-      // Sort indices
       careerIndices.sort((a, b) => a - b);
       
-      // Color options for different companies
-      const colors = ['#2c5f8d', '#16a085', '#8e44ad', '#e67e22', '#c0392b', '#16a085'];
-      
-      // Build HTML for all career entries
-      let careerHTML = '';
+      let html = '';
       careerIndices.forEach((index, i) => {
         const companyName = cv[`職務経歴_会社名${index}`];
         const period = cv[`職務経歴_期間${index}`] || '';
         const duties = cv[`職務経歴_職務内容${index}`] || '';
         const achievements = cv[`職務経歴_実績${index}`] || '';
-        const borderColor = colors[i % colors.length];
         
-        careerHTML += `
-          <div class="mb-5">
-            <div class="card bg-light" style="border-left: 5px solid ${borderColor}; border-top: none; border-right: none; border-bottom: none;">
-              <div class="card-body">
-                <h3 class="h4 fw-bold mb-2" style="color: ${borderColor};">${companyName}</h3>
-                <p class="text-muted mb-3">
-                  <i class="bi bi-calendar-range me-1"></i>${period}
-                </p>
-                
-                ${duties ? `
-                <h4 class="h6 fw-bold mb-2 mt-3" style="color: #34495e;">
-                  <i class="bi bi-list-task me-2"></i>職務内容
-                </h4>
-                <p class="ps-3" style="line-height: 1.8; white-space: pre-line; border-left: 3px solid ${borderColor}; padding-left: 1rem !important; color: #2c3e50;">${duties}</p>
-                ` : ''}
-                
-                ${achievements ? `
-                <h4 class="h6 fw-bold mb-2 mt-3" style="color: #34495e;">
-                  <i class="bi bi-trophy me-2"></i>実績
-                </h4>
-                <p class="ps-3" style="line-height: 1.8; white-space: pre-line; border-left: 3px solid ${borderColor}; padding-left: 1rem !important; color: #2c3e50;">${achievements}</p>
-                ` : ''}
-              </div>
+        html += `
+          <div class="career-card">
+            <div class="career-header">
+              <h3 class="career-company">
+                <i class="bi bi-building me-2" style="color: var(--primary);"></i>${companyName}
+              </h3>
+              <span class="career-period">
+                <i class="bi bi-calendar3"></i>${period}
+              </span>
             </div>
+            
+            ${duties ? `
+            <div class="career-section-title">
+              <i class="bi bi-list-check"></i>職務内容 / Responsibilities
+            </div>
+            <div class="career-content">${duties}</div>
+            ` : ''}
+            
+            ${achievements ? `
+            <div class="career-section-title">
+              <i class="bi bi-trophy"></i>実績 / Achievements
+            </div>
+            <div class="career-content">${achievements}</div>
+            ` : ''}
           </div>
         `;
       });
       
-      careerSection.innerHTML = careerHTML;
+      careerSection.innerHTML = html;
+    }
+    
+    // Function to render skills as tags
+    function renderSkills(cv) {
+      const skillsGrid = document.getElementById('skillsGrid');
+      if (!skillsGrid || !cv.保有スキル) return;
+      
+      // Split skills by common delimiters
+      const skillsText = cv.保有スキル;
+      const skills = skillsText.split(/[、,，\n・]/g)
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+      
+      let html = '';
+      skills.forEach(skill => {
+        html += `
+          <span class="skill-tag">
+            <i class="bi bi-check-circle-fill"></i>${skill}
+          </span>
+        `;
+      });
+      
+      skillsGrid.innerHTML = html;
     }
   </script>
 </body>
