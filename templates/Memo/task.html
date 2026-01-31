@@ -1911,7 +1911,7 @@ const utils = {
         );
     },
 
-    formatDateJST(isoDate) {
+    formatDateJST(isoDate, includeTime = true) {
         if (!isoDate) return '';
         const date = new Date(isoDate);
         const options = {
@@ -1923,7 +1923,10 @@ const utils = {
         const parts = Object.fromEntries(
             formatter.formatToParts(date).map(part => [part.type, part.value])
         );
-        return `${parts.year}/${parts.month}/${parts.day} (${parts.weekday}) ${parts.hour}:${parts.minute}`;
+        if (includeTime) {
+            return `${parts.year}/${parts.month}/${parts.day} (${parts.weekday}) ${parts.hour}:${parts.minute}`;
+        }
+        return `${parts.year}/${parts.month}/${parts.day} (${parts.weekday})`;
     }
 
     
@@ -2042,7 +2045,7 @@ const ui = {
     updateDueDateDisplays() {
         document.querySelectorAll('.due-date').forEach(el => {
             const isoDate = el.getAttribute('data-due-date');
-            if (isoDate) el.textContent = utils.formatDateJST(isoDate);
+            if (isoDate) el.textContent = utils.formatDateJST(isoDate, false);
         });
     }
 };
